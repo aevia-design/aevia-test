@@ -112,6 +112,15 @@
   .testi-grid-row2 { grid-template-columns: 1fr; max-width: 100%; }
 
 
+  /* ── About page — story section ── */
+  .story {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 48px 20px;
+  }
+  .story-label { position: static; font-size: 22px; }
+
+
   /* ── Collections page ── */
   .page-header { padding: 100px 20px 56px; }
 
@@ -128,16 +137,6 @@
   }
   #la .panel { position: static; }
   #la .product-title { font-size: 36px; }
-
-  /* Layout B — full-bleed hero */
-  #lb .hero-text          { left: 20px; bottom: 32px; }
-  #lb .hero-text .product-title { font-size: 44px; }
-  #lb .body {
-    grid-template-columns: 1fr;
-    gap: 40px;
-    padding: 40px 20px;
-  }
-  #lb .detail { position: static; }
 
   /* Chips (page count selector) — allow wrapping */
   .chips { flex-wrap: wrap; }
@@ -165,9 +164,6 @@
   .step2-bar { flex-direction: column; gap: 4px; align-items: flex-start; }
   .step2-bar .sep { display: none; }
 
-  /* Switcher (product page layout toggle) */
-  .switcher { top: 8px; }
-
 }
 
 
@@ -179,5 +175,4 @@
   .steps      { grid-template-columns: 1fr; }
   .hero-headline { font-size: 30px; }
   #la .product-title { font-size: 30px; }
-  #lb .hero-text .product-title { font-size: 34px; }
 }

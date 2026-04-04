@@ -23,21 +23,6 @@
     button { cursor: pointer; border: none; background: none; font: inherit; }
     a { color: inherit; text-decoration: none; }
 
-    /* ── Layout switcher ── */
-    .switcher {
-      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-      z-index: 200; display: flex; gap: 2px;
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: 100px; padding: 3px;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.09);
-    }
-    .switcher button {
-      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
-      padding: 6px 20px; border-radius: 100px; color: var(--muted);
-      transition: background 0.15s, color 0.15s;
-    }
-    .switcher button.active { background: var(--text); color: var(--white); }
-
     /* ── Nav ── */
     .nav {
       display: flex; align-items: center; justify-content: space-between;
@@ -202,16 +187,10 @@
 </head>
 <body>
 
-<!-- Switcher -->
-<div class="switcher">
-  <button id="btn-a" class="active" onclick="setLayout('a')">Layout A — Split</button>
-  <button id="btn-b" onclick="setLayout('b')">Layout B — Hero</button>
-</div>
-
 <!-- Nav -->
 <nav class="nav">
   <a href="home.html" class="nav-logo">
-    <img src="../assets/images/logo - transparent.png" alt="Aevia" style="height:28px;width:auto;"
+    <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia" style="height:28px;width:auto;"
          onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
     <span style="display:none;font-family:Georgia,serif;font-size:18px;">aevia</span>
   </a>
@@ -304,88 +283,6 @@
 </div>
 
 
-<!-- ═══════════════════════════════════════════════════════
-     LAYOUT B  —  Full-bleed hero + editorial grid
-═══════════════════════════════════════════════════════ -->
-<div id="lb">
-  <div class="hero">
-    <img src="https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp" alt="Bloom photo book" />
-    <div class="hero-veil"></div>
-    <div class="hero-text">
-      <div class="tag">Kids</div>
-      <h1 class="product-title">Bloom</h1>
-      <p class="product-tagline">Every tiny milestone, composed<br>into something you'll keep forever.</p>
-    </div>
-  </div>
-
-  <div class="body">
-    <!-- Gallery -->
-    <div>
-      <img id="b-img" class="gallery-main"
-        src="https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-2.webp"
-        alt="Bloom interior spread" />
-      <div class="thumbs">
-        <button onclick="sw('b',0,this)">
-          <img src="https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp?width=200&auto=webp" alt="" />
-        </button>
-        <button class="on" onclick="sw('b',1,this)">
-          <img src="https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-2.webp?width=200&auto=webp" alt="" />
-        </button>
-        <button onclick="sw('b',2,this)">
-          <img src="https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp?width=200&auto=webp" alt="" />
-        </button>
-      </div>
-    </div>
-    <!-- Details -->
-    <div class="detail">
-      <div class="tag">Kids</div>
-      <h2 class="product-title">Bloom</h2>
-      <p class="product-tagline">Every tiny milestone, composed into something you'll keep forever.</p>
-
-      <div class="page-toggle">
-        <div class="section-label">Pages</div>
-        <div class="chips">
-          <div class="chip on" onclick="pick('b',this,70)">
-            <span class="chip-label">40 pages</span>
-            <span class="chip-price">€ 70</span>
-          </div>
-          <div class="chip" onclick="pick('b',this,120)">
-            <span class="chip-label">80 pages</span>
-            <span class="chip-price">€ 120</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="addons">
-        <div class="section-label">Optional add-ons</div>
-        <div class="addon" data-input-type="text" data-slug="first-words" onclick="xtra('b',this)">
-          <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <div class="addon-body">
-            <div class="addon-name">First words</div>
-            <div class="addon-desc">A dedicated spread to capture their earliest attempts at language</div>
-          </div>
-          <div class="addon-cost">Included</div>
-        </div>
-        <div class="addon" data-input-type="none" data-slug="first-year-timeline" onclick="xtra('b',this)">
-          <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <div class="addon-body">
-            <div class="addon-name">First year timeline</div>
-            <div class="addon-desc">A visual month-by-month spread — no extra photos needed</div>
-          </div>
-          <div class="addon-cost">Included</div>
-        </div>
-      </div>
-
-      <div class="price-row">
-        <span class="price-sym">€</span>
-        <span class="price-val" id="b-price">70</span>
-        <span class="price-note">incl. design &amp; printing</span>
-      </div>
-      <button class="cta" onclick="goToOrder()">Create your book</button>
-      <p class="cta-note">You approve before we print. No charge until you're happy.</p>
-    </div>
-  </div>
-</div>
 
 
 <!-- Accordion -->
@@ -453,7 +350,7 @@
   <div class="footer-inner">
     <div class="foot-brand">
       <div class="foot-logo">
-        <img src="../assets/images/logo - transparent.png" alt="Aevia"
+        <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia"
              onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');" />
       </div>
       <p>A premium photo book studio in Vienna. We design and print; you keep forever.</p>
@@ -465,9 +362,9 @@
     <div class="foot-col">
       <h5>Products</h5>
       <a href="collections.html">All templates</a>
-      <a href="vows.html">Love</a>
-      <a href="bloom.html">Kids</a>
-      <a href="wander.html">Adventures</a>
+      <a href="collections.html#love">Love</a>
+      <a href="collections.html#kids">Kids</a>
+      <a href="collections.html#adventures">Adventures</a>
     </div>
     <div class="foot-col">
       <h5>Company</h5>
@@ -478,9 +375,8 @@
     <div class="foot-col">
       <h5>Support</h5>
       <a href="help.html">FAQ</a>
-      <a href="#">Shipping</a>
       <a href="#">Instagram</a>
-      <a href="#">Contact</a>
+      <a href="help.html#contact">Contact</a>
     </div>
   </div>
   <div class="foot-base">
@@ -526,14 +422,6 @@
 
   function render(l) {
     document.getElementById(l + '-price').textContent = st[l].base + st[l].extra;
-  }
-
-  function setLayout(l) {
-    document.getElementById('la').style.display = l === 'a' ? '' : 'none';
-    document.getElementById('lb').style.display = l === 'b' ? 'block' : 'none';
-    document.getElementById('btn-a').classList.toggle('active', l === 'a');
-    document.getElementById('btn-b').classList.toggle('active', l === 'b');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function goToOrder() {
