@@ -188,6 +188,7 @@
     .foot-col a:hover { color: var(--text); }
     .foot-base { max-width: 1160px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
   </style>
+  <link rel="stylesheet" href="../assets/css/mobile.css">
 </head>
 <body>
 
@@ -204,6 +205,9 @@
     <a href="help.html">Help</a>
   </div>
   <a href="#love" class="nav-cta">Our Collections</a>
+  <button class="nav-burger" aria-label="Open menu" onclick="this.closest('.nav').classList.toggle('open')">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
 
 

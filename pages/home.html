@@ -288,6 +288,7 @@
     body > .hero { padding-top: 0; }
     .nav + .hero { margin-top: 0; }
   </style>
+  <link rel="stylesheet" href="../assets/css/mobile.css">
 </head>
 <body>
 
@@ -306,6 +307,9 @@
     <a href="help.html">Help</a>
   </div>
   <a href="collections.html" class="nav-cta">Our Collections</a>
+  <button class="nav-burger" aria-label="Open menu" onclick="this.closest('.nav').classList.toggle('open')">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
 
 

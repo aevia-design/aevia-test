@@ -1,0 +1,183 @@
+/* ═══════════════════════════════════════════════════
+   Aevia — Responsive / Mobile styles
+   Loaded by all pages after their inline <style> block
+   Breakpoint: 768px
+═══════════════════════════════════════════════════ */
+
+/* Hamburger button — hidden on desktop */
+.nav-burger { display: none; }
+
+
+/* ═══════════════════════════════════════════════════
+   MOBILE  (≤ 768px)
+═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Nav ── */
+  .nav {
+    padding: 16px 20px;
+    flex-wrap: wrap;
+  }
+
+  .nav-links {
+    display: none;
+    order: 3;
+    width: 100%;
+    flex-direction: column;
+    gap: 0;
+    padding: 12px 0 4px;
+    border-top: 1px solid var(--border);
+    margin-top: 12px;
+  }
+  .nav-links a {
+    display: block;
+    padding: 12px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-cta {
+    display: none;
+    order: 3;
+    width: 100%;
+    text-align: center;
+    padding: 13px;
+    border-radius: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+
+  /* Open state */
+  .nav.open .nav-links { display: flex; }
+  .nav.open .nav-cta   { display: block; }
+
+  /* Hamburger button */
+  .nav-burger {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 32px;
+    height: 32px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .nav-burger span {
+    display: block;
+    width: 22px;
+    height: 1.5px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: all 0.25s;
+  }
+  /* Animate to × when open */
+  .nav.open .nav-burger span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+  .nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+  .nav.open .nav-burger span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+
+  /* ── Sections ── */
+  .section         { padding: 60px 20px; }
+  .section-title   { font-size: 28px; }
+  .section-sub     { font-size: 15px; }
+
+  .final-cta                { padding: 60px 20px; }
+  .final-cta .section-title { font-size: 32px; }
+
+
+  /* ── Home — Hero ── */
+  .hero-content       { padding: 0 24px; }
+  .hero-headline-wrap { height: auto; min-height: 110px; }
+  .hero-headline      { font-size: clamp(32px, 9vw, 48px); }
+  .hero-sub           { font-size: 15px; }
+
+
+  /* ── Home — Collections grid (3-col → 1-col) ── */
+  .collections-grid { grid-template-columns: 1fr; }
+
+
+  /* ── Home — How it works (4-col → 2-col) ── */
+  .steps      { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .steps-line { display: none; }
+
+
+  /* ── Home — Aevia touch (4-col → 2-col) ── */
+  .touch-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+
+
+  /* ── Home — Testimonials ── */
+  .testi-grid      { grid-template-columns: 1fr; }
+  .testi-grid-row2 { grid-template-columns: 1fr; max-width: 100%; }
+
+
+  /* ── Collections page ── */
+  .page-header { padding: 100px 20px 56px; }
+
+
+  /* ── Product pages (bloom, devotion, etc.) ── */
+  .crumb     { padding: 13px 20px; }
+  .acc-wrap  { padding: 0 20px; }
+
+  /* Layout A — sticky split → single column */
+  #la .zone {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 40px 20px;
+  }
+  #la .panel { position: static; }
+  #la .product-title { font-size: 36px; }
+
+  /* Layout B — full-bleed hero */
+  #lb .hero-text          { left: 20px; bottom: 32px; }
+  #lb .hero-text .product-title { font-size: 44px; }
+  #lb .body {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 40px 20px;
+  }
+  #lb .detail { position: static; }
+
+  /* Chips (page count selector) — allow wrapping */
+  .chips { flex-wrap: wrap; }
+  .chip  { min-width: 90px; }
+
+
+  /* ── Order page ── */
+  .stepper-wrap { padding: 0 20px; }
+  .stepper      { gap: 0; overflow-x: auto; padding-bottom: 2px; }
+  .step-label   { display: none; } /* show only numbers on small screens */
+
+  .content { padding: 40px 20px 80px; }
+
+  /* Form + summary: single column, summary moves below form */
+  .step1-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .summary-card { position: static; }
+
+  /* Two-col field rows → single column */
+  .field-row { grid-template-columns: 1fr; }
+
+  /* Step 2 bar — allow wrapping */
+  .step2-bar { flex-direction: column; gap: 4px; align-items: flex-start; }
+  .step2-bar .sep { display: none; }
+
+  /* Switcher (product page layout toggle) */
+  .switcher { top: 8px; }
+
+}
+
+
+/* ═══════════════════════════════════════════════════
+   SMALL PHONES  (≤ 400px) — fine-tuning
+═══════════════════════════════════════════════════ */
+@media (max-width: 400px) {
+  .touch-grid { grid-template-columns: 1fr; }
+  .steps      { grid-template-columns: 1fr; }
+  .hero-headline { font-size: 30px; }
+  #la .product-title { font-size: 30px; }
+  #lb .hero-text .product-title { font-size: 34px; }
+}
