@@ -270,7 +270,7 @@
 
       <div class="addons">
         <div class="section-label">Optional add-ons</div>
-        <div class="addon" onclick="xtra('a',this)">
+        <div class="addon" data-input-type="text" data-slug="first-words" onclick="xtra('a',this)">
           <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="addon-body">
             <div class="addon-name">First words</div>
@@ -278,7 +278,7 @@
           </div>
           <div class="addon-cost">Included</div>
         </div>
-        <div class="addon" onclick="xtra('a',this)">
+        <div class="addon" data-input-type="none" data-slug="first-year-timeline" onclick="xtra('a',this)">
           <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="addon-body">
             <div class="addon-name">First year timeline</div>
@@ -293,7 +293,7 @@
         <span class="price-val" id="a-price">70</span>
         <span class="price-note">incl. design &amp; printing</span>
       </div>
-      <button class="cta">Create your book</button>
+      <button class="cta" onclick="goToOrder()">Create your book</button>
       <p class="cta-note">You approve before we print. No charge until you're happy.</p>
     </div>
   </div>
@@ -354,7 +354,7 @@
 
       <div class="addons">
         <div class="section-label">Optional add-ons</div>
-        <div class="addon" onclick="xtra('b',this)">
+        <div class="addon" data-input-type="text" data-slug="first-words" onclick="xtra('b',this)">
           <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="addon-body">
             <div class="addon-name">First words</div>
@@ -362,7 +362,7 @@
           </div>
           <div class="addon-cost">Included</div>
         </div>
-        <div class="addon" onclick="xtra('b',this)">
+        <div class="addon" data-input-type="none" data-slug="first-year-timeline" onclick="xtra('b',this)">
           <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="addon-body">
             <div class="addon-name">First year timeline</div>
@@ -377,7 +377,7 @@
         <span class="price-val" id="b-price">70</span>
         <span class="price-note">incl. design &amp; printing</span>
       </div>
-      <button class="cta">Create your book</button>
+      <button class="cta" onclick="goToOrder()">Create your book</button>
       <p class="cta-note">You approve before we print. No charge until you're happy.</p>
     </div>
   </div>
@@ -530,6 +530,24 @@
     document.getElementById('btn-a').classList.toggle('active', l === 'a');
     document.getElementById('btn-b').classList.toggle('active', l === 'b');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function goToOrder() {
+    const l = document.getElementById('lb').style.display === 'block' ? 'b' : 'a';
+    const price = document.getElementById(l + '-price').textContent;
+    const selectedChip = document.querySelector('#l' + l + ' .chip.on');
+    const pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
+    const addonNames = [], addonInputs = [], addonSlugs = [];
+    document.querySelectorAll('#l' + l + ' .addon.on').forEach(a => {
+      addonNames.push(a.querySelector('.addon-name').textContent);
+      addonInputs.push(a.dataset.inputType || 'none');
+      addonSlugs.push(a.dataset.slug || '');
+    });
+    const params = new URLSearchParams({ template: 'Bloom', category: 'kids', pages, price, backUrl: 'bloom.html' });
+    addonNames.forEach(n => params.append('addonName', n));
+    addonInputs.forEach(t => params.append('addonInput', t));
+    addonSlugs.forEach(s => params.append('addonSlug', s));
+    window.location.href = 'order.html?' + params.toString();
   }
 
   function acc(btn) {

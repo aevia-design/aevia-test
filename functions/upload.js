@@ -101,12 +101,19 @@ async function handler(req, res) {
       if (fileInfo) {
         const rawExt = (fileInfo.name || '').split('.').pop().toLowerCase() || 'bin';
         const ext = rawExt === 'heic' ? 'heic' : rawExt === 'jpg' ? 'jpg' : rawExt;
-        storedName  = `${folderName}/photo_${String(i + 1).padStart(3, '0')}.${ext}`;
         contentType = fileInfo.type && fileInfo.type !== ''
           ? fileInfo.type
           : ext === 'heic' ? 'image/heic' : 'image/jpeg';
+        if (fileInfo.fileType === 'cover') {
+          storedName = `${folderName}/cover/cover.${ext}`;
+        } else if (fileInfo.fileType === 'special') {
+          const slug = fileInfo.addonSlug || `special_${String(i + 1).padStart(3, '0')}`;
+          storedName = `${folderName}/special_pages/${slug}.${ext}`;
+        } else {
+          storedName = `${folderName}/photos/photo_${String(i + 1).padStart(3, '0')}.${ext}`;
+        }
       } else {
-        storedName  = `${folderName}/slot_${String(i + 1).padStart(3, '0')}`;
+        storedName  = `${folderName}/photos/slot_${String(i + 1).padStart(3, '0')}`;
         contentType = 'application/octet-stream';
       }
 
