@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wander — Aevia</title>
+  <style>
+    :root{--bg:#fafaf8;--surface:#f3efe9;--border:#e4dfd8;--text:#1a1a1a;--muted:#7d7570;--accent-dk:#a8895f;--white:#ffffff;--serif:Georgia,'Times New Roman',serif;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}html{scroll-behavior:smooth;}body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}img{display:block;max-width:100%;}button{cursor:pointer;border:none;background:none;font:inherit;}a{color:inherit;text-decoration:none;}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 56px;background:rgba(250,250,248,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+    .nav-logo img{height:28px;width:auto;display:block;}.nav-logo-text{font-family:var(--serif);font-size:18px;}.nav-links{display:flex;gap:32px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}.nav-links a{transition:color 0.15s;}.nav-links a:hover{color:var(--text);}
+    .nav-cta{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;border:1px solid var(--text);padding:8px 20px;border-radius:100px;transition:background 0.15s,color 0.15s;}.nav-cta:hover{background:var(--text);color:var(--white);}
+    .crumb{margin-top:69px;padding:13px 56px;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}.crumb span{margin:0 8px;opacity:0.35;}
+    .tag{display:inline-block;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent-dk);margin-bottom:12px;}
+    .product-title{font-family:var(--serif);font-weight:400;letter-spacing:-0.02em;line-height:1.04;margin-bottom:14px;font-size:54px;}
+    .product-tagline{font-family:var(--serif);font-style:italic;color:var(--muted);line-height:1.65;margin-bottom:36px;font-size:16px;max-width:340px;}
+    .section-label{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+    .zone{display:grid;grid-template-columns:1fr 400px;gap:72px;max-width:1160px;margin:0 auto;padding:64px 56px;align-items:start;}.panel{position:sticky;top:90px;}
+    .gallery-main{width:100%;aspect-ratio:5/4;border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center;}.gallery-main svg{opacity:0.25;}
+    .thumbs{display:flex;gap:8px;margin-top:10px;}.thumb-ph{flex:1;aspect-ratio:1;border-radius:3px;background:var(--surface);border:2px solid transparent;}.thumb-ph.on{border-color:var(--text);}
+    .page-toggle{margin-bottom:30px;}.chips{display:flex;gap:8px;margin-top:8px;}
+    .chip{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 22px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;min-width:108px;background:var(--white);transition:border-color 0.15s,background 0.15s;user-select:none;}.chip:hover{border-color:var(--text);}.chip.on{border-color:var(--text);background:var(--text);color:var(--white);}
+    .chip-label{font-size:12px;font-weight:500;letter-spacing:0.03em;}.chip-price{font-family:var(--serif);font-size:15px;}
+    .addons{margin-bottom:30px;}.addon{display:flex;align-items:flex-start;gap:14px;padding:15px;border:1.5px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--white);cursor:pointer;transition:border-color 0.15s;}.addon:hover{border-color:#c4a882;}.addon.on{border-color:var(--text);box-shadow:inset 0 0 0 0.5px var(--text);}
+    .chk{width:20px;height:20px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:background 0.15s,border-color 0.15s;}.addon.on .chk{background:var(--text);border-color:var(--text);}.chk svg{display:none;}.addon.on .chk svg{display:block;}
+    .addon-body{flex:1;}.addon-name{font-size:13px;font-weight:600;margin-bottom:3px;}.addon-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+    .addon-cost{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:3px 9px;border-radius:100px;flex-shrink:0;align-self:center;}
+    .price-row{display:flex;align-items:baseline;gap:5px;margin-bottom:22px;}.price-sym{font-family:var(--serif);font-size:22px;color:var(--muted);}.price-val{font-family:var(--serif);font-size:52px;font-weight:400;letter-spacing:-0.03em;line-height:1;}.price-note{font-size:11px;color:var(--muted);}
+    .cta{width:100%;background:var(--text);color:var(--white);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;padding:17px 32px;border-radius:3px;transition:background 0.2s;margin-bottom:11px;}.cta:hover{background:#2e2e2e;}.cta-note{text-align:center;font-size:11px;color:var(--muted);}
+    .acc-wrap{border-top:1px solid var(--border);max-width:1160px;margin:0 auto;padding:0 56px;}.acc-item{border-bottom:1px solid var(--border);}
+    .acc-btn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:20px 0;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;text-align:left;transition:color 0.15s;}.acc-btn:hover{color:var(--muted);}
+    .acc-ico{width:16px;height:16px;flex-shrink:0;transition:transform 0.24s;}.acc-item.open .acc-ico{transform:rotate(45deg);}
+    .acc-body{display:none;padding-bottom:24px;font-size:14px;line-height:1.8;color:var(--muted);max-width:600px;}.acc-body ul{padding-left:16px;margin-top:10px;}.acc-body li{margin-bottom:4px;}.acc-body p+p{margin-top:10px;}.acc-item.open .acc-body{display:block;}
+    .footer{margin-top:96px;background:var(--surface);border-top:1px solid var(--border);padding:64px 56px 48px;}.footer-inner{max-width:1160px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:48px;}
+    .foot-logo{margin-bottom:14px;}.foot-logo img{height:28px;width:auto;}.foot-brand p{font-size:13px;color:var(--muted);line-height:1.7;max-width:220px;}
+    .foot-form{margin-top:20px;display:flex;gap:8px;}.foot-form input{flex:1;background:var(--white);border:1px solid var(--border);border-radius:3px;padding:8px 12px;font-size:12px;font-family:var(--sans);color:var(--text);outline:none;}.foot-form input:focus{border-color:var(--text);}.foot-form button{background:var(--text);color:var(--white);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;padding:8px 16px;border-radius:3px;}
+    .foot-col h5{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;}.foot-col a{display:block;font-size:13px;color:var(--muted);margin-bottom:8px;transition:color 0.15s;}.foot-col a:hover{color:var(--text);}
+    .foot-base{max-width:1160px;margin:40px auto 0;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;color:var(--muted);}
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <a href="home.html" class="nav-logo"><img src="../assets/images/logo - transparent.png" alt="Aevia" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"/><span class="nav-logo-text" style="display:none;">aevia</span></a>
+  <div class="nav-links"><a href="home.html">Home</a><a href="about.html">About us</a><a href="help.html">Help</a></div>
+  <a href="collections.html" class="nav-cta">Our Collections</a>
+</nav>
+<div class="crumb">Templates <span>›</span> Adventures <span>›</span> Wander</div>
+<div class="zone">
+  <div>
+    <div class="gallery-main"><svg width="72" height="72" viewBox="0 0 72 72" fill="none"><rect x="10" y="18" width="52" height="38" rx="3" stroke="#9b8e83" stroke-width="1.8"/><circle cx="25" cy="32" r="6" stroke="#9b8e83" stroke-width="1.8"/><path d="M10 46l14-14 10 10 8-8 12 10 8-10" stroke="#9b8e83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="thumbs"><div class="thumb-ph on"></div><div class="thumb-ph"></div><div class="thumb-ph"></div></div>
+  </div>
+  <div class="panel">
+    <div class="tag">Adventures</div>
+    <h1 class="product-title">Wander</h1>
+    <p class="product-tagline">Built for travel — open landscapes and the feeling of going somewhere.</p>
+    <div class="page-toggle">
+      <div class="section-label">Pages</div>
+      <div class="chips">
+        <div class="chip on" onclick="pick(this,60)"><span class="chip-label">40 pages</span><span class="chip-price">€ 60</span></div>
+        <div class="chip" onclick="pick(this,100)"><span class="chip-label">80 pages</span><span class="chip-price">€ 100</span></div>
+      </div>
+    </div>
+    <div class="addons">
+      <div class="section-label">Optional add-ons</div>
+      <div class="addon" onclick="xtra(this)">
+        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="addon-body"><div class="addon-name">Route map spread</div><div class="addon-desc">A custom illustrated map of your journey on a full spread</div></div>
+        <div class="addon-cost">Included</div>
+      </div>
+      <div class="addon" onclick="xtra(this)">
+        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="addon-body"><div class="addon-name">Caption overlays</div><div class="addon-desc">Location names and dates printed directly over your images</div></div>
+        <div class="addon-cost">Included</div>
+      </div>
+    </div>
+    <div class="price-row"><span class="price-sym">€</span><span class="price-val" id="price">60</span><span class="price-note">incl. design &amp; printing</span></div>
+    <button class="cta">Create your book</button>
+    <p class="cta-note">You approve before we print. No charge until you're happy.</p>
+  </div>
+</div>
+<div class="acc-wrap">
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">About this template<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Wander is designed for travel photography — wide panoramas, layered compositions, and the sweeping sense of moving through the world. Landscape orientation and full-bleed spreads let your images lead.</p></div></div>
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Print &amp; production<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Printed on 170gsm FSC-certified matte art paper. Hardcover case-bound. Produced in Vienna, dispatched within 5–7 business days.</p><ul><li>Format: 33 × 24 cm (landscape)</li><li>Cover: Matte linen hardcover, slate</li><li>Paper: 170gsm matte, archival quality</li><li>Binding: Case-bound, sewn signatures</li></ul></div></div>
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Preparing your photos<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><ul><li>Minimum resolution: 2000px on the short edge</li><li>Colour space: sRGB preferred</li><li>We accept Google Drive, Dropbox, or direct upload</li></ul></div></div>
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Delivery<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><ul><li>Austria: 2–3 business days</li><li>Germany, Switzerland: 3–4 business days</li><li>Rest of EU: 5–7 business days</li><li>UK, USA: 7–10 business days</li></ul><p>Standard shipping included.</p></div></div>
+</div>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="foot-brand"><div class="foot-logo"><img src="../assets/images/logo - transparent.png" alt="Aevia" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');"/></div><p>A premium photo book studio in Vienna. We design and print; you keep forever.</p><div class="foot-form"><input type="email" placeholder="Email address"/><button>Subscribe</button></div></div>
+    <div class="foot-col"><h5>Products</h5><a href="collections.html">All templates</a><a href="vows.html">Love</a><a href="bloom.html">Kids</a><a href="wander.html">Adventures</a></div>
+    <div class="foot-col"><h5>Company</h5><a href="about.html">Our story</a><a href="home.html#how">How it works</a><a href="#">Quality promise</a></div>
+    <div class="foot-col"><h5>Support</h5><a href="help.html">FAQ</a><a href="#">Shipping</a><a href="#">Instagram</a><a href="#">Contact</a></div>
+  </div>
+  <div class="foot-base"><span>© 2026 Aevia. All rights reserved.</span><span>Terms of service</span></div>
+</footer>
+<script>
+  function pick(el,p){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');document.getElementById('price').textContent=p;}
+  function xtra(card){card.classList.toggle('on');card.querySelector('.addon-cost').textContent=card.classList.contains('on')?'Added \u2713':'Included';}
+  function acc(btn){const item=btn.closest('.acc-item');const open=item.classList.contains('open');document.querySelectorAll('.acc-item').forEach(i=>i.classList.remove('open'));if(!open)item.classList.add('open');}
+  const nav=document.querySelector('.nav');window.addEventListener('scroll',()=>{nav.style.background=window.scrollY>80?'rgba(250,250,248,0.97)':'rgba(250,250,248,0.92)';});
+</script>
+</body>
+</html>

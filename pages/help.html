@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Help — Aevia</title>
+  <style>
+    :root {
+      --bg:        #fafaf8;
+      --surface:   #f3efe9;
+      --border:    #e4dfd8;
+      --text:      #1a1a1a;
+      --muted:     #7d7570;
+      --accent-dk: #a8895f;
+      --white:     #ffffff;
+      --serif:     Georgia, 'Times New Roman', serif;
+      --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    img { display: block; max-width: 100%; }
+    button { cursor: pointer; border: none; background: none; font: inherit; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ══ NAV ══ */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 56px;
+      background: rgba(250,250,248,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.3s;
+    }
+    .nav-logo img { height: 28px; width: auto; display: block; }
+    .nav-logo-text { font-family: var(--serif); font-size: 18px; letter-spacing: -0.01em; }
+    .nav-links { display: flex; gap: 32px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .nav-links a { transition: color 0.15s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a.active { color: var(--text); }
+    .nav-cta {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid var(--text); padding: 8px 20px; border-radius: 100px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-cta:hover { background: var(--text); color: var(--white); }
+
+    /* ══ PAGE HEADER ══ */
+    .page-header-wrap { border-bottom: 1px solid var(--border); }
+    .page-header {
+      padding: 160px 56px 80px;
+      max-width: 720px; margin: 0 auto;
+      text-align: center;
+    }
+    .page-tag {
+      font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--accent-dk); display: block; margin-bottom: 20px;
+    }
+    .page-title {
+      font-family: var(--serif); font-size: clamp(44px, 5.5vw, 72px);
+      font-weight: 400; letter-spacing: -0.03em; line-height: 1.05;
+      margin-bottom: 20px;
+    }
+    .page-sub {
+      font-family: var(--serif); font-style: italic; font-size: 18px;
+      color: var(--muted); line-height: 1.65; max-width: 520px; margin: 0 auto;
+    }
+
+    /* ══ FAQ SECTION ══ */
+    .faq-section {
+      max-width: 720px; margin: 0 auto;
+      padding: 80px 56px;
+      display: block;
+    }
+    .faq-sidebar {
+      position: sticky; top: 120px;
+    }
+    .faq-sidebar-label {
+      font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--accent-dk); margin-bottom: 20px;
+    }
+    .faq-nav a {
+      display: block; font-size: 13px; color: var(--muted);
+      padding: 7px 0; border-bottom: 1px solid var(--border);
+      transition: color 0.15s;
+    }
+    .faq-nav a:last-child { border-bottom: none; }
+    .faq-nav a:hover { color: var(--text); }
+
+    /* ══ ACCORDION ══ */
+    .faq-list { display: flex; flex-direction: column; }
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+    }
+    .faq-item:first-child { border-top: 1px solid var(--border); }
+    .faq-q {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 26px 0; cursor: pointer; gap: 24px;
+      font-family: var(--serif); font-size: 19px; font-weight: 400;
+      letter-spacing: -0.01em; line-height: 1.3;
+      color: var(--text);
+      user-select: none;
+    }
+    .faq-q:hover { color: var(--accent-dk); }
+    .faq-icon {
+      flex-shrink: 0; width: 20px; height: 20px;
+      color: var(--muted); transition: transform 0.3s ease;
+    }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .faq-a {
+      display: none;
+      padding-bottom: 28px;
+    }
+    .faq-item.open .faq-a { display: block; }
+    .faq-a p {
+      font-size: 15px; color: var(--muted); line-height: 1.8;
+      margin-bottom: 14px;
+    }
+    .faq-a p:last-child { margin-bottom: 0; }
+    .faq-a .note {
+      display: inline-block; margin-top: 10px;
+      font-size: 12px; color: var(--accent-dk);
+      border: 1px solid var(--border); border-radius: 3px;
+      padding: 8px 14px; font-style: italic;
+    }
+
+    /* ══ CONTACT SECTION ══ */
+    .contact-section {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .contact-inner {
+      max-width: 1160px; margin: 0 auto;
+      padding: 80px 56px;
+      display: grid;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 80px;
+      align-items: start;
+    }
+    .contact-label {
+      position: sticky; top: 120px;
+    }
+    .contact-label .section-tag {
+      font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--accent-dk); display: block; margin-bottom: 14px;
+    }
+    .contact-label h2 {
+      font-family: var(--serif); font-size: 34px; font-weight: 400;
+      letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 14px;
+    }
+    .contact-label p {
+      font-family: var(--serif); font-style: italic; font-size: 16px;
+      color: var(--muted); line-height: 1.65;
+    }
+    .contact-cards { display: flex; flex-direction: column; gap: 16px; }
+    .contact-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 6px; padding: 28px 32px;
+      display: flex; align-items: center; gap: 24px;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .contact-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.07); transform: translateY(-1px); }
+    .contact-card-icon {
+      width: 44px; height: 44px; flex-shrink: 0;
+      color: var(--accent-dk);
+    }
+    .contact-card-body {}
+    .contact-card-label {
+      font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 5px;
+    }
+    .contact-card-value {
+      font-family: var(--serif); font-size: 18px; font-weight: 400;
+      letter-spacing: -0.01em;
+    }
+    .contact-card-value a:hover { color: var(--accent-dk); }
+    .contact-card-note {
+      font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5;
+    }
+
+    /* ══ IMAGE BREAK ══ */
+    .img-break {
+      width: 100%; aspect-ratio: 21/8; overflow: hidden;
+      background: #ddd8d0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .img-break svg { opacity: 0.22; }
+
+    /* ══ FOOTER ══ */
+    .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 64px 56px 48px; }
+    .footer-inner { max-width: 1160px; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 48px; }
+    .foot-logo { margin-bottom: 14px; }
+    .foot-logo img { height: 28px; width: auto; }
+    .foot-brand p { font-size: 13px; color: var(--muted); line-height: 1.7; max-width: 220px; }
+    .foot-form { margin-top: 20px; display: flex; gap: 8px; }
+    .foot-form input { flex: 1; background: var(--white); border: 1px solid var(--border); border-radius: 3px; padding: 8px 12px; font-size: 12px; font-family: var(--sans); color: var(--text); outline: none; }
+    .foot-form input:focus { border-color: var(--text); }
+    .foot-form button { background: var(--text); color: var(--white); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 16px; border-radius: 3px; }
+    .foot-col h5 { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+    .foot-col a { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; transition: color 0.15s; }
+    .foot-col a:hover { color: var(--text); }
+    .foot-base { max-width: 1160px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="home.html" class="nav-logo">
+    <img src="../assets/images/logo - transparent.png" alt="Aevia"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+    <span class="nav-logo-text" style="display:none;">aevia</span>
+  </a>
+  <div class="nav-links">
+    <a href="home.html">Home</a>
+    <a href="about.html">About us</a>
+    <a href="help.html" class="active">Help</a>
+  </div>
+  <a href="collections.html" class="nav-cta">Our Collections</a>
+</nav>
+
+
+<!-- PAGE HEADER -->
+<div class="page-header-wrap">
+  <div class="page-header">
+    <span class="page-tag">Help</span>
+    <h1 class="page-title">Questions &amp; answers.</h1>
+    <p class="page-sub">Everything you need to know about ordering and creating your book.</p>
+  </div>
+</div>
+
+
+<!-- FAQ -->
+<div class="faq-section">
+
+  <div class="faq-list" style="max-width:720px; margin: 0 auto;">
+
+    <div class="faq-item open" id="q1">
+      <div class="faq-q" onclick="toggle(this)">
+        What do printed photos actually look like?
+        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
+        </svg>
+      </div>
+      <div class="faq-a">
+        <p>Printed photos will always look different from your phone screen — and that's not a flaw, it's physics. Screens emit light; paper reflects it. Colors will be slightly less vivid, and very dark or backlit photos may print darker than expected. A good rule of thumb: reduce your screen brightness to 50% to approximate how a photo will look in print.</p>
+        <p>For best results we recommend photos taken in good light, with the main subject filling most of the frame. Small faces in group shots, distant landscapes, or heavily filtered photos may lose sharpness or detail in print.</p>
+      </div>
+    </div>
+
+    <div class="faq-item" id="q2">
+      <div class="faq-q" onclick="toggle(this)">
+        What quality should my photos be?
+        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
+        </svg>
+      </div>
+      <div class="faq-a">
+        <p>Your phone camera is more than good enough — modern smartphones shoot at resolutions well above what printing requires. The main things to avoid: heavy Instagram filters, extreme crops, and very dark or strongly backlit shots. If you've edited your photos in an app, that's fine — just avoid over-sharpening or heavy color grading.</p>
+        <p>We print in sRGB color profile. Photos taken on a smartphone are automatically in sRGB. If you're uploading photos from a DSLR camera, check with your photographer that the color profile is set correctly.</p>
+        <p>For best quality and correct photo ordering, upload directly from your phone or transfer via USB cable / AirDrop. Avoid WhatsApp or email — they reduce quality and remove date information.</p>
+      </div>
+    </div>
+
+    <div class="faq-item" id="q3">
+      <div class="faq-q" onclick="toggle(this)">
+        How many photos do I need?
+        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
+        </svg>
+      </div>
+      <div class="faq-a">
+        <p>Depending on the template, you'll need between 50 and 80 photos. We'll let you know the exact range once you choose your template and page count.</p>
+      </div>
+    </div>
+
+    <div class="faq-item" id="q4">
+      <div class="faq-q" onclick="toggle(this)">
+        How does ordering work?
+        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
+        </svg>
+      </div>
+      <div class="faq-a">
+        <p>Aevia is currently in early access. Here's how the process works: choose your occasion and template, upload your photos via our order form, and we'll assemble your book within 48 hours. You'll receive two layout options to review — choose your favourite, then complete payment. Your book goes to print immediately after.</p>
+      </div>
+    </div>
+
+    <div class="faq-item" id="q5">
+      <div class="faq-q" onclick="toggle(this)">
+        How do I pay?
+        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
+        </svg>
+      </div>
+      <div class="faq-a">
+        <p>We accept all major credit and debit cards via Stripe — a secure, industry-standard payment processor. You are only charged after you approve your book layout, not upfront.</p>
+      </div>
+    </div>
+
+    <div class="faq-item" id="q6">
+      <div class="faq-q" onclick="toggle(this)">
+        Do you deliver outside Austria?
+        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
+        </svg>
+      </div>
+      <div class="faq-a">
+        <p>Yes — we currently deliver across the EU. Delivery times for other EU countries are typically 5–7 business days from dispatch.</p>
+      </div>
+    </div>
+
+    <div class="faq-item" id="q7">
+      <div class="faq-q" onclick="toggle(this)">
+        How much does delivery cost?
+        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
+        </svg>
+      </div>
+      <div class="faq-a">
+        <span class="note">Delivery pricing coming soon — we're finalising rates with our logistics partner.</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- CONTACT -->
+<div class="contact-section">
+  <div class="contact-inner">
+
+    <div class="contact-label">
+      <span class="section-tag">Get in touch</span>
+      <h2>Still have questions?</h2>
+      <p>We're here to help. Reach out anytime.</p>
+    </div>
+
+    <div class="contact-cards">
+
+      <div class="contact-card">
+        <svg class="contact-card-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="6" y="12" width="32" height="22" rx="2"/>
+          <path d="M6 14l16 12 16-12"/>
+        </svg>
+        <div class="contact-card-body">
+          <div class="contact-card-label">Email</div>
+          <div class="contact-card-value"><a href="mailto:hello@aevia.at">hello@aevia.at</a></div>
+          <div class="contact-card-note">We typically reply within one business day.</div>
+        </div>
+      </div>
+
+      <div class="contact-card">
+        <svg class="contact-card-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="8" y="8" width="28" height="28" rx="6"/>
+          <circle cx="22" cy="22" r="6"/>
+          <circle cx="30.5" cy="13.5" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+        <div class="contact-card-body">
+          <div class="contact-card-label">Instagram</div>
+          <div class="contact-card-value">@aevia</div>
+          <div class="contact-card-note">DM us — we're active and responsive.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- IMAGE BREAK -->
+<div class="img-break">
+  <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+    <rect x="10" y="20" width="52" height="36" rx="3" stroke="#7d7570" stroke-width="1.5"/>
+    <circle cx="26" cy="34" r="6" stroke="#7d7570" stroke-width="1.5"/>
+    <path d="M10 48l14-14 10 10 8-8 12 10 10-12" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</div>
+
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="foot-brand">
+      <div class="foot-logo">
+        <img src="../assets/images/logo - transparent.png" alt="Aevia"
+             onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');" />
+      </div>
+      <p>A premium photo book studio in Vienna. We design and print; you keep forever.</p>
+      <div class="foot-form">
+        <input type="email" placeholder="Email address" />
+        <button>Subscribe</button>
+      </div>
+    </div>
+    <div class="foot-col">
+      <h5>Products</h5>
+      <a href="home.html#collections">All templates</a>
+      <a href="#">Love</a>
+      <a href="bloom.html">Kids</a>
+      <a href="#">Adventure</a>
+    </div>
+    <div class="foot-col">
+      <h5>Company</h5>
+      <a href="about.html">Our story</a>
+      <a href="home.html#how">How it works</a>
+      <a href="#">Quality promise</a>
+    </div>
+    <div class="foot-col">
+      <h5>Support</h5>
+      <a href="help.html">FAQ</a>
+      <a href="#">Shipping</a>
+      <a href="#">Instagram</a>
+      <a href="mailto:hello@aevia.at">Contact</a>
+    </div>
+  </div>
+  <div class="foot-base">
+    <span>© 2026 Aevia. All rights reserved.</span>
+    <span>Terms of service</span>
+  </div>
+</footer>
+
+
+<script>
+  function toggle(el) {
+    const item = el.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  }
+
+  const nav = document.querySelector('.nav');
+  window.addEventListener('scroll', () => {
+    nav.style.background = window.scrollY > 80
+      ? 'rgba(250,250,248,0.97)'
+      : 'rgba(250,250,248,0.92)';
+  });
+</script>
+
+</body>
+</html>

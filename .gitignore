@@ -1,0 +1,12 @@
+# Secret credentials — NEVER commit these
+functions/.env
+functions/serviceAccountKey.json
+
+# Dependencies — too large, reinstalled with `npm install`
+node_modules/
+functions/node_modules/
+
+# OS junk
+desktop.ini
+.DS_Store
+Thumbs.db

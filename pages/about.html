@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About Us — Aevia</title>
+  <style>
+    :root {
+      --bg:        #fafaf8;
+      --surface:   #f3efe9;
+      --border:    #e4dfd8;
+      --text:      #1a1a1a;
+      --muted:     #7d7570;
+      --accent-dk: #a8895f;
+      --white:     #ffffff;
+      --serif:     Georgia, 'Times New Roman', serif;
+      --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    img { display: block; max-width: 100%; }
+    button { cursor: pointer; border: none; background: none; font: inherit; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ══ NAV ══ */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 56px;
+      background: rgba(250,250,248,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.3s;
+    }
+    .nav-logo img { height: 28px; width: auto; display: block; }
+    .nav-logo-text { font-family: var(--serif); font-size: 18px; letter-spacing: -0.01em; }
+    .nav-links { display: flex; gap: 32px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .nav-links a { transition: color 0.15s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid var(--text); padding: 8px 20px; border-radius: 100px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-cta:hover { background: var(--text); color: var(--white); }
+
+    /* ══ PAGE HEADER ══ */
+    .page-header {
+      padding: 160px 56px 80px;
+      max-width: 1160px; margin: 0 auto;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-tag {
+      font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--accent-dk); display: block; margin-bottom: 20px;
+    }
+    .page-title {
+      font-family: var(--serif); font-size: clamp(48px, 6vw, 80px);
+      font-weight: 400; letter-spacing: -0.03em; line-height: 1.0;
+      color: var(--text);
+    }
+
+    /* ══ STORY SECTION ══ */
+    .story {
+      max-width: 1160px; margin: 0 auto;
+      padding: 80px 56px;
+      display: grid;
+      grid-template-columns: 1fr 1.8fr;
+      gap: 80px;
+      align-items: start;
+    }
+    .story-label {
+      font-family: var(--serif); font-size: 28px; font-weight: 400;
+      letter-spacing: -0.015em; line-height: 1.25;
+      color: var(--text);
+      position: sticky; top: 120px;
+    }
+    .story-body p {
+      font-family: var(--serif); font-size: 19px; font-weight: 400;
+      line-height: 1.75; color: var(--text);
+      margin-bottom: 28px;
+    }
+    .story-body p:last-child { margin-bottom: 0; }
+    .story-body p.lead {
+      font-size: 22px; line-height: 1.65; color: var(--text);
+    }
+    .story-body p.closing {
+      font-style: italic; color: var(--accent-dk); font-size: 20px;
+      margin-top: 16px;
+    }
+
+    /* ══ IMAGE BREAK ══ */
+    .img-break {
+      width: 100%;
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .img-break-inner {
+      max-width: 1160px; margin: 0 auto;
+      padding: 0 56px;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 2px;
+    }
+    .img-placeholder {
+      background: #e0dbd2;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .img-placeholder svg { opacity: 0.28; }
+    .img-placeholder-tall { aspect-ratio: 3/4; }
+    .img-placeholder-sq { aspect-ratio: 1; }
+
+    /* ══ EARLY ACCESS SECTION ══ */
+    .early {
+      background: var(--text);
+      padding: 96px 56px;
+      text-align: center;
+    }
+    .early-tag {
+      font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+      color: #c4a882; display: block; margin-bottom: 20px;
+    }
+    .early-title {
+      font-family: var(--serif); font-size: 44px; font-weight: 400;
+      letter-spacing: -0.025em; line-height: 1.1;
+      color: var(--white); margin-bottom: 20px;
+    }
+    .early-sub {
+      font-family: var(--serif); font-style: italic; font-size: 17px;
+      color: rgba(255,255,255,0.55); max-width: 480px;
+      margin: 0 auto 40px; line-height: 1.7;
+    }
+    .early-cta {
+      display: inline-block;
+      background: var(--white); color: var(--text);
+      font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+      padding: 16px 40px; border-radius: 3px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .early-cta:hover { background: #c4a882; color: var(--white); }
+    .early-note {
+      margin-top: 16px; font-size: 11px;
+      color: rgba(255,255,255,0.35);
+    }
+
+    /* ══ FOOTER ══ */
+    .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 64px 56px 48px; }
+    .footer-inner { max-width: 1160px; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 48px; }
+    .foot-logo { margin-bottom: 14px; }
+    .foot-logo img { height: 28px; width: auto; }
+    .foot-brand p { font-size: 13px; color: var(--muted); line-height: 1.7; max-width: 220px; }
+    .foot-form { margin-top: 20px; display: flex; gap: 8px; }
+    .foot-form input { flex: 1; background: var(--white); border: 1px solid var(--border); border-radius: 3px; padding: 8px 12px; font-size: 12px; font-family: var(--sans); color: var(--text); outline: none; }
+    .foot-form input:focus { border-color: var(--text); }
+    .foot-form button { background: var(--text); color: var(--white); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 16px; border-radius: 3px; }
+    .foot-col h5 { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+    .foot-col a { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; transition: color 0.15s; }
+    .foot-col a:hover { color: var(--text); }
+    .foot-base { max-width: 1160px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="home.html" class="nav-logo">
+    <img src="../assets/images/logo - transparent.png" alt="Aevia"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+    <span class="nav-logo-text" style="display:none;">aevia</span>
+  </a>
+  <div class="nav-links">
+    <a href="home.html">Home</a>
+    <a href="about.html">About us</a>
+    <a href="help.html">Help</a>
+  </div>
+  <a href="collections.html" class="nav-cta">Our Collections</a>
+</nav>
+
+
+<!-- PAGE HEADER -->
+<div style="border-bottom: 1px solid var(--border);">
+  <div class="page-header">
+    <span class="page-tag">About us</span>
+    <h1 class="page-title">What Aevia<br>is about.</h1>
+  </div>
+</div>
+
+
+<!-- STORY -->
+<div class="story">
+  <div class="story-label">
+    Aevum — in Latin,<br>a lifetime.<br>An age.
+  </div>
+  <div class="story-body">
+    <p class="lead">That's the word that gave Aevia its name, and its purpose.</p>
+    <p>Your phone is always with you — and so are your photos. Thousands of them. But when did you last actually sit down and look through them? When did you last show them to someone you love?</p>
+    <p>There's something our grandparents understood that we've quietly forgotten: printed photos get revisited. They sit on shelves, get passed around at dinner tables, and outlast any phone upgrade.</p>
+    <p>We built Aevia to bring that habit back — without the hours of layout work, without needing a design eye, without the friction that stops most people from ever starting. Choose your occasion, upload your photos, and we handle everything else.</p>
+    <p>The paper is soft to the touch. The binding is precise. Every detail of the packaging is considered — because the moment you open an Aevia book should feel like the moment itself was worth keeping.</p>
+    <p class="closing">Keep your memories beautifully.</p>
+  </div>
+</div>
+
+
+<!-- IMAGE BREAK -->
+<div class="img-break">
+  <div class="img-break-inner">
+    <div class="img-placeholder img-placeholder-tall">
+      <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+        <rect x="8" y="16" width="40" height="30" rx="2" stroke="#9b8e83" stroke-width="1.5"/>
+        <circle cx="20" cy="27" r="4" stroke="#9b8e83" stroke-width="1.5"/>
+        <path d="M8 38l10-10 8 8 6-6 8 7 10-10" stroke="#9b8e83" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2px;">
+      <div class="img-placeholder img-placeholder-sq">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <rect x="6" y="8" width="28" height="22" rx="2" stroke="#9b8e83" stroke-width="1.3"/>
+          <path d="M6 22l8-8 6 6 4-3 8 7" stroke="#9b8e83" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="img-placeholder img-placeholder-sq">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <rect x="10" y="6" width="20" height="28" rx="2" stroke="#9b8e83" stroke-width="1.3"/>
+          <path d="M14 14h12M14 19h8M14 24h10" stroke="#9b8e83" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- EARLY ACCESS -->
+<section class="early">
+  <span class="early-tag">Early access</span>
+  <h2 class="early-title">We're just getting started.</h2>
+  <p class="early-sub">Aevia is in early access. Each order gets our direct attention and care.</p>
+  <a href="home.html#collections" class="early-cta">Create your first book</a>
+  <p class="early-note">You approve before we print. No charge until you're happy.</p>
+</section>
+
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="foot-brand">
+      <div class="foot-logo">
+        <img src="../assets/images/logo - transparent.png" alt="Aevia"
+             onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');" />
+      </div>
+      <p>A premium photo book studio in Vienna. We design and print; you keep forever.</p>
+      <div class="foot-form">
+        <input type="email" placeholder="Email address" />
+        <button>Subscribe</button>
+      </div>
+    </div>
+    <div class="foot-col">
+      <h5>Products</h5>
+      <a href="home.html#collections">All templates</a>
+      <a href="#">Love</a>
+      <a href="bloom.html">Kids</a>
+      <a href="#">Adventure</a>
+    </div>
+    <div class="foot-col">
+      <h5>Company</h5>
+      <a href="about.html">Our story</a>
+      <a href="home.html#how">How it works</a>
+      <a href="#">Quality promise</a>
+    </div>
+    <div class="foot-col">
+      <h5>Support</h5>
+      <a href="#">FAQ</a>
+      <a href="#">Shipping</a>
+      <a href="#">Instagram</a>
+      <a href="#">Contact</a>
+    </div>
+  </div>
+  <div class="foot-base">
+    <span>© 2026 Aevia. All rights reserved.</span>
+    <span>Terms of service</span>
+  </div>
+</footer>
+
+<script>
+  const nav = document.querySelector('.nav');
+  window.addEventListener('scroll', () => {
+    nav.style.background = window.scrollY > 80
+      ? 'rgba(250,250,248,0.97)'
+      : 'rgba(250,250,248,0.92)';
+  });
+</script>
+
+</body>
+</html>
