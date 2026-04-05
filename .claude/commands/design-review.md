@@ -12,12 +12,12 @@ GIT STATUS:
 
 FILES MODIFIED:
 ```
-!`git diff --name-only origin/HEAD...`
+!`git diff --name-only origin/main...HEAD`
 ```
 
 RECENT COMMITS:
 ```
-!`git log --no-decorate origin/HEAD... --oneline`
+!`git log --no-decorate origin/main...HEAD --oneline`
 ```
 
 Review all modified HTML pages against the Aevia design principles and style guide located at `context/design-principles.md` and `context/style-guide.md`.
