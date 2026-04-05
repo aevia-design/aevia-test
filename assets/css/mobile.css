@@ -124,6 +124,17 @@
   /* ── Collections page ── */
   .page-header { padding: 100px 20px 56px; }
 
+  .collection-section { padding: 56px 20px; }
+
+  .collection-header { flex-direction: column; gap: 6px; margin-bottom: 32px; }
+
+  .template-grid { grid-template-columns: 1fr; gap: 20px; }
+
+  /* ── Footer ── */
+  .footer { padding: 48px 20px 36px; }
+  .footer-inner { grid-template-columns: 1fr; gap: 36px; }
+  .foot-base { flex-direction: column; gap: 8px; }
+
 
   /* ── Product pages (bloom, devotion, etc.) ── */
   .crumb     { padding: 13px 20px; }
