@@ -130,6 +130,17 @@
 
   .template-grid { grid-template-columns: 1fr; gap: 20px; }
 
+  /* ── Help page — contact section ── */
+  .contact-inner {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 40px 20px;
+  }
+  .contact-label { position: static; }
+
+  /* ── Help page — FAQ sidebar ── */
+  .faq-sidebar { position: static; }
+
   /* ── Footer ── */
   .footer { padding: 48px 20px 36px; }
   .footer-inner { grid-template-columns: 1fr; gap: 36px; }
