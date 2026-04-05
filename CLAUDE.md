@@ -99,3 +99,26 @@ npm run deploy
 | `EMAIL_PASS` | `functions/.env` | Gmail app password |
 | `EMAIL_NOTIFY` | `functions/.env` | Internal notification recipient (`xenia@aevia.at`) |
 | `serviceAccountKey.json` | `functions/` | Google Cloud service account for GCS signed URLs |
+
+---
+
+## Visual Development Guidelines
+
+Design principles and brand rules are in:
+- `context/design-principles.md` — spacing, colour, typography, what to flag
+- `context/style-guide.md` — logo, nav/footer patterns, page inventory, backend info
+
+### After making any visual change
+
+1. Identify which pages were modified
+2. Start local dev server (`npx serve . -p 8080` from project root)
+3. Open changed pages in browser and check at desktop + mobile widths
+4. Verify design matches `context/design-principles.md`
+5. Check browser console for errors or 404s
+6. Take a screenshot at 1440px desktop width to document the state
+
+### For a full design review
+
+Run `/design-review` to trigger the design review agent. It will open each modified page in a browser, test all three viewports, check links and interactions, and return a prioritised report.
+
+Requires: local dev server running at `http://localhost:8080` and Playwright MCP configured.
