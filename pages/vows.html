@@ -120,7 +120,7 @@
   </button>
 </nav>
 
-<div class="crumb">Templates <span>›</span> Love <span>›</span> Vows</div>
+<div class="crumb"><a href="collections.html">Templates</a> <span>›</span> <a href="collections.html#love">Love</a> <span>›</span> Vows</div>
 
 <div class="zone">
   <!-- Gallery -->
@@ -183,7 +183,7 @@
       <span class="price-val" id="price">60</span>
       <span class="price-note">incl. design &amp; printing</span>
     </div>
-    <button class="cta">Create your book</button>
+    <button class="cta" onclick="goToOrder()">Create your book</button>
     <p class="cta-note">You approve before we print. No charge until you're happy.</p>
   </div>
 </div>
@@ -291,6 +291,16 @@
     card.classList.toggle('on');
     const cost = card.querySelector('.addon-cost');
     cost.textContent = card.classList.contains('on') ? 'Added \u2713' : 'Included';
+  }
+  function goToOrder() {
+    const price = document.getElementById('price').textContent;
+    const selectedChip = document.querySelector('.chip.on');
+    const pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
+    const addonNames = [];
+    document.querySelectorAll('.addon.on').forEach(a => addonNames.push(a.querySelector('.addon-name').textContent));
+    const params = new URLSearchParams({ template: 'Vows', category: 'love', pages, price: '€ ' + price, backUrl: 'vows.html' });
+    addonNames.forEach(n => params.append('addonName', n));
+    window.location.href = 'order.html?' + params.toString();
   }
   function acc(btn) {
     const item = btn.closest('.acc-item');

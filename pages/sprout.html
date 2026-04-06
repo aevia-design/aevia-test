@@ -48,7 +48,7 @@
     <span></span><span></span><span></span>
   </button>
 </nav>
-<div class="crumb">Templates <span>›</span> Kids <span>›</span> Sprout</div>
+<div class="crumb"><a href="collections.html">Templates</a> <span>›</span> <a href="collections.html#kids">Kids</a> <span>›</span> Sprout</div>
 <div class="zone">
   <div>
     <div class="gallery-main"><svg width="72" height="72" viewBox="0 0 72 72" fill="none"><rect x="10" y="18" width="52" height="38" rx="3" stroke="#9b8e83" stroke-width="1.8"/><circle cx="25" cy="32" r="6" stroke="#9b8e83" stroke-width="1.8"/><path d="M10 46l14-14 10 10 8-8 12 10 8-10" stroke="#9b8e83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -79,7 +79,7 @@
       </div>
     </div>
     <div class="price-row"><span class="price-sym">€</span><span class="price-val" id="price">70</span><span class="price-note">incl. design &amp; printing</span></div>
-    <button class="cta">Create your book</button>
+    <button class="cta" onclick="goToOrder()">Create your book</button>
     <p class="cta-note">You approve before we print. No charge until you're happy.</p>
   </div>
 </div>
@@ -101,6 +101,16 @@
 <script>
   function pick(el,p){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');document.getElementById('price').textContent=p;}
   function xtra(card){card.classList.toggle('on');card.querySelector('.addon-cost').textContent=card.classList.contains('on')?'Added \u2713':'Included';}
+  function goToOrder() {
+    const price = document.getElementById('price').textContent;
+    const selectedChip = document.querySelector('.chip.on');
+    const pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
+    const addonNames = [];
+    document.querySelectorAll('.addon.on').forEach(a => addonNames.push(a.querySelector('.addon-name').textContent));
+    const params = new URLSearchParams({ template: 'Sprout', category: 'kids', pages, price: '€ ' + price, backUrl: 'sprout.html' });
+    addonNames.forEach(n => params.append('addonName', n));
+    window.location.href = 'order.html?' + params.toString();
+  }
   function acc(btn){const item=btn.closest('.acc-item');const open=item.classList.contains('open');document.querySelectorAll('.acc-item').forEach(i=>i.classList.remove('open'));if(!open)item.classList.add('open');}
   const nav=document.querySelector('.nav');window.addEventListener('scroll',()=>{nav.style.background=window.scrollY>80?'rgba(250,250,248,0.97)':'rgba(250,250,248,0.92)';});
 </script>
