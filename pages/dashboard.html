@@ -346,7 +346,8 @@
         : '—';
       const ageStr    = createdMs ? timeAgo(createdMs) : '';
       const notes     = [o.specialRequests, o.photoNotes].filter(Boolean).join(' · ') || '—';
-      const price     = o.price ? `€ ${o.price}` : '—';
+      const priceRaw  = o.price ? String(o.price).replace(/[€\s]/g, '') : null;
+      const price     = priceRaw ? `€ ${priceRaw}` : '—';
 
       // Last 2 status history entries
       const history   = o.statusHistory || [];

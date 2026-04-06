@@ -107,7 +107,7 @@
     const pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
     const addonNames = [];
     document.querySelectorAll('.addon.on').forEach(a => addonNames.push(a.querySelector('.addon-name').textContent));
-    const params = new URLSearchParams({ template: 'Wonder', category: 'kids', pages, price: '€ ' + price, backUrl: 'wonder.html' });
+    const params = new URLSearchParams({ template: 'Wonder', category: 'kids', pages, price: price, backUrl: 'wonder.html' });
     addonNames.forEach(n => params.append('addonName', n));
     window.location.href = 'order.html?' + params.toString();
   }
