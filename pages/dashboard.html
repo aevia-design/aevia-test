@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orders — Aevia</title>
+  <style>
+    :root {
+      --bg:      #fafaf8;
+      --surface: #f3efe9;
+      --border:  #e4dfd8;
+      --text:    #1a1a1a;
+      --muted:   #7d7570;
+      --accent:  #a8895f;
+      --white:   #ffffff;
+      --serif:   Georgia, 'Times New Roman', serif;
+      --sans:    -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+
+      --status-new:       #e8f0fe;
+      --status-new-text:  #1a56db;
+      --status-designing: #fef3c7;
+      --status-designing-text: #92400e;
+      --status-preview:   #e0f2fe;
+      --status-preview-text: #0369a1;
+      --status-approved:  #dcfce7;
+      --status-approved-text: #166534;
+      --status-printed:   #f3f4f6;
+      --status-printed-text: #374151;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; border: none; background: none; font: inherit; }
+
+    /* ── Lock screen ── */
+    #lock {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999;
+    }
+    .lock-box {
+      width: 340px; text-align: center;
+    }
+    .lock-logo {
+      font-family: var(--serif); font-size: 22px; letter-spacing: -0.01em;
+      margin-bottom: 32px; color: var(--text);
+    }
+    .lock-title {
+      font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 20px;
+    }
+    .lock-input {
+      width: 100%; padding: 12px 16px; font-size: 14px; font-family: var(--sans);
+      background: var(--white); border: 1px solid var(--border); border-radius: 4px;
+      outline: none; margin-bottom: 10px; color: var(--text);
+      transition: border-color 0.15s;
+    }
+    .lock-input:focus { border-color: var(--text); }
+    .lock-btn {
+      width: 100%; padding: 12px; background: var(--text); color: var(--white);
+      font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+      border-radius: 4px; transition: background 0.15s;
+    }
+    .lock-btn:hover { background: #333; }
+    .lock-error {
+      font-size: 12px; color: #c0392b; margin-top: 10px; min-height: 18px;
+    }
+
+    /* ── App shell (hidden until unlocked) ── */
+    #app { display: none; }
+
+    /* ── Top bar ── */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px; border-bottom: 1px solid var(--border);
+      background: var(--white); position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-logo { font-family: var(--serif); font-size: 18px; letter-spacing: -0.01em; }
+    .topbar-label {
+      font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--muted); margin-left: 14px;
+    }
+    .topbar-left { display: flex; align-items: baseline; gap: 0; }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .refresh-btn {
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); border: 1px solid var(--border); padding: 7px 16px;
+      border-radius: 100px; transition: color 0.15s, border-color 0.15s;
+    }
+    .refresh-btn:hover { color: var(--text); border-color: var(--text); }
+    .logout-btn {
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+      transition: color 0.15s;
+    }
+    .logout-btn:hover { color: var(--text); }
+
+    /* ── Stats bar ── */
+    .stats {
+      display: flex; gap: 0; border-bottom: 1px solid var(--border);
+      background: var(--white);
+    }
+    .stat {
+      flex: 1; padding: 20px 40px; border-right: 1px solid var(--border);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-num { font-family: var(--serif); font-size: 32px; font-weight: 400; line-height: 1; }
+    .stat-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
+    /* ── Filters ── */
+    .filters {
+      padding: 16px 40px; display: flex; gap: 8px; align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .filter-btn {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 6px 14px; border-radius: 100px; border: 1px solid var(--border);
+      color: var(--muted); transition: all 0.15s;
+    }
+    .filter-btn:hover { color: var(--text); border-color: var(--text); }
+    .filter-btn.active { background: var(--text); color: var(--white); border-color: var(--text); }
+
+    /* ── Table ── */
+    .table-wrap { padding: 0 40px 60px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+    th {
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); font-weight: 400; padding: 10px 16px;
+      border-bottom: 1px solid var(--border); text-align: left;
+    }
+    td { padding: 16px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr { transition: background 0.1s; }
+    tbody tr:hover { background: var(--surface); }
+
+    .order-num { font-weight: 600; font-size: 13px; letter-spacing: 0.03em; }
+    .order-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .customer-name { font-size: 14px; }
+    .customer-email { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* Status badge */
+    .badge {
+      display: inline-block; font-size: 10px; letter-spacing: 0.08em;
+      text-transform: uppercase; padding: 4px 10px; border-radius: 100px;
+      font-weight: 500;
+    }
+    .badge-new       { background: var(--status-new);       color: var(--status-new-text); }
+    .badge-designing { background: var(--status-designing); color: var(--status-designing-text); }
+    .badge-preview   { background: var(--status-preview);   color: var(--status-preview-text); }
+    .badge-approved  { background: var(--status-approved);  color: var(--status-approved-text); }
+    .badge-printed   { background: var(--status-printed);   color: var(--status-printed-text); }
+
+    /* Status dropdown */
+    .status-select {
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 4px 8px; border-radius: 100px; border: 1px solid var(--border);
+      background: var(--white); color: var(--text); cursor: pointer;
+      font-family: var(--sans); outline: none;
+    }
+
+    .gcs-link {
+      font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--accent); border-bottom: 1px solid currentColor;
+      padding-bottom: 1px;
+    }
+    .gcs-link:hover { color: var(--text); }
+
+    /* Notes cell */
+    .notes-text {
+      font-size: 12px; color: var(--muted); max-width: 220px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ── Empty / Loading states ── */
+    .state-msg {
+      text-align: center; padding: 80px 24px; color: var(--muted);
+      font-family: var(--serif); font-style: italic; font-size: 17px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ LOCK SCREEN ══ -->
+<div id="lock">
+  <div class="lock-box">
+    <div class="lock-logo">aevia</div>
+    <div class="lock-title">Internal Dashboard</div>
+    <input id="pwd-input" class="lock-input" type="password"
+           placeholder="Password" onkeydown="if(event.key==='Enter')unlock()" />
+    <button class="lock-btn" onclick="unlock()">Enter</button>
+    <div class="lock-error" id="lock-error"></div>
+  </div>
+</div>
+
+
+<!-- ══ APP ══ -->
+<div id="app">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo">aevia</span>
+      <span class="topbar-label">Orders</span>
+    </div>
+    <div class="topbar-right">
+      <button class="refresh-btn" onclick="loadOrders()">Refresh</button>
+      <button class="logout-btn" onclick="logout()">Log out</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num" id="stat-total">—</div>
+      <div class="stat-label">Total orders</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-new">—</div>
+      <div class="stat-label">New</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-active">—</div>
+      <div class="stat-label">In progress</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-done">—</div>
+      <div class="stat-label">Printed</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-btn" onclick="setFilter('new', this)">New</button>
+    <button class="filter-btn" onclick="setFilter('designing', this)">Designing</button>
+    <button class="filter-btn" onclick="setFilter('preview', this)">Preview sent</button>
+    <button class="filter-btn" onclick="setFilter('approved', this)">Approved</button>
+    <button class="filter-btn" onclick="setFilter('printed', this)">Printed</button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table id="orders-table">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Customer</th>
+          <th>Template</th>
+          <th>Pages</th>
+          <th>Photos</th>
+          <th>Price</th>
+          <th>Notes</th>
+          <th>Status</th>
+          <th>Folder</th>
+        </tr>
+      </thead>
+      <tbody id="orders-body">
+        <tr><td colspan="9"><div class="state-msg">Loading orders…</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+  import { getFirestore, collection, getDocs, doc, updateDoc, query, orderBy }
+    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+  // ⚠️  Replace with your real Firebase web config from:
+  // Firebase Console → Project Settings → Your apps → Web app → SDK setup
+  const firebaseConfig = {
+    apiKey:            "REPLACE_WITH_YOUR_API_KEY",
+    authDomain:        "aevia-uploads.firebaseapp.com",
+    projectId:         "aevia-uploads",
+    storageBucket:     "aevia-uploads.firebasestorage.app",
+    messagingSenderId: "REPLACE_WITH_YOUR_SENDER_ID",
+    appId:             "REPLACE_WITH_YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // ── Password ──────────────────────────────────────────────────────────────
+  const PASS_KEY = 'aevia_dash_auth';
+  const PASS     = 'aevia2026';   // ← change this before going live
+
+  window.unlock = function() {
+    const val = document.getElementById('pwd-input').value;
+    if (val === PASS) {
+      sessionStorage.setItem(PASS_KEY, '1');
+      document.getElementById('lock').style.display = 'none';
+      document.getElementById('app').style.display  = 'block';
+      loadOrders();
+    } else {
+      document.getElementById('lock-error').textContent = 'Incorrect password.';
+      document.getElementById('pwd-input').value = '';
+    }
+  };
+
+  window.logout = function() {
+    sessionStorage.removeItem(PASS_KEY);
+    location.reload();
+  };
+
+  // Auto-unlock if already authenticated this session
+  if (sessionStorage.getItem(PASS_KEY) === '1') {
+    document.getElementById('lock').style.display = 'none';
+    document.getElementById('app').style.display  = 'block';
+  }
+
+  // ── Filter state ──────────────────────────────────────────────────────────
+  let currentFilter = 'all';
+  let allOrders = [];
+
+  window.setFilter = function(status, btn) {
+    currentFilter = status;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTable();
+  };
+
+  // ── Load orders ───────────────────────────────────────────────────────────
+  window.loadOrders = async function() {
+    const tbody = document.getElementById('orders-body');
+    tbody.innerHTML = '<tr><td colspan="9"><div class="state-msg">Loading orders…</div></td></tr>';
+
+    try {
+      const q    = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      allOrders  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      updateStats();
+      renderTable();
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="9"><div class="state-msg">Error loading orders: ${err.message}</div></td></tr>`;
+    }
+  };
+
+  function updateStats() {
+    const counts = { new: 0, active: 0, printed: 0 };
+    allOrders.forEach(o => {
+      if (o.status === 'new')                                           counts.new++;
+      else if (o.status === 'designing' || o.status === 'preview' || o.status === 'approved') counts.active++;
+      else if (o.status === 'printed')                                  counts.printed++;
+    });
+    document.getElementById('stat-total').textContent  = allOrders.length;
+    document.getElementById('stat-new').textContent    = counts.new;
+    document.getElementById('stat-active').textContent = counts.active;
+    document.getElementById('stat-done').textContent   = counts.printed;
+  }
+
+  function renderTable() {
+    const tbody   = document.getElementById('orders-body');
+    const visible = currentFilter === 'all'
+      ? allOrders
+      : allOrders.filter(o => o.status === currentFilter);
+
+    if (visible.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9"><div class="state-msg">No orders here yet.</div></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = visible.map(o => {
+      const date = o.createdAt
+        ? new Date(o.createdAt.seconds * 1000).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '—';
+      const notes = [o.specialRequests, o.photoNotes].filter(Boolean).join(' · ') || '—';
+      const price = o.price ? `€ ${o.price}` : '—';
+
+      return `<tr>
+        <td>
+          <div class="order-num">${o.orderNumber}</div>
+          <div class="order-date">${date}</div>
+        </td>
+        <td>
+          <div class="customer-name">${esc(o.customerName)}</div>
+          <div class="customer-email"><a href="mailto:${esc(o.email)}">${esc(o.email)}</a></div>
+        </td>
+        <td>${esc(o.templateName)}</td>
+        <td>${esc(String(o.pageCount))}</td>
+        <td>${o.fileCount ?? '—'}</td>
+        <td>${price}</td>
+        <td><div class="notes-text" title="${esc(notes)}">${esc(notes)}</div></td>
+        <td>
+          <select class="status-select" onchange="updateStatus('${o.orderNumber}', this.value)">
+            ${['new','designing','preview','approved','printed'].map(s =>
+              `<option value="${s}" ${o.status === s ? 'selected' : ''}>${statusLabel(s)}</option>`
+            ).join('')}
+          </select>
+        </td>
+        <td>
+          ${o.folderLink
+            ? `<a href="${o.folderLink}" target="_blank" rel="noopener" class="gcs-link">Open folder</a>`
+            : '—'}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Update status ─────────────────────────────────────────────────────────
+  window.updateStatus = async function(orderNumber, newStatus) {
+    try {
+      await updateDoc(doc(db, 'orders', orderNumber), { status: newStatus });
+      const order = allOrders.find(o => o.orderNumber === orderNumber);
+      if (order) order.status = newStatus;
+      updateStats();
+    } catch (err) {
+      alert('Could not update status: ' + err.message);
+    }
+  };
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function esc(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function statusLabel(s) {
+    return { new: 'New', designing: 'Designing', preview: 'Preview sent', approved: 'Approved', printed: 'Printed' }[s] || s;
+  }
+
+  // Auto-load if already unlocked
+  if (sessionStorage.getItem(PASS_KEY) === '1') loadOrders();
+</script>
+
+</body>
+</html>

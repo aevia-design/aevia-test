@@ -226,6 +226,24 @@ async function handler(req, res) {
       `,
     });
 
+    // Save order to Firestore
+    const db = admin.firestore();
+    await db.collection('orders').doc(orderNumber).set({
+      orderNumber,
+      customerName,
+      email,
+      templateName,
+      pageCount,
+      price: price || null,
+      specialRequests: specialRequests || null,
+      photoNotes: photoNotes || null,
+      fileCount: fileList.length,
+      folderName,
+      folderLink,
+      status: 'new',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
     return res.status(200).json({
       success: true,
       orderNumber,
