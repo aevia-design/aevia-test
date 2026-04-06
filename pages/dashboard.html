@@ -268,15 +268,14 @@
   import { getFirestore, collection, getDocs, doc, updateDoc, query, orderBy }
     from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-  // ⚠️  Replace with your real Firebase web config from:
-  // Firebase Console → Project Settings → Your apps → Web app → SDK setup
   const firebaseConfig = {
-    apiKey:            "REPLACE_WITH_YOUR_API_KEY",
+    apiKey:            "AIzaSyAki1W4N3xVvHSTZl77uTVukeiA3yqO1K4",
     authDomain:        "aevia-uploads.firebaseapp.com",
     projectId:         "aevia-uploads",
     storageBucket:     "aevia-uploads.firebasestorage.app",
-    messagingSenderId: "REPLACE_WITH_YOUR_SENDER_ID",
-    appId:             "REPLACE_WITH_YOUR_APP_ID"
+    messagingSenderId: "677807969667",
+    appId:             "1:677807969667:web:b92b02a38bda89161652b6",
+    measurementId:     "G-2QZ4MBKG2B"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -284,7 +283,7 @@
 
   // ── Password ──────────────────────────────────────────────────────────────
   const PASS_KEY = 'aevia_dash_auth';
-  const PASS     = 'aevia2026';   // ← change this before going live
+  const PASS     = 'keanuredcat';   // 
 
   window.unlock = function() {
     const val = document.getElementById('pwd-input').value;

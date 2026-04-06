@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const { chromium } = require\\('playwright'\\); \\(async \\(\\) => { const browser = await chromium.launch\\(\\); const page = await browser.newPage\\(\\); await page.setViewportSize\\({ width: 1440, height: 900 }\\); await page.goto\\('https://aevia-v1.webflow.io/templates/vows', { waitUntil: 'networkidle', timeout: 60000 }\\); await page.screenshot\\({ path: 'screenshots/aevia-vows.png', fullPage: true }\\); console.log\\('aevia done'\\); await browser.close\\(\\); }\\)\\(\\).catch\\(e => { console.error\\(e\\); process.exit\\(1\\); }\\);\")",
+      "Bash(npm install:*)",
+      "Bash(npx playwright:*)",
+      "Bash(node -e ':*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const p=i.tool_input&&i.tool_input.file_path||'';const blocked=['.env','serviceAccountKey.json','serviceAccountKey'];if(blocked.some(b=>p.includes(b))){process.stdout.write(JSON.stringify({continue:false,stopReason:'Blocked: this file contains secrets and Claude is not allowed to read it.'}));}else{process.stdout.write(JSON.stringify({continue:true}));}});\""
+          }
+        ]
+      }
+    ]
+  }
+}
