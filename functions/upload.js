@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { Storage } = require('@google-cloud/storage');
 const cors = require('cors')({
   origin: ['https://aevia.at', 'https://www.aevia.at', 'https://aevia-v1.webflow.io', /\.webflow\.io$/, /^http:\/\/localhost(:\d+)?$/, /\.pages\.dev$/],
@@ -228,6 +229,7 @@ async function handler(req, res) {
 
     // Save order to Firestore
     const db = admin.firestore();
+    const token = crypto.randomBytes(32).toString('hex');
     await db.collection('orders').doc(orderNumber).set({
       orderNumber,
       customerName,
@@ -241,6 +243,7 @@ async function handler(req, res) {
       folderName,
       folderLink,
       status: 'new',
+      token,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
