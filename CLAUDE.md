@@ -1,7 +1,9 @@
 # Aevia — Project Guide for Claude Code
 
 ## What is Aevia
-A premium photo book service based in Vienna. Concierge model: customer uploads photos → Aevia staff design the book → customer approves → then pays. Not automated — staff handle design manually. The tech moves orders from customer to Aevia reliably.
+A premium photo book service based in Vienna. The model is moving from fully manual (staff handle everything) toward semi-automated: customer uploads photos → system pre-places photos into template using EXIF date metadata → staff review and refine → customer approves preview PDF → pays → order sent to print house → delivered.
+
+The goal is to automate the repetitive parts (photo sorting, template filling, PDF generation, emails, payment, print submission) while keeping human craft at the review and caption-writing stages.
 
 **Live Webflow site (old, being replaced):** https://aevia-v1.webflow.io  
 **Target domain:** https://aevia.at (paid, not yet pointed)  
@@ -71,12 +73,45 @@ npm run deploy
 
 ---
 
-## MVP v1 build order
+## Full product vision
 
-1. **Order form page** (`pages/order.html`) — customer picks template + page count, uploads photos. Calls the live Firebase function above.
-2. **Hosting** — deploy static site to Cloudflare Pages (free tier, connects to GitHub, deploys on push). Point `aevia.at` DNS to Cloudflare.
-3. **Internal order dashboard** (`pages/dashboard.html`) — password-protected, shows submitted orders from Firestore, links to GCS folders. Plain HTML + Firebase SDK, no framework.
-4. **PDF delivery + payment** — after design is done, email customer a watermarked PDF preview + Stripe Payment Link. Manual trigger for now.
+See `context/customer-journey-v1.md` for the complete annotated flow with decisions, open questions, and tech stack requirements. Update that file as decisions are made.
+
+**Short version of the pipeline:**
+```
+Customer order → photos to GCS → EXIF sort → auto-place in HTML template →
+staff review + captions (AI-assisted) → Puppeteer PDF → preview email (GCS signed URL) →
+customer approves → Stripe payment → webhook → send to print API → tracking → delivered
+```
+
+## MVP phases
+
+### Phase 1 — Order intake (done)
+- Order form, Firebase function, GCS upload, Firestore, email confirmations, internal dashboard
+
+### Phase 2 — Template engine + PDF generation (next)
+- HTML/CSS templates for each book design
+- Node.js script: reads order from Firestore, fetches photos from GCS, sorts by EXIF date, fills template
+- Puppeteer renders to PDF (preview = low-res watermarked; print = full-res)
+- Internal caption tool with Claude API vision suggestions
+
+### Phase 3 — Payment + automation
+- Stripe Checkout Sessions + webhooks (auto-update order status on payment)
+- Firebase Scheduled Functions for reminder emails
+- Preview delivery via GCS signed URL in email
+
+### Phase 4 — Print + delivery
+- Print house API integration (Prodigi or Gelato — TBD)
+- Tracking webhook → customer notification email
+- Dashboard auto-updates delivery status
+
+## Order status vocabulary
+
+```
+new → designing → needs_info → review_sent → approved → paid →
+sent_to_print → printing → in_delivery → delivered
+```
+`needs_info` can be set at any stage (photos too low-res, count mismatch, etc.)
 
 ---
 
