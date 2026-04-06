@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Order — Aevia</title>
+  <style>
+    :root {
+      --bg:        #fafaf8;
+      --surface:   #f3efe9;
+      --border:    #e4dfd8;
+      --text:      #1a1a1a;
+      --muted:     #7d7570;
+      --accent-dk: #a8895f;
+      --green:     #2d6a4f;
+      --white:     #ffffff;
+      --serif:     Georgia, 'Times New Roman', serif;
+      --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Nav ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 56px;
+      background: rgba(250,250,248,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { font-family: var(--serif); font-size: 18px; letter-spacing: -0.01em; }
+    @media (max-width: 600px) { .nav { padding: 16px 24px; } }
+
+    /* ── Layout ── */
+    .page { min-height: 100vh; padding: 120px 24px 80px; display: flex; flex-direction: column; align-items: center; }
+    .card { width: 100%; max-width: 560px; background: var(--white); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+
+    /* ── Card header ── */
+    .card-header { background: var(--surface); padding: 32px 36px 28px; border-bottom: 1px solid var(--border); }
+    .card-eyebrow { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .card-order { font-family: var(--serif); font-size: 26px; }
+    .card-name { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+    /* ── Status ── */
+    .status-row { padding: 24px 36px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 14px; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+    .status-label { font-size: 14px; font-weight: 500; }
+    .status-desc  { font-size: 13px; color: var(--muted); margin-top: 3px; }
+    .dot-new           { background: #bbb; }
+    .dot-designing     { background: #f0a500; }
+    .dot-needs_info    { background: #cc0055; }
+    .dot-review_sent   { background: #4a90d9; }
+    .dot-approved      { background: #2d6a4f; }
+    .dot-paid          { background: #2d6a4f; }
+    .dot-sent_to_print { background: #6c4fcf; }
+    .dot-printing      { background: #6c4fcf; }
+    .dot-in_delivery   { background: #e07a00; }
+    .dot-delivered     { background: #2d6a4f; }
+
+    /* ── Details ── */
+    .details { padding: 24px 36px; border-bottom: 1px solid var(--border); }
+    .detail-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { color: var(--muted); }
+    .detail-value { font-weight: 500; }
+
+    /* ── Preview PDF ── */
+    .preview-section { padding: 24px 36px; border-bottom: 1px solid var(--border); display: none; }
+    .preview-section.visible { display: block; }
+    .section-eyebrow { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    .preview-link { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--accent-dk); border-bottom: 1px solid currentColor; padding-bottom: 1px; }
+    .preview-link:hover { opacity: 0.7; }
+
+    /* ── Approve ── */
+    .approve-section { padding: 28px 36px; display: none; }
+    .approve-section.visible { display: block; }
+    .approve-intro { font-size: 14px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+    .btn-approve { width: 100%; padding: 14px; background: var(--text); color: var(--white); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 4px; cursor: pointer; border: none; font-family: var(--sans); transition: background 0.15s; }
+    .btn-approve:hover:not(:disabled) { background: #333; }
+    .btn-approve:disabled { background: #bbb; cursor: not-allowed; }
+    .btn-changes { display: block; width: 100%; margin-top: 10px; padding: 13px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); background: none; cursor: pointer; font-family: var(--sans); transition: border-color 0.15s, color 0.15s; }
+    .btn-changes:hover { border-color: var(--text); color: var(--text); }
+    .approved-msg { display: none; margin-top: 16px; padding: 18px 20px; background: #f0faf4; border: 1px solid #b7dfc8; border-radius: 4px; font-size: 14px; color: var(--green); line-height: 1.6; }
+    .approved-msg.visible { display: block; }
+
+    /* ── Footer note ── */
+    .footer-note { margin-top: 24px; font-size: 13px; color: var(--muted); text-align: center; }
+    .footer-note a { border-bottom: 1px solid var(--border); }
+    .footer-note a:hover { color: var(--text); }
+
+    /* ── Loading / error ── */
+    #loading { text-align: center; padding: 80px 24px; }
+    #loading p { font-size: 14px; color: var(--muted); }
+    #error-state { display: none; text-align: center; padding: 80px 24px; max-width: 400px; }
+    .error-title { font-family: var(--serif); font-size: 24px; margin-bottom: 12px; }
+    .error-body  { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .error-body a { border-bottom: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="home.html" class="nav-logo">Aevia</a>
+  </nav>
+
+  <div class="page">
+
+    <div id="loading"><p>Loading your order&hellip;</p></div>
+
+    <div id="error-state">
+      <div class="error-title">Order not found</div>
+      <p class="error-body">This link may be invalid or expired.<br>
+        Please contact us at <a href="mailto:xenia@aevia.at">xenia@aevia.at</a>
+        and include your order reference.</p>
+    </div>
+
+    <div class="card" id="order-card" style="display:none">
+
+      <div class="card-header">
+        <div class="card-eyebrow">Your order</div>
+        <div class="card-order" id="c-order-number"></div>
+        <div class="card-name"  id="c-customer-name"></div>
+      </div>
+
+      <div class="status-row">
+        <div class="status-dot" id="c-status-dot"></div>
+        <div>
+          <div class="status-label" id="c-status-label"></div>
+          <div class="status-desc"  id="c-status-desc"></div>
+        </div>
+      </div>
+
+      <div class="details">
+        <div class="detail-row">
+          <span class="detail-label">Template</span>
+          <span class="detail-value" id="c-template"></span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Pages</span>
+          <span class="detail-value" id="c-pages"></span>
+        </div>
+        <div class="detail-row" id="price-row" style="display:none">
+          <span class="detail-label">Price</span>
+          <span class="detail-value" id="c-price"></span>
+        </div>
+      </div>
+
+      <!-- Preview PDF — visible when previewUrl field exists on the order doc -->
+      <div class="preview-section" id="preview-section">
+        <div class="section-eyebrow">Your preview</div>
+        <a class="preview-link" id="c-preview-link" href="#" target="_blank">Open preview PDF &#8599;</a>
+      </div>
+
+      <!-- Approve — visible only when status === review_sent -->
+      <div class="approve-section" id="approve-section">
+        <p class="approve-intro">
+          Please review your preview carefully. When you are happy with the design,
+          click Approve &mdash; we will then send you a payment link to complete your order.
+        </p>
+        <button class="btn-approve" id="btn-approve">Approve this design</button>
+        <button class="btn-changes" id="btn-changes">Request changes instead</button>
+        <div class="approved-msg" id="approved-msg">
+          Your approval has been received &mdash; thank you. We will send you a payment link shortly.
+        </div>
+      </div>
+
+    </div><!-- /card -->
+
+    <p class="footer-note" id="footer-note" style="display:none">
+      Questions? Email <a href="mailto:xenia@aevia.at">xenia@aevia.at</a>
+      and include your order number.
+    </p>
+
+  </div><!-- /page -->
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import {
+      getFirestore, collection, query, where, getDocs,
+      doc, updateDoc, arrayUnion,
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+    const app = initializeApp({
+      apiKey:            'AIzaSyAki1W4N3xVvHSTZl77uTVukeiA3yqO1K4',
+      authDomain:        'aevia-uploads.firebaseapp.com',
+      projectId:         'aevia-uploads',
+      storageBucket:     'aevia-uploads.firebasestorage.app',
+      messagingSenderId: '677807969667',
+      appId:             '1:677807969667:web:b92b02a38bda89161652b6',
+    });
+    const db = getFirestore(app);
+
+    const STATUS = {
+      new:           { label: 'Order received',       desc: 'We have received your photos and will begin designing soon.',       dot: 'dot-new' },
+      designing:     { label: 'Designing your book',  desc: 'Our team is assembling your photo book.',                           dot: 'dot-designing' },
+      needs_info:    { label: 'We need your input',   desc: 'We have sent you an email with a question about your order.',       dot: 'dot-needs_info' },
+      review_sent:   { label: 'Preview ready',        desc: 'Your preview is ready \u2014 please review and approve below.',     dot: 'dot-review_sent' },
+      approved:      { label: 'Design approved',      desc: 'You have approved your design. Payment details are on their way.', dot: 'dot-approved' },
+      paid:          { label: 'Payment received',     desc: 'Payment confirmed. Your book is being prepared for print.',        dot: 'dot-paid' },
+      sent_to_print: { label: 'Sent to print',        desc: 'Your book is with the printer.',                                   dot: 'dot-sent_to_print' },
+      printing:      { label: 'Printing',             desc: 'Your book is being printed.',                                      dot: 'dot-printing' },
+      in_delivery:   { label: 'On its way',           desc: 'Your book has been shipped and is on its way to you.',             dot: 'dot-in_delivery' },
+      delivered:     { label: 'Delivered',            desc: 'Your book has been delivered. We hope you love it.',               dot: 'dot-delivered' },
+    };
+
+    const get     = id => document.getElementById(id);
+    const setText = (id, v) => { const el = get(id); if (el) el.textContent = v; };
+    const showEl  = id => { const el = get(id); if (el) el.style.display = ''; };
+    const hideEl  = id => { const el = get(id); if (el) el.style.display = 'none'; };
+    const setVis  = (id, v) => { const el = get(id); if (el) el.classList.toggle('visible', v); };
+
+    const token = new URLSearchParams(window.location.search).get('token');
+    if (!token) { hideEl('loading'); showEl('error-state'); } else { loadOrder(token); }
+
+    async function loadOrder(token) {
+      try {
+        const snap = await getDocs(
+          query(collection(db, 'orders'), where('token', '==', token))
+        );
+        if (snap.empty) { hideEl('loading'); showEl('error-state'); return; }
+
+        const orderDoc = snap.docs[0];
+        const order    = orderDoc.data();
+        const orderRef = doc(db, 'orders', orderDoc.id);
+
+        setText('c-order-number', order.orderNumber);
+        setText('c-customer-name', order.customerName);
+        setText('c-template', order.templateName);
+        setText('c-pages', order.pageCount + ' pages');
+        if (order.price) { setText('c-price', '\u20ac' + order.price); showEl('price-row'); }
+
+        const s = STATUS[order.status] || { label: order.status, desc: '', dot: 'dot-new' };
+        setText('c-status-label', s.label);
+        setText('c-status-desc', s.desc);
+        get('c-status-dot').classList.add(s.dot);
+
+        if (order.previewUrl) { get('c-preview-link').href = order.previewUrl; setVis('preview-section', true); }
+        if (order.status === 'review_sent') { setVis('approve-section', true); setupApprove(orderRef, order.token); }
+
+        hideEl('loading'); showEl('order-card'); showEl('footer-note');
+
+      } catch (err) {
+        console.error(err);
+        hideEl('loading');
+        showEl('error-state');
+      }
+    }
+
+    function setupApprove(orderRef, token) {
+      const btnApprove = get('btn-approve');
+      const btnChanges = get('btn-changes');
+
+      btnApprove.addEventListener('click', async () => {
+        btnApprove.disabled = true;
+        btnApprove.textContent = 'Saving\u2026';
+        try {
+          await updateDoc(orderRef, {
+            token,
+            status: 'approved',
+            statusHistory: arrayUnion({ status: 'approved', timestamp: new Date().toISOString() }),
+          });
+          btnApprove.style.display = 'none';
+          btnChanges.style.display = 'none';
+          get('approved-msg').classList.add('visible');
+          const s = STATUS.approved;
+          setText('c-status-label', s.label);
+          setText('c-status-desc', s.desc);
+          get('c-status-dot').className = 'status-dot ' + s.dot;
+        } catch (err) {
+          console.error(err);
+          btnApprove.disabled = false;
+          btnApprove.textContent = 'Approve this design';
+          alert('Something went wrong. Please email xenia@aevia.at with your order number.');
+        }
+      });
+
+      btnChanges.addEventListener('click', () => {
+        const ref = get('c-order-number').textContent;
+        window.location.href = 'mailto:xenia@aevia.at?subject=' +
+          encodeURIComponent('Change request \u2014 ' + ref);
+      });
+    }
+  </script>
+
+</body>
+</html>

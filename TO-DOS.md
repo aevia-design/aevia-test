@@ -6,6 +6,24 @@
 
 - **Design and build full customer email sequence** - Extend beyond initial order confirmation to cover all key status transitions. **Problem:** Currently only one email is sent (order confirmation after upload). Customers need to be notified at each meaningful stage. **Files:** `functions/upload.js` (email logic), `pages/dashboard.html` (status change triggers). **Solution:** Add email sends triggered by status changes in Firestore — designing started, preview ready, payment received, shipped, delivered. Use existing Nodemailer setup.
 
-- **Build customer order portal (login area)** - Customers should be able to log in and track their order status on the website, with a less granular view than the internal dashboard. **Problem:** No customer-facing order tracking exists; all communication is email-only. **Files:** `pages/` (new page needed, e.g. `pages/my-order.html`), `functions/index.js` (new auth/lookup function needed). **Solution:** Firebase Authentication for customer login; Firestore order lookup by email/order number; read-only status view.
+- ~~**Build customer order portal**~~ — Done (2026-04-06). Built as token-based `pages/order.html` — no login required. Token stored in Firestore, customer accesses via unique URL.
 
-- **Design customer authentication mechanism** - Customers need a way to log in to view their order. **Problem:** No auth system exists on the frontend yet. **Files:** `pages/` (new auth pages), `functions/index.js`. **Blocked by:** Decision on auth approach (Firebase Auth email link vs. password vs. order number + email lookup — no-password magic link is simplest for one-time customers).
+---
+
+## Template Engine — Designer Brief + PDF Pipeline - 2026-04-06 15:46
+
+- **Brief designer on photo slot spec sheet** - Designer is building the first professional template (likely in Adobe InDesign). They need to deliver a slot spec alongside the PDF so automation can place photos. **Problem:** Without exact X/Y coordinates and dimensions for each photo slot per page, the script cannot place photos automatically — measurements would have to be done manually. **Files:** No files yet — this is a pre-build coordination task. **Solution:** Send designer the brief (already drafted in conversation): placeholder rectangles for photo slots, spec table with X, Y, Width, Height in mm per slot per page. Page size to confirm: A4 or standard square book format.
+
+- **Build Puppeteer PDF generation pipeline** - Once designer delivers template + spec sheet, build Node.js script that fetches order photos from GCS, sorts by EXIF date, overlays photos onto designer template at correct slot positions, and exports PDF via Puppeteer. **Problem:** No automated PDF generation exists — Phase 2 is blocked until template is ready. **Files:** `functions/index.js` (new Cloud Function), `functions/upload.js` (reference for GCS + Firestore patterns). **Solution:** Puppeteer runs inside Firebase Cloud Function; triggered when order status moves to `designing`; outputs preview PDF to GCS as signed URL; sends customer email with link.
+
+---
+
+## Customer Email Sequence + Portal - 2026-04-06 14:46
+
+- ~~**Design customer authentication mechanism**~~ — Resolved (2026-04-06). Chose token-based URL over Firebase Auth. No login needed for v1.
+
+---
+
+## Include Order Link in Confirmation Email - 2026-04-06 16:08
+
+- **Add order page link to customer confirmation email** - The token is now generated and saved in Firestore, but the confirmation email sent to the customer does not yet include the link to their order page. **Problem:** Customers have no way to find their order page unless staff manually send them the URL. The link should be included automatically in the order confirmation email so customers can bookmark it from day one. **Files:** `functions/upload.js:170-227` (customer confirmation email HTML). **Solution:** Construct the URL as `https://aevia-test.pages.dev/pages/my-order.html?token=${token}` and add a styled button/link to the email body. Token is already available in scope when the email is sent (generated at line ~230).
