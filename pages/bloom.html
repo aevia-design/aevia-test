@@ -425,7 +425,7 @@
   }
 
   function goToOrder() {
-    const l = document.getElementById('lb').style.display === 'block' ? 'b' : 'a';
+    const l = 'a';
     const price = document.getElementById(l + '-price').textContent;
     const selectedChip = document.querySelector('#l' + l + ' .chip.on');
     const pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
