@@ -1,6 +1,6 @@
 const { Storage } = require('@google-cloud/storage');
 const cors = require('cors')({
-  origin: ['https://aevia.at', 'https://www.aevia.at', 'https://aevia-v1.webflow.io', /\.webflow\.io$/, /^http:\/\/localhost(:\d+)?$/],
+  origin: ['https://aevia.at', 'https://www.aevia.at', 'https://aevia-v1.webflow.io', /\.webflow\.io$/, /^http:\/\/localhost(:\d+)?$/, /\.pages\.dev$/],
 });
 const nodemailer = require('nodemailer');
 const admin = require('firebase-admin');
