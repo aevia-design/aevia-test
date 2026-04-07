@@ -127,6 +127,8 @@ async function handler(req, res) {
 
     const uploadUrls  = await limitedConcurrent(tasks, 10);
     const orderNumber = await getNextOrderNumber();
+    const token = crypto.randomBytes(32).toString('hex');
+    const orderPageUrl = `https://aevia-test.pages.dev/pages/my-order.html?token=${token}`;
 
     const folderLink =
       `https://console.cloud.google.com/storage/browser/` +
@@ -213,6 +215,16 @@ async function handler(req, res) {
             <p style="margin:0 0 12px">We're assembling your photo book and will send you a preview for approval within 48 hours.</p>
             <p style="color:#999;font-style:italic;font-size:13px;margin:0 0 24px">You won't be charged until you review and approve the final design.</p>
 
+            <!-- Track order CTA -->
+            <div style="text-align:center;margin:0 0 32px">
+              <a href="${orderPageUrl}"
+                 style="background:#1a1a1a;color:#ffffff;padding:14px 28px;text-decoration:none;
+                        border-radius:4px;display:inline-block;font-family:Georgia,serif;
+                        font-size:14px;letter-spacing:0.5px">
+                Track your order →
+              </a>
+            </div>
+
             <hr style="border:none;border-top:1px solid #e0e0e0;margin:0 0 24px">
 
             <p style="font-size:13px;margin:0">Questions? Write to <a href="mailto:xenia@aevia.at" style="color:#333">xenia@aevia.at</a> with <strong>${orderNumber}</strong> in the subject line.</p>
@@ -229,7 +241,6 @@ async function handler(req, res) {
 
     // Save order to Firestore
     const db = admin.firestore();
-    const token = crypto.randomBytes(32).toString('hex');
     await db.collection('orders').doc(orderNumber).set({
       orderNumber,
       customerName,
