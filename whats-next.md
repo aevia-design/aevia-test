@@ -1,196 +1,173 @@
 <original_task>
-Continue building the Aevia photo book service. Session started by reviewing STATUS.md and CLAUDE.md from the previous session, then discussing next steps. The primary task that emerged was building a token-based customer order page (no login required) where customers can view their order status and approve a preview PDF.
+Understand and design the mechanics of the Aevia photo book template backend — the pipeline that takes customer-uploaded photos and assembles them into a book layout for staff review and export.
 </original_task>
 
 <work_completed>
-## Discussions and decisions
+## Pipeline architecture — agreed and documented
 
-### Template engine / PDF pipeline
-- Discussed PDF generation approach: HTML/CSS → Puppeteer recommended over Adobe InDesign
-- Confirmed designer will work in Adobe tools and deliver the template
-- Decision: request from designer (a) a PDF with photo placeholder rectangles, and (b) a spec sheet table with X, Y, Width, Height in mm for every photo slot on every page
-- Confirmed template structure: ~10 unique page types, repeated across 40-page album (4× each), some pages have 1 photo, some 2
-- Drafted designer brief (in conversation) explaining slot spec sheet requirement
-- Puppeteer: free, open source, npm install, runs inside Firebase Cloud Functions, ~€0–5/month at current scale
+Discussed the full flow end-to-end and reached agreement on the architecture:
 
-### Customer order page decision
-- Discussed Firebase Auth vs token-based URL approach
-- Decided: token-based URL for v1 — no login needed, simpler, same customer experience
-- Rationale: Firebase Auth adds 4–5 extra build/maintenance items for no additional value at current scale
-- Future: can add Firebase Auth on top of the existing page when volume demands it
+### The pipeline (agreed)
+1. Customer selects template + optional special pages on website → system tells them how many photos to upload
+2. Customer uploads photos → stored in GCS
+3. Backend reads EXIF metadata from photos
+4. Backend considers special page selections
+5. Backend picks the correct layout variant per spread (based on photo orientations)
+6. Backend places photos into slots at the correct coordinates
+7. Web interface displays the assembled book — staff review it, generate captions via API
+8. Export to SVG (agreed replacement for .ai — editable in Illustrator, actually buildable)
 
-## Code changes
+### Template structure — semantics agreed
+- Each book has ~10 spreads (left page + right page = 20×20cm each)
+- Each spread has multiple layout variants (e.g. 1a, 1b, 1c) depending on photo orientation mix
+- Some spreads are "special" — only included if customer selected them (e.g. "First Steps" for toddler template)
+- Photo slots defined per variant per page
 
-### `functions/upload.js`
-- Added `const crypto = require('crypto');` at line 1
-- Generated 64-char random hex token: `const token = crypto.randomBytes(32).toString('hex');`
-- Added `token` field to Firestore order document (alongside orderNumber, customerName, etc.)
-- Token is in scope when emails are sent (emails are sent before Firestore write, so token must be moved before email send if adding to email — see Work Remaining)
+### Spec table format — agreed
+One Google Sheet / Excel file, all spreads and variants in one table:
 
-### `firestore.rules`
-- Updated to allow two types of updates:
-  1. Dashboard: update `status` + `statusHistory` fields only (existing rule)
-  2. Customer approval: update `status` + `statusHistory` only when `request.resource.data.token == resource.data.token` AND new status is `'approved'`
-- Deployed successfully via `firebase deploy --only firestore:rules`
+| Spread | Variant | Page | Slot | X center (mm) | Y center (mm) | Width (mm) | Height (mm) | Orientation |
+|--------|---------|------|------|---------------|---------------|------------|-------------|-------------|
 
-### `pages/my-order.html` (NEW)
-- Customer-facing order status page, accessed via `?token=<64-char-hex>`
-- Queries Firestore: `where('token', '==', token)` — finds order by token, not by ID
-- Displays: order number, customer name, status with coloured dot, template, pages, price (if set)
-- Shows PDF preview link when `previewUrl` field exists on Firestore order doc
-- Shows Approve + Request changes buttons ONLY when `status === 'review_sent'`
-- Approve button: calls `updateDoc` with `{ token, status: 'approved', statusHistory: arrayUnion(...) }` — token must be sent back for Firestore rule to pass
-- Request changes button: opens pre-filled mailto to xenia@aevia.at with subject "Change request — AEV-XXX"
-- On approve: buttons hide, green confirmation message shown, status badge updates live
-- Error state: "Order not found" shown if token missing or no match in Firestore
-- Firebase config uses real credentials (same as dashboard.html)
-- Status labels and descriptions for all 10 statuses defined in JS STATUS object
+- Page column: `L` or `R` (not 1/2 — avoids confusion across spreads)
+- Coordinates: center of photo slot, measured from top-left of that page (each page is its own 0,0 origin)
+- Bleed excluded from coordinates — code will handle 3mm bleed as a fixed offset
+- Orientation values: `vertical`, `horizontal`, `square`
+- Designer has already measured from center of photo — confirmed this is fine, code converts to top-left with half-width/height offset
 
-### `functions/upload.js` — Cloud Function deployed
-- Deployed via `cd functions && npm run deploy`
-- Warning shown about Node.js 20 deprecation (April 2026) and firebase-functions SDK version — not urgent but noted
-- Live endpoint unchanged: `https://europe-west1-aevia-uploads.cloudfunctions.net/createUploadSession`
+### Visual reference format — agreed
+- One PDF per spread, with each layout variant on a separate page inside it
+- Named: `spread_01.pdf`, `spread_02.pdf`, etc.
+- Stored at: `assets/template/spreads/`
+- Spec table stored at: `assets/template/spec.xlsx` (or Google Sheet link)
 
-## Bug encountered and fixed
-- **Bug:** `pages/order.html` was the existing order intake form (multi-step form for placing orders, built in commit `45db150`). We created our new customer status page also named `order.html`, overwriting the intake form.
-- **Symptom:** "Create your book" button on all product pages (wander.html, terrain.html, etc.) stopped working — URL `order.html?template=Wander&...` landed on the status page which showed "Order not found"
-- **Fix:** Restored original `order.html` from git (`git show 45db150:pages/order.html > pages/order.html`) and moved our status page to `my-order.html` (`git show HEAD:pages/order.html > pages/my-order.html`)
-- All product pages still link to `order.html` — no changes needed there
+### Export format decision
+- User initially wanted `.ai` (Adobe Illustrator) export
+- Agreed: SVG is the correct target — Illustrator opens SVG natively, stays fully editable, and is actually buildable from code
+- `.ai` format is proprietary and not programmatically generatable
 
-## Commits pushed to main
-1. `3b78c6e` — Add token-based customer order page with approve flow
-2. `29cfd55` — Fix: restore order intake form, rename status page to my-order.html
-
-Both live at `https://aevia-test.pages.dev` (Cloudflare Pages, auto-deploys from main).
-
-## TO-DOS.md updates
-- Marked "Build customer order portal" as done
-- Marked "Design customer authentication mechanism" as resolved
-- Added: "Auto-email customer when status changes to review_sent"
-- Added: "Add order page link to customer confirmation email"
-- Updated URL reference from `order.html?token=` to `my-order.html?token=`
+### Build strategy — agreed
+- Start with ONE spread only to validate the whole pipeline works
+- Add complexity (more spreads, captions, special pages) only after first spread renders correctly in browser
 </work_completed>
 
 <work_remaining>
-## Immediate / highest priority
+## Immediate — user to deliver
 
-### 1. Auto-email customer when status changes to `review_sent`
-**Why:** Currently staff must manually copy token from Firestore, construct the URL, and send a separate email. This is the main manual step in the preview approval flow.
-**How:**
-- Dashboard (`pages/dashboard.html`) already calls `updateDoc` when status changes
-- Add logic: after status update to `review_sent`, call a new Firebase Cloud Function `sendStatusEmail`
-- New function in `functions/index.js`: receives `orderNumber`, fetches order from Firestore (has `token` + `email`), sends branded Nodemailer email with:
-  - Order page link: `https://aevia-test.pages.dev/pages/my-order.html?token=${token}`
-  - `previewUrl` link if set (or note that preview will appear on the page)
-- Same function can handle other status transitions later (approved → send payment link, paid → send confirmation, delivered → ask for review)
-**Files:** `pages/dashboard.html` (find status update logic), `functions/index.js` (add new exported function)
+### 1. Spec table (single spread)
+- One spread only for the first test
+- Google Sheet or Excel, structure as agreed above
+- Save to `assets/template/spec.xlsx` or share link
 
-### 2. Add order page link to customer confirmation email
-**Why:** Customers currently have no way to find `my-order.html` after placing an order — they have to wait for staff to send them the link manually.
-**How:**
-- In `functions/upload.js`, the token is generated at line ~230 (before Firestore write)
-- Customer confirmation email HTML is at lines 170–227
-- Add a styled CTA button to the email: "Track your order →" linking to `https://aevia-test.pages.dev/pages/my-order.html?token=${token}`
-- NOTE: token is generated AFTER the emails are sent in current code order — need to move token generation to BEFORE the email send, or restructure slightly
-**Files:** `functions/upload.js:170-230`
+### 2. Visual PDFs (single spread)
+- PDF showing all variants of that spread (e.g. 1a, 1b, 1c as separate pages)
+- Save to `assets/template/spreads/spread_01.pdf`
 
-### 3. PDF preview flow (Phase 2 — blocked on designer)
-**Depends on:** Designer delivering template PDF + slot spec sheet
-**Steps once designer delivers:**
-- Build Node.js script: fetch photos from GCS → sort by EXIF date → overlay onto template at spec coordinates → Puppeteer PDF export
-- Save PDF to GCS, generate signed URL, store as `previewUrl` on Firestore order doc
-- `my-order.html` already handles `previewUrl` — PDF link appears automatically when field is set
+### 3. Test photos
+- A folder of real JPEGs with EXIF dates (can be anything — doesn't need to be a customer order)
+- Mix of portrait and landscape orientations
+- Used to test EXIF reading and layout variant selection
 
-### 4. Dashboard: add previewUrl field input
-**Why:** Staff need a way to paste the GCS signed URL for the PDF preview into the Firestore order. Currently requires going to Firestore console directly.
-**How:** Add a small input field in the dashboard order detail view to set/update `previewUrl` field on the order doc.
+## Once assets are received — code to build
 
-### 5. Stripe payment link integration
-**Current:** Manual — staff send a Stripe Payment Link by email after order is approved
-**Future:** When status changes to `approved`, auto-send email with Stripe Payment Link
-**Blocked by:** Stripe account setup and decision: Payment Links (manual per order) vs Checkout Sessions (fully automated)
+### Phase 1 — single spread renderer
+1. **EXIF reader** — Node.js script, reads orientation (portrait/landscape) from each photo
+2. **Layout picker** — given a set of photos for a spread, selects the correct variant (1a/1b/1c) based on orientation counts
+3. **Spec loader** — reads `spec.xlsx` or CSV into a JS data structure
+4. **HTML template renderer** — generates an HTML page (20×20cm per page) with photos placed at correct coordinates using absolute positioning
+5. **Browser preview** — open the HTML file locally in browser and verify photos appear in correct slots
+
+### Phase 2 — full book (after Phase 1 validated)
+- All 10 spreads
+- Special page logic (conditional spreads based on customer selection)
+- Caption generation integration (call `functions/caption/caption.js` per page)
+- SVG export
+
+### Phase 3 — web interface
+- Staff review UI: view assembled book, click to regenerate captions, approve pages
+- Eventually: "regenerate this photo slot" if photo doesn't fit well
 </work_remaining>
 
 <attempted_approaches>
-## Writing pages/order.html (the new customer status page)
+## AI/Illustrator export — rejected
+- User wanted `.ai` export so staff could manually adjust in Illustrator
+- `.ai` is proprietary format — not generatable from code
+- SVG agreed as replacement: Illustrator opens it natively, fully editable, buildable
 
-Three failed attempts before success:
-
-**Attempt 1:** Used `Write` tool — failed with "File has not been read yet. Read it first."
-The file didn't exist, so `touch` was used to create an empty file, then `Read` was called, but the file somehow already had content (from a previous partial write).
-
-**Attempt 2:** Tried bash heredoc (`cat > file << 'HTMLEOF'`) — failed with "unexpected EOF while looking for matching `'`" because the HTML contained single quotes inside the heredoc delimiter context.
-
-**Attempt 3:** Tried `node -e "..."` with template literal — failed with same issue (single quotes in the JS string conflicted with the outer bash single-quote wrapper).
-
-**What worked:** Used `node -e "require('fs').writeFileSync(...)"` with a simpler placeholder first to confirm write access worked, then used the `Edit` tool to replace the placeholder content with the full HTML. This avoided all shell quoting issues.
-
-## Naming collision
-- Originally named customer status page `order.html` — collided with existing order intake form
-- Discovered only after user reported "Create your book" button broken on product pages
-- Git history was the source of truth for restoring the original file
+## Center vs. top-left coordinates — non-issue
+- Designer measured from center of photo slot, not top-left corner
+- This is fine — code converts: `top_left_x = center_x - width/2`, same for Y
+- No remeasurement needed
 </attempted_approaches>
 
 <critical_context>
-## Architecture decisions locked in
+## Book specs
+- Page size: 20×20cm square (each page individually — spread = two pages side by side = 40×20cm open)
+- Bleed: 3mm (excluded from spec table — added as fixed offset in code)
+- Print resolution: 300dpi → ~2362px per page
+- Generation size for motifs: 1024×1024 (2.3× upscale for print — acceptable for textures)
 
-- **No Firebase Auth for customers** — token-based URL is the chosen approach for v1. Do not add login unless volume makes it necessary (suggested threshold: ~200 orders/month or customers explicitly asking for order history).
-- **Token security model:** Token is 64 hex chars (32 random bytes) — cryptographically unguessable. Firestore rule validates token on approve. Token is never exposed in the dashboard or internal emails — only in the customer-facing email/URL.
-- **`my-order.html` reads by token, not order ID** — Firestore query is `where('token', '==', token)`. This means customers cannot guess each other's order pages by incrementing an order number.
-- **`previewUrl` field on order doc** — when this field exists in Firestore, `my-order.html` automatically shows the PDF link. Staff set this manually for now; automated PDF pipeline will set it automatically in Phase 2.
-- **Status `review_sent` is the trigger** — Approve/Request changes buttons only appear on `my-order.html` when `status === 'review_sent'`. All other statuses show read-only view.
+## Spec table conventions (must stay consistent)
+- Page = `L` or `R`
+- Coordinates = center of slot, from top-left of that page, in mm
+- Bleed not included in coordinates
+- Orientation = `vertical` | `horizontal` | `square`
 
-## File naming
-- `pages/order.html` = order INTAKE form (multi-step, customer fills in details and uploads photos) — DO NOT overwrite
-- `pages/my-order.html` = customer STATUS page (token-based, shows progress and approve button)
-- `pages/dashboard.html` = internal staff dashboard (password: keanuredcat, in git history — known issue)
+## Template source
+- Designer has Adobe Illustrator `.ai` file — this is the master
+- Preliminary measurements already done from center of photo slots
+- Spec table and PDFs not yet delivered — blocked on designer
 
-## Firebase / deployment
-- Project ID: `aevia-uploads`, region: `europe-west1`
-- Functions deploy: `cd functions && npm run deploy`
-- Firestore rules deploy: `npx firebase deploy --only firestore:rules` (from project root)
-- Frontend auto-deploys to Cloudflare Pages on push to main: `https://aevia-test.pages.dev`
-- Node.js 20 deprecation warning on functions — needs upgrade before April 30 2026
-- firebase-functions SDK at 4.9.0 — should upgrade to >=5.1.0 eventually
+## Caption module (already built, separate from this pipeline)
+- Lives at `functions/caption/caption.js`
+- Uses GPT-4o mini with vision
+- Accepts: `--image` (local path or signed GCS URL), `--collection`, `--note`
+- sign-url.js generates 15-min signed GCS URLs for private bucket files
+- Tested end-to-end on a real customer photo — working
 
-## Token generation order in upload.js
-- Currently: emails sent first (lines ~136–227), then token generated, then Firestore write
-- To include token in confirmation email, token generation must be moved BEFORE the email send
-- This is a minor restructure — move `const token = crypto.randomBytes(32).toString('hex');` to before the `transporter.sendMail` calls
+## Motif engine (separate, also unblocked)
+- Lives at `motif-engine/`
+- Still untracked in git
+- Remaining motifs to generate: rock (attempt 3), bg_crosshatch (more runs), mountain_peak, trail, contour
+- Mock-up book blocked on Ksenia's template layout
 
-## Designer brief (for template engine)
-- Designer should work in Adobe tools of their choice
-- Deliverables needed: (1) PDF showing layout with grey placeholder rectangles for photos, (2) spec sheet table: Page | Slot | X (mm) | Y (mm) | Width (mm) | Height (mm) | Orientation
-- Page size: confirm A4 (210×297mm) or standard square book — designer should suggest
-- ~10 unique page types, repeated ~4× in a 40-page album
-- Total photo slots across all pages should add up to 35–50
-- This is pre-build coordination — no code files yet
+## Firebase / GCS
+- Project: `aevia-uploads`
+- Bucket: `aevia-uploads.firebasestorage.app`
+- All files private — signed URLs required for access
+- `sign-url.js` handles this for local testing
+
+## Build approach philosophy
+- Start with one spread, validate in browser, then scale
+- Web preview first (HTML/CSS), SVG export later
+- No frameworks — plain HTML/CSS/JS as per project conventions
 </critical_context>
 
 <current_state>
-## Deliverables status
+## Template backend pipeline
+- **Architecture**: fully designed and agreed ✓
+- **Spec table format**: agreed ✓
+- **Visual reference format**: agreed ✓
+- **Code**: not started — waiting on spec table and test photos from user
 
-| Item | Status | Location |
-|------|--------|----------|
-| Token generation in Cloud Function | Complete, deployed | `functions/upload.js:1, ~230` |
-| `pages/my-order.html` (customer status page) | Complete, live | `pages/my-order.html` |
-| Firestore rules (token-validated approve) | Complete, deployed | `firestore.rules` |
-| Order intake form `pages/order.html` | Restored, live | `pages/order.html` |
-| Auto-email on `review_sent` | Not started | `functions/index.js` (new), `pages/dashboard.html` |
-| Order link in confirmation email | Not started | `functions/upload.js:170-230` |
-| PDF pipeline (Puppeteer) | Not started — blocked on designer | — |
-| Dashboard `previewUrl` input | Not started | `pages/dashboard.html` |
-| Stripe integration | Not started | — |
+## Deliverables needed from user (blockers)
+- [ ] Spec table (even just spread 1) — `assets/template/spec.xlsx`
+- [ ] Visual PDF of spread 1 variants — `assets/template/spreads/spread_01.pdf`
+- [ ] Test photos (JPEGs with EXIF) — any location
 
-## Current live URLs
-- Customer order page: `https://aevia-test.pages.dev/pages/my-order.html?token=<64-char-token>`
-- Order intake form: `https://aevia-test.pages.dev/pages/order.html`
-- Internal dashboard: `https://aevia-test.pages.dev/pages/dashboard.html`
+## Folder to create (not yet created)
+- `assets/template/` — doesn't exist yet, user will create when dropping files
 
-## Git state
-- Branch: `main`, clean (all changes committed and pushed)
-- Last commit: `29cfd55` — Fix: restore order intake form, rename status page to my-order.html
+## Other work (from previous sessions, still pending)
+- Motif engine: rock attempt 3, more bg_crosshatch runs, mountain_peak/trail/contour — not started this session
+- `motif-engine/` and `functions/caption/` still untracked in git
+- Dashboard previewUrl field — not started
+- 6 missing product pages (vows, radiance, wander, terrain, sprout, wonder) — not started
 
-## Immediate next action (recommended)
-Build "auto-email on review_sent": when dashboard status is set to `review_sent`, fire a Cloud Function that emails the customer their `my-order.html` link. This removes the only remaining manual step in the preview approval flow and makes the customer order page actually useful end-to-end.
+## Open questions
+1. Which Kevin Lucbert photo for the mock-up book cover?
+2. Layout tool for mock-up (Affinity Publisher / Canva / InDesign)?
+3. Should `sign-url.js` be integrated directly into `caption.js`?
+4. bg_crosshatch warm palette variant — worth a separate prompt file?
+5. Does the designer need a brief on the spec sheet format, or do they already know what to deliver?
 </current_state>

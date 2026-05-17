@@ -1,0 +1,16 @@
+{
+  "motif": "boots",
+  "date": "2026-04-18",
+  "run": 1,
+  "model": "aevia-design/aevia-kevinlucbert:aevia-design/aevia-kevinlucbert:7c8c906fffecd2a860712a789a667f94546f1c5bc8ff1e97415e36ffcc4d84ed",
+  "style_image_used": null,
+  "style_image_reference": null,
+  "num_outputs": 4,
+  "files": [
+    "boots_run01_01.png",
+    "boots_run01_02.png",
+    "boots_run01_03.png",
+    "boots_run01_04.png"
+  ],
+  "prompt": "kevinlucbert_style. Small decorative motif for a premium photobook interior page.\n\nA pair of hiking boots hanging by their laces — laces tied together, boots dangling. Isolated and centered on a pure white background. Large empty space around the object. The boots occupy roughly 15% of the canvas.\n\nThe boots are rendered as bold simplified flat shapes. Each surface filled with dense directional pen lines following the form contour — different directions on different planes. Vibrant flat color: warm orange or burnt red for the boot body, deep blue or purple for the sole and laces.\n\nFloating isolated object. No ground, no shadow, no environment, no scene. Single object only.\n\nMust feel like a quiet decorative fragment on a printed page. Legible at 2–3cm printed width."
+}

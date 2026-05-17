@@ -1,0 +1,13 @@
+{
+  "motif": "tent",
+  "date": "2026-04-10",
+  "run": 4,
+  "model": "recraft-ai/recraft-v3",
+  "style_image_used": "Main.jpg",
+  "style_image_reference": "Main.jpg",
+  "num_outputs": 1,
+  "files": [
+    "tent_run04_01.png"
+  ],
+  "prompt": "Small decorative motif for a premium photobook interior page.\n\nA camping tent, isolated and centered on a white background with large empty space around it.\n\nStyle:\nThe illustration uses flat color areas filled with structured, hand-drawn texture.\n\nThe texture is made of short strokes, dots, and slightly curved “worm-like” marks. These marks are directional and follow the surface of each shape. Within each area, the marks are consistent and organized, forming clear texture fields.\n\nTexture density varies across areas to suggest form, but there are no gradients or smooth shading.\n\nContours are minimal. Where present, they are thin, slightly irregular, and not dominant.\n\nColor:\nLimited palette of warm orange/red tones with contrasting blue accents. Colors are applied as flat regions, without blending or transparency.\n\nForm:\nSimplified but solid shapes, no small details, no realistic construction.\n\nConstraints:\n- single object only\n- no environment, no ground, no shadows\n- no realistic lighting\n- no 3D rendering\n- no product-style realism\n\nThe result should feel like a small fragment of a larger printed graphic artwork, not a clean icon and not a realistic illustration."
+}

@@ -163,7 +163,7 @@
       width: 100%; padding: 12px 14px;
       border: 1px solid var(--border); border-radius: 6px;
       background: var(--white); font-family: var(--serif); font-size: 14px;
-      color: var(--text); resize: vertical; line-height: 1.5;
+      color: #493955; resize: vertical; line-height: 1.5;
       margin-bottom: 10px;
     }
     .caption-area textarea:focus { outline: none; border-color: var(--accent-dk); }
@@ -521,7 +521,7 @@ function buildPage(variantName, pagePhotos) {
   });
 
   // SVG overlay
-  const svgPath = `../assets/Template/Spreads/Spread 1/${variantName}.svg`;
+  const svgPath = `../assets/Template_Toddler/Spreads/Spread 1/${variantName}.svg`;
   const overlay = document.createElement('img');
   overlay.src = svgPath;
   overlay.className = 'svg-overlay';
@@ -597,11 +597,50 @@ function renderCaptionArea() {
   document.getElementById('caption-area').classList.add('visible');
 }
 
-document.getElementById('generate-btn').addEventListener('click', () => {
-  // Stub — will call functions/caption/caption.js with GCS signed URL in v1.1
-  console.log('Caption generation stub. Photo:', photos[0]?.name);
-  document.getElementById('caption-text').value = '[AI caption will appear here — connect caption module in v1.1]';
+document.getElementById('generate-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('generate-btn');
+  const textarea = document.getElementById('caption-text');
+  if (!photos.length) return;
+
+  btn.textContent = 'Generating…';
+  btn.disabled = true;
+
+  try {
+    // Convert the left-page photo (photos[0]) to base64 for the API
+    const leftPhoto = photos[0];
+    const base64 = await blobToBase64(leftPhoto.objectURL);
+
+    const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/generateCaption', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64, collection: 'kids' }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.error || resp.statusText);
+    }
+
+    const { caption } = await resp.json();
+    textarea.value = caption;
+  } catch (err) {
+    textarea.value = 'Error: ' + err.message;
+  } finally {
+    btn.textContent = 'Generate caption';
+    btn.disabled = false;
+  }
 });
+
+async function blobToBase64(objectURL) {
+  const resp = await fetch(objectURL);
+  const blob = await resp.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
 
 // ── Variant badge ─────────────────────────────────────────
 function showVariantBadge(lv, rv) {

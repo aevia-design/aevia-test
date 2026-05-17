@@ -1,0 +1,16 @@
+{
+  "motif": "hiker",
+  "date": "2026-04-18",
+  "run": 1,
+  "model": "aevia-design/aevia-kevinlucbert:aevia-design/aevia-kevinlucbert:7c8c906fffecd2a860712a789a667f94546f1c5bc8ff1e97415e36ffcc4d84ed",
+  "style_image_used": null,
+  "style_image_reference": null,
+  "num_outputs": 4,
+  "files": [
+    "hiker_run01_01.png",
+    "hiker_run01_02.png",
+    "hiker_run01_03.png",
+    "hiker_run01_04.png"
+  ],
+  "prompt": "kevinlucbert_style. Small decorative motif for a premium photobook interior page.\n\nA lone figure walking in side profile — a hiker with a large backpack on a winding mountain trail. The trail is a simple curved line suggesting a path through open landscape. Minimal scene: figure + trail only, no buildings, no trees, no clutter.\n\nThe figure and backpack are rendered as bold simplified flat shapes with dense directional pen lines following each form. The trail is a thin gestural line. Vibrant flat color: deep blue or forest green for the figure's clothing and backpack, warm ochre or dusty red for the trail line. Small contrast accent — bright green or purple — on one element.\n\nThe scene occupies roughly 20% of the canvas, centered on a pure white background with generous empty space around it.\n\nNo ground fill, no sky, no horizon fill, no shadow. Just the figure, backpack, and a single minimal trail line. Feels like a small ink sketch — economical and expressive.\n\nMust feel like a quiet decorative fragment on a printed page. Legible at 2–3cm printed width."
+}

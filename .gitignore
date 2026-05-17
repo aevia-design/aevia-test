@@ -1,6 +1,7 @@
 # Secret credentials — NEVER commit these
 functions/.env
 functions/serviceAccountKey.json
+motif-engine/.env
 
 # Dependencies — too large, reinstalled with `npm install`
 node_modules/

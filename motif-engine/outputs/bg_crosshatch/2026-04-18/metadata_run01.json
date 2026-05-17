@@ -1,0 +1,16 @@
+{
+  "motif": "bg_crosshatch",
+  "date": "2026-04-18",
+  "run": 1,
+  "model": "aevia-design/aevia-kevinlucbert:aevia-design/aevia-kevinlucbert:7c8c906fffecd2a860712a789a667f94546f1c5bc8ff1e97415e36ffcc4d84ed",
+  "style_image_used": null,
+  "style_image_reference": null,
+  "num_outputs": 4,
+  "files": [
+    "bg_crosshatch_run01_01.png",
+    "bg_crosshatch_run01_02.png",
+    "bg_crosshatch_run01_03.png",
+    "bg_crosshatch_run01_04.png"
+  ],
+  "prompt": "kevinlucbert_style. Full-page background texture for a premium photobook interior page.\n\nAn all-over abstract pen hatching field filling the entire canvas edge to edge. No recognizable objects. Dense directional biro pen lines covering the whole surface — areas of parallel marks in different directions, creating a shifting textural landscape. Lines are slightly curved, organic, never mechanical. Some zones denser, some lighter, with breathing room between sections.\n\nColor: two to three vibrant flat color zones — warm orange-coral, deep blue-purple, and a hint of bright green or ochre. Each color zone has its own distinct line direction. Colors are bold and saturated but the overall composition stays calm and even — no single corner dominates.\n\nNo objects, no shapes, no figures, no text, no borders, no vignette. Pure mark-making across the full frame. The texture should feel like an abstract landscape reduced to its essence — rich but quiet. Photos placed on top will remain the visual heroes.\n\nWhite paper shows through between lines — the background breathes."
+}

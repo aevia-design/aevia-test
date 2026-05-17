@@ -1,0 +1,13 @@
+{
+  "motif": "tent",
+  "date": "2026-04-10",
+  "run": 1,
+  "model": "recraft-ai/recraft-v3",
+  "style_image_used": "Main.jpg",
+  "style_image_reference": "Main.jpg",
+  "num_outputs": 1,
+  "files": [
+    "tent_run01_01.png"
+  ],
+  "prompt": "A simple camping tent, isolated and centered on a pure white background.\n\nThe object occupies no more than 15% of the total canvas area and is surrounded by large empty white space.\n\nStyle:\nSimplified flat shape with slightly irregular hand-drawn outlines. The form is filled with short, irregular directional marks that follow the surface shape, forming subtle texture fields. Texture density varies to suggest form, but remains light and controlled. Avoid dense or noisy patterns.\n\nColor:\nUse a very limited palette (2–3 colors max) drawn from burnt orange, coral pink, dusty purple, and sky blue. No black, no grey, no gradients, no shadows.\n\nConstraints:\n- single object only\n- no background, no ground plane, no environment\n- no additional elements\n- no perspective depth\n- no realistic detail\n- no storytelling\n\nThe result should feel like a small printed ornament derived from a larger illustrated artwork, not a standalone illustration.It should look quiet, minimal, and secondary, as if placed next to a photograph without attracting attention.\n🚫"
+}

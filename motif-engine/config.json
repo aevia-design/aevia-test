@@ -1,0 +1,25 @@
+{
+  "template": "mountain",
+  "active_motif": "tent",
+  "replicate": {
+    "model": "aevia-design/aevia-kevinlucbert:aevia-design/aevia-kevinlucbert:7c8c906fffecd2a860712a789a667f94546f1c5bc8ff1e97415e36ffcc4d84ed",
+    "num_outputs": 4,
+    "size": "1024x1024",
+    "style": null,
+    "_note_style_image": "If you want to pass a reference image for style guidance, set style_image_input_field to the model's exact input field name. For recraft-v3 this is 'style_image'. Set to null to skip.",
+    "style_image_input_field": null,
+    "style_image_reference": null
+  },
+  "references": {
+    "folder": "../assets/Template Mountains/References"
+  },
+  "output": {
+    "base_folder": "outputs"
+  },
+  "lora": {
+    "model": "aevia-design/aevia-kevinlucbert",
+    "version": "aevia-design/aevia-kevinlucbert:7c8c906fffecd2a860712a789a667f94546f1c5bc8ff1e97415e36ffcc4d84ed",
+    "trigger_word": "kevinlucbert_style",
+    "trained_on": "2026-04-17"
+  }
+}

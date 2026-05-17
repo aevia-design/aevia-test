@@ -1,0 +1,16 @@
+{
+  "motif": "rock",
+  "date": "2026-04-18",
+  "run": 2,
+  "model": "aevia-design/aevia-kevinlucbert:aevia-design/aevia-kevinlucbert:7c8c906fffecd2a860712a789a667f94546f1c5bc8ff1e97415e36ffcc4d84ed",
+  "style_image_used": null,
+  "style_image_reference": null,
+  "num_outputs": 4,
+  "files": [
+    "rock_run02_01.png",
+    "rock_run02_02.png",
+    "rock_run02_03.png",
+    "rock_run02_04.png"
+  ],
+  "prompt": "kevinlucbert_style. Small decorative motif for a premium photobook interior page.\n\nA single smooth trail stone — the kind you find on a mountain path and want to pocket. Small, palm-sized, slightly irregular oval or rounded shape with interesting natural markings or veining. Isolated and centered on a pure white background. Large empty space around the object. The stone occupies roughly 12% of the canvas.\n\nThe stone is rendered as bold simplified flat shapes. Surface filled with dense directional pen lines following the contour — like woodgrain wrapping around a smooth form. Vibrant flat color: warm grey, sandy ochre or muted coral, with a streak or band of deep blue or purple as natural veining or shadow.\n\nFloating isolated object. No ground, no shadow, no environment, no scene. Single object only.\n\nMust feel like a quiet decorative fragment on a printed page. Legible at 2–3cm printed width."
+}

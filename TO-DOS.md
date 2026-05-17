@@ -1,31 +1,36 @@
-# Aevia — To-Do Backlog
+# Aevia — Backlog
 
----
-
-## Customer Email Sequence + Portal - 2026-04-06 14:46
-
-- **Design and build full customer email sequence** - Extend beyond initial order confirmation to cover all key status transitions. **Problem:** Currently only one email is sent (order confirmation after upload). Customers need to be notified at each meaningful stage. **Files:** `functions/upload.js` (email logic), `pages/dashboard.html` (status change triggers). **Solution:** Add email sends triggered by status changes in Firestore — designing started, preview ready, payment received, shipped, delivered. Use existing Nodemailer setup.
-
-- ~~**Build customer order portal**~~ — Done (2026-04-06). Built as token-based `pages/order.html` — no login required. Token stored in Firestore, customer accesses via unique URL.
-
----
-
-## Template Engine — Designer Brief + PDF Pipeline - 2026-04-06 15:46
-
-- **Brief designer on photo slot spec sheet** - Designer is building the first professional template (likely in Adobe InDesign). They need to deliver a slot spec alongside the PDF so automation can place photos. **Problem:** Without exact X/Y coordinates and dimensions for each photo slot per page, the script cannot place photos automatically — measurements would have to be done manually. **Files:** No files yet — this is a pre-build coordination task. **Solution:** Send designer the brief (already drafted in conversation): placeholder rectangles for photo slots, spec table with X, Y, Width, Height in mm per slot per page. Page size to confirm: A4 or standard square book format.
-
-- **Build Puppeteer PDF generation pipeline** - Once designer delivers template + spec sheet, build Node.js script that fetches order photos from GCS, sorts by EXIF date, overlays photos onto designer template at correct slot positions, and exports PDF via Puppeteer. **Problem:** No automated PDF generation exists — Phase 2 is blocked until template is ready. **Files:** `functions/index.js` (new Cloud Function), `functions/upload.js` (reference for GCS + Firestore patterns). **Solution:** Puppeteer runs inside Firebase Cloud Function; triggered when order status moves to `designing`; outputs preview PDF to GCS as signed URL; sends customer email with link.
-
----
-
-## Customer Email Sequence + Portal - 2026-04-06 14:46
-
-- ~~**Design customer authentication mechanism**~~ — Resolved (2026-04-06). Chose token-based URL over Firebase Auth. No login needed for v1.
-
----
-
-## Include Order Link in Confirmation Email - 2026-04-06 16:08
-
-- **Auto-email customer when status changes to review_sent** - When staff sets an order status to `review_sent` in the dashboard, the customer should automatically receive an email with a link to their order page (`my-order.html?token=...`) so they can view and approve the preview. **Problem:** Currently staff must manually copy the token from Firestore, construct the URL, and send a separate email — error-prone and slow. **Files:** `pages/dashboard.html` (status change logic, where `updateDoc` is called), `functions/index.js` (new Cloud Function needed: `sendStatusEmail`). **Solution:** Dashboard calls a new Firebase Cloud Function when status changes to `review_sent`, passing orderNumber. Function fetches order from Firestore (has token + email), sends branded email with order page link and PDF preview link. Same function can later handle other status transitions (approved, paid, delivered).
-
-- **Add order page link to customer confirmation email** - The token is now generated and saved in Firestore, but the confirmation email sent to the customer does not yet include the link to their order page. **Problem:** Customers have no way to find their order page unless staff manually send them the URL. The link should be included automatically in the order confirmation email so customers can bookmark it from day one. **Files:** `functions/upload.js:170-227` (customer confirmation email HTML). **Solution:** Construct the URL as `https://aevia-test.pages.dev/pages/my-order.html?token=${token}` and add a styled button/link to the email body. Token is already available in scope when the email is sent (generated at line ~230).
+| # | Item | Priority | Trigger | Notes |
+|---|------|----------|---------|-------|
+| 1 | Review order page link in confirmation email | High | Now | Link is implemented but approach needs review — token generation timing and email structure may be suboptimal. `functions/upload.js:130-226` |
+| 2 | Dashboard: add `previewUrl` input field | High | Before first PDF preview | Staff need to paste the GCS signed URL for the preview PDF into Firestore without going to console. `pages/dashboard.html` |
+| 3 | Auto-email customer when status → `review_sent` | High | After PDF pipeline is working | Dashboard calls new Cloud Function `sendStatusEmail`; sends branded email with `my-order.html?token=` link. `pages/dashboard.html` + `functions/index.js` |
+| 4 | Build Puppeteer PDF pipeline | High | After designer delivers template + spec sheet | Fetch photos from GCS → sort by EXIF → overlay onto template at spec coordinates → export PDF → save to GCS → store `previewUrl` on order doc. `functions/index.js` |
+| 5 | Brief designer on photo slot spec sheet | High | Now (coordination) | Designer delivers: (a) PDF with placeholder rectangles, (b) spec table: Page, Slot, X, Y, Width, Height in mm. Confirm page size (A4 or square). |
+| 6 | Stripe payment integration | High | After approval flow is working | Stripe Checkout Sessions. Show VAT (20%) clearly. Send receipt/invoice after payment (legally required in Austria). |
+| 7 | Fix hero slide 3 text alignment | Medium | Next visual pass | Slide 3 has `style="text-align:center"` inline; slides 1 & 2 are left-aligned. Remove the inline style. `pages/home.html:331` |
+| 8 | German language version of website | Medium | Before public launch | Austrian market expects German. Decide: toggle on same page or separate `/de/` pages. |
+| 9 | Google Analytics setup | Medium | Before any marketing | No tracking currently. Need to know who's visiting before running any ads. |
+| 10 | Meta Pixel setup | Medium | Before paid ads | Meta Pixel is a tracking snippet from Facebook/Instagram. Required for running paid ads on Instagram and measuring which ads convert to orders. |
+| 11 | OG image tags | Medium | Before social sharing / launch | OG (Open Graph) tags control how pages look when shared on WhatsApp, Instagram, iMessage — title, description, preview image. Without them links look blank. |
+| 12 | SEO optimisation | Medium | Before public launch | Page titles, meta descriptions, alt text on images, structured data. Aevia pages currently have minimal SEO. |
+| 13 | Dashboard: overdue order tracking | Medium | After first real orders | Highlight orders that haven't moved status in X days. Prevents orders falling through the cracks. `pages/dashboard.html` |
+| 14 | Replace all [placeholder] template copy | Medium | Before launch | All product pages have placeholder text. Needs real copy once templates are confirmed. |
+| 15 | Copy audit with stop-slop | Medium | Before launch | Run `/stop-slop` across all page copy to remove generic AI-sounding phrases. |
+| 16 | VAT handling | Medium | Before Stripe integration | Austrian VAT is 20%. Must be shown clearly at checkout. Decide: prices inc. or exc. VAT. |
+| 17 | Customer delivery tracking | Medium | After first print run | Send tracking number to customer when status → `in_delivery`. `my-order.html` should display it. |
+| 18 | Post-delivery review collection | Medium | After first deliveries | Automated email asking for review/testimonial. Warm leads from concept test are the first targets. |
+| 19 | Repeat-order prompt | Medium | After first deliveries | Email or `my-order.html` prompt: "Make another book?" Simple CTA. |
+| 20 | Artist profile pages | Medium | When 3+ templates are live | Dedicated page per artist — bio, style, which templates. Artists are a key differentiator and a reason to buy. |
+| 21 | Instagram page creation | Medium | Before launch | Core channel per concept test. Must exist before any word-of-mouth kicks in. |
+| 22 | Instagram content tooling | Low | Before first campaign | Xenia leads content but needs scheduling + planning tools. Evaluate: Later, Buffer, or Notion-based planning. |
+| 23 | Newsletter setup | Low | After email tool chosen | Decide on email tool first (Mailchimp, Brevo, etc.). Footer subscribe form currently leads nowhere. |
+| 24 | Footer subscribe form → real email tool | Low | When newsletter tool chosen | Currently dead. Wire to chosen email tool. |
+| 25 | Terms & Conditions page | Low | Before taking payments | Minimum: refund/returns policy. "Approve before you pay" covers a lot but something must be written. |
+| 26 | Quality promise page | Low | After first print specs confirmed | Advertise paper quality, printing specs, finish options properly. Needs real photoshoot of printed books. |
+| 27 | Copyright lines review | Low | Before launch | Footer copyrights are placeholder. Review once templates and artist credits are confirmed. |
+| 28 | Press / "as seen in" section | Low | If/when press coverage happens | Placeholder space on homepage or about page. Low effort to add once there's something to show. |
+| 29 | Referral mechanic | Low | After first 20 orders | 50% of concept test participants signed up for pilot — warm audience. Simple referral prompt post-delivery. |
+| 30 | Dashboard: internal notes per order | Low | After first real orders | Free-text field on each order for staff notes (e.g. "customer requested warmer tones"). `pages/dashboard.html` |
+| 31 | Turkish / Russian language version | Low | If demand shows | After German. Based on audience data or order patterns. |
+| 32 | B2B order flow | Low | After B2C MVP validated | Photographers, HR managers, event agencies. Different pricing, bulk orders, possible white-label. |

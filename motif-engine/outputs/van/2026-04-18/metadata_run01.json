@@ -1,0 +1,16 @@
+{
+  "motif": "van",
+  "date": "2026-04-18",
+  "run": 1,
+  "model": "aevia-design/aevia-kevinlucbert:aevia-design/aevia-kevinlucbert:7c8c906fffecd2a860712a789a667f94546f1c5bc8ff1e97415e36ffcc4d84ed",
+  "style_image_used": null,
+  "style_image_reference": null,
+  "num_outputs": 4,
+  "files": [
+    "van_run01_01.png",
+    "van_run01_02.png",
+    "van_run01_03.png",
+    "van_run01_04.png"
+  ],
+  "prompt": "kevinlucbert_style. Small decorative motif for a premium photobook interior page.\n\nA vintage campervan, isolated and centered on a pure white background. Large empty space around the object. The van occupies roughly 15% of the canvas. Side profile view.\n\nThe van is rendered as bold simplified flat shapes. Each panel filled with dense directional pen lines — lines follow the surface contour, different directions on different planes. Vibrant flat color: warm orange or coral for the body, dusty blue or deep purple for the roof or a panel accent.\n\nFloating isolated object, not touching any ground surface. No road, no ground, no shadow, no grass, no environment, no scene. Single object only.\n\nMust feel like a quiet decorative fragment on a printed page. Legible at 2–3cm printed width."
+}

@@ -49,6 +49,7 @@ Options evaluated:
 - Photo slots are `<div>` or `<img>` placeholders with defined dimensions
 - Caption slots are `<p>` placeholders
 - A Node.js script reads the order from Firestore, fetches photos from GCS, sorts by EXIF date, fills in the slots, and renders to PDF
+- After photos are pre-filled, needs to have an interface where they can change the order of photos and generate captions
 
 **EXIF sorting:** Use the `sharp` or `exiftool-vendored` Node.js library to read `DateTimeOriginal` from each photo.
 
@@ -60,19 +61,20 @@ Options evaluated:
 
 Some template pages have caption placeholders. The flow:
 
-1. After photos are pre-placed, the internal tool shows each photo with its caption slot
-2. Aevia staff writes or edits captions — or AI suggests them
-3. AI assistance: use Claude API (vision) to analyze each photo and suggest a caption in Aevia's brand tone
-4. Staff approves/edits, captions are saved to Firestore against the order
+1.  A check is conducted to see if the customer has left specific comments for certain photos. If so, these comments become the captions for these photos. If not, AEVIA arbitrates which photos are better suited to captions.
+2. After photos are pre-placed to the template, human based on placeholder on a given page can generate captions via API
+3. AI uses pre-defined tone of voice and set of rules to generate catpions
+4. Human revises captions or re-generates them multiple time
+5. Staff approves/edits, captions are saved to Firestore against the order
 
 **Why an internal tool beats copy-pasting into Claude.ai:**
 - Photos stay in GCS — no manual download
 - Captions are saved directly to the order record
 - Can preview captions in the actual template layout before generating PDF
 - Batch workflow — all photos for one order in one screen
-- Brand tone can be enforced via system prompt (Claude API)
+- Brand tone can be enforced via system prompt (Claude API / GPT mini - tbd)
 
-**Status:** Not yet started. Depends on template system (step 6).
+**Status:** Small prototype module built. Depends on template system (step 6).
 
 ---
 
@@ -93,7 +95,7 @@ Two PDFs per order:
 Options:
 - Email with PDF attachment (if file is small enough — preview PDFs for a 30-page book ~5–15MB)
 - Email with a link to a hosted PDF on GCS (signed URL, expires after X days)
-- Dedicated preview page on the site (nicer UX, but more work)
+- Dedicated preview page on the site (nicer UX, but more work) - preffered option
 
 **Recommendation for MVP:** GCS signed URL in email. Keeps email lightweight and avoids attachment size limits.
 
@@ -110,14 +112,8 @@ Three cases:
 - On payment: Stripe webhook fires → Cloud Function updates order status to `paid` in Firestore → Aevia notified
 
 **b. Customer requests a change (one revision)**
-- Customer replies to email with feedback
-- Aevia adjusts, regenerates PDF, resends
-- Maximum one revision iteration before payment (policy decision)
-- Could build a lightweight revision request form later (avoids email threading)
-
-**c. Customer doesn't respond**
-- Automated reminder email after X days (e.g. 3 days, then 7 days)
-- Firebase Scheduled Functions can handle this — check Firestore for orders in `review_sent` status older than threshold
+- Customer suggests changes over the dedicated preview page on Aevia website (ideally they can do some micro changes themselves but not sure how interface would look like then; i.e. re-generate captions or change positioning of the photos)
+***if path above is hard to implement then need to re-think this step #10
 
 **Status:** Stripe Payment Link = manual for now. Webhooks and reminders = not yet started.
 
@@ -128,11 +124,6 @@ Three cases:
 **If print house has API (e.g. Prodigi, Gelato):**
 - On `paid` status: Cloud Function calls print API with order specs + print PDF URL
 - Print house pulls the PDF, queues printing
-- Prodigi and Gelato both operate in Europe and accept photo book specs
-
-**If no API (local print house):**
-- Semi-automated: Cloud Function emails print-ready PDF + order spec sheet to the print house
-- Manual confirmation step for Aevia
 
 **Open question:** Which print house will Aevia use? This determines feasibility of API integration.
 
@@ -142,13 +133,9 @@ Three cases:
 
 ### 13–14. Printing + shipping
 
-If using Prodigi/Gelato:
+Print house:
 - They handle shipping, generate tracking numbers
 - Customer address passed in the API call from step 11
-
-If using local print house:
-- Aevia provides customer shipping address
-- Print house ships directly or sends to Aevia for QC first (TBD)
 
 ---
 
@@ -156,9 +143,6 @@ If using local print house:
 
 **If print API:**
 - Webhook from print provider fires when order ships → Cloud Function captures tracking number → Aevia dashboard updated → Customer email sent with tracking link (from aevia@aevia.at or xenia@aevia.at)
-
-**If no API:**
-- Print house emails tracking number to Aevia → manual entry in dashboard → email sent to customer
 
 **Automated customer email** (e.g. "Your Aevia book is on its way!") with DHL/GLS tracking link — should come from Aevia, not the print house, to maintain brand experience.
 

@@ -1,0 +1,13 @@
+{
+  "motif": "tent",
+  "date": "2026-04-10",
+  "run": 2,
+  "model": "recraft-ai/recraft-v3",
+  "style_image_used": "Main.jpg",
+  "style_image_reference": "Main.jpg",
+  "num_outputs": 1,
+  "files": [
+    "tent_run02_01.png"
+  ],
+  "prompt": "Small editorial ornament for a premium photobook interior page.\n\nA simple camping tent, front-facing, with a clear triangular silhouette, centered on a pure white background.\n\nThe object occupies no more than 15% of the canvas and is surrounded by large empty white space.\n\nForm:\nFlat, simplified geometry with clean, stable structure. No perspective, no distortion, no complex construction.\n\nSurface treatment:\nEach surface of the tent is filled with structured, directional line patterns that follow the shape of the surface, similar to topographic or engraved lines. The lines are consistent within each area and form clear texture fields. Avoid chaotic or random marks.\n\nColor:\nUse 2–3 flat colors from burnt orange, coral pink, dusty purple, and sky blue. Colors appear as solid regions, not gradients.\n\nConstraints:\n- single object only\n- no background, no ground, no shadow\n- no environment\n- no additional elements\n- no sketchy or messy texture\n- no noise\n\nThe result should look like a simplified fragment of a larger graphic illustration, not a detailed drawing."
+}

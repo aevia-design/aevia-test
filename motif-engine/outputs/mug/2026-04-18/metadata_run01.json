@@ -1,0 +1,16 @@
+{
+  "motif": "mug",
+  "date": "2026-04-18",
+  "run": 1,
+  "model": "aevia-design/aevia-kevinlucbert:aevia-design/aevia-kevinlucbert:7c8c906fffecd2a860712a789a667f94546f1c5bc8ff1e97415e36ffcc4d84ed",
+  "style_image_used": null,
+  "style_image_reference": null,
+  "num_outputs": 4,
+  "files": [
+    "mug_run01_01.png",
+    "mug_run01_02.png",
+    "mug_run01_03.png",
+    "mug_run01_04.png"
+  ],
+  "prompt": "kevinlucbert_style. Small decorative motif for a premium photobook interior page.\n\nA single camping enamel mug, isolated and centered on a pure white background. Large empty space around the object. The mug occupies roughly 15% of the canvas. Slight three-quarter view showing front and handle.\n\nThe mug is rendered as bold simplified flat shapes. Each surface filled with dense directional pen lines following the form contour — different directions on the body, rim and handle. Vibrant flat color: warm coral or orange for the body, deep blue or purple for the rim and handle details.\n\nFloating isolated object, not touching any surface. No ground, no shadow, no table, no steam, no environment, no scene. Single object only.\n\nMust feel like a quiet decorative fragment on a printed page. Legible at 2–3cm printed width."
+}

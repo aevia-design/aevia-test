@@ -1,0 +1,10 @@
+{
+  "name": "aevia-caption",
+  "version": "1.0.0",
+  "description": "AI caption generator for Aevia photobook pages",
+  "main": "caption.js",
+  "dependencies": {
+    "@google-cloud/storage": "^7.0.0",
+    "openai": "^4.0.0"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "aevia-motif-engine",
+  "version": "1.0.0",
+  "description": "Generates interior decorative motifs for Aevia photobook templates",
+  "main": "generate.js",
+  "scripts": {
+    "generate": "node generate.js",
+    "tent": "node generate.js --motif tent"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
+    "@google-cloud/storage": "^7.19.0",
+    "archiver": "^7.0.1",
+    "openai": "^6.34.0",
+    "replicate": "^1.0.1"
+  }
+}
