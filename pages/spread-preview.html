@@ -367,16 +367,34 @@ async function processFiles(files) {
           throw new Error('Server conversion failed: ' + errText);
         }
         displayBlob = await resp.blob();
-        dbg('  HEIC → JPEG conversion OK (' + Math.round(displayBlob.size/1024) + 'KB)');
+        dbg('  HEIC → JPEG conversion OK (' + Math.round(displayBlob.size/1024) + 'KB, type: ' + displayBlob.type + ')');
+        if (displayBlob.size < 1000) throw new Error('Conversion returned empty file (' + displayBlob.size + ' bytes)');
+
+        // Re-read EXIF from the converted JPEG — heic-convert preserves orientation tag
+        // which is critical since iPhone stores portrait photos as rotated-landscape pixels
+        if (!date || !orientation) {
+          try {
+            const jpegExif = await exifr.parse(displayBlob, ['DateTimeOriginal', 'Orientation']);
+            dbg('  JPEG EXIF: ' + JSON.stringify(jpegExif));
+            if (jpegExif) {
+              if (!date && jpegExif.DateTimeOriginal) date = jpegExif.DateTimeOriginal;
+              if (!orientation && jpegExif.Orientation) {
+                orientation = [5, 6, 7, 8].includes(jpegExif.Orientation) ? 'vertical' : 'horizontal';
+                dbg('  orientation from JPEG EXIF: ' + orientation + ' (tag=' + jpegExif.Orientation + ')');
+              }
+            }
+          } catch (e) { dbg('  JPEG EXIF read failed: ' + e.message); }
+        }
       } catch (err) {
         dbg('  HEIC conversion error: ' + err.message);
         throw new Error('Could not convert HEIC photo "' + file.name + '": ' + err.message);
       }
     }
 
-    // 3. Orientation fallback from image dimensions (works now that we have a displayable blob)
+    // 3. Orientation fallback from image dimensions
     if (!orientation) {
       orientation = await getOrientationFromDimensions(displayBlob);
+      dbg('  orientation from dimensions: ' + orientation);
     }
 
     return {
