@@ -1,173 +1,85 @@
 <original_task>
-Understand and design the mechanics of the Aevia photo book template backend — the pipeline that takes customer-uploaded photos and assembles them into a book layout for staff review and export.
+Build the Aevia spread preview tool — a staff-facing browser tool that takes 3 photos, sequences by EXIF date, picks the correct layout variant, and renders a spread preview with drag-and-drop reordering.
 </original_task>
 
 <work_completed>
-## Pipeline architecture — agreed and documented
+## Spread preview tool — pages/spread-preview.html
 
-Discussed the full flow end-to-end and reached agreement on the architecture:
+### What was built
+A fully functional staff browser tool for Spread 1 of the Toddler template:
+- Upload 3 photos via file picker (JPEG, HEIC/HEIF supported)
+- Reads EXIF date metadata to sequence photos chronologically
+- Detects orientation from final image dimensions (reliable, EXIF-independent)
+- Picks left variant (L1 horizontal / L2 vertical) and right variant (R1/R2/R3)
+- Renders spread at 600×600px per page with photos placed at spec coordinates
+- SVG overlays slot in as top layer (placeholder border shown until SVG files delivered)
+- Drag-and-drop between slots to manually reorder — template re-renders automatically
+- "↺ By date" button resets to chronological order
+- Caption text field with "Generate caption" button (calls GPT-4o mini vision API)
 
-### The pipeline (agreed)
-1. Customer selects template + optional special pages on website → system tells them how many photos to upload
-2. Customer uploads photos → stored in GCS
-3. Backend reads EXIF metadata from photos
-4. Backend considers special page selections
-5. Backend picks the correct layout variant per spread (based on photo orientations)
-6. Backend places photos into slots at the correct coordinates
-7. Web interface displays the assembled book — staff review it, generate captions via API
-8. Export to SVG (agreed replacement for .ai — editable in Illustrator, actually buildable)
+### Fixes applied this session
+- **HEIC portrait orientation**: removed EXIF-based orientation detection entirely; always use `naturalWidth/naturalHeight` on the final converted image
+- **macOS Photos app upload**: HEIC files from Photos app have no MIME type/extension — fixed with magic-byte detection (ISO BMFF `ftyp` header)
+- **Drag-and-drop stop-sign cursor**: browser was intercepting drag on `<img>` elements — fixed with `img.draggable = false`
+- **R3 slot assignment**: horizontal photo was landing in vertical slot and vice versa — fixed by matching photos to slots by orientation shape before rendering
 
-### Template structure — semantics agreed
-- Each book has ~10 spreads (left page + right page = 20×20cm each)
-- Each spread has multiple layout variants (e.g. 1a, 1b, 1c) depending on photo orientation mix
-- Some spreads are "special" — only included if customer selected them (e.g. "First Steps" for toddler template)
-- Photo slots defined per variant per page
+### Deployed
+Live at: https://aevia-test.pages.dev/pages/spread-preview
+Cloudflare Pages auto-deploys from GitHub main branch.
 
-### Spec table format — agreed
-One Google Sheet / Excel file, all spreads and variants in one table:
-
-| Spread | Variant | Page | Slot | X center (mm) | Y center (mm) | Width (mm) | Height (mm) | Orientation |
-|--------|---------|------|------|---------------|---------------|------------|-------------|-------------|
-
-- Page column: `L` or `R` (not 1/2 — avoids confusion across spreads)
-- Coordinates: center of photo slot, measured from top-left of that page (each page is its own 0,0 origin)
-- Bleed excluded from coordinates — code will handle 3mm bleed as a fixed offset
-- Orientation values: `vertical`, `horizontal`, `square`
-- Designer has already measured from center of photo — confirmed this is fine, code converts to top-left with half-width/height offset
-
-### Visual reference format — agreed
-- One PDF per spread, with each layout variant on a separate page inside it
-- Named: `spread_01.pdf`, `spread_02.pdf`, etc.
-- Stored at: `assets/template/spreads/`
-- Spec table stored at: `assets/template/spec.xlsx` (or Google Sheet link)
-
-### Export format decision
-- User initially wanted `.ai` (Adobe Illustrator) export
-- Agreed: SVG is the correct target — Illustrator opens SVG natively, stays fully editable, and is actually buildable from code
-- `.ai` format is proprietary and not programmatically generatable
-
-### Build strategy — agreed
-- Start with ONE spread only to validate the whole pipeline works
-- Add complexity (more spreads, captions, special pages) only after first spread renders correctly in browser
+Also fixed: removed `assets/business plan/` PDF (26.7 MB) from repo — was blocking Cloudflare deploy. Added to `.gitignore`.
 </work_completed>
 
 <work_remaining>
-## Immediate — user to deliver
+## Spread preview tool — next fixes (TO-DOS #33–35)
 
-### 1. Spec table (single spread)
-- One spread only for the first test
-- Google Sheet or Excel, structure as agreed above
-- Save to `assets/template/spec.xlsx` or share link
+### 33. Render caption on page (High)
+Caption is generated in a text field below the spread but not placed visually on the left page.
+Target position: bottom-center of left page, ~Y:170mm from top.
+Font: NT Comic or EB Garamond, color Plum (#493955).
 
-### 2. Visual PDFs (single spread)
-- PDF showing all variants of that spread (e.g. 1a, 1b, 1c as separate pages)
-- Save to `assets/template/spreads/spread_01.pdf`
+### 34. PDF export button (High)
+Add export button. Simplest approach: `window.print()` with print CSS that hides UI chrome.
+Higher fidelity: server-side Puppeteer (needs Firebase Function).
 
-### 3. Test photos
-- A folder of real JPEGs with EXIF dates (can be anything — doesn't need to be a customer order)
-- Mix of portrait and landscape orientations
-- Used to test EXIF reading and layout variant selection
+### 35. Remove R3 mixed variant (High)
+Decision needed: when photos[1] and [2] have mixed orientations (one H, one V),
+what should the tool do?
+- Option A: Show a warning — "these two photos have different orientations, please reorder manually"
+- Option B: Fall back silently to photos[1]'s orientation (ignore photos[2]'s orientation)
+**User to decide before implementing.**
 
-## Once assets are received — code to build
-
-### Phase 1 — single spread renderer
-1. **EXIF reader** — Node.js script, reads orientation (portrait/landscape) from each photo
-2. **Layout picker** — given a set of photos for a spread, selects the correct variant (1a/1b/1c) based on orientation counts
-3. **Spec loader** — reads `spec.xlsx` or CSV into a JS data structure
-4. **HTML template renderer** — generates an HTML page (20×20cm per page) with photos placed at correct coordinates using absolute positioning
-5. **Browser preview** — open the HTML file locally in browser and verify photos appear in correct slots
-
-### Phase 2 — full book (after Phase 1 validated)
-- All 10 spreads
-- Special page logic (conditional spreads based on customer selection)
-- Caption generation integration (call `functions/caption/caption.js` per page)
-- SVG export
-
-### Phase 3 — web interface
-- Staff review UI: view assembled book, click to regenerate captions, approve pages
-- Eventually: "regenerate this photo slot" if photo doesn't fit well
+## Other pending work (pre-existing)
+- Dashboard: add `previewUrl` input field (TO-DO #2)
+- Auto-email customer when status → `review_sent` (TO-DO #3)
+- Build Puppeteer PDF pipeline (TO-DO #4)
+- 6 missing product pages: vows, radiance, wander, terrain, sprout, wonder
+- `motif-engine/` and `functions/caption/` still untracked in git
 </work_remaining>
 
-<attempted_approaches>
-## AI/Illustrator export — rejected
-- User wanted `.ai` export so staff could manually adjust in Illustrator
-- `.ai` is proprietary format — not generatable from code
-- SVG agreed as replacement: Illustrator opens it natively, fully editable, buildable
-
-## Center vs. top-left coordinates — non-issue
-- Designer measured from center of photo slot, not top-left corner
-- This is fine — code converts: `top_left_x = center_x - width/2`, same for Y
-- No remeasurement needed
-</attempted_approaches>
-
-<critical_context>
-## Book specs
-- Page size: 20×20cm square (each page individually — spread = two pages side by side = 40×20cm open)
-- Bleed: 3mm (excluded from spec table — added as fixed offset in code)
-- Print resolution: 300dpi → ~2362px per page
-- Generation size for motifs: 1024×1024 (2.3× upscale for print — acceptable for textures)
-
-## Spec table conventions (must stay consistent)
-- Page = `L` or `R`
-- Coordinates = center of slot, from top-left of that page, in mm
-- Bleed not included in coordinates
-- Orientation = `vertical` | `horizontal` | `square`
-
-## Template source
-- Designer has Adobe Illustrator `.ai` file — this is the master
-- Preliminary measurements already done from center of photo slots
-- Spec table and PDFs not yet delivered — blocked on designer
-
-## Caption module (already built, separate from this pipeline)
-- Lives at `functions/caption/caption.js`
-- Uses GPT-4o mini with vision
-- Accepts: `--image` (local path or signed GCS URL), `--collection`, `--note`
-- sign-url.js generates 15-min signed GCS URLs for private bucket files
-- Tested end-to-end on a real customer photo — working
-
-## Motif engine (separate, also unblocked)
-- Lives at `motif-engine/`
-- Still untracked in git
-- Remaining motifs to generate: rock (attempt 3), bg_crosshatch (more runs), mountain_peak, trail, contour
-- Mock-up book blocked on Ksenia's template layout
-
-## Firebase / GCS
-- Project: `aevia-uploads`
-- Bucket: `aevia-uploads.firebasestorage.app`
-- All files private — signed URLs required for access
-- `sign-url.js` handles this for local testing
-
-## Build approach philosophy
-- Start with one spread, validate in browser, then scale
-- Web preview first (HTML/CSS), SVG export later
-- No frameworks — plain HTML/CSS/JS as per project conventions
-</critical_context>
+<open_questions>
+1. R3 removal: when 2 right-page photos have mixed orientations, show warning or silently fall back? (needed for TO-DO #35)
+2. Caption on page: which font — NT Comic or EB Garamond? What font size?
+3. PDF export: browser print CSS (fast, free) or Puppeteer (higher fidelity, needs backend)?
+</open_questions>
 
 <current_state>
-## Template backend pipeline
-- **Architecture**: fully designed and agreed ✓
-- **Spec table format**: agreed ✓
-- **Visual reference format**: agreed ✓
-- **Code**: not started — waiting on spec table and test photos from user
+## Spread preview tool
+- Core functionality: complete and deployed ✓
+- HEIC + orientation detection: working ✓
+- Drag-and-drop reorder: working ✓
+- Caption generation API: wired and working ✓
+- Caption rendered on page: NOT YET (text field only)
+- PDF export: NOT YET
+- R3 mixed variant: still active — removal pending decision
+- SVG overlays: placeholder borders only (designer hasn't delivered SVG files yet)
 
-## Deliverables needed from user (blockers)
-- [ ] Spec table (even just spread 1) — `assets/template/spec.xlsx`
-- [ ] Visual PDF of spread 1 variants — `assets/template/spreads/spread_01.pdf`
-- [ ] Test photos (JPEGs with EXIF) — any location
+## Firebase backend
+- `convertHeic`, `generateCaption`, `createUploadSession` — all deployed and live
+- `exifr` added as dependency (for HEIC EXIF reading in convertHeic function)
 
-## Folder to create (not yet created)
-- `assets/template/` — doesn't exist yet, user will create when dropping files
-
-## Other work (from previous sessions, still pending)
-- Motif engine: rock attempt 3, more bg_crosshatch runs, mountain_peak/trail/contour — not started this session
-- `motif-engine/` and `functions/caption/` still untracked in git
-- Dashboard previewUrl field — not started
-- 6 missing product pages (vows, radiance, wander, terrain, sprout, wonder) — not started
-
-## Open questions
-1. Which Kevin Lucbert photo for the mock-up book cover?
-2. Layout tool for mock-up (Affinity Publisher / Canva / InDesign)?
-3. Should `sign-url.js` be integrated directly into `caption.js`?
-4. bg_crosshatch warm palette variant — worth a separate prompt file?
-5. Does the designer need a brief on the spec sheet format, or do they already know what to deliver?
+## Cloudflare Pages
+- Auto-deploys from GitHub main
+- Live URL: https://aevia-test.pages.dev
+- Business plan PDF removed from repo to stay under 25 MB file limit
 </current_state>
