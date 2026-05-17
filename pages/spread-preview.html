@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aevia — Spread Preview</title>
+  <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+  <style>
+    :root {
+      --bg:        #fafaf8;
+      --surface:   #f3efe9;
+      --border:    #e4dfd8;
+      --text:      #1a1a1a;
+      --muted:     #7d7570;
+      --accent-dk: #a8895f;
+      --white:     #ffffff;
+      --serif:     Georgia, 'Times New Roman', serif;
+      --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    img { display: block; max-width: 100%; }
+    button { cursor: pointer; border: none; background: none; font: inherit; }
+    a { color: inherit; text-decoration: none; }
+
+    /* NAV */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 56px;
+      background: rgba(250,250,248,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo img { height: 28px; width: auto; display: block; }
+    .nav-logo-text { font-family: var(--serif); font-size: 18px; letter-spacing: -0.01em; }
+    .nav-links { display: flex; gap: 32px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid var(--text); padding: 8px 20px; border-radius: 100px; }
+    .nav-cta:hover { background: var(--text); color: var(--white); }
+
+    /* MAIN */
+    main { margin-top: 80px; padding: 48px 56px 80px; max-width: 1400px; margin-left: auto; margin-right: auto; }
+    h1 { font-family: var(--serif); font-size: 28px; font-weight: 400; margin-bottom: 8px; }
+    .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 40px; }
+
+    /* UPLOAD AREA */
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      background: var(--surface);
+      margin-bottom: 32px;
+      transition: border-color 0.2s;
+    }
+    .upload-area:hover { border-color: var(--accent-dk); }
+    .upload-area label { cursor: pointer; }
+    .upload-area input { display: none; }
+    .upload-icon { font-size: 32px; margin-bottom: 12px; }
+    .upload-label { font-size: 14px; color: var(--muted); }
+    .upload-label strong { color: var(--text); }
+
+    /* WARNING BANNER */
+    .warning-banner {
+      display: none;
+      background: #fff8e6;
+      border: 1px solid #e8d5a0;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #7a5c1e;
+      margin-bottom: 24px;
+    }
+    .warning-banner.visible { display: block; }
+
+    /* REORDER ROW */
+    .reorder-row {
+      display: none;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding: 16px;
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .reorder-row.visible { display: flex; }
+    .reorder-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); flex-shrink: 0; }
+    .thumb-list { display: flex; gap: 12px; flex: 1; }
+    .thumb-item {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+    }
+    .thumb-item img { width: 48px; height: 48px; object-fit: cover; border-radius: 3px; }
+    .thumb-info { font-size: 11px; color: var(--muted); }
+    .thumb-info strong { color: var(--text); display: block; }
+    .thumb-arrows { display: flex; gap: 4px; }
+    .thumb-btn {
+      font-size: 16px; color: var(--muted); padding: 2px 6px;
+      border: 1px solid var(--border); border-radius: 4px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .thumb-btn:hover { color: var(--text); border-color: var(--text); }
+    .thumb-btn:disabled { opacity: 0.3; cursor: default; }
+    .resequence-btn {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid var(--border); padding: 8px 16px; border-radius: 100px;
+      color: var(--muted); flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .resequence-btn:hover { background: var(--text); color: var(--white); border-color: var(--text); }
+
+    /* SPREAD */
+    #spread-container { margin-bottom: 32px; }
+    .spread { display: flex; gap: 4px; }
+
+    .page {
+      position: relative;
+      width: 600px; height: 600px;
+      background: #f5f0eb;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .photo-slot {
+      position: absolute;
+      overflow: hidden;
+      background: #e8e2da;
+      border: 2px dashed #ccc;
+    }
+    .photo-slot img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .photo-slot-empty {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+
+    .svg-overlay {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* CAPTION AREA */
+    .caption-area {
+      display: none;
+      width: 600px;
+      margin-top: 16px;
+    }
+    .caption-area.visible { display: block; }
+    .caption-area label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); display: block; margin-bottom: 8px; }
+    .caption-area textarea {
+      width: 100%; padding: 12px 14px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--white); font-family: var(--serif); font-size: 14px;
+      color: var(--text); resize: vertical; line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .caption-area textarea:focus { outline: none; border-color: var(--accent-dk); }
+    .generate-btn {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid var(--text); padding: 10px 24px; border-radius: 100px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .generate-btn:hover { background: var(--text); color: var(--white); }
+
+    /* VARIANT BADGE */
+    .variant-badge {
+      display: none;
+      font-size: 11px; color: var(--muted); letter-spacing: 0.08em;
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .variant-badge.visible { display: block; }
+    .variant-badge span { color: var(--text); font-weight: 600; }
+
+    /* FOOTER */
+    .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 64px 56px 48px; }
+    .footer-inner { max-width: 1160px; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 48px; }
+    .foot-col h5 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 16px; }
+    .foot-col a { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    .foot-col a:hover { color: var(--text); }
+    .foot-base { max-width: 1160px; margin: 48px auto 0; display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 24px; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="home.html" class="nav-logo">
+    <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+    <span class="nav-logo-text" style="display:none;">aevia</span>
+  </a>
+  <div class="nav-links">
+    <a href="home.html">Home</a>
+    <a href="about.html">About us</a>
+    <a href="help.html">Help</a>
+  </div>
+  <a href="collections.html" class="nav-cta">Our Collections</a>
+</nav>
+
+<main>
+  <h1>Spread Preview</h1>
+  <p class="subtitle">Upload 3 photos — the tool sequences them by date, picks the layout, and renders the spread.</p>
+
+  <div class="upload-area">
+    <label>
+      <input type="file" id="photo-input" multiple accept="image/*" />
+      <div class="upload-icon">📷</div>
+      <div class="upload-label"><strong>Choose 3 photos</strong> or drag and drop</div>
+      <div class="upload-label" style="margin-top:6px; font-size:12px;">JPEG with EXIF dates recommended · AirDrop from iPhone preserves dates</div>
+    </label>
+  </div>
+
+  <div class="warning-banner" id="warning-banner"></div>
+
+  <div class="reorder-row" id="reorder-row">
+    <div class="reorder-label">Order</div>
+    <div class="thumb-list" id="thumb-list"></div>
+    <button class="resequence-btn" id="resequence-btn">↺ By date</button>
+  </div>
+
+  <div class="variant-badge" id="variant-badge"></div>
+
+  <div id="spread-container"></div>
+
+  <div class="caption-area" id="caption-area">
+    <label>Caption — left page</label>
+    <textarea id="caption-text" rows="3" placeholder="Caption will appear here…"></textarea>
+    <button class="generate-btn" id="generate-btn">Generate caption</button>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="foot-col">
+      <h5>Aevia</h5>
+      <a href="home.html">Home</a>
+      <a href="about.html">Our story</a>
+      <a href="collections.html">Collections</a>
+    </div>
+    <div class="foot-col">
+      <h5>Products</h5>
+      <a href="collections.html">All templates</a>
+    </div>
+    <div class="foot-col">
+      <h5>Support</h5>
+      <a href="help.html">FAQ</a>
+      <a href="help.html#contact">Contact</a>
+    </div>
+    <div class="foot-col">
+      <h5>Staff</h5>
+      <a href="dashboard.html">Dashboard</a>
+    </div>
+  </div>
+  <div class="foot-base">
+    <span>© 2026 Aevia. All rights reserved.</span>
+    <span>Internal tool</span>
+  </div>
+</footer>
+
+<script>
+const MM_TO_PX = 3; // 1mm = 3px → 200mm page = 600px
+
+const SPREAD_SPEC = {
+  pageSize: { w: 200, h: 200 },
+  bleed: 3,
+  variants: {
+    L1: { side: 'left',  orientation: 'horizontal', slots: [{ cx: 95,  cy: 100, w: 150, h: 100 }] },
+    L2: { side: 'left',  orientation: 'vertical',   slots: [{ cx: 95,  cy: 90,  w: 110, h: 140 }] },
+    R1: { side: 'right', slots: [{ cx: 105, cy: 55,  w: 110, h: 70  }, { cx: 105, cy: 145, w: 110, h: 70  }] },
+    R2: { side: 'right', slots: [{ cx: 65,  cy: 100, w: 70,  h: 100 }, { cx: 145, cy: 100, w: 70,  h: 100 }] },
+    R3: { side: 'right', slots: [{ cx: 50,  cy: 60,  w: 70,  h: 100 }, { cx: 140, cy: 132, w: 105, h: 70  }] },
+  }
+};
+
+// ── State ──────────────────────────────────────────────────
+let photos = [];        // { file, objectURL, orientation, date, name }
+let originalOrder = []; // for re-sequence reset
+
+// ── File input ────────────────────────────────────────────
+document.getElementById('photo-input').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files);
+  if (files.length !== 3) {
+    showWarning('Please select exactly 3 photos.');
+    return;
+  }
+  clearWarning();
+  try {
+    photos = await processFiles(files);
+    originalOrder = [...photos];
+    render();
+  } catch (err) {
+    console.error('Failed to process photos:', err);
+    showWarning('Error processing photos: ' + err.message);
+  }
+});
+
+// ── Process files: EXIF → orientation → sort ──────────────
+async function processFiles(files) {
+  const results = await Promise.all(files.map(async (file) => {
+    let date = null;
+    let orientation = null;
+
+    try {
+      const exif = await exifr.parse(file, { pick: ['DateTimeOriginal', 'Orientation'] });
+      if (exif) {
+        date = exif.DateTimeOriginal || null;
+        if (exif.Orientation) {
+          orientation = [5, 6, 7, 8].includes(exif.Orientation) ? 'vertical' : 'horizontal';
+        }
+      }
+    } catch (err) {
+      console.warn('EXIF read failed for', file.name, err.message);
+    }
+
+    // Always resolve orientation — fallback to image dimensions
+    orientation = orientation || await getOrientationFromDimensions(file);
+
+    return {
+      file,
+      objectURL: URL.createObjectURL(file),
+      orientation,
+      date,
+      name: file.name,
+    };
+  }));
+
+  const hasAnyDate = results.some(r => r.date !== null);
+
+  if (!hasAnyDate) {
+    showWarning('⚠ No date metadata found in these photos — they\'re shown in upload order. Use the arrows above to arrange them manually.');
+    // keep upload order, no sort
+    return results;
+  }
+
+  // Sort by date ascending; null dates go to end
+  results.sort((a, b) => {
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return new Date(a.date) - new Date(b.date);
+  });
+
+  return results;
+}
+
+// ── Orientation from image natural dimensions ─────────────
+function getOrientationFromDimensions(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      // square treated as horizontal
+      resolve(img.naturalHeight > img.naturalWidth ? 'vertical' : 'horizontal');
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => { resolve('horizontal'); URL.revokeObjectURL(url); };
+    img.src = url;
+  });
+}
+
+// ── Pick variants ─────────────────────────────────────────
+function pickVariants() {
+  const leftVariant  = photos[0].orientation === 'vertical' ? 'L2' : 'L1';
+  const r1 = photos[1].orientation;
+  const r2 = photos[2].orientation;
+  let rightVariant;
+  if (r1 === 'horizontal' && r2 === 'horizontal') rightVariant = 'R1';
+  else if (r1 === 'vertical' && r2 === 'vertical') rightVariant = 'R2';
+  else rightVariant = 'R3';
+  return { leftVariant, rightVariant };
+}
+
+// ── Render everything ─────────────────────────────────────
+function render() {
+  renderThumbs();
+  const { leftVariant, rightVariant } = pickVariants();
+  showVariantBadge(leftVariant, rightVariant);
+  renderSpread(leftVariant, rightVariant);
+  renderCaptionArea();
+}
+
+// ── Spread renderer ───────────────────────────────────────
+function renderSpread(leftVariant, rightVariant) {
+  const container = document.getElementById('spread-container');
+  container.innerHTML = '';
+
+  const spread = document.createElement('div');
+  spread.className = 'spread';
+
+  const leftPage  = buildPage(leftVariant,  [photos[0]]);
+  const rightPage = buildPage(rightVariant, [photos[1], photos[2]]);
+
+  spread.appendChild(leftPage);
+  spread.appendChild(rightPage);
+  container.appendChild(spread);
+}
+
+function buildPage(variantName, pagePhotos) {
+  const variantDef = SPREAD_SPEC.variants[variantName];
+  const page = document.createElement('div');
+  page.className = 'page';
+
+  variantDef.slots.forEach((slot, i) => {
+    const slotEl = document.createElement('div');
+    slotEl.className = 'photo-slot';
+    slotEl.style.left   = (slot.cx - slot.w / 2) * MM_TO_PX + 'px';
+    slotEl.style.top    = (slot.cy - slot.h / 2) * MM_TO_PX + 'px';
+    slotEl.style.width  = slot.w * MM_TO_PX + 'px';
+    slotEl.style.height = slot.h * MM_TO_PX + 'px';
+
+    if (pagePhotos[i]) {
+      const img = document.createElement('img');
+      img.src = pagePhotos[i].objectURL;
+      img.alt = pagePhotos[i].name;
+      slotEl.appendChild(img);
+    } else {
+      const empty = document.createElement('div');
+      empty.className = 'photo-slot-empty';
+      empty.textContent = 'Photo ' + (i + 1);
+      slotEl.appendChild(empty);
+    }
+
+    page.appendChild(slotEl);
+  });
+
+  // SVG overlay
+  const svgPath = `../assets/Template/Spreads/Spread 1/${variantName}.svg`;
+  const overlay = document.createElement('img');
+  overlay.src = svgPath;
+  overlay.className = 'svg-overlay';
+  overlay.alt = '';
+  overlay.onerror = () => {
+    overlay.style.border = '2px dashed #ccc';
+    overlay.style.opacity = '0.4';
+    overlay.style.background = 'transparent';
+  };
+  page.appendChild(overlay);
+
+  return page;
+}
+
+// ── Thumbnails + reorder ──────────────────────────────────
+function renderThumbs() {
+  const row = document.getElementById('reorder-row');
+  const list = document.getElementById('thumb-list');
+  list.innerHTML = '';
+  row.classList.add('visible');
+
+  photos.forEach((photo, i) => {
+    const item = document.createElement('div');
+    item.className = 'thumb-item';
+
+    const img = document.createElement('img');
+    img.src = photo.objectURL;
+    img.alt = photo.name;
+
+    const info = document.createElement('div');
+    info.className = 'thumb-info';
+    const role = i === 0 ? 'Left page' : `Right · slot ${i}`;
+    const dateStr = photo.date ? new Date(photo.date).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) : 'No date';
+    info.innerHTML = `<strong>${role}</strong>${photo.orientation} · ${dateStr}`;
+
+    const arrows = document.createElement('div');
+    arrows.className = 'thumb-arrows';
+
+    const leftBtn = document.createElement('button');
+    leftBtn.className = 'thumb-btn';
+    leftBtn.textContent = '←';
+    leftBtn.disabled = i === 0;
+    leftBtn.onclick = () => { swapPhotos(i - 1, i); };
+
+    const rightBtn = document.createElement('button');
+    rightBtn.className = 'thumb-btn';
+    rightBtn.textContent = '→';
+    rightBtn.disabled = i === photos.length - 1;
+    rightBtn.onclick = () => { swapPhotos(i, i + 1); };
+
+    arrows.appendChild(leftBtn);
+    arrows.appendChild(rightBtn);
+    item.appendChild(img);
+    item.appendChild(info);
+    item.appendChild(arrows);
+    list.appendChild(item);
+  });
+}
+
+function swapPhotos(a, b) {
+  [photos[a], photos[b]] = [photos[b], photos[a]];
+  render();
+}
+
+document.getElementById('resequence-btn').addEventListener('click', () => {
+  photos = [...originalOrder];
+  clearWarning();
+  render();
+});
+
+// ── Caption ───────────────────────────────────────────────
+function renderCaptionArea() {
+  document.getElementById('caption-area').classList.add('visible');
+}
+
+document.getElementById('generate-btn').addEventListener('click', () => {
+  // Stub — will call functions/caption/caption.js with GCS signed URL in v1.1
+  console.log('Caption generation stub. Photo:', photos[0]?.name);
+  document.getElementById('caption-text').value = '[AI caption will appear here — connect caption module in v1.1]';
+});
+
+// ── Variant badge ─────────────────────────────────────────
+function showVariantBadge(lv, rv) {
+  const badge = document.getElementById('variant-badge');
+  badge.innerHTML = `Layout: Left <span>${lv}</span> · Right <span>${rv}</span>`;
+  badge.classList.add('visible');
+}
+
+// ── Warning helpers ───────────────────────────────────────
+function showWarning(msg) {
+  const el = document.getElementById('warning-banner');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+function clearWarning() {
+  document.getElementById('warning-banner').classList.remove('visible');
+}
+</script>
+</body>
+</html>
