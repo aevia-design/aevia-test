@@ -7,6 +7,9 @@ motif-engine/.env
 node_modules/
 functions/node_modules/
 
+# Large assets — over Cloudflare Pages 25MB limit
+assets/business plan/
+
 # OS junk
 desktop.ini
 .DS_Store
