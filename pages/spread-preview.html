@@ -355,13 +355,22 @@ async function processFiles(files) {
       || /\.(heic|heif)$/i.test(file.name);
     dbg('  ' + file.name + ' isHeic: ' + isHeic + ' · orientation so far: ' + orientation + ' · date: ' + (date || 'none'));
     if (isHeic) {
+      dbg('  HEIC detected — converting via server…');
       try {
-        dbg('  Converting ' + file.name + '…');
-        const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
-        displayBlob = Array.isArray(converted) ? converted[0] : converted;
-        dbg('  Converted OK · blob size: ' + Math.round(displayBlob.size/1024) + 'KB');
+        const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/convertHeic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/octet-stream' },
+          body: file,
+        });
+        if (!resp.ok) {
+          const errText = await resp.text();
+          throw new Error('Server conversion failed: ' + errText);
+        }
+        displayBlob = await resp.blob();
+        dbg('  HEIC → JPEG conversion OK (' + Math.round(displayBlob.size/1024) + 'KB)');
       } catch (err) {
-        dbg('  HEIC conversion FAILED: ' + err.message);
+        dbg('  HEIC conversion error: ' + err.message);
+        throw new Error('Could not convert HEIC photo "' + file.name + '": ' + err.message);
       }
     }
 
