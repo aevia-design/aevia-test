@@ -12,7 +12,7 @@ exports.createUploadSession = functions
 // ── HEIC → JPEG converter ────────────────────────────────────────────────────
 exports.convertHeic = functions
   .region('europe-west1')
-  .runWith({ timeoutSeconds: 60, memory: '512MB' })
+  .runWith({ timeoutSeconds: 120, memory: '1GB' })
   .https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
