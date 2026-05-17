@@ -476,8 +476,18 @@ function renderSpread(leftVariant, rightVariant) {
   const spread = document.createElement('div');
   spread.className = 'spread';
 
-  const leftPage  = buildPage(leftVariant,  [photos[0]],          [0]);
-  const rightPage = buildPage(rightVariant, [photos[1], photos[2]], [1, 2]);
+  // Match photos to right-page slots by orientation shape
+  const rightSlotDefs = SPREAD_SPEC.variants[rightVariant].slots;
+  let rightIndices = [1, 2];
+  if (rightSlotDefs.length === 2) {
+    const slot0IsVertical = rightSlotDefs[0].h > rightSlotDefs[0].w;
+    const photo1IsVertical = photos[1].orientation === 'vertical';
+    if (slot0IsVertical !== photo1IsVertical) rightIndices = [2, 1];
+  }
+  const rightPagePhotos = rightIndices.map(i => photos[i]);
+
+  const leftPage  = buildPage(leftVariant,  [photos[0]],    [0]);
+  const rightPage = buildPage(rightVariant, rightPagePhotos, rightIndices);
 
   // Allow dragging over the spread background without showing stop-sign
   spread.addEventListener('dragover', (e) => { if (draggedIndex !== null) e.preventDefault(); });
