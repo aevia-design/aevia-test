@@ -100,18 +100,42 @@ exports.convertHeic = functions
 
     try {
       const heicConvert = require('heic-convert');
+      const sharp = require('sharp');
+      const exifr = require('exifr');
       const inputBuffer = req.rawBody;
       if (!inputBuffer || inputBuffer.length === 0) {
         res.status(400).json({ error: 'Empty body' });
         return;
       }
+
+      // Read EXIF orientation from the original HEIC before conversion
+      // (heic-convert strips EXIF, so we must capture it first)
+      let exifOrientation = 1;
+      try {
+        const exif = await exifr.parse(inputBuffer, ['Orientation']);
+        if (exif && exif.Orientation) exifOrientation = exif.Orientation;
+        console.log('HEIC EXIF orientation:', exifOrientation);
+      } catch (e) { console.warn('EXIF read failed:', e.message); }
+
+      // Convert HEIC → JPEG (pixels only, no rotation applied yet)
       const jpegBuffer = await heicConvert({
         buffer: inputBuffer,
         format: 'JPEG',
         quality: 0.9,
       });
+
+      // Physically rotate pixels so output JPEG needs no rotation tag.
+      // EXIF orientation values → degrees: 3=180°, 6=90° CW, 8=90° CCW
+      const rotationMap = { 3: 180, 6: 90, 8: -90 };
+      const rotateDeg = rotationMap[exifOrientation] || 0;
+      let finalBuffer = Buffer.from(jpegBuffer);
+      if (rotateDeg !== 0) {
+        finalBuffer = await sharp(finalBuffer).rotate(rotateDeg).jpeg({ quality: 90 }).toBuffer();
+        console.log(`Rotated JPEG by ${rotateDeg}°`);
+      }
+
       res.set('Content-Type', 'image/jpeg');
-      res.send(Buffer.from(jpegBuffer));
+      res.send(finalBuffer);
     } catch (err) {
       console.error('convertHeic error:', err);
       res.status(500).json({ error: err.message });
