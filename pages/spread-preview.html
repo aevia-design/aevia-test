@@ -75,43 +75,19 @@
     }
     .warning-banner.visible { display: block; }
 
-    /* REORDER ROW */
-    .reorder-row {
+    /* SPREAD CONTROLS BAR */
+    .spread-controls {
       display: none;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 24px;
-      padding: 16px;
-      background: var(--surface);
-      border-radius: 8px;
-      border: 1px solid var(--border);
+      justify-content: space-between;
+      margin-bottom: 12px;
     }
-    .reorder-row.visible { display: flex; }
-    .reorder-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); flex-shrink: 0; }
-    .thumb-list { display: flex; gap: 12px; flex: 1; }
-    .thumb-item {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--white);
-      border: 2px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 10px;
-      cursor: pointer;
-      transition: border-color 0.15s, box-shadow 0.15s;
-      user-select: none;
-    }
-    .thumb-item:hover { border-color: #aaa; }
-    .thumb-item.selected {
-      border-color: #c8a96e;
-      box-shadow: 0 0 0 3px rgba(200,169,110,0.25);
-    }
-    .thumb-item img { width: 48px; height: 48px; object-fit: cover; border-radius: 3px; }
-    .thumb-info { font-size: 11px; color: var(--muted); }
-    .thumb-info strong { color: var(--text); display: block; }
-    .thumb-hint { font-size: 10px; color: var(--muted); margin-top: 4px; font-style: italic; }
+    .spread-controls.visible { display: flex; }
+    .drag-hint { font-size: 11px; color: var(--muted); font-style: italic; }
     .resequence-btn {
       font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
       border: 1px solid var(--border); padding: 8px 16px; border-radius: 100px;
-      color: var(--muted); flex-shrink: 0;
+      color: var(--muted);
       transition: background 0.15s, color 0.15s;
     }
     .resequence-btn:hover { background: var(--text); color: var(--white); border-color: var(--text); }
@@ -133,11 +109,21 @@
       overflow: hidden;
       background: #e8e2da;
       border: 2px dashed #ccc;
+      transition: outline 0.1s;
+    }
+    .photo-slot.has-photo { cursor: grab; }
+    .photo-slot.has-photo:active { cursor: grabbing; }
+    .photo-slot.dragging-source { opacity: 0.35; }
+    .photo-slot.drag-over {
+      outline: 3px solid #c8a96e;
+      outline-offset: -3px;
+      background: rgba(200,169,110,0.12);
     }
     .photo-slot img {
       width: 100%; height: 100%;
       object-fit: cover;
       display: block;
+      pointer-events: none;
     }
     .photo-slot-empty {
       width: 100%; height: 100%;
@@ -229,9 +215,8 @@
 
   <div class="warning-banner" id="warning-banner"></div>
 
-  <div class="reorder-row" id="reorder-row">
-    <div class="reorder-label">Order</div>
-    <div class="thumb-list" id="thumb-list"></div>
+  <div class="spread-controls" id="spread-controls">
+    <span class="drag-hint">Drag photos between slots to reorder — template updates automatically</span>
     <button class="resequence-btn" id="resequence-btn">↺ By date</button>
   </div>
 
@@ -473,12 +458,15 @@ function pickVariants() {
 
 // ── Render everything ─────────────────────────────────────
 function render() {
-  renderThumbs();
+  document.getElementById('spread-controls').classList.add('visible');
   const { leftVariant, rightVariant } = pickVariants();
   showVariantBadge(leftVariant, rightVariant);
   renderSpread(leftVariant, rightVariant);
   renderCaptionArea();
 }
+
+// ── Drag state ────────────────────────────────────────────
+let draggedIndex = null;
 
 // ── Spread renderer ───────────────────────────────────────
 function renderSpread(leftVariant, rightVariant) {
@@ -488,38 +476,86 @@ function renderSpread(leftVariant, rightVariant) {
   const spread = document.createElement('div');
   spread.className = 'spread';
 
-  const leftPage  = buildPage(leftVariant,  [photos[0]]);
-  const rightPage = buildPage(rightVariant, [photos[1], photos[2]]);
+  const leftPage  = buildPage(leftVariant,  [photos[0]],          [0]);
+  const rightPage = buildPage(rightVariant, [photos[1], photos[2]], [1, 2]);
 
   spread.appendChild(leftPage);
   spread.appendChild(rightPage);
   container.appendChild(spread);
 }
 
-function buildPage(variantName, pagePhotos) {
+function buildPage(variantName, pagePhotos, slotIndices) {
   const variantDef = SPREAD_SPEC.variants[variantName];
   const page = document.createElement('div');
   page.className = 'page';
 
   variantDef.slots.forEach((slot, i) => {
     const slotEl = document.createElement('div');
-    slotEl.className = 'photo-slot';
+    const photoIndex = slotIndices[i];
+    const photo = pagePhotos[i];
+
+    slotEl.className = 'photo-slot' + (photo ? ' has-photo' : '');
     slotEl.style.left   = (slot.cx - slot.w / 2) * MM_TO_PX + 'px';
     slotEl.style.top    = (slot.cy - slot.h / 2) * MM_TO_PX + 'px';
     slotEl.style.width  = slot.w * MM_TO_PX + 'px';
     slotEl.style.height = slot.h * MM_TO_PX + 'px';
+    slotEl.dataset.photoIndex = photoIndex;
 
-    if (pagePhotos[i]) {
+    if (photo) {
       const img = document.createElement('img');
-      img.src = pagePhotos[i].objectURL;
-      img.alt = pagePhotos[i].name;
+      img.src = photo.objectURL;
+      img.alt = photo.name;
       slotEl.appendChild(img);
+
+      slotEl.draggable = true;
+
+      slotEl.addEventListener('dragstart', (e) => {
+        draggedIndex = photoIndex;
+        e.dataTransfer.effectAllowed = 'move';
+        // small delay so browser captures the element before we dim it
+        requestAnimationFrame(() => slotEl.classList.add('dragging-source'));
+      });
+
+      slotEl.addEventListener('dragend', () => {
+        slotEl.classList.remove('dragging-source');
+        document.querySelectorAll('.photo-slot.drag-over')
+          .forEach(el => el.classList.remove('drag-over'));
+        draggedIndex = null;
+      });
     } else {
       const empty = document.createElement('div');
       empty.className = 'photo-slot-empty';
       empty.textContent = 'Photo ' + (i + 1);
       slotEl.appendChild(empty);
     }
+
+    // All slots are valid drop targets
+    slotEl.addEventListener('dragover', (e) => {
+      if (draggedIndex !== null && draggedIndex !== photoIndex) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      }
+    });
+
+    slotEl.addEventListener('dragenter', (e) => {
+      if (draggedIndex !== null && draggedIndex !== photoIndex) {
+        e.preventDefault();
+        slotEl.classList.add('drag-over');
+      }
+    });
+
+    slotEl.addEventListener('dragleave', () => {
+      slotEl.classList.remove('drag-over');
+    });
+
+    slotEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      slotEl.classList.remove('drag-over');
+      if (draggedIndex !== null && draggedIndex !== photoIndex) {
+        swapPhotos(draggedIndex, photoIndex);
+      }
+      draggedIndex = null;
+    });
 
     page.appendChild(slotEl);
   });
@@ -538,55 +574,6 @@ function buildPage(variantName, pagePhotos) {
   page.appendChild(overlay);
 
   return page;
-}
-
-// ── Thumbnails + reorder ──────────────────────────────────
-let selectedThumb = null; // index of currently selected thumbnail
-
-function renderThumbs() {
-  const row = document.getElementById('reorder-row');
-  const list = document.getElementById('thumb-list');
-  list.innerHTML = '';
-  row.classList.add('visible');
-
-  const slotLabels = ['Left page', 'Right · slot 1', 'Right · slot 2'];
-
-  photos.forEach((photo, i) => {
-    const item = document.createElement('div');
-    item.className = 'thumb-item' + (selectedThumb === i ? ' selected' : '');
-
-    const img = document.createElement('img');
-    img.src = photo.objectURL;
-    img.alt = photo.name;
-
-    const info = document.createElement('div');
-    info.className = 'thumb-info';
-    const dateStr = photo.date ? new Date(photo.date).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) : 'No date';
-    info.innerHTML = `<strong>${slotLabels[i]}</strong>${photo.orientation} · ${dateStr}`;
-
-    item.appendChild(img);
-    item.appendChild(info);
-
-    item.addEventListener('click', () => {
-      if (selectedThumb === null) {
-        selectedThumb = i;
-        renderThumbs();
-      } else if (selectedThumb === i) {
-        selectedThumb = null;
-        renderThumbs();
-      } else {
-        swapPhotos(selectedThumb, i);
-        selectedThumb = null;
-      }
-    });
-
-    list.appendChild(item);
-  });
-
-  const hint = document.createElement('div');
-  hint.className = 'thumb-hint';
-  hint.textContent = selectedThumb !== null ? 'Now click another photo to swap' : 'Click a photo to select, then click another to swap';
-  list.appendChild(hint);
 }
 
 function swapPhotos(a, b) {
