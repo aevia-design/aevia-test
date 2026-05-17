@@ -479,6 +479,9 @@ function renderSpread(leftVariant, rightVariant) {
   const leftPage  = buildPage(leftVariant,  [photos[0]],          [0]);
   const rightPage = buildPage(rightVariant, [photos[1], photos[2]], [1, 2]);
 
+  // Allow dragging over the spread background without showing stop-sign
+  spread.addEventListener('dragover', (e) => { if (draggedIndex !== null) e.preventDefault(); });
+
   spread.appendChild(leftPage);
   spread.appendChild(rightPage);
   container.appendChild(spread);
@@ -505,6 +508,7 @@ function buildPage(variantName, pagePhotos, slotIndices) {
       const img = document.createElement('img');
       img.src = photo.objectURL;
       img.alt = photo.name;
+      img.draggable = false; // prevent browser native image drag hijacking our slot drag
       slotEl.appendChild(img);
 
       slotEl.draggable = true;
