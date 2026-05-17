@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aevia — Spread Preview</title>
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
   <style>
     :root {
       --bg:        #fafaf8;
@@ -213,11 +214,14 @@
 
   <div class="upload-area">
     <label>
-      <input type="file" id="photo-input" multiple accept="image/*" />
+      <input type="file" id="photo-input" multiple accept="image/*,.heic,.HEIC" />
       <div class="upload-icon">📷</div>
       <div class="upload-label"><strong>Choose 3 photos</strong> or drag and drop</div>
-      <div class="upload-label" style="margin-top:6px; font-size:12px;">JPEG with EXIF dates recommended · AirDrop from iPhone preserves dates</div>
+      <div class="upload-label" style="margin-top:6px; font-size:12px;">JPEG or HEIC · iPhone Camera Roll works directly</div>
     </label>
+  </div>
+  <div id="loading-banner" style="display:none; padding:12px 16px; background:var(--surface); border:1px solid var(--border); border-radius:6px; font-size:13px; color:var(--muted); margin-bottom:16px;">
+    Converting photos… this takes a few seconds for iPhone HEIC files.
   </div>
 
   <div class="warning-banner" id="warning-banner"></div>
@@ -294,6 +298,7 @@ document.getElementById('photo-input').addEventListener('change', async (e) => {
     return;
   }
   clearWarning();
+  document.getElementById('loading-banner').style.display = 'block';
   try {
     photos = await processFiles(files);
     originalOrder = [...photos];
@@ -301,20 +306,25 @@ document.getElementById('photo-input').addEventListener('change', async (e) => {
   } catch (err) {
     console.error('Failed to process photos:', err);
     showWarning('Error processing photos: ' + err.message);
+  } finally {
+    document.getElementById('loading-banner').style.display = 'none';
   }
 });
 
-// ── Process files: EXIF → orientation → sort ──────────────
+// ── Process files: EXIF → orientation → HEIC convert → sort ──
 async function processFiles(files) {
   const results = await Promise.all(files.map(async (file) => {
     let date = null;
     let orientation = null;
+    let displayBlob = file; // may be replaced by converted JPEG
 
+    // 1. Read EXIF from original file first (exifr handles HEIC)
     try {
-      const exif = await exifr.parse(file, { pick: ['DateTimeOriginal', 'Orientation'] });
+      const exif = await exifr.parse(file, ['DateTimeOriginal', 'Orientation']);
       if (exif) {
         date = exif.DateTimeOriginal || null;
         if (exif.Orientation) {
+          // EXIF orientation 5-8 means the camera was held portrait
           orientation = [5, 6, 7, 8].includes(exif.Orientation) ? 'vertical' : 'horizontal';
         }
       }
@@ -322,12 +332,27 @@ async function processFiles(files) {
       console.warn('EXIF read failed for', file.name, err.message);
     }
 
-    // Always resolve orientation — fallback to image dimensions
-    orientation = orientation || await getOrientationFromDimensions(file);
+    // 2. Convert HEIC → JPEG if needed (browser can't display HEIC)
+    const isHeic = file.type === 'image/heic' || file.type === 'image/heif'
+      || /\.(heic|heif)$/i.test(file.name);
+    if (isHeic) {
+      try {
+        const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+        displayBlob = Array.isArray(converted) ? converted[0] : converted;
+      } catch (err) {
+        console.warn('HEIC conversion failed for', file.name, err.message);
+        // keep original — may not display but won't crash
+      }
+    }
+
+    // 3. Orientation fallback from image dimensions (works now that we have a displayable blob)
+    if (!orientation) {
+      orientation = await getOrientationFromDimensions(displayBlob);
+    }
 
     return {
       file,
-      objectURL: URL.createObjectURL(file),
+      objectURL: URL.createObjectURL(displayBlob),
       orientation,
       date,
       name: file.name,
@@ -337,12 +362,10 @@ async function processFiles(files) {
   const hasAnyDate = results.some(r => r.date !== null);
 
   if (!hasAnyDate) {
-    showWarning('⚠ No date metadata found in these photos — they\'re shown in upload order. Use the arrows above to arrange them manually.');
-    // keep upload order, no sort
+    showWarning('⚠ No date metadata found — photos shown in upload order. Use the arrows above to arrange manually.');
     return results;
   }
 
-  // Sort by date ascending; null dates go to end
   results.sort((a, b) => {
     if (!a.date) return 1;
     if (!b.date) return -1;
