@@ -21,15 +21,19 @@ exports.convertHeic = functions
     if (req.method !== 'POST') { res.status(405).send('Method Not Allowed'); return; }
 
     try {
-      const sharp = require('sharp');
+      const heicConvert = require('heic-convert');
       const inputBuffer = req.rawBody;
       if (!inputBuffer || inputBuffer.length === 0) {
         res.status(400).json({ error: 'Empty body' });
         return;
       }
-      const jpegBuffer = await sharp(inputBuffer).jpeg({ quality: 90 }).toBuffer();
+      const jpegBuffer = await heicConvert({
+        buffer: inputBuffer,
+        format: 'JPEG',
+        quality: 0.9,
+      });
       res.set('Content-Type', 'image/jpeg');
-      res.send(jpegBuffer);
+      res.send(Buffer.from(jpegBuffer));
     } catch (err) {
       console.error('convertHeic error:', err);
       res.status(500).json({ error: err.message });
