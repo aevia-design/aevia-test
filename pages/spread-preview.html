@@ -92,21 +92,22 @@
     .thumb-item {
       display: flex; align-items: center; gap: 8px;
       background: var(--white);
-      border: 1px solid var(--border);
+      border: 2px solid var(--border);
       border-radius: 6px;
       padding: 6px 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      user-select: none;
+    }
+    .thumb-item:hover { border-color: #aaa; }
+    .thumb-item.selected {
+      border-color: #c8a96e;
+      box-shadow: 0 0 0 3px rgba(200,169,110,0.25);
     }
     .thumb-item img { width: 48px; height: 48px; object-fit: cover; border-radius: 3px; }
     .thumb-info { font-size: 11px; color: var(--muted); }
     .thumb-info strong { color: var(--text); display: block; }
-    .thumb-arrows { display: flex; gap: 4px; }
-    .thumb-btn {
-      font-size: 16px; color: var(--muted); padding: 2px 6px;
-      border: 1px solid var(--border); border-radius: 4px;
-      transition: color 0.15s, border-color 0.15s;
-    }
-    .thumb-btn:hover { color: var(--text); border-color: var(--text); }
-    .thumb-btn:disabled { opacity: 0.3; cursor: default; }
+    .thumb-hint { font-size: 10px; color: var(--muted); margin-top: 4px; font-style: italic; }
     .resequence-btn {
       font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
       border: 1px solid var(--border); padding: 8px 16px; border-radius: 100px;
@@ -438,16 +439,22 @@ async function isHeicByMagicBytes(file) {
   } catch (e) { return false; }
 }
 
-function getOrientationFromDimensions(file) {
+function getOrientationFromDimensions(blob) {
   return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
+    const url = URL.createObjectURL(blob);
     const img = new Image();
     img.onload = () => {
-      // square treated as horizontal
-      resolve(img.naturalHeight > img.naturalWidth ? 'vertical' : 'horizontal');
+      const w = img.naturalWidth, h = img.naturalHeight;
+      const result = h > w ? 'vertical' : 'horizontal';
+      dbg('  dimensions: ' + w + '×' + h + ' → ' + result);
+      resolve(result);
       URL.revokeObjectURL(url);
     };
-    img.onerror = () => { resolve('horizontal'); URL.revokeObjectURL(url); };
+    img.onerror = () => {
+      dbg('  WARNING: image failed to load for dimension check — defaulting to horizontal');
+      resolve('horizontal');
+      URL.revokeObjectURL(url);
+    };
     img.src = url;
   });
 }
@@ -534,15 +541,19 @@ function buildPage(variantName, pagePhotos) {
 }
 
 // ── Thumbnails + reorder ──────────────────────────────────
+let selectedThumb = null; // index of currently selected thumbnail
+
 function renderThumbs() {
   const row = document.getElementById('reorder-row');
   const list = document.getElementById('thumb-list');
   list.innerHTML = '';
   row.classList.add('visible');
 
+  const slotLabels = ['Left page', 'Right · slot 1', 'Right · slot 2'];
+
   photos.forEach((photo, i) => {
     const item = document.createElement('div');
-    item.className = 'thumb-item';
+    item.className = 'thumb-item' + (selectedThumb === i ? ' selected' : '');
 
     const img = document.createElement('img');
     img.src = photo.objectURL;
@@ -550,32 +561,32 @@ function renderThumbs() {
 
     const info = document.createElement('div');
     info.className = 'thumb-info';
-    const role = i === 0 ? 'Left page' : `Right · slot ${i}`;
     const dateStr = photo.date ? new Date(photo.date).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) : 'No date';
-    info.innerHTML = `<strong>${role}</strong>${photo.orientation} · ${dateStr}`;
+    info.innerHTML = `<strong>${slotLabels[i]}</strong>${photo.orientation} · ${dateStr}`;
 
-    const arrows = document.createElement('div');
-    arrows.className = 'thumb-arrows';
-
-    const leftBtn = document.createElement('button');
-    leftBtn.className = 'thumb-btn';
-    leftBtn.textContent = '←';
-    leftBtn.disabled = i === 0;
-    leftBtn.onclick = () => { swapPhotos(i - 1, i); };
-
-    const rightBtn = document.createElement('button');
-    rightBtn.className = 'thumb-btn';
-    rightBtn.textContent = '→';
-    rightBtn.disabled = i === photos.length - 1;
-    rightBtn.onclick = () => { swapPhotos(i, i + 1); };
-
-    arrows.appendChild(leftBtn);
-    arrows.appendChild(rightBtn);
     item.appendChild(img);
     item.appendChild(info);
-    item.appendChild(arrows);
+
+    item.addEventListener('click', () => {
+      if (selectedThumb === null) {
+        selectedThumb = i;
+        renderThumbs();
+      } else if (selectedThumb === i) {
+        selectedThumb = null;
+        renderThumbs();
+      } else {
+        swapPhotos(selectedThumb, i);
+        selectedThumb = null;
+      }
+    });
+
     list.appendChild(item);
   });
+
+  const hint = document.createElement('div');
+  hint.className = 'thumb-hint';
+  hint.textContent = selectedThumb !== null ? 'Now click another photo to swap' : 'Click a photo to select, then click another to swap';
+  list.appendChild(hint);
 }
 
 function swapPhotos(a, b) {
