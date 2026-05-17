@@ -224,6 +224,8 @@
     Converting photos… this takes a few seconds for iPhone HEIC files.
   </div>
 
+  <div id="debug-panel" style="display:none; margin-bottom:24px; padding:16px; background:#f0f0f0; border-radius:6px; font-size:12px; font-family:monospace; white-space:pre-wrap; line-height:1.6;"></div>
+
   <div class="warning-banner" id="warning-banner"></div>
 
   <div class="reorder-row" id="reorder-row">
@@ -287,12 +289,25 @@ const SPREAD_SPEC = {
 };
 
 // ── State ──────────────────────────────────────────────────
-let photos = [];        // { file, objectURL, orientation, date, name }
-let originalOrder = []; // for re-sequence reset
+let photos = [];
+let originalOrder = [];
+
+function dbg(msg) {
+  const el = document.getElementById('debug-panel');
+  el.style.display = 'block';
+  el.textContent += msg + '\n';
+  console.log(msg);
+}
 
 // ── File input ────────────────────────────────────────────
 document.getElementById('photo-input').addEventListener('change', async (e) => {
+  document.getElementById('debug-panel').textContent = '';
   const files = Array.from(e.target.files);
+  dbg('Files selected: ' + files.length);
+  files.forEach(f => dbg('  ' + f.name + ' · type: ' + (f.type || 'unknown') + ' · size: ' + Math.round(f.size/1024) + 'KB'));
+  dbg('heic2any loaded: ' + (typeof heic2any !== 'undefined'));
+  dbg('exifr loaded: ' + (typeof exifr !== 'undefined'));
+
   if (files.length !== 3) {
     showWarning('Please select exactly 3 photos.');
     return;
@@ -302,10 +317,13 @@ document.getElementById('photo-input').addEventListener('change', async (e) => {
   try {
     photos = await processFiles(files);
     originalOrder = [...photos];
+    dbg('--- Processing complete ---');
+    photos.forEach((p, i) => dbg('  Photo ' + (i+1) + ': ' + p.name + ' · ' + p.orientation + ' · date: ' + (p.date || 'none') + ' · url: ' + (p.objectURL ? 'ok' : 'MISSING')));
     render();
+    dbg('render() called');
   } catch (err) {
-    console.error('Failed to process photos:', err);
-    showWarning('Error processing photos: ' + err.message);
+    dbg('ERROR: ' + err.message + '\n' + err.stack);
+    showWarning('Error: ' + err.message);
   } finally {
     document.getElementById('loading-banner').style.display = 'none';
   }
@@ -335,13 +353,15 @@ async function processFiles(files) {
     // 2. Convert HEIC → JPEG if needed (browser can't display HEIC)
     const isHeic = file.type === 'image/heic' || file.type === 'image/heif'
       || /\.(heic|heif)$/i.test(file.name);
+    dbg('  ' + file.name + ' isHeic: ' + isHeic + ' · orientation so far: ' + orientation + ' · date: ' + (date || 'none'));
     if (isHeic) {
       try {
+        dbg('  Converting ' + file.name + '…');
         const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
         displayBlob = Array.isArray(converted) ? converted[0] : converted;
+        dbg('  Converted OK · blob size: ' + Math.round(displayBlob.size/1024) + 'KB');
       } catch (err) {
-        console.warn('HEIC conversion failed for', file.name, err.message);
-        // keep original — may not display but won't crash
+        dbg('  HEIC conversion FAILED: ' + err.message);
       }
     }
 
