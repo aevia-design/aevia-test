@@ -335,16 +335,10 @@ async function processOneFile(file) {
     let orientation = null;
     let displayBlob = file; // may be replaced by converted JPEG
 
-    // 1. Read EXIF from original file first (exifr handles HEIC)
+    // 1. Read EXIF from original file — date only; orientation comes from final dimensions
     try {
-      const exif = await exifr.parse(file, ['DateTimeOriginal', 'Orientation']);
-      if (exif) {
-        date = exif.DateTimeOriginal || null;
-        if (exif.Orientation) {
-          // EXIF orientation 5-8 means the camera was held portrait
-          orientation = [5, 6, 7, 8].includes(exif.Orientation) ? 'vertical' : 'horizontal';
-        }
-      }
+      const exif = await exifr.parse(file, ['DateTimeOriginal']);
+      if (exif) date = exif.DateTimeOriginal || null;
     } catch (err) {
       console.warn('EXIF read failed for', file.name, err.message);
     }
@@ -379,20 +373,12 @@ async function processOneFile(file) {
         }
         if (lastErr) throw lastErr;
 
-        // Re-read EXIF from the converted JPEG — heic-convert preserves orientation tag
-        // which is critical since iPhone stores portrait photos as rotated-landscape pixels
-        if (!date || !orientation) {
+        // Try to recover date from converted JPEG if not already found
+        if (!date) {
           try {
-            const jpegExif = await exifr.parse(displayBlob, ['DateTimeOriginal', 'Orientation']);
-            dbg('  JPEG EXIF: ' + JSON.stringify(jpegExif));
-            if (jpegExif) {
-              if (!date && jpegExif.DateTimeOriginal) date = jpegExif.DateTimeOriginal;
-              if (!orientation && jpegExif.Orientation) {
-                orientation = [5, 6, 7, 8].includes(jpegExif.Orientation) ? 'vertical' : 'horizontal';
-                dbg('  orientation from JPEG EXIF: ' + orientation + ' (tag=' + jpegExif.Orientation + ')');
-              }
-            }
-          } catch (e) { dbg('  JPEG EXIF read failed: ' + e.message); }
+            const jpegExif = await exifr.parse(displayBlob, ['DateTimeOriginal']);
+            if (jpegExif && jpegExif.DateTimeOriginal) date = jpegExif.DateTimeOriginal;
+          } catch (e) { /* ignore */ }
         }
       } catch (err) {
         dbg('  HEIC conversion error: ' + err.message);
@@ -400,11 +386,9 @@ async function processOneFile(file) {
       }
     }
 
-    // 3. Orientation fallback from image dimensions
-    if (!orientation) {
-      orientation = await getOrientationFromDimensions(displayBlob);
-      dbg('  orientation from dimensions: ' + orientation);
-    }
+    // 3. Orientation from final image dimensions (always — most reliable)
+    orientation = await getOrientationFromDimensions(displayBlob);
+    dbg('  orientation from dimensions: ' + orientation);
 
     return {
       file,
