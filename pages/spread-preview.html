@@ -329,9 +329,8 @@ document.getElementById('photo-input').addEventListener('change', async (e) => {
   }
 });
 
-// ── Process files: EXIF → orientation → HEIC convert → sort ──
-async function processFiles(files) {
-  const results = await Promise.all(files.map(async (file) => {
+// ── Process one file ─────────────────────────────────────────
+async function processOneFile(file) {
     let date = null;
     let orientation = null;
     let displayBlob = file; // may be replaced by converted JPEG
@@ -404,7 +403,16 @@ async function processFiles(files) {
       date,
       name: file.name,
     };
-  }));
+}
+
+// ── Process files: EXIF → orientation → HEIC convert → sort ──
+// Sequential (not parallel) — heic-convert WASM has shared state,
+// concurrent calls to the same function instance corrupt each other.
+async function processFiles(files) {
+  const results = [];
+  for (const file of files) {
+    results.push(await processOneFile(file));
+  }
 
   const hasAnyDate = results.some(r => r.date !== null);
 
