@@ -182,6 +182,7 @@
       line-height: 18pt;
       letter-spacing: -0.02em;
       color: #493955;
+      white-space: pre-wrap;
       word-wrap: break-word;
       pointer-events: none;
       z-index: 5;
@@ -722,13 +723,14 @@ function updateCaptionOverlay(text) {
     overlay.className = 'page-caption';
     leftPage.appendChild(overlay);
   }
-  // Align with photo slot: same left/width, 18px below slot bottom
+  // Center within 70% of photo slot width, 18px below slot bottom
   const slot = leftPage.querySelector('.photo-slot');
   if (slot) {
+    const w = slot.offsetWidth * 0.70;
     overlay.style.bottom = '';
     overlay.style.top   = (slot.offsetTop + slot.offsetHeight + 18) + 'px';
-    overlay.style.left  = slot.offsetLeft + 'px';
-    overlay.style.width = slot.offsetWidth + 'px';
+    overlay.style.left  = (slot.offsetLeft + slot.offsetWidth * 0.15) + 'px';
+    overlay.style.width = w + 'px';
   }
   overlay.textContent = text;
 }
