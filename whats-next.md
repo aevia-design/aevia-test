@@ -47,6 +47,21 @@ File: `pages/spread-preview.html` — `.page-caption` CSS class.
 - Puppeteer PDF only at print submission stage (TO-DO #4)
 - No immediate action needed — current window.print() is sufficient for staff internal use
 
+## Customer-facing sequencing tool — direction decided, pending Kseniia sign-off
+
+⚠️ **Discuss with Kseniia before building.**
+
+**Decision:** The internal spread preview tool becomes the customer preview interface — same engine, constrained UI. When Aevia sends the preview link, customer sees their photos pre-sequenced and pre-captioned. They can:
+- Drag to reorder photos between slots
+- Edit caption text freely
+- Press "Approve & Pay" when happy
+
+**What they cannot do:** change template, layout variants, fonts, margins — all design decisions stay locked.
+
+**Caption regeneration:** No "Generate" button on the customer side. Aevia generates captions in the staff tool before sending the link. Customer edits the pre-written text manually. Zero API cost on customer side, and the pre-filled captions add to the "magical first impression" feeling.
+
+**Rationale:** Eliminates revision back-and-forth before payment. Customers hold private information (sequence preference, caption content) that Aevia structurally cannot supply. Giving them this instrument costs little — it's the same tool. The brand promise shifts from "we do everything" to "we handle all design decisions, you tell us your story" — which is more honest and more sustainable operationally.
+
 ## Other pending work (pre-existing)
 - Dashboard: add `previewUrl` input field (TO-DO #2)
 - Auto-email customer when status → `review_sent` (TO-DO #3)
