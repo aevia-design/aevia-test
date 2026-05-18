@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aevia — Spread Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
   <style>
@@ -154,12 +156,46 @@
       margin-bottom: 10px;
     }
     .caption-area textarea:focus { outline: none; border-color: var(--accent-dk); }
+    .caption-actions { display: flex; gap: 12px; align-items: center; }
     .generate-btn {
       font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
       border: 1px solid var(--text); padding: 10px 24px; border-radius: 100px;
       transition: background 0.15s, color 0.15s;
     }
     .generate-btn:hover { background: var(--text); color: var(--white); }
+    .print-btn {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid var(--border); padding: 10px 24px; border-radius: 100px;
+      color: var(--muted);
+      transition: background 0.15s, color 0.15s;
+    }
+    .print-btn:hover { background: var(--text); color: var(--white); border-color: var(--text); }
+
+    /* Caption overlay on left page */
+    .page-caption {
+      position: absolute;
+      bottom: 18px;
+      left: 0; right: 0;
+      text-align: center;
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #493955;
+      padding: 0 24px;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Print styles */
+    @media print {
+      nav, .upload-area, #loading-banner, #debug-panel, .warning-banner,
+      .spread-controls, .variant-badge, .caption-area, footer { display: none !important; }
+      body { background: white; margin: 0; }
+      main { margin: 0; padding: 0; max-width: none; }
+      #spread-container { display: block; }
+      .spread { display: flex; gap: 4px; page-break-inside: avoid; }
+      .page { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
 
     /* VARIANT BADGE */
     .variant-badge {
@@ -227,7 +263,10 @@
   <div class="caption-area" id="caption-area">
     <label>Caption — left page</label>
     <textarea id="caption-text" rows="3" placeholder="Caption will appear here…"></textarea>
-    <button class="generate-btn" id="generate-btn">Generate caption</button>
+    <div class="caption-actions">
+      <button class="generate-btn" id="generate-btn">Generate caption</button>
+      <button class="print-btn" id="print-btn">Print / Export</button>
+    </div>
   </div>
 </main>
 
@@ -373,9 +412,10 @@ async function processOneFile(file) {
       }
     }
 
-    // 3. Orientation from final image dimensions (always — most reliable)
-    orientation = await getOrientationFromDimensions(displayBlob);
-    dbg('  orientation from dimensions: ' + orientation);
+    // 3. Orientation + dimensions from final image (always — most reliable)
+    const { orientation: detectedOrientation, w, h } = await getOrientationFromDimensions(displayBlob);
+    orientation = detectedOrientation;
+    dbg('  orientation from dimensions: ' + orientation + ' (' + w + '×' + h + ')');
 
     return {
       file,
@@ -383,7 +423,15 @@ async function processOneFile(file) {
       orientation,
       date,
       name: file.name,
+      w, h,
+      lowRes: w > 0 && Math.min(w, h) < MIN_PRINT_PX,
     };
+}
+
+// ── Extract trailing number from filename (e.g. IMG_5256.jpg → 5256) ──
+function filenameNumber(name) {
+  const match = name.replace(/\.[^.]+$/, '').match(/(\d+)\D*$/);
+  return match ? parseInt(match[1], 10) : null;
 }
 
 // ── Process files: EXIF → orientation → HEIC convert → sort ──
@@ -395,20 +443,46 @@ async function processFiles(files) {
     results.push(await processOneFile(file));
   }
 
-  const hasAnyDate = results.some(r => r.date !== null);
+  const dateCount = results.filter(r => r.date !== null).length;
+  const numCount  = results.filter(r => filenameNumber(r.name) !== null).length;
 
-  if (!hasAnyDate) {
-    showWarning('⚠ No date metadata found — photos shown in upload order. Use the arrows above to arrange manually.');
-    return results;
+  // Resolution check — run before sorting so indices are stable
+  const lowResPhotos = results.filter(r => r.lowRes);
+  if (lowResPhotos.length) {
+    const names = lowResPhotos.map(r => '"' + r.name + '" (' + r.w + '×' + r.h + 'px)').join(', ');
+    showWarning('⚠ Low resolution: ' + names + ' — may appear soft in print. Recommend replacing with a higher-res version.');
   }
 
-  results.sort((a, b) => {
-    if (!a.date) return 1;
-    if (!b.date) return -1;
-    return new Date(a.date) - new Date(b.date);
-  });
+  if (dateCount === 3) {
+    // All have EXIF — sort by date, no warning needed
+    results.sort((a, b) => new Date(a.date) - new Date(b.date));
+    showSequenceMethod('date metadata', 'confident');
+  } else if (numCount === 3) {
+    // Fall back to filename numbers
+    results.sort((a, b) => filenameNumber(a.name) - filenameNumber(b.name));
+    if (dateCount === 0) {
+      showSequenceMethod('filename order (no date metadata found)', 'warn');
+    } else {
+      showSequenceMethod('filename order (only ' + dateCount + '/3 photos had date metadata)', 'warn');
+    }
+  } else {
+    // Nothing reliable — upload order
+    showSequenceMethod('upload order — no date or filename sequence found. Drag to reorder manually.', 'warn');
+  }
 
   return results;
+}
+
+function showSequenceMethod(method, level) {
+  const el = document.getElementById('warning-banner');
+  if (level === 'warn') {
+    el.textContent = '⚠ Sequenced by ' + method;
+    el.classList.add('visible');
+  } else {
+    // Confident — show quietly in variant badge area or just clear warning
+    clearWarning();
+  }
+  dbg('Sequence method: ' + method);
 }
 
 // ── Orientation from image natural dimensions ─────────────
@@ -424,6 +498,10 @@ async function isHeicByMagicBytes(file) {
   } catch (e) { return false; }
 }
 
+// Minimum px on shortest side for 300 DPI at largest slot (150mm → 1772px).
+// Using 1500px as practical threshold with a small safety margin.
+const MIN_PRINT_PX = 1500;
+
 function getOrientationFromDimensions(blob) {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(blob);
@@ -432,12 +510,12 @@ function getOrientationFromDimensions(blob) {
       const w = img.naturalWidth, h = img.naturalHeight;
       const result = h > w ? 'vertical' : 'horizontal';
       dbg('  dimensions: ' + w + '×' + h + ' → ' + result);
-      resolve(result);
+      resolve({ orientation: result, w, h });
       URL.revokeObjectURL(url);
     };
     img.onerror = () => {
       dbg('  WARNING: image failed to load for dimension check — defaulting to horizontal');
-      resolve('horizontal');
+      resolve({ orientation: 'horizontal', w: 0, h: 0 });
       URL.revokeObjectURL(url);
     };
     img.src = url;
@@ -463,6 +541,9 @@ function render() {
   showVariantBadge(leftVariant, rightVariant);
   renderSpread(leftVariant, rightVariant);
   renderCaptionArea();
+  // Re-apply caption overlay after DOM rebuild
+  const currentCaption = document.getElementById('caption-text').value;
+  if (currentCaption) updateCaptionOverlay(currentCaption);
 }
 
 // ── Drag state ────────────────────────────────────────────
@@ -596,14 +677,25 @@ function swapPhotos(a, b) {
 }
 
 document.getElementById('resequence-btn').addEventListener('click', () => {
-  photos = [...originalOrder];
-  clearWarning();
+  photos = [...originalOrder]; // originalOrder is already sorted by best available method
   render();
 });
 
 // ── Caption ───────────────────────────────────────────────
 function renderCaptionArea() {
   document.getElementById('caption-area').classList.add('visible');
+}
+
+function updateCaptionOverlay(text) {
+  const leftPage = document.querySelector('.spread .page:first-child');
+  if (!leftPage) return;
+  let overlay = leftPage.querySelector('.page-caption');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'page-caption';
+    leftPage.appendChild(overlay);
+  }
+  overlay.textContent = text;
 }
 
 document.getElementById('generate-btn').addEventListener('click', async () => {
@@ -632,6 +724,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
 
     const { caption } = await resp.json();
     textarea.value = caption;
+    updateCaptionOverlay(caption);
   } catch (err) {
     textarea.value = 'Error: ' + err.message;
   } finally {
@@ -651,6 +744,16 @@ async function blobToBase64(objectURL) {
   });
 }
 
+// Live caption overlay as staff types
+document.getElementById('caption-text').addEventListener('input', (e) => {
+  updateCaptionOverlay(e.target.value);
+});
+
+// Print button
+document.getElementById('print-btn').addEventListener('click', () => {
+  window.print();
+});
+
 // ── Variant badge ─────────────────────────────────────────
 function showVariantBadge(lv, rv) {
   const badge = document.getElementById('variant-badge');
@@ -661,7 +764,8 @@ function showVariantBadge(lv, rv) {
 // ── Warning helpers ───────────────────────────────────────
 function showWarning(msg) {
   const el = document.getElementById('warning-banner');
-  el.textContent = msg;
+  el.textContent = el.textContent ? el.textContent + '\n' + msg : msg;
+  el.style.whiteSpace = 'pre-line';
   el.classList.add('visible');
 }
 function clearWarning() {
