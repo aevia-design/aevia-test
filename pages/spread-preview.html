@@ -309,7 +309,6 @@ const SPREAD_SPEC = {
     L2: { side: 'left',  orientation: 'vertical',   slots: [{ cx: 95,  cy: 90,  w: 110, h: 140 }] },
     R1: { side: 'right', slots: [{ cx: 105, cy: 55,  w: 110, h: 70  }, { cx: 105, cy: 145, w: 110, h: 70  }] },
     R2: { side: 'right', slots: [{ cx: 65,  cy: 100, w: 70,  h: 100 }, { cx: 145, cy: 100, w: 70,  h: 100 }] },
-    R3: { side: 'right', slots: [{ cx: 50,  cy: 60,  w: 70,  h: 100 }, { cx: 140, cy: 132, w: 105, h: 70  }] },
   }
 };
 
@@ -453,24 +452,33 @@ async function processFiles(files) {
     showWarning('⚠ Low resolution: ' + names + ' — may appear soft in print. Recommend replacing with a higher-res version.');
   }
 
+  // Rule 1 & 2: sort by best available method
+  let sequenceMethod, sequenceLevel;
   if (dateCount === 3) {
-    // All have EXIF — sort by date, no warning needed
     results.sort((a, b) => new Date(a.date) - new Date(b.date));
-    showSequenceMethod('date metadata', 'confident');
+    sequenceMethod = 'date metadata'; sequenceLevel = 'confident';
   } else if (numCount === 3) {
-    // Fall back to filename numbers
     results.sort((a, b) => filenameNumber(a.name) - filenameNumber(b.name));
-    if (dateCount === 0) {
-      showSequenceMethod('filename order (no date metadata found)', 'warn');
-    } else {
-      showSequenceMethod('filename order (only ' + dateCount + '/3 photos had date metadata)', 'warn');
-    }
+    sequenceMethod = dateCount === 0
+      ? 'filename order (no date metadata found)'
+      : 'filename order (only ' + dateCount + '/3 photos had date metadata)';
+    sequenceLevel = 'warn';
   } else {
-    // Nothing reliable — upload order
-    showSequenceMethod('upload order — no date or filename sequence found. Drag to reorder manually.', 'warn');
+    sequenceMethod = 'upload order — no date or filename sequence found. Drag to reorder manually.';
+    sequenceLevel = 'warn';
   }
 
-  return results;
+  // Rule 3 & 4: avoid mixed right page (V+H) by moving the odd-one-out to left.
+  // With 3 photos this is always possible — majority orientation goes to the right page.
+  const reordered = avoidMixedRightPage(results);
+  if (reordered.swapped) {
+    sequenceMethod += ' · order adjusted to avoid mixed layout ("'
+      + reordered.movedName + '" moved to left page)';
+    sequenceLevel = 'warn';
+  }
+
+  showSequenceMethod(sequenceMethod, sequenceLevel);
+  return reordered.photos;
 }
 
 function showSequenceMethod(method, level) {
@@ -522,15 +530,33 @@ function getOrientationFromDimensions(blob) {
   });
 }
 
-// ── Pick variants ─────────────────────────────────────────
+// ── Rule 4: move odd-one-out to left page to avoid mixed right page ──
+// Returns { photos, swapped, movedName }.
+// Input array is already in preferred sequence order.
+function avoidMixedRightPage(arr) {
+  const [p0, p1, p2] = arr;
+  // Right page is clean — nothing to do
+  if (p1.orientation === p2.orientation) return { photos: arr, swapped: false };
+
+  // Right page is mixed. Find the odd-one-out among all three.
+  // Counts: whichever orientation appears once is the odd one.
+  const hCount = arr.filter(p => p.orientation === 'horizontal').length;
+  const oddOrientation = hCount === 1 ? 'horizontal' : 'vertical';
+  const oddIndex = arr.findIndex(p => p.orientation === oddOrientation);
+
+  // Build new array: odd-one-out goes to index 0 (left page).
+  // The other two keep their relative order for the right page.
+  const rest = arr.filter((_, i) => i !== oddIndex);
+  const reordered = [arr[oddIndex], ...rest];
+
+  dbg('Rule 4: moved "' + arr[oddIndex].name + '" to left page to avoid mixed right');
+  return { photos: reordered, swapped: true, movedName: arr[oddIndex].name };
+}
+
+// ── Pick variants — R3 removed, right page always HH or VV ───
 function pickVariants() {
-  const leftVariant  = photos[0].orientation === 'vertical' ? 'L2' : 'L1';
-  const r1 = photos[1].orientation;
-  const r2 = photos[2].orientation;
-  let rightVariant;
-  if (r1 === 'horizontal' && r2 === 'horizontal') rightVariant = 'R1';
-  else if (r1 === 'vertical' && r2 === 'vertical') rightVariant = 'R2';
-  else rightVariant = 'R3';
+  const leftVariant = photos[0].orientation === 'vertical' ? 'L2' : 'L1';
+  const rightVariant = photos[1].orientation === 'horizontal' ? 'R1' : 'R2';
   return { leftVariant, rightVariant };
 }
 
