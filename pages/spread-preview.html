@@ -4,8 +4,36 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aevia — Spread Preview</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'NT Somic';
+      src: url('../assets/fonts/NTSomic-Regular.woff2') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'NT Somic';
+      src: url('../assets/fonts/NTSomic-Medium.woff2') format('woff2');
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'EB Garamond';
+      src: url('../assets/fonts/EBGaramond-Regular.woff2') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'EB Garamond';
+      src: url('../assets/fonts/EBGaramond-Italic.woff2') format('woff2');
+      font-weight: 400;
+      font-style: italic;
+      font-display: swap;
+    }
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
   <style>
@@ -177,7 +205,7 @@
     .page-caption {
       position: absolute;
       text-align: center;
-      font-family: 'NT Comic', sans-serif;
+      font-family: 'NT Somic', sans-serif;
       font-size: 14pt;
       line-height: 18pt;
       letter-spacing: -0.02em;
