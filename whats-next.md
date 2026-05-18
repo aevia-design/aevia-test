@@ -9,45 +9,43 @@ Build the Aevia spread preview tool — a staff-facing browser tool that takes 3
 A fully functional staff browser tool for Spread 1 of the Toddler template:
 - Upload 3 photos via file picker (JPEG, HEIC/HEIF supported)
 - Reads EXIF date metadata to sequence photos chronologically
+- Filename number extraction as fallback sequencing (e.g. IMG_5256 → 5256) when EXIF unavailable
 - Detects orientation from final image dimensions (reliable, EXIF-independent)
-- Picks left variant (L1 horizontal / L2 vertical) and right variant (R1/R2/R3)
+- Picks left variant (L1 horizontal / L2 vertical) and right variant (R1 HH / R2 VV) — R3 removed
 - Renders spread at 600×600px per page with photos placed at spec coordinates
 - SVG overlays slot in as top layer (placeholder border shown until SVG files delivered)
 - Drag-and-drop between slots to manually reorder — template re-renders automatically
 - "↺ By date" button resets to chronological order
 - Caption text field with "Generate caption" button (calls GPT-4o mini vision API)
+- Caption rendered visually on left page (EB Garamond, Plum #493955, bottom-center)
+- Print button → window.print() with print CSS that hides all UI chrome
+- Per-photo resolution warning if below 1500px on shortest side (300 DPI × 150mm threshold)
+- RAW format detection with clear block message (ProRAW not accepted, matches print industry standard)
 
-### Fixes applied this session
-- **HEIC portrait orientation**: removed EXIF-based orientation detection entirely; always use `naturalWidth/naturalHeight` on the final converted image
-- **macOS Photos app upload**: HEIC files from Photos app have no MIME type/extension — fixed with magic-byte detection (ISO BMFF `ftyp` header)
-- **Drag-and-drop stop-sign cursor**: browser was intercepting drag on `<img>` elements — fixed with `img.draggable = false`
-- **R3 slot assignment**: horizontal photo was landing in vertical slot and vice versa — fixed by matching photos to slots by orientation shape before rendering
+### Session fixes (this session)
+- **Caption rendered on page (#33)**: EB Garamond overlay at bottom-center of left page, updates live as user types
+- **PDF export (#34)**: Print button wired to window.print(); dashed slot borders hidden in print via CSS scoping
+- **R3 removed (#35)**: Mixed H+V right page eliminated; smart reorder algorithm moves odd-orientation photo to left slot automatically
+- **Sequencing fallback**: EXIF date → filename trailing number → upload order (3-tier cascade)
+- **Slot border fix**: border scoped to `.photo-slot:not(.has-photo)` so filled slots are clean in print/PDF
 
 ### Deployed
 Live at: https://aevia-test.pages.dev/pages/spread-preview
 Cloudflare Pages auto-deploys from GitHub main branch.
-
-Also fixed: removed `assets/business plan/` PDF (26.7 MB) from repo — was blocking Cloudflare deploy. Added to `.gitignore`.
 </work_completed>
 
 <work_remaining>
-## Spread preview tool — next fixes (TO-DOS #33–35)
+## Spread preview tool — next fix
 
-### 33. Render caption on page (High)
-Caption is generated in a text field below the spread but not placed visually on the left page.
-Target position: bottom-center of left page, ~Y:170mm from top.
-Font: NT Comic or EB Garamond, color Plum (#493955).
+### 36. Adjust caption size and position on left page (High)
+Caption overlay is rendered but size and position need tuning. User will share reference image/spec.
+Current defaults: 13px EB Garamond, bottom-center, 18px from bottom.
+File: `pages/spread-preview.html` — `.page-caption` CSS class.
 
-### 34. PDF export button (High)
-Add export button. Simplest approach: `window.print()` with print CSS that hides UI chrome.
-Higher fidelity: server-side Puppeteer (needs Firebase Function).
-
-### 35. Remove R3 mixed variant (High)
-Decision needed: when photos[1] and [2] have mixed orientations (one H, one V),
-what should the tool do?
-- Option A: Show a warning — "these two photos have different orientations, please reorder manually"
-- Option B: Fall back silently to photos[1]'s orientation (ignore photos[2]'s orientation)
-**User to decide before implementing.**
+## PDF / preview delivery architecture (decided, not yet built)
+- Client preview = browser link (HTML render + Approve button), NOT a PDF download
+- Puppeteer PDF only at print submission stage (TO-DO #4)
+- No immediate action needed — current window.print() is sufficient for staff internal use
 
 ## Other pending work (pre-existing)
 - Dashboard: add `previewUrl` input field (TO-DO #2)
@@ -58,9 +56,8 @@ what should the tool do?
 </work_remaining>
 
 <open_questions>
-1. R3 removal: when 2 right-page photos have mixed orientations, show warning or silently fall back? (needed for TO-DO #35)
-2. Caption on page: which font — NT Comic or EB Garamond? What font size?
-3. PDF export: browser print CSS (fast, free) or Puppeteer (higher fidelity, needs backend)?
+1. Caption position: user to share reference image for exact font size, line width, and Y position spec
+2. SVG overlays: designer hasn't delivered SVG files yet — placeholder borders remain
 </open_questions>
 
 <current_state>
@@ -69,9 +66,13 @@ what should the tool do?
 - HEIC + orientation detection: working ✓
 - Drag-and-drop reorder: working ✓
 - Caption generation API: wired and working ✓
-- Caption rendered on page: NOT YET (text field only)
-- PDF export: NOT YET
-- R3 mixed variant: still active — removal pending decision
+- Caption rendered on page: working ✓ (position/size TBD — TO-DO #36)
+- PDF export (staff): working via window.print() ✓
+- R3 mixed variant: removed ✓
+- Smart reorder (avoid mixed right page): working ✓
+- Filename fallback sequencing: working ✓
+- Resolution warning: working ✓
+- RAW format block: working ✓
 - SVG overlays: placeholder borders only (designer hasn't delivered SVG files yet)
 
 ## Firebase backend

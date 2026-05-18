@@ -34,6 +34,4 @@
 | 30 | Dashboard: internal notes per order | Low | After first real orders | Free-text field on each order for staff notes (e.g. "customer requested warmer tones"). `pages/dashboard.html` |
 | 31 | Turkish / Russian language version | Low | If demand shows | After German. Based on audience data or order patterns. |
 | 32 | B2B order flow | Low | After B2C MVP validated | Photographers, HR managers, event agencies. Different pricing, bulk orders, possible white-label. |
-| 33 | Spread preview: render caption on page | High | Spread preview tool | Caption is generated in a text field but not placed visually on the left page at the correct position (bottom-center, ~Y:170mm). `pages/spread-preview.html` |
-| 34 | Spread preview: PDF export | High | Spread preview tool | Add a button to export the rendered spread as a PDF. Options: browser `window.print()` with print CSS, or Puppeteer server-side. |
-| 35 | Spread preview: remove R3 mixed variant | High | Spread preview tool | Remove H+V mixed right-page option. When photos[1] and [2] have different orientations, decide handling: show a warning to staff to manually reorder, or fall back to the orientation of photos[1]. Decision needed. `pages/spread-preview.html` |
+| 36 | Spread preview: adjust caption size and position | High | Spread preview tool | Caption overlay on left page needs size and position tuned — user will share reference image for exact spec. Current: 13px EB Garamond, bottom-center 18px from bottom. `pages/spread-preview.html` |
