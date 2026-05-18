@@ -714,6 +714,16 @@ function renderCaptionArea() {
   document.getElementById('caption-area').classList.add('visible');
 }
 
+// Typographic rules applied to overlay display only (textarea value unchanged)
+function applyTypographicRules(text) {
+  // Bind short prepositions/articles to the word that follows (no line break after them)
+  const preps = /\b(a|an|the|in|on|at|by|of|to|for|with|from|up|as|into|under|over|about|and|but|or) /gi;
+  text = text.replace(preps, (_, p) => p + ' ');
+  // Widow prevention: last word always stays with the word before it
+  text = text.replace(/ (\S+)$/, ' $1');
+  return text;
+}
+
 function updateCaptionOverlay(text) {
   const leftPage = document.querySelector('.spread .page:first-child');
   if (!leftPage) return;
@@ -732,7 +742,7 @@ function updateCaptionOverlay(text) {
     overlay.style.left  = (slot.offsetLeft + slot.offsetWidth * 0.15) + 'px';
     overlay.style.width = w + 'px';
   }
-  overlay.textContent = text;
+  overlay.textContent = applyTypographicRules(text);
 }
 
 document.getElementById('generate-btn').addEventListener('click', async () => {
