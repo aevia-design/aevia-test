@@ -110,8 +110,10 @@
       position: absolute;
       overflow: hidden;
       background: #e8e2da;
-      border: 2px dashed #ccc;
       transition: outline 0.1s;
+    }
+    .photo-slot:not(.has-photo) {
+      border: 2px dashed #ccc;
     }
     .photo-slot.has-photo { cursor: grab; }
     .photo-slot.has-photo:active { cursor: grabbing; }
