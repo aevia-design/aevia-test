@@ -726,8 +726,8 @@ function updateCaptionOverlay(text) {
   // Anchor 18px below the photo slot's bottom edge (works for both H and V variants)
   const slot = leftPage.querySelector('.photo-slot');
   if (slot) {
-    const fromBottom = leftPage.offsetHeight - (slot.offsetTop + slot.offsetHeight) + 18;
-    overlay.style.bottom = fromBottom + 'px';
+    overlay.style.bottom = '';
+    overlay.style.top = (slot.offsetTop + slot.offsetHeight + 18) + 'px';
   }
   overlay.textContent = text;
 }
