@@ -1,101 +1,111 @@
 <original_task>
-Build the Aevia spread preview tool — a staff-facing browser tool that takes 3 photos, sequences by EXIF date, picks the correct layout variant, and renders a spread preview with drag-and-drop reordering.
+Build the full Toddler template engine — a staff-facing browser tool that renders a complete photobook from order parameters, with all spreads, functional pages, photo sequencing, SVG overlays, staff reorder controls, and caption editing. Integrates with bloom.html order flow.
 </original_task>
 
 <work_completed>
-## Spread preview tool — pages/spread-preview.html
+## This session — planning only (no code written yet)
 
-### What was built
-A fully functional staff browser tool for Spread 1 of the Toddler template:
-- Upload 3 photos via file picker (JPEG, HEIC/HEIF supported)
-- Reads EXIF date metadata to sequence photos chronologically
-- Filename number extraction as fallback sequencing (e.g. IMG_5256 → 5256) when EXIF unavailable
-- Detects orientation from final image dimensions (reliable, EXIF-independent)
-- Picks left variant (L1 horizontal / L2 vertical) and right variant (R1 HH / R2 VV) — R3 removed
-- Renders spread at 600×600px per page with photos placed at spec coordinates
-- SVG overlays slot in as top layer (placeholder border shown until SVG files delivered)
-- Drag-and-drop between slots to manually reorder — template re-renders automatically
-- "↺ By date" button resets to chronological order
-- Caption text field with "Generate caption" button (calls GPT-4o mini vision API)
-- Caption rendered visually on left page (EB Garamond, Plum #493955, bottom-center)
-- Print button → window.print() with print CSS that hides all UI chrome
-- Per-photo resolution warning if below 1500px on shortest side (300 DPI × 150mm threshold)
-- RAW format detection with clear block message (ProRAW not accepted, matches print industry standard)
+### Scope clarified (understanding-the-ask)
+- Tool is staff-facing now; customer preview (captions + photo swap only) reuses same code later
+- Integration target: bloom.html order → Firestore → template engine loads order data
+- Photo count math: must tell customers exactly how many photos to prepare at order time
+- Text content (Birthday message, First words) comes from order form — staff doesn't retype
+- Spread reorder = drag spreads to different positions (not swapping layout types)
+- FPs auto-distributed initially, staff can move them
+- Local upload for testing; GCS swap is a 1-line change later (same objectURL interface)
+- FP preview images on bloom.html: use existing bloom carousel photos as placeholders
 
-### Session fixes (this session)
-- **Caption rendered on page (#33)**: EB Garamond overlay at bottom-center of left page, updates live as user types
-- **PDF export (#34)**: Print button wired to window.print(); dashed slot borders hidden in print via CSS scoping
-- **R3 removed (#35)**: Mixed H+V right page eliminated; smart reorder algorithm moves odd-orientation photo to left slot automatically
-- **Sequencing fallback**: EXIF date → filename trailing number → upload order (3-tier cascade)
-- **Slot border fix**: border scoped to `.photo-slot:not(.has-photo)` so filled slots are clean in print/PDF
+### Planning documents created
+- `.planning/BRIEF.md` — updated with full v2.0 architecture
+- `.planning/ROADMAP.md` — v2.0 phases 05–10 added
+- 10 executable plan files written across 6 phase folders:
+  - `05-01` — template-data.js config + page shell
+  - `06-01` — single spread renderer
+  - `06-02` — book sequence builder + photo allocator
+  - `06-03` — full book scroll view
+  - `07-01` — photo slot drag-and-drop
+  - `07-02` — spread reorder + type swap
+  - `07-03` — caption layer
+  - `08-01` — FP text panels (Birthday/Words) + heart clip
+  - `08-02` — special photo upload zones (Toy/Steps/Art)
+  - `09-01` — print export + resolution warnings + AI captions
+  - `10-01` — bloom.html FP selector + photo count calculator
 
-### Deployed
-Live at: https://aevia-test.pages.dev/pages/spread-preview
-Cloudflare Pages auto-deploys from GitHub main branch.
+### Key architectural decisions documented
+- New page only: `pages/template-engine.html` — spread-preview.html untouched
+- Coordinate system: px = mm × 3 (600px canvas = 200mm page)
+- Heart photo (FP1): SVG clip path does the masking, photo sits behind SVG layer
+- Photo pools: regular pool (EXIF-sorted) + named special pools per FP type
+- Caption state stored in window.captionState — survives spread re-renders
+- SVG file map fully resolved for all 14 standard + 15 functional page SVGs
 </work_completed>
 
 <work_remaining>
-## Spread preview tool — next fix
+## Template engine — execute plans in order
 
-### 36. Adjust caption size and position on left page (High)
-Caption overlay is rendered but size and position need tuning. User will share reference image/spec.
-Current defaults: 13px EB Garamond, bottom-center, 18px from bottom.
-File: `pages/spread-preview.html` — `.page-caption` CSS class.
+### Phase 05 — Data + Shell (start here)
+**05-01**: Create `assets/Template_Toddler/template-data.js` + `pages/template-engine.html` shell
+- See `.planning/phases/05-data-shell/05-01-PLAN.md` for full spec
+- All Excel data is pre-parsed and included in the plan — no need to re-read the xlsx
+- SVG file map is fully resolved in the plan
 
-## PDF / preview delivery architecture (decided, not yet built)
-- Client preview = browser link (HTML render + Approve button), NOT a PDF download
-- Puppeteer PDF only at print submission stage (TO-DO #4)
-- No immediate action needed — current window.print() is sufficient for staff internal use
+### Phase 06 — Renderer
+- 06-01: Single spread renderer
+- 06-02: Book sequence builder (page count + FP → ordered spread list + photo allocator)
+- 06-03: Full book scroll view
 
-## Customer-facing sequencing tool — direction decided, pending Kseniia sign-off
+### Phase 07 — Staff Interactions
+- 07-01: Photo slot drag-and-drop
+- 07-02: Spread reorder + type swap
+- 07-03: Caption layer (positioned per Excel spec)
 
-⚠️ **Discuss with Kseniia before building.**
+### Phase 08 — Functional Pages
+- 08-01: Text panels (Birthday/Words) + heart clip photo
+- 08-02: Special photo upload zones
 
-**Decision:** The internal spread preview tool becomes the customer preview interface — same engine, constrained UI. When Aevia sends the preview link, customer sees their photos pre-sequenced and pre-captioned. They can:
-- Drag to reorder photos between slots
-- Edit caption text freely
-- Press "Approve & Pay" when happy
+### Phase 09 — Export
+- 09-01: Print CSS + resolution warnings + AI caption generation
 
-**What they cannot do:** change template, layout variants, fonts, margins — all design decisions stay locked.
+### Phase 10 — bloom.html Amendments
+- 10-01: "Personalise your book" FP selector section + photo count calculator + order form integration
+- FP preview images: use existing bloom.html carousel photos as placeholders
+- Conditional text fields for Birthday message + First words in order form
 
-**Caption regeneration:** No "Generate" button on the customer side. Aevia generates captions in the staff tool before sending the link. Customer edits the pre-written text manually. Zero API cost on customer side, and the pre-filled captions add to the "magical first impression" feeling.
-
-**Rationale:** Eliminates revision back-and-forth before payment. Customers hold private information (sequence preference, caption content) that Aevia structurally cannot supply. Giving them this instrument costs little — it's the same tool. The brand promise shifts from "we do everything" to "we handle all design decisions, you tell us your story" — which is more honest and more sustainable operationally.
-
-## Other pending work (pre-existing)
-- Dashboard: add `previewUrl` input field (TO-DO #2)
-- Auto-email customer when status → `review_sent` (TO-DO #3)
-- Build Puppeteer PDF pipeline (TO-DO #4)
+## Pre-existing work (unchanged)
+- Dashboard: `previewUrl` input field (TO-DO #2)
+- Auto-email on status → review_sent (TO-DO #3)
+- Puppeteer PDF pipeline (TO-DO #4)
 - 6 missing product pages: vows, radiance, wander, terrain, sprout, wonder
-- `motif-engine/` and `functions/caption/` still untracked in git
+- Caption position spec (TO-DO #38) — resolved: data is in Toddler_sizing_full.xlsx and compiled into plans
 </work_remaining>
 
 <open_questions>
-1. Caption position: user to share reference image for exact font size, line width, and Y position spec
-2. SVG overlays: designer hasn't delivered SVG files yet — placeholder borders remain
+1. FP1 "upper right" caption position — is it horizontal text or rotated 90°? Needs visual confirmation during 07-03.
+2. FP2 right page x=100, y=100, w=200, h=200 — this overflows a 200mm page. Likely means full bleed (photo fills entire page). Confirm interpretation during 06-01.
+3. Book page count minimum — is 20 the minimum or can it be lower? (Current dropdown starts at 20.)
+4. How does the order form currently handle page count on bloom.html — is there an existing field or does 10-01 add one from scratch?
 </open_questions>
 
 <current_state>
-## Spread preview tool
-- Core functionality: complete and deployed ✓
-- HEIC + orientation detection: working ✓
-- Drag-and-drop reorder: working ✓
-- Caption generation API: wired and working ✓
-- Caption rendered on page: working ✓ (position/size TBD — TO-DO #36)
-- PDF export (staff): working via window.print() ✓
-- R3 mixed variant: removed ✓
-- Smart reorder (avoid mixed right page): working ✓
-- Filename fallback sequencing: working ✓
-- Resolution warning: working ✓
-- RAW format block: working ✓
-- SVG overlays: placeholder borders only (designer hasn't delivered SVG files yet)
+## Spread preview tool (pages/spread-preview.html)
+- All features complete and deployed ✓
+- Caption position/size TO-DO #36 still open (user hasn't shared reference image)
+
+## Template engine (pages/template-engine.html)
+- Not started — 10 plans written and ready to execute
+
+## bloom.html
+- Not amended yet — plan 10-01 written and ready
 
 ## Firebase backend
-- `convertHeic`, `generateCaption`, `createUploadSession` — all deployed and live
-- `exifr` added as dependency (for HEIC EXIF reading in convertHeic function)
+- All functions deployed and live ✓
 
 ## Cloudflare Pages
 - Auto-deploys from GitHub main
 - Live URL: https://aevia-test.pages.dev
-- Business plan PDF removed from repo to stay under 25 MB file limit
+
+## Assets
+- Toddler_sizing_full.xlsx: delivered and parsed into plans ✓
+- All SVGs (SP + FP spreads): delivered and file map resolved ✓
+- Old `Spread 1/` folder (L1/L2/R1/R2): redundant — replaced by SP Spread 1
 </current_state>
