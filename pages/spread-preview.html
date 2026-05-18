@@ -176,14 +176,13 @@
     /* Caption overlay on left page */
     .page-caption {
       position: absolute;
-      left: 0; right: 0;
       text-align: center;
       font-family: 'NT Comic', sans-serif;
-      font-size: 16pt;
+      font-size: 14pt;
       line-height: 18pt;
       letter-spacing: -0.02em;
       color: #493955;
-      padding: 0 24px;
+      word-wrap: break-word;
       pointer-events: none;
       z-index: 5;
     }
@@ -723,11 +722,13 @@ function updateCaptionOverlay(text) {
     overlay.className = 'page-caption';
     leftPage.appendChild(overlay);
   }
-  // Anchor 18px below the photo slot's bottom edge (works for both H and V variants)
+  // Align with photo slot: same left/width, 18px below slot bottom
   const slot = leftPage.querySelector('.photo-slot');
   if (slot) {
     overlay.style.bottom = '';
-    overlay.style.top = (slot.offsetTop + slot.offsetHeight + 18) + 'px';
+    overlay.style.top   = (slot.offsetTop + slot.offsetHeight + 18) + 'px';
+    overlay.style.left  = slot.offsetLeft + 'px';
+    overlay.style.width = slot.offsetWidth + 'px';
   }
   overlay.textContent = text;
 }
