@@ -176,12 +176,12 @@
     /* Caption overlay on left page */
     .page-caption {
       position: absolute;
-      bottom: 18px;
       left: 0; right: 0;
       text-align: center;
-      font-family: 'EB Garamond', Georgia, serif;
-      font-size: 13px;
-      line-height: 1.5;
+      font-family: 'NT Comic', sans-serif;
+      font-size: 16pt;
+      line-height: 18pt;
+      letter-spacing: -0.02em;
       color: #493955;
       padding: 0 24px;
       pointer-events: none;
@@ -722,6 +722,12 @@ function updateCaptionOverlay(text) {
     overlay = document.createElement('div');
     overlay.className = 'page-caption';
     leftPage.appendChild(overlay);
+  }
+  // Anchor 18px below the photo slot's bottom edge (works for both H and V variants)
+  const slot = leftPage.querySelector('.photo-slot');
+  if (slot) {
+    const fromBottom = leftPage.offsetHeight - (slot.offsetTop + slot.offsetHeight) + 18;
+    overlay.style.bottom = fromBottom + 'px';
   }
   overlay.textContent = text;
 }
