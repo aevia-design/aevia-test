@@ -11,10 +11,6 @@
       }
 
       .cls-3 {
-        fill: #fdd16f;
-      }
-
-      .cls-4 {
         clip-path: url(#clippath);
       }
     </style>
@@ -28,13 +24,12 @@
   </defs>
   <g id="SP_07_V_Left" data-name="SP 07 V Left">
     <g id="Design_08_Left" data-name="Design 08 Left">
-      <g class="cls-4">
+      <g class="cls-3">
         <use transform="translate(402.55 501.52) rotate(33.65) scale(.24)" xlink:href="#image"/>
       </g>
     </g>
   </g>
   <g id="SP_07_H_Left" data-name="SP 07 H Left">
-    <rect id="Background_Color" data-name="Background Color" class="cls-3" x="-8.5" y="-8.5" width="583.94" height="583.94"/>
     <g id="Design_08_Left-2" data-name="Design 08 Left">
       <g class="cls-2">
         <use transform="translate(390.4 -209.03) rotate(33.65) scale(.24)" xlink:href="#image"/>

@@ -10,18 +10,13 @@
       }
 
       .cls-2 {
-        fill: #f8ead9;
-      }
-
-      .cls-3 {
         letter-spacing: -.03em;
       }
     </style>
   </defs>
   <g id="FP_Art_12_H_Right" data-name="FP Art 12 H Right">
-    <rect id="Background_Color" data-name="Background Color" class="cls-2" x="-8.5" y="-8.29" width="583.94" height="583.94"/>
     <g id="Layout_Horizontal_" data-name="Layout (Horizontal)">
-      <text class="cls-1" transform="translate(128.89 89.13)"><tspan x="0" y="0">ART GALLE</tspan><tspan class="cls-3" x="273.5" y="0">R</tspan><tspan x="304.89" y="0">Y</tspan></text>
+      <text class="cls-1" transform="translate(128.89 89.13)"><tspan x="0" y="0">ART GALLE</tspan><tspan class="cls-2" x="273.5" y="0">R</tspan><tspan x="304.89" y="0">Y</tspan></text>
     </g>
   </g>
 </svg>

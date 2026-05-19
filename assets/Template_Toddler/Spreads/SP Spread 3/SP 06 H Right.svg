@@ -21,10 +21,6 @@
       .cls-5 {
         clip-path: url(#clippath-2);
       }
-
-      .cls-6 {
-        fill: #f8ead9;
-      }
     </style>
     <clipPath id="clippath-1">
       <rect id="_Clipping_Path_" data-name="&amp;lt;Clipping Path&amp;gt;" class="cls-1" x="-602.08" y="675.04" width="583.94" height="583.94"/>
@@ -55,7 +51,6 @@
     </g>
   </g>
   <g id="SP_06_H_Right" data-name="SP 06 H Right">
-    <rect id="Background_Color" data-name="Background Color" class="cls-6" x="-8.5" y="-8.5" width="583.94" height="583.94"/>
     <g id="Design_05_Right" data-name="Design 05 Right">
       <g class="cls-3">
         <use transform="translate(334.74 880.92) rotate(156.57) scale(.36)" xlink:href="#image"/>

@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aevia — Template Engine (Staff)</title>
+  <script src="../assets/Template_Toddler/template-data.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+  <style>
+    :root {
+      --bg:        #fafaf8;
+      --surface:   #f3efe9;
+      --border:    #e4dfd8;
+      --text:      #1a1a1a;
+      --muted:     #7d7570;
+      --accent-dk: #a8895f;
+      --white:     #ffffff;
+      --serif:     Georgia, 'Times New Roman', serif;
+      --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      --config-h:  68px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    img { display: block; max-width: 100%; }
+    button { cursor: pointer; border: none; background: none; font: inherit; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ── NAV ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 56px;
+      background: rgba(250,250,248,0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo img { height: 28px; width: auto; display: block; }
+    .nav-logo-text { font-family: var(--serif); font-size: 18px; letter-spacing: -0.01em; }
+    .nav-links { display: flex; gap: 32px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .nav-links a { transition: color 0.15s; } .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid var(--text); padding: 8px 20px; border-radius: 100px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-cta:hover { background: var(--text); color: var(--white); }
+    .nav-burger { display: none; flex-direction: column; gap: 5px; padding: 4px; }
+    .nav-burger span { display: block; width: 22px; height: 1.5px; background: var(--text); }
+
+    /* ── CONFIG BAR ── */
+    .config-bar {
+      position: fixed; top: 69px; left: 0; right: 0; z-index: 90;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      height: var(--config-h);
+      display: flex; align-items: center; gap: 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .config-group {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .config-label {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); white-space: nowrap;
+    }
+    .config-select {
+      font-family: var(--sans); font-size: 13px; color: var(--text);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 6px 10px; background: var(--bg);
+      cursor: pointer; outline: none;
+      transition: border-color 0.15s;
+    }
+    .config-select:focus { border-color: var(--text); }
+
+    .config-divider {
+      width: 1px; height: 32px; background: var(--border); flex-shrink: 0;
+    }
+
+    .fp-group {
+      display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;
+    }
+    .fp-checkbox-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; color: var(--muted);
+      cursor: pointer; padding: 4px 8px; border-radius: 4px;
+      border: 1px solid transparent;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .fp-checkbox-item input[type="checkbox"] { accent-color: var(--text); cursor: pointer; }
+    .fp-checkbox-item:hover { border-color: var(--border); color: var(--text); }
+    .fp-checkbox-item:has(input:checked) {
+      background: var(--surface); border-color: var(--border); color: var(--text);
+    }
+
+    .config-upload-btn {
+      margin-left: auto; flex-shrink: 0;
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      border: 1px solid var(--text); border-radius: 100px;
+      padding: 9px 22px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .config-upload-btn:hover { background: var(--text); color: var(--white); }
+
+    /* ── PHOTO STRIP ── */
+    .photo-strip-wrap {
+      display: none;
+      position: fixed; top: calc(69px + var(--config-h)); left: 0; right: 0; z-index: 80;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 10px 40px;
+    }
+    .photo-strip-wrap.visible { display: block; }
+    .photo-strip {
+      display: flex; gap: 8px;
+      overflow-x: auto; overflow-y: hidden;
+      padding-bottom: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .photo-strip::-webkit-scrollbar { height: 4px; }
+    .photo-strip::-webkit-scrollbar-track { background: transparent; }
+    .photo-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .photo-thumb {
+      flex-shrink: 0;
+      width: 60px; height: 60px;
+      border-radius: 4px; overflow: hidden;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      position: relative;
+    }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-thumb.assigned { border-color: var(--border); opacity: 0.5; }
+    .photo-thumb.unassigned { border-color: var(--accent-dk); }
+    .photo-thumb .warn-badge {
+      position: absolute; bottom: 2px; right: 2px;
+      background: #f4ca6f; color: #493955;
+      font-size: 8px; padding: 1px 3px; border-radius: 2px;
+      font-weight: 700;
+    }
+    .photo-strip-label {
+      font-size: 11px; color: var(--muted); margin-bottom: 6px;
+      letter-spacing: 0.06em; text-transform: uppercase;
+    }
+
+    /* ── MAIN CONTENT AREA ── */
+    .page-body {
+      padding-top: calc(69px + var(--config-h) + 32px);
+      min-height: 100vh;
+    }
+    .page-body.strip-visible {
+      padding-top: calc(69px + var(--config-h) + 88px + 32px);
+    }
+    .page-body.log-visible {
+      padding-top: calc(69px + var(--config-h) + 88px + 162px + 32px);
+    }
+
+    /* ── BOOK CANVAS ── */
+    .book-canvas-wrap {
+      max-width: 1400px; margin: 0 auto;
+      padding: 0 40px 80px;
+    }
+    #book-canvas {
+      min-height: 400px;
+    }
+    .canvas-placeholder {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 400px;
+      border: 2px dashed var(--border); border-radius: 8px;
+      color: var(--muted); text-align: center;
+      padding: 60px 40px;
+    }
+    .canvas-placeholder-icon {
+      font-size: 48px; margin-bottom: 20px; opacity: 0.4;
+    }
+    .canvas-placeholder h3 {
+      font-family: var(--serif); font-size: 22px; font-weight: 400;
+      color: var(--text); margin-bottom: 10px;
+    }
+    .canvas-placeholder p {
+      font-size: 14px; color: var(--muted); max-width: 380px; line-height: 1.6;
+    }
+
+    /* ── PHOTO STATUS BAR ── */
+    .photo-status-bar {
+      display: flex; gap: 24px; align-items: center;
+      padding: 12px 0 20px;
+      font-size: 12px; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+    .photo-status-bar .stat { display: flex; gap: 6px; align-items: center; }
+    .photo-status-bar .stat-value { font-size: 14px; font-weight: 600; color: var(--text); }
+    .photo-status-bar .stat-value.warn { color: #c0860a; }
+
+    /* ── SPREAD ROW ── */
+    .spread-row {
+      margin-bottom: 48px;
+    }
+    .spread-row-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 10px;
+    }
+    .spread-index-badge {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      flex-shrink: 0;
+    }
+    .spread-title {
+      font-size: 12px; color: var(--text); font-weight: 500;
+    }
+    .spread-type-tag {
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); border: 1px solid var(--border);
+      border-radius: 100px; padding: 2px 8px;
+    }
+    .spread-type-tag.fp { color: #8060a8; border-color: #c8aae0; background: #f5f0fc; }
+    .spread-controls-strip {
+      margin-left: auto; display: flex; gap: 8px;
+    }
+    .spread-ctrl-btn {
+      font-size: 11px; letter-spacing: 0.04em;
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 4px 10px; color: var(--muted);
+      opacity: 0.5; cursor: not-allowed;
+    }
+    .spread-pages {
+      display: flex; gap: 4px;
+    }
+    @media (max-width: 1399px) {
+      .spread-pages { flex-direction: column; gap: 2px; }
+      .spread-pages::after {
+        content: ''; display: block; height: 1px;
+        background: var(--border); margin: 6px 0;
+        display: none; /* separator only shown between stacked pages */
+      }
+    }
+    .page-canvas {
+      position: relative;
+      width: 600px; height: 600px;
+      background: #FDF1E5;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .page-canvas.right-only-hidden { display: none; }
+    .page-canvas .svg-overlay {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+    /* fallback bg — overridden per variant by variant.bgColor */
+    .photo-slot {
+      position: absolute;
+      overflow: hidden;
+      background: #e8dfd0;
+      z-index: 1;
+    }
+    .photo-slot img.slot-photo {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .photo-slot .slot-placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: #a8a094; text-align: center; padding: 8px;
+      line-height: 1.4;
+    }
+
+    /* ── DEBUG LOG ── */
+    .debug-log-wrap {
+      display: none;
+      position: fixed; left: 0; right: 0; z-index: 75;
+      top: calc(69px + var(--config-h) + 88px);
+      background: #1a1a1a; color: #c8f0b0;
+      font-family: monospace; font-size: 11px; line-height: 1.6;
+      padding: 10px 40px 12px;
+      border-bottom: 1px solid #333;
+      max-height: 160px; overflow-y: auto;
+    }
+    .debug-log-wrap.visible { display: block; }
+    .debug-log-line { white-space: pre; }
+    .debug-log-line.warn  { color: #f4ca6f; }
+    .debug-log-line.error { color: #f47e67; }
+    .debug-log-line.info  { color: #c8f0b0; }
+    .debug-log-line.muted { color: #888; }
+
+    /* ── FOOTER ── */
+    .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 64px 56px 48px; }
+    .footer-inner { max-width: 1160px; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 48px; }
+    .foot-logo { font-family: var(--serif); font-size: 20px; margin-bottom: 14px; }
+    .foot-brand p { font-size: 13px; color: var(--muted); line-height: 1.7; max-width: 220px; }
+    .foot-form { margin-top: 20px; display: flex; gap: 8px; }
+    .foot-form input { flex: 1; background: var(--white); border: 1px solid var(--border); border-radius: 3px; padding: 8px 12px; font-size: 12px; font-family: var(--sans); color: var(--text); outline: none; }
+    .foot-form input:focus { border-color: var(--text); }
+    .foot-form button { background: var(--text); color: var(--white); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 16px; border-radius: 3px; }
+    .foot-col h5 { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+    .foot-col a { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; transition: color 0.15s; }
+    .foot-col a:hover { color: var(--text); }
+    .foot-base { max-width: 1160px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="home.html" class="nav-logo">
+    <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+    <span class="nav-logo-text" style="display:none;">aevia</span>
+  </a>
+  <div class="nav-links">
+    <a href="home.html">Home</a>
+    <a href="about.html">About us</a>
+    <a href="help.html">Help</a>
+  </div>
+  <a href="collections.html" class="nav-cta">Our Collections</a>
+  <button class="nav-burger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ── CONFIG BAR ── -->
+<div class="config-bar">
+
+  <div class="config-group">
+    <label class="config-label" for="page-count-select">Page count</label>
+    <select class="config-select" id="page-count-select">
+      <option value="40">40</option>
+      <option value="80">80</option>
+    </select>
+  </div>
+
+  <div class="config-divider"></div>
+
+  <div class="config-group">
+    <span class="config-label">Functional pages</span>
+    <div class="fp-group">
+      <label class="fp-checkbox-item">
+        <input type="checkbox" name="fp" value="FP1" /> Birthday wishes
+      </label>
+      <label class="fp-checkbox-item">
+        <input type="checkbox" name="fp" value="FP2" /> Funny words
+      </label>
+      <label class="fp-checkbox-item">
+        <input type="checkbox" name="fp" value="FP3" /> Favourite toy
+      </label>
+      <label class="fp-checkbox-item">
+        <input type="checkbox" name="fp" value="FP4" /> First steps
+      </label>
+      <label class="fp-checkbox-item">
+        <input type="checkbox" name="fp" value="FP5" /> Art gallery
+      </label>
+    </div>
+  </div>
+
+  <input type="file" id="photo-file-input" accept=".jpg,.jpeg,.heic,.heif" multiple hidden />
+  <button class="config-upload-btn" id="upload-btn">Upload Photos</button>
+
+</div>
+
+<!-- ── PHOTO STRIP ── -->
+<div class="photo-strip-wrap" id="photo-strip-wrap">
+  <div class="photo-strip-label">Photos — <span id="strip-count">0</span> uploaded</div>
+  <div class="photo-strip" id="photo-strip"></div>
+</div>
+
+<!-- ── DEBUG LOG ── -->
+<div class="debug-log-wrap" id="debug-log-wrap">
+  <div id="debug-log"></div>
+</div>
+
+<!-- ── MAIN CONTENT ── -->
+<div class="page-body" id="page-body">
+  <div class="book-canvas-wrap">
+    <div id="book-canvas">
+      <div class="canvas-placeholder">
+        <div class="canvas-placeholder-icon">&#128218;</div>
+        <h3>No photos yet</h3>
+        <p>Upload photos and configure the book above to begin. Photos will be sorted automatically by date taken.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="foot-brand">
+      <div class="foot-logo">
+        <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia" style="height:28px; width:auto;"
+             onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');" />
+      </div>
+      <p>A premium photo book studio in Vienna. We design and print; you keep forever.</p>
+      <div class="foot-form">
+        <input type="email" placeholder="Email address" />
+        <button>Subscribe</button>
+      </div>
+    </div>
+    <div class="foot-col">
+      <h5>Products</h5>
+      <a href="collections.html">All templates</a>
+      <a href="collections.html#love">Love</a>
+      <a href="collections.html#kids">Kids</a>
+      <a href="collections.html#adventures">Adventures</a>
+    </div>
+    <div class="foot-col">
+      <h5>Company</h5>
+      <a href="about.html">Our story</a>
+      <a href="home.html#how">How it works</a>
+      <a href="#">Quality promise</a>
+    </div>
+    <div class="foot-col">
+      <h5>Support</h5>
+      <a href="help.html">FAQ</a>
+      <a href="#">Instagram</a>
+      <a href="help.html#contact">Contact</a>
+    </div>
+  </div>
+  <div class="foot-base">
+    <span>© 2026 Aevia. All rights reserved.</span>
+    <span>Terms of service</span>
+  </div>
+</footer>
+
+<script>
+  /* ═══════════════════════════════════════════
+     GLOBAL STATE
+  ═══════════════════════════════════════════ */
+  window.photoPool       = [];   // [{ file, url, date, orientation, name, w, h, lowRes }]
+  window.bookAssignments = {};   // { spreadIndex: { left:[poolIdx|null,...], right:[...] } }
+  window.captionState    = {};   // { spreadIndex: { left:{1:'text'}, right:{1:'text'} } }
+  window.specialPhotos   = { FP3: [], FP4: [], FP5: [] };
+
+  const SCALE = 3;               // px per mm
+  const HEIC_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/convertHeic';
+  const SVG_BASE      = '../assets/Template_Toddler/Spreads/';
+
+  /* ── DEBUG LOG helpers ── */
+  function dbLog(msg, level) {
+    const wrap = document.getElementById('debug-log-wrap');
+    const log  = document.getElementById('debug-log');
+    const line = document.createElement('div');
+    line.className = 'debug-log-line ' + (level || 'info');
+    line.textContent = msg;
+    log.appendChild(line);
+    wrap.scrollTop = wrap.scrollHeight;
+    wrap.classList.add('visible');
+    document.getElementById('page-body').classList.add('log-visible');
+  }
+  function dbClear() {
+    document.getElementById('debug-log').innerHTML = '';
+    document.getElementById('debug-log-wrap').classList.remove('visible');
+    document.getElementById('page-body').classList.remove('log-visible');
+  }
+
+  /* ═══════════════════════════════════════════
+     PHOTO PROCESSING  (EXIF + HEIC + orientation)
+  ═══════════════════════════════════════════ */
+
+  function isRaw(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    return ['dng','raw','cr2','nef','arw'].includes(ext);
+  }
+
+  async function isHeicFile(file) {
+    if (file.type === 'image/heic' || file.type === 'image/heif') return true;
+    if (/\.(heic|heif)$/i.test(file.name)) return true;
+    try {
+      const buf = await file.slice(0, 12).arrayBuffer();
+      const b = new Uint8Array(buf);
+      const ftyp  = String.fromCharCode(b[4], b[5], b[6], b[7]);
+      const brand = String.fromCharCode(b[8], b[9], b[10], b[11]);
+      return ftyp === 'ftyp' && /heic|heix|hevc|hevx|mif1|msf1/i.test(brand);
+    } catch (e) { return false; }
+  }
+
+  function getOrientationFromBlob(blob) {
+    return new Promise(resolve => {
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        const w = img.naturalWidth, h = img.naturalHeight;
+        const orientation = h > w ? 'vertical' : 'horizontal';
+        URL.revokeObjectURL(url);
+        resolve({ orientation, w, h });
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve({ orientation: 'horizontal', w: 0, h: 0 });
+      };
+      img.src = url;
+    });
+  }
+
+  function filenameNumber(name) {
+    const match = name.replace(/\.[^.]+$/, '').match(/(\d+)\D*$/);
+    return match ? parseInt(match[1], 10) : null;
+  }
+
+  async function processOneFile(file) {
+    if (isRaw(file)) {
+      dbLog('✗ BLOCKED (RAW): ' + file.name, 'error');
+      alert('RAW files are not supported.\nPlease export "' + file.name + '" as JPEG first.');
+      return null;
+    }
+
+    dbLog('→ Processing: ' + file.name + ' (' + (file.type || 'unknown type') + ', ' + (file.size / 1024 | 0) + ' KB)', 'muted');
+
+    let date = null;
+    let exifOrientation = 1;
+    let displayBlob = file;
+
+    // 1. EXIF date + orientation tag
+    try {
+      const exif = await exifr.parse(file, ['DateTimeOriginal', 'Orientation']);
+      if (exif && exif.DateTimeOriginal) {
+        date = exif.DateTimeOriginal;
+        dbLog('  EXIF date: ' + date, 'muted');
+      } else {
+        dbLog('  EXIF date: none', 'muted');
+      }
+      if (exif && exif.Orientation) exifOrientation = exif.Orientation;
+    } catch (e) { dbLog('  EXIF read failed: ' + e.message, 'muted'); }
+
+    // 2. HEIC → JPEG (with retry, matching spread-preview.html)
+    if (await isHeicFile(file)) {
+      dbLog('  HEIC detected — converting…', 'warn');
+      let lastErr;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const resp = await fetch(HEIC_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: file,
+          });
+          if (!resp.ok) throw new Error('Server error ' + resp.status);
+          const blob = await resp.blob();
+          if (blob.size < 1000) throw new Error('Empty response (' + blob.size + ' bytes)');
+          displayBlob = blob;
+          lastErr = null;
+          dbLog('  HEIC → JPEG OK (attempt ' + attempt + ', ' + (blob.size / 1024 | 0) + ' KB)', 'info');
+          // Try to get EXIF date from converted JPEG if not already found
+          if (!date) {
+            try {
+              const exif2 = await exifr.parse(displayBlob, ['DateTimeOriginal']);
+              if (exif2 && exif2.DateTimeOriginal) { date = exif2.DateTimeOriginal; dbLog('  EXIF date from converted JPEG: ' + date, 'muted'); }
+            } catch (e) { /* ignore */ }
+          }
+          break;
+        } catch (e) { lastErr = e; dbLog('  HEIC attempt ' + attempt + ' failed: ' + e.message, 'warn'); }
+      }
+      if (lastErr) {
+        dbLog('✗ HEIC conversion failed: ' + file.name, 'error');
+        return null;
+      }
+    }
+
+    // 3. Orientation — read visual pixel dims from browser Image object.
+    //    Modern browsers (Chrome, Firefox, Safari) auto-rotate images based on EXIF Orientation,
+    //    so img.naturalWidth/naturalHeight always reflect the correct visual orientation.
+    //    We do NOT apply any additional EXIF swap — that would double-rotate and invert the result.
+    const { orientation, w, h } = await getOrientationFromBlob(displayBlob);
+    const objectURL = URL.createObjectURL(displayBlob);
+    const lowRes = w > 0 && Math.min(w, h) < 1500;
+
+    dbLog('  ✓ ' + orientation.toUpperCase() + '  ' + w + '×' + h + (exifOrientation !== 1 ? ' [EXIF orient=' + exifOrientation + ']' : '') + (lowRes ? '  ⚠ LOW RES' : ''), orientation === 'vertical' ? 'info' : 'muted');
+
+    return { file, url: objectURL, date, name: file.name, w, h, orientation, lowRes };
+  }
+
+  // Ensure right page is all-H or all-V — move the odd-one-out to the left slot.
+  // Mirrors avoidMixedRightPage() from spread-preview.html.
+  function avoidMixedRightPage(arr) {
+    if (arr.length < 3) return { photos: arr, swapped: false };
+    const [p0, p1, p2] = arr;
+    if (p1.orientation === p2.orientation) return { photos: arr, swapped: false };
+    const hCount = arr.filter(p => p.orientation === 'horizontal').length;
+    const oddOrientation = hCount === 1 ? 'horizontal' : 'vertical';
+    const oddIndex = arr.findIndex(p => p.orientation === oddOrientation);
+    const rest = arr.filter((_, i) => i !== oddIndex);
+    dbLog('Swap: moved "' + arr[oddIndex].name + '" to left page to avoid mixed right-page orientations', 'warn');
+    return { photos: [arr[oddIndex], ...rest], swapped: true };
+  }
+
+  /* ═══════════════════════════════════════════
+     UPLOAD HANDLER
+  ═══════════════════════════════════════════ */
+
+  document.getElementById('upload-btn').addEventListener('click', () => {
+    document.getElementById('photo-file-input').click();
+  });
+
+  document.getElementById('photo-file-input').addEventListener('change', async function () {
+    const files = Array.from(this.files);
+    if (!files.length) return;
+
+    // Revoke old objectURLs
+    window.photoPool.forEach(p => URL.revokeObjectURL(p.url));
+    window.photoPool = [];
+    window.bookAssignments = {};
+    window.captionState = {};
+    dbClear();
+
+    // Show loading state
+    document.getElementById('book-canvas').innerHTML =
+      '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">⏳</div><h3>Processing photos…</h3></div>';
+
+    dbLog('═══ Processing ' + files.length + ' file(s) ═══', 'info');
+
+    // Sequential processing — HEIC WASM has shared state, parallel corrupts it
+    const processed = [];
+    for (const file of files) {
+      const result = await processOneFile(file);
+      if (result) processed.push(result);
+    }
+
+    // Sort: EXIF date → filename trailing number → upload order
+    processed.sort((a, b) => {
+      if (a.date && b.date) return new Date(a.date) - new Date(b.date);
+      if (a.date && !b.date) return -1;
+      if (!a.date && b.date) return 1;
+      const na = filenameNumber(a.name), nb = filenameNumber(b.name);
+      if (na !== null && nb !== null) return na - nb;
+      if (na !== null) return -1;
+      if (nb !== null) return 1;
+      return files.indexOf(a.file) - files.indexOf(b.file);
+    });
+
+    const hasAllExif = processed.every(p => p.date);
+    const sortMethod = hasAllExif ? 'EXIF date' : processed.some(p => filenameNumber(p.name) !== null) ? 'filename number' : 'upload order';
+    dbLog('Sort method: ' + sortMethod, hasAllExif ? 'info' : 'warn');
+    dbLog('Final order: ' + processed.map((p, i) => (i + 1) + '. ' + p.name + ' [' + p.orientation.charAt(0).toUpperCase() + ']').join('  '), 'info');
+
+    window.photoPool = processed;
+
+    renderPhotoStrip();
+    renderBook();
+  });
+
+  /* ═══════════════════════════════════════════
+     PHOTO STRIP
+  ═══════════════════════════════════════════ */
+
+  function renderPhotoStrip() {
+    const strip = document.getElementById('photo-strip');
+    const wrap  = document.getElementById('photo-strip-wrap');
+    const body  = document.getElementById('page-body');
+
+    strip.innerHTML = '';
+    document.getElementById('strip-count').textContent = window.photoPool.length;
+
+    window.photoPool.forEach((photo, i) => {
+      const thumb = document.createElement('div');
+      thumb.className = 'photo-thumb unassigned';
+      thumb.dataset.index = i;
+      thumb.title = photo.name;
+
+      const img = document.createElement('img');
+      img.src = photo.url;
+      img.alt = photo.name;
+      thumb.appendChild(img);
+
+      if (photo.lowRes) {
+        const badge = document.createElement('div');
+        badge.className = 'warn-badge';
+        badge.textContent = '⚠ Low res';
+        thumb.appendChild(badge);
+      }
+
+      strip.appendChild(thumb);
+    });
+
+    wrap.classList.add('visible');
+    body.classList.add('strip-visible');
+  }
+
+  /* ═══════════════════════════════════════════
+     SINGLE SPREAD RENDERER
+  ═══════════════════════════════════════════ */
+
+  /*
+   * renderSpread(spreadId, photoSlice, spreadIndex)
+   *   spreadId    — key from TODDLER_DATA.spreads, e.g. 'SP1'
+   *   photoSlice  — { left: [poolIdx|null,...], right: [...] }
+   *   spreadIndex — integer, for bookAssignments + captionState keys
+   *
+   * Returns a .spread-row DOM element ready to append.
+   */
+  function renderSpread(spreadId, photoSlice, spreadIndex) {
+    const spreadDef = window.TODDLER_DATA.spreads[spreadId];
+    if (!spreadDef) { console.error('Unknown spreadId', spreadId); return null; }
+
+    const row = document.createElement('div');
+    row.className = 'spread-row';
+    row.dataset.spreadId    = spreadId;
+    row.dataset.spreadIndex = spreadIndex;
+
+    // ── Spread header ──
+    const header = document.createElement('div');
+    header.className = 'spread-row-header';
+
+    const badge = document.createElement('div');
+    badge.className = 'spread-index-badge';
+    badge.textContent = spreadIndex + 1;
+    header.appendChild(badge);
+
+    const title = document.createElement('div');
+    title.className = 'spread-title';
+    title.textContent = spreadDef.label;
+    header.appendChild(title);
+
+    const isFP = spreadId.startsWith('FP');
+    const typeTag = document.createElement('div');
+    typeTag.className = 'spread-type-tag' + (isFP ? ' fp' : '');
+    typeTag.textContent = isFP ? 'Functional' : 'Standard';
+    header.appendChild(typeTag);
+
+    const controls = document.createElement('div');
+    controls.className = 'spread-controls-strip';
+    ['↑ Move up', '↓ Move down', 'Change type ▼'].forEach(label => {
+      const btn = document.createElement('button');
+      btn.className = 'spread-ctrl-btn';
+      btn.textContent = label;
+      btn.disabled = true;
+      controls.appendChild(btn);
+    });
+    header.appendChild(controls);
+
+    row.appendChild(header);
+
+    const pagesWrap = document.createElement('div');
+    pagesWrap.className = 'spread-pages';
+    row.appendChild(pagesWrap);
+
+    const sides = ['left', 'right'];
+
+    // For rightOnly spreads (SP0), render a blank left page with a placeholder label
+    if (spreadDef.rightOnly) {
+      const blankPage = document.createElement('div');
+      blankPage.className = 'page-canvas';
+      blankPage.style.background = '#ffffff';
+      blankPage.style.display = 'flex';
+      blankPage.style.alignItems = 'center';
+      blankPage.style.justifyContent = 'center';
+      blankPage.dataset.side = 'left';
+      blankPage.dataset.variant = 'blank';
+      const blankLabel = document.createElement('div');
+      blankLabel.style.cssText = 'font-size:13px;color:#b0a89e;text-align:center;line-height:1.6;';
+      blankLabel.innerHTML = '← Cover / Back<br><span style="font-size:11px;opacity:0.6;">Not yet designed</span>';
+      blankPage.appendChild(blankLabel);
+      pagesWrap.appendChild(blankPage);
+    }
+
+    sides.forEach(side => {
+      if (spreadDef.rightOnly && side === 'left') return;
+      const pageDef = spreadDef.pages[side];
+      if (!pageDef) return;
+
+      // Determine which orientation variant to use
+      // Take orientation from first assigned photo on this side
+      const sideSlice = photoSlice[side] || [];
+      let dominantOrientation = 'horizontal'; // default
+      for (const idx of sideSlice) {
+        if (idx !== null && window.photoPool[idx]) {
+          dominantOrientation = window.photoPool[idx].orientation || 'horizontal';
+          break;
+        }
+      }
+
+      // Map orientation string → template-data variant key
+      const orientToKey = { horizontal: 'H', vertical: 'V', square: 'S' };
+      // Variant selection: prefer exact match, then 'default', then first key
+      let variantKey = orientToKey[dominantOrientation] || 'H';
+      if (!pageDef[variantKey]) {
+        variantKey = pageDef['default'] ? 'default' : Object.keys(pageDef)[0];
+      }
+      const variant = pageDef[variantKey];
+      if (!variant) return;
+
+      const canvas = document.createElement('div');
+      canvas.className = 'page-canvas';
+      canvas.dataset.side    = side;
+      canvas.dataset.variant = variantKey;
+      if (variant.bgColor) canvas.style.background = variant.bgColor;
+
+      // SVG background first (z-index 0), photos on top (z-index 1)
+      if (variant.svg) {
+        const overlay = document.createElement('img');
+        overlay.className = 'svg-overlay';
+        overlay.src = SVG_BASE + variant.svg;
+        overlay.alt = '';
+        overlay.loading = 'lazy';
+        overlay.decoding = 'async';
+        canvas.appendChild(overlay);
+      }
+
+      // Render photo slots
+      variant.slots.forEach((slotDef, slotIdx) => {
+        const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
+        const photo   = poolIdx !== null ? window.photoPool[poolIdx] : null;
+
+        const slotEl = document.createElement('div');
+        slotEl.className = 'photo-slot';
+        if (slotDef.heartClip) {
+          // Full-canvas slot — SVG overlay PNG provides yellow masking around heart
+          slotEl.style.left   = '0px';
+          slotEl.style.top    = '0px';
+          slotEl.style.width  = (200 * SCALE) + 'px';
+          slotEl.style.height = (200 * SCALE) + 'px';
+        } else {
+          slotEl.style.left   = ((slotDef.x - slotDef.w / 2) * SCALE) + 'px';
+          slotEl.style.top    = ((slotDef.y - slotDef.h / 2) * SCALE) + 'px';
+          slotEl.style.width  = (slotDef.w * SCALE) + 'px';
+          slotEl.style.height = (slotDef.h * SCALE) + 'px';
+        }
+        slotEl.dataset.slot = slotDef.slot;
+        if (slotDef.heartClip) {
+          // Heart path scaled from original 566.93×566.93 SVG space to 600×600 canvas
+          slotEl.style.clipPath = "path('M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z')";
+          slotEl.style.background = 'transparent';
+        }
+
+        if (photo) {
+          const img = document.createElement('img');
+          img.className = 'slot-photo';
+          img.src = photo.url;
+          img.alt = photo.name;
+          img.loading = 'lazy';
+          img.decoding = 'async';
+          img.onerror = () => console.warn('Slot img failed to load:', photo.name, photo.url.slice(0,40));
+          slotEl.appendChild(img);
+
+          if (photo.lowRes) {
+            slotEl.style.outline = '3px solid #f4ca6f';
+          }
+        } else {
+          const ph = document.createElement('div');
+          ph.className = 'slot-placeholder';
+          ph.textContent = 'Drop photo here';
+          slotEl.appendChild(ph);
+        }
+
+        canvas.appendChild(slotEl);
+      });
+
+
+      pagesWrap.appendChild(canvas);
+    });
+
+    return row;
+  }
+
+  /* ═══════════════════════════════════════════
+     BOOK SEQUENCE BUILDER
+  ═══════════════════════════════════════════ */
+
+  function buildBookSequence(pageCount, selectedFPs) {
+    const totalSpreads  = pageCount / 2;
+    const remaining     = totalSpreads - 1;
+    const standardCount = remaining - selectedFPs.length;
+
+    // Cycle SP1–SP6 for however many standard slots are needed
+    const stdIds = ['SP1','SP2','SP3','SP4','SP5','SP6'];
+    const standards = [];
+    for (let i = 0; i < standardCount; i++) {
+      standards.push(stdIds[i % stdIds.length]);
+    }
+
+    // Calculate insertion positions for FPs (evenly spaced), then insert right-to-left
+    // so earlier insertions don't shift later positions.
+    const fpCount = selectedFPs.length;
+    const positions = selectedFPs.map((_, i) =>
+      Math.round((i + 1) * (standards.length + 1) / (fpCount + 1))
+    );
+    // Insert from last position to first to avoid index shifting
+    for (let i = fpCount - 1; i >= 0; i--) {
+      standards.splice(positions[i], 0, selectedFPs[i]);
+    }
+
+    return ['SP0', ...standards];
+  }
+
+  /* ═══════════════════════════════════════════
+     PHOTO ALLOCATOR
+  ═══════════════════════════════════════════ */
+
+  function assignPhotosToSpreads(sequence, pool) {
+    const assignments = {};
+    let ptr = 0; // pointer into pool
+
+    const orientToKey = { horizontal: 'H', vertical: 'V', square: 'S' };
+
+    sequence.forEach((spreadId, spreadIndex) => {
+      const spreadDef = window.TODDLER_DATA.spreads[spreadId];
+      if (!spreadDef) return;
+
+      const assignment = { left: [], right: [] };
+      const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
+
+      sides.forEach(side => {
+        const pageDef = spreadDef.pages[side];
+        if (!pageDef) return;
+
+        // Pick variant based on next available regular photo
+        const nextPhoto = pool[ptr];
+        let variantKey = nextPhoto ? (orientToKey[nextPhoto.orientation] || 'H') : 'H';
+        if (!pageDef[variantKey]) {
+          variantKey = pageDef['default'] ? 'default' : Object.keys(pageDef)[0];
+        }
+        const variant = pageDef[variantKey];
+        if (!variant || !variant.slots) return;
+
+        const slotAssignments = [];
+        variant.slots.forEach(slotDef => {
+          if (slotDef.pool === 'special' || slotDef.pool === 'artwork') {
+            // Special/artwork photos handled separately (Plans 08-xx)
+            slotAssignments.push(null);
+          } else {
+            slotAssignments.push(ptr < pool.length ? ptr++ : null);
+          }
+        });
+        assignment[side] = slotAssignments;
+      });
+
+      assignments[spreadIndex] = assignment;
+    });
+
+    window.bookAssignments = assignments;
+    return assignments;
+  }
+
+  /* ═══════════════════════════════════════════
+     FULL BOOK RENDERER
+  ═══════════════════════════════════════════ */
+
+  function renderBook() {
+    const canvas = document.getElementById('book-canvas');
+    canvas.innerHTML = '';
+
+    const pool = window.photoPool;
+    if (!pool.length) {
+      canvas.innerHTML = '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">📷</div><h3>No photos yet</h3><p>Upload photos to begin.</p></div>';
+      return;
+    }
+
+    const pageCount  = parseInt(document.getElementById('page-count-select').value);
+    const selectedFPs = Array.from(document.querySelectorAll('input[name="fp"]:checked'))
+                             .map(cb => cb.value);
+
+    const sequence = buildBookSequence(pageCount, selectedFPs);
+    assignPhotosToSpreads(sequence, pool);
+
+    // Count regular photo slots (excluding special/artwork)
+    let regularSlots = 0;
+    sequence.forEach((spreadId, si) => {
+      const spreadDef = window.TODDLER_DATA.spreads[spreadId];
+      if (!spreadDef) return;
+      const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
+      const orientToKey = { horizontal: 'H', vertical: 'V', square: 'S' };
+      sides.forEach(side => {
+        const pageDef = spreadDef.pages[side];
+        if (!pageDef) return;
+        const asgn = window.bookAssignments[si];
+        const firstIdx = asgn && asgn[side] ? asgn[side].find(x => x !== null) : null;
+        const nextPhoto = firstIdx !== null && firstIdx !== undefined ? pool[firstIdx] : pool[0];
+        let variantKey = nextPhoto ? (orientToKey[nextPhoto.orientation] || 'H') : 'H';
+        if (!pageDef[variantKey]) variantKey = pageDef['default'] ? 'default' : Object.keys(pageDef)[0];
+        const variant = pageDef[variantKey];
+        if (variant && variant.slots) {
+          regularSlots += variant.slots.filter(s => !s.pool || s.pool === 'regular').length;
+        }
+      });
+    });
+
+    dbLog('Book: ' + sequence.join(' → '), 'muted');
+    dbLog('Spreads: ' + sequence.length + '  |  Photo slots: ' + regularSlots + '  |  Photos uploaded: ' + pool.length, 'info');
+    if (pool.length > regularSlots) {
+      dbLog('⚠ ' + (pool.length - regularSlots) + ' photo(s) won\'t fit — increase page count or remove functional pages', 'warn');
+    } else if (pool.length < regularSlots) {
+      dbLog('⚠ ' + (regularSlots - pool.length) + ' slot(s) will be empty — upload more photos', 'warn');
+    } else {
+      dbLog('✓ Photos fill book exactly', 'info');
+    }
+
+    // Photo status bar
+    const placed = new Set();
+    Object.values(window.bookAssignments).forEach(asgn => {
+      [...(asgn.left||[]), ...(asgn.right||[])].forEach(idx => {
+        if (idx !== null && idx !== undefined) placed.add(idx);
+      });
+    });
+    const assignedCount   = placed.size;
+    const unassignedCount = pool.length - assignedCount;
+    const emptySlots      = Math.max(0, regularSlots - pool.length);
+
+    const statusBar = document.createElement('div');
+    statusBar.className = 'photo-status-bar';
+    statusBar.innerHTML = `
+      <div class="stat"><span class="stat-value">${pool.length}</span> photos uploaded</div>
+      <div class="stat"><span class="stat-value">${assignedCount}</span> placed in book</div>
+      <div class="stat"><span class="stat-value ${unassignedCount > 0 ? 'warn' : ''}">${unassignedCount}</span> unplaced</div>
+      <div class="stat"><span class="stat-value ${emptySlots > 0 ? 'warn' : ''}">${emptySlots}</span> empty slots</div>
+      <div class="stat" style="margin-left:auto;color:var(--muted);font-size:11px;">${sequence.length} spreads · ${pageCount} pages</div>
+    `;
+    canvas.appendChild(statusBar);
+
+    sequence.forEach((spreadId, spreadIndex) => {
+      const asgn = window.bookAssignments[spreadIndex] || { left: [], right: [] };
+      const row = renderSpread(spreadId, asgn, spreadIndex);
+      if (row) canvas.appendChild(row);
+    });
+
+    updateStripAssignedState();
+  }
+
+  function updateStripAssignedState() {
+    const placed = new Set();
+    Object.values(window.bookAssignments).forEach(asgn => {
+      [...(asgn.left || []), ...(asgn.right || [])].forEach(idx => {
+        if (idx !== null && idx !== undefined) placed.add(idx);
+      });
+    });
+    document.querySelectorAll('.photo-thumb').forEach(thumb => {
+      const i = parseInt(thumb.dataset.index);
+      const isPlaced = placed.has(i);
+      thumb.classList.toggle('assigned',   isPlaced);
+      thumb.classList.toggle('unassigned', !isPlaced);
+    });
+  }
+
+  /* ── Config bar → re-render on change ── */
+  document.getElementById('page-count-select').addEventListener('change', () => {
+    if (window.photoPool.length) renderBook();
+  });
+  document.querySelectorAll('input[name="fp"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (window.photoPool.length) renderBook();
+    });
+  });
+
+  /* ═══════════════════════════════════════════
+     VERIFY DATA ON LOAD
+  ═══════════════════════════════════════════ */
+
+  (function verifyData() {
+    const d = window.TODDLER_DATA;
+    if (!d) { console.error('TODDLER_DATA not loaded'); return; }
+    const keys = Object.keys(d.spreads);
+    const expected = ['SP0','SP1','SP2','SP3','SP4','SP5','SP6','FP1','FP2','FP3','FP4','FP5'];
+    const missing = expected.filter(k => !keys.includes(k));
+    if (missing.length) {
+      console.error('TODDLER_DATA missing spread keys:', missing);
+    } else {
+      console.log('TODDLER_DATA loaded — spreads:', keys.join(', '));
+      console.log('SP1 right H slots:', d.spreads.SP1.pages.right.H.slots.length, '(expect 2)');
+    }
+  })();
+</script>
+
+</body>
+</html>
