@@ -22,6 +22,33 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 ## template-data.js — bgColor at variant level (completed earlier)
 - bgColor per variant for all 12 spreads; SP0 label fixed; SP4 right V = `#fdd16f`
 
+## Session 2026-05-20 — Plans 07-01 through 08-02 (completed)
+
+### Plan 07-01 — Photo slot drag-and-drop
+- Drag photo from thumbnail strip → drop onto slot; slot-to-slot swap
+- Updates `window.bookAssignments`, re-renders affected spread, updates strip state
+- Drag-over highlight on target slot
+
+### Plan 07-02 — Spread reorder + type swap
+- Drag spread row up/down to reorder; change spread type (e.g. SP2 → SP5)
+- Re-runs `assignPhotosToSpreads` and re-renders after change
+
+### Plan 07-03 — Caption layer
+- Caption `contenteditable` overlays on slots where `captions: true`
+- Stored in `window.bookCaptions[spreadIndex][side][slotIndex]`
+- AI caption button: resizes photo to max 1200px before upload (413 fix); sends `previousCaptions` array (last 8) for diversity
+- Caption width 90% slot width (5% inset); `upper-right` position gets `text-align: left`
+
+### Plan 08-01 — FP text panels
+- FP1 (Birthday wishes) and FP2 (Funny words) editable `contenteditable` overlay on left pages
+- Stored as `window.bookCaptions[spreadIndex][side]['textPanel']`
+- Caption voice prompt loaded from `functions/caption/caption-voice.md` (not hardcoded)
+
+### Plan 08-02 — Special photo upload zones
+- FP3 "Favourite toy" / FP4 "First steps" / FP5 "Art gallery" upload zones wired
+- `window.specialPhotos` keys: `['FP1', 'FP3', 'FP4', 'FP5']`
+- Special photos not draggable from main pool
+
 ## Session 2026-05-20 — CSV pipeline + Scribble rename
 
 ### csv-to-template.js
@@ -71,38 +98,7 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 
 <work_remaining>
 
-## Immediate / next session
-
-### Plan 06-03 verification
-- Confirm scroll view shows correct labels and spread counts for 40 and 80 page books
-
 ## Plans not yet started
-
-### Plan 07-01 — Photo slot drag-and-drop
-- Drag photo from thumbnail strip → drop onto slot
-- Slot-to-slot swap
-- After swap: update `window.bookAssignments`, re-render affected spread, update strip state
-- Drag-over highlight on target slot
-
-### Plan 07-02 — Spread reorder + type swap
-- Drag spread row up/down to reorder
-- Change spread type (e.g. SP2 → SP5)
-- After change: re-run `assignPhotosToSpreads` and re-render
-
-### Plan 07-03 — Caption layer
-- Caption text overlays on slots where `captions: true`
-- Editable (contenteditable or input) fields
-- Store in `window.bookCaptions[spreadIndex][side][slotIndex]`
-
-### Plan 08-01 — FP text panels
-- FP1 (Birthday wishes): editable birthday message overlay
-- FP2 (Funny words): editable funny quote overlay
-
-### Plan 08-02 — Special photo upload zones
-- FP3 "Favourite toy photo" / FP4 "First steps photo" / FP5 "Art gallery (1–2)"
-- Named upload zones appear when those FPs are selected
-- Wire to renderer; show dashed placeholder if not uploaded
-- Special photos not draggable from main pool
 
 ### Plan 09-01 — Print export + resolution warnings + AI captions
 - Print CSS (`@page 206mm × 206mm`, hide UI controls, `break-after: page`)
@@ -230,12 +226,8 @@ Check `functions/` to confirm this exists before wiring.
 - All SP/FP Spread SVGs — Kseniia's artwork updates committed
 
 ## In progress / not started
-- Plan 07-01 (drag-and-drop): not started
-- Plan 07-02 (spread reorder): not started
-- Plan 07-03 (captions): not started
-- Plan 08-01 (FP text panels): not started
-- Plan 08-02 (special photo uploads): not started
-- Plan 09-01 (print export + resolution + AI captions): not started
+- Plan 09-01 (print export + resolution warnings + AI captions): not started
+- Plan 10-01 (bloom.html FP selector + photo count): not started
 
 ## Blocking items
 - None currently (FP1 heart now renders; orientation detection fixed)
