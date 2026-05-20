@@ -1,0 +1,3 @@
+﻿Page;Page;Slot;Photo_X (mm);Photo_Y (mm);Photo_Width (mm);Photo_Height (mm);captions allowed;Captions_1_X (mm);Captions_1_Y (mm);Captions_2_X (mm);Captions_2_Y (mm);Captions_1_font;Captions_2_font;Captions_1_fontsize;Captions_2_fontsize;Captions_1_direction;Captions_2_direction;bgColor;Aspect ratio;Orientation;Bleed;Page size
+Front page;Right H;1;309;100;140;100;yes;309;25;309;175;EB Garamond;NT Somic;35pt;30pt;horisontal;horisontal;#f8ead9;07:05;horizontal;18mm;200×200mm
+Spine;Center;;;;;;yes;205;140;205;60;EB Garamond;NT Somic;16pt;16pt;Rotate all text 270 degree;Rotate all text 270 degree;;;;;

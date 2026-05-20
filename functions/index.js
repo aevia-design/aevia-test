@@ -12,35 +12,9 @@ exports.createUploadSession = functions
 // ── Caption generator ────────────────────────────────────────────────────────
 // Accepts multipart/form-data: image (JPEG blob) + collection + note (optional)
 // Returns { caption: "..." }
-const CAPTION_VOICE = `# Aevia Caption Voice
-
-## The product
-Aevia makes premium photobooks — physical keepsakes, not digital content. Printed, bound, designed to sit on a shelf and be picked up years later. Editorial in feel, art-forward in design. Based in Vienna. The customer is a conscious hedonist: a woman who values beautiful things, craft, and quality. She buys Aevia because the result matters, not because it's fast or cheap.
-
-## Collections
-Captions must fit the occasion. Aevia has:
-- **Travel** — adventure, landscapes, shared journeys
-- **Kids** — newborns, toddlers, early years
-- **Love** — couples, everyday intimacy, long relationships, wedding
-
-Each collection has its own emotional register. A newborn caption reads differently from a wedding caption. Match the mood to the collection.
-
-## The voice
-One sentence. Sometimes just a few words. Never more than two sentences.
-
-Warm, precise, unhurried. Can be sentimental when the moment calls for it — a first birthday, a wedding morning, a last day of a trip. Can be quiet and observational when the photo is quiet. The tone follows the photo, not a formula.
-
-No exclamation marks. No rhetorical questions. No motivational register.
-
-Write what the photo feels like. Not what is literally in it, not what the viewer should feel about it.
-
-## What to avoid
-Never assume facts you cannot see. No specific ages, durations, years, anniversaries, days, times, names, or locations unless provided.
-
-Eliminate: filler constructions, greeting card sentimentality, hollow travel language, instructions to the viewer, passive voice, adverbs, pull-quote sentences, abstractions.
-
-## For the model generating captions
-You are writing short captions for a premium printed photobook. Study the photo carefully. Match the emotional register of the collection. Write one sentence — or a few precise words. Sound like a person, not a content generator. No filler. No softening. No throat-clearing. State what the photo holds and stop.`;
+const fs = require('fs');
+const path = require('path');
+const CAPTION_VOICE = fs.readFileSync(path.join(__dirname, 'caption/caption-voice.md'), 'utf8');
 
 exports.generateCaption = functions
   .region('europe-west1')
@@ -56,13 +30,19 @@ exports.generateCaption = functions
       const OpenAI = require('openai');
       const client = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
 
-      // Expect JSON body: { image: "<base64>", collection: "kids", note: "optional" }
-      const { image, collection = 'kids', note } = req.body;
+      // Expect JSON body: { image: "<base64>", collection: "kids", note: "optional", previousCaptions: [] }
+      const { image, collection = 'kids', note, previousCaptions } = req.body;
       if (!image) { res.status(400).json({ error: 'image (base64) is required' }); return; }
 
       const userLines = [`Collection: ${collection}`];
       if (note) userLines.push(`Customer note: "${note}"`);
-      userLines.push('', 'Generate one caption for this photo. Return only the caption text, nothing else.');
+      if (Array.isArray(previousCaptions) && previousCaptions.length > 0) {
+        userLines.push('');
+        userLines.push('Captions already used elsewhere in this book — do not repeat similar phrasing, structure, opening words, or emotional register:');
+        previousCaptions.slice(-8).forEach(c => userLines.push(`- ${c}`));
+      }
+      userLines.push('', 'IMPORTANT: Do not start the caption with the word "A" or "An".');
+      userLines.push('Generate one caption for this photo. Return only the caption text, nothing else.');
 
       const response = await client.chat.completions.create({
         model: 'gpt-4o-mini',

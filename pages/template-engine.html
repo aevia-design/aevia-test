@@ -391,6 +391,20 @@
       flex-shrink: 0;
       overflow: hidden;
     }
+    .cover-canvas {
+      width: 1227px !important; /* (200 + 9 + 200)mm × 3px/mm */
+      height: 600px !important;
+    }
+    .cover-canvas .svg-overlay {
+      width: 1227px;
+      height: 600px;
+    }
+    .cover-caption:empty::before {
+      content: attr(data-label);
+      font-size: 10pt;
+      color: #c0b8ae;
+      pointer-events: none;
+    }
     .page-canvas.right-only-hidden { display: none; }
     .page-canvas .svg-overlay {
       position: absolute; top: 0; left: 0;
@@ -409,6 +423,8 @@
       width: 100%; height: 100%;
       object-fit: cover;
       display: block;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: smooth;
     }
     .photo-slot .slot-placeholder {
       width: 100%; height: 100%;
@@ -548,6 +564,12 @@
 
 <!-- ── SPECIAL PHOTO PANEL ── -->
 <div class="special-panel" id="special-panel">
+  <div class="special-zone" id="special-zone-cover" style="display:none;">
+    <span class="special-zone-label">Cover photo</span>
+    <button class="special-upload-btn" data-fp="cover" data-max="1">+ Upload photo</button>
+    <div class="special-thumbs" id="special-thumbs-cover"></div>
+    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="cover" />
+  </div>
   <div class="special-zone" id="special-zone-FP1" style="display:none;">
     <span class="special-zone-label">Birthday photo</span>
     <button class="special-upload-btn" data-fp="FP1" data-max="1">+ Upload photo</button>
@@ -657,7 +679,7 @@
   window.photoPool       = [];   // [{ file, url, date, orientation, name, w, h, lowRes }]
   window.bookAssignments = {};   // { spreadIndex: { left:[poolIdx|null,...], right:[...] } }
   window.captionState    = {};   // { spreadIndex: { left:{1:'text'}, right:{1:'text'} } }
-  window.specialPhotos   = { FP1: [], FP3: [], FP4: [], FP5: [] };
+  window.specialPhotos   = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
 
   const SCALE = 3;               // px per mm
   const HEIC_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/convertHeic';
@@ -701,7 +723,10 @@
         const h = Math.round(img.naturalHeight * scale);
         const c = document.createElement('canvas');
         c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        const ctx2d = c.getContext('2d');
+        ctx2d.imageSmoothingEnabled = true;
+        ctx2d.imageSmoothingQuality = 'high';
+        ctx2d.drawImage(img, 0, 0, w, h);
         resolve(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
         URL.revokeObjectURL(img.src);
       };
@@ -1066,6 +1091,138 @@
   /* ═══════════════════════════════════════════
      SINGLE SPREAD RENDERER
   ═══════════════════════════════════════════ */
+
+  /* ═══════════════════════════════════════════
+     COVER RENDERER
+  ═══════════════════════════════════════════ */
+
+  function renderCover() {
+    const coverDef = window.SCRIBBLE_DATA.cover;
+    if (!coverDef) return null;
+
+    const secs  = coverDef.sections;
+    const totalW = (secs.back.wMm + secs.spine.wMm + secs.front.wMm) * SCALE; // 1227px
+
+    const row = document.createElement('div');
+    row.className = 'spread-row';
+    row.dataset.spreadId = 'cover';
+
+    const header = document.createElement('div');
+    header.className = 'spread-row-header';
+    header.innerHTML = `
+      <div class="spread-index-badge">C</div>
+      <span class="spread-title">Cover</span>
+      <span class="spread-type-tag">Cover</span>
+    `;
+    row.appendChild(header);
+
+    const pagesWrap = document.createElement('div');
+    pagesWrap.className = 'spread-pages';
+
+    const canvas = document.createElement('div');
+    canvas.className = 'page-canvas cover-canvas';
+
+    // Canvas background gradient — covers full height at any zoom/rounding.
+    // Back and spine colors come from the SVG; front bgColor is the only user-facing config.
+    {
+      const spineStartPx = secs.back.wMm * SCALE;
+      const frontStartPx = (secs.back.wMm + secs.spine.wMm) * SCALE;
+      const backColor  = secs.back.bgColor  || '#3d1f5c';
+      const spineColor = secs.spine.bgColor || '#fdd16f';
+      const frontColor = secs.front.bgColor || '#f8ead9';
+      canvas.style.background = `linear-gradient(90deg, ${backColor} 0px ${spineStartPx}px, ${spineColor} ${spineStartPx}px ${frontStartPx}px, ${frontColor} ${frontStartPx}px 100%)`;
+    }
+
+    // SVG overlay
+    const svgImg = document.createElement('img');
+    svgImg.className = 'svg-overlay';
+    svgImg.src = SVG_BASE + coverDef.svg;
+    svgImg.alt = '';
+    canvas.appendChild(svgImg);
+
+    // Photo slot (center-based coords from CSV)
+    const slotDef = coverDef.slots[0];
+    const slotW   = slotDef.wMm * SCALE;
+    const slotH   = slotDef.hMm * SCALE;
+    const slotL   = slotDef.xMm * SCALE - slotW / 2;
+    const slotT   = slotDef.yMm * SCALE - slotH / 2;
+
+    const slot = document.createElement('div');
+    slot.className = 'photo-slot';
+    slot.style.cssText = `left:${slotL}px;top:${slotT}px;width:${slotW}px;height:${slotH}px;z-index:1;`;
+
+    const coverPhoto = (window.specialPhotos.cover || [])[0];
+    if (coverPhoto) {
+      const img = document.createElement('img');
+      img.className = 'slot-photo';
+      img.src = coverPhoto.url;
+      slot.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'slot-placeholder';
+      ph.textContent = 'Cover photo';
+      slot.appendChild(ph);
+    }
+    canvas.appendChild(slot);
+
+    // Captions (center-based coords)
+    const savedCoverCaps = window.bookCaptions['cover'] || {};
+    coverDef.captions.forEach(capDef => {
+      const capW  = capDef.wMm * SCALE;
+      const capCX = capDef.xMm * SCALE;
+      const capCY = capDef.yMm * SCALE;
+
+      const cap = document.createElement('div');
+      cap.className = 'slot-caption cover-caption';
+      cap.contentEditable = 'true';
+      cap.dataset.coverCaptionKey = capDef.key;
+      cap.dataset.label = capDef.label;
+
+      const fontSize = capDef.sizePt + 'pt';
+      const lineH    = (capDef.sizePt * 1.1).toFixed(1) + 'pt';
+      // 1pt = 4/3 CSS px at 96dpi; use this to get the rendered line height in px
+      const lineHpx  = capDef.sizePt * (4 / 3) * 1.1;
+      let posCSS;
+      if (capDef.rotate) {
+        // Rotated spine captions: center element at (capCX, capCY) after rotation.
+        // transform-origin:center center keeps the element center fixed,
+        // so pre-rotation center must equal (capCX, capCY).
+        // Pre-rotation element dims: width=capW, height≈lineHpx (single line).
+        const top = capCY - lineHpx / 2;
+        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${capDef.font}',serif;font-size:${fontSize};line-height:${lineH};text-align:center;z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
+      } else {
+        // Non-rotated front captions: translateY(-50%) centers any number of lines at capCY.
+        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${capDef.font}',serif;font-size:${fontSize};line-height:${lineH};text-align:${capDef.align || 'center'};z-index:3;transform:translateY(-50%);`;
+      }
+      cap.style.cssText = posCSS;
+
+      if (savedCoverCaps[capDef.key]) cap.textContent = savedCoverCaps[capDef.key];
+
+      cap.addEventListener('input', () => {
+        if (!window.bookCaptions['cover']) window.bookCaptions['cover'] = {};
+        window.bookCaptions['cover'][capDef.key] = cap.textContent;
+      });
+
+      canvas.appendChild(cap);
+    });
+
+    pagesWrap.appendChild(canvas);
+    row.appendChild(pagesWrap);
+    return row;
+  }
+
+  function rerenderCover() {
+    const existing = document.querySelector('.spread-row[data-spread-id="cover"]');
+    const newRow = renderCover();
+    if (!newRow) return;
+    if (existing) existing.replaceWith(newRow);
+    else {
+      const bookCanvas = document.getElementById('book-canvas');
+      const firstSpread = bookCanvas.querySelector('.spread-row:not([data-spread-id="cover"])');
+      if (firstSpread) bookCanvas.insertBefore(newRow, firstSpread);
+      else bookCanvas.appendChild(newRow);
+    }
+  }
 
   /*
    * renderSpread(spreadId, photoSlice, spreadIndex)
@@ -1803,6 +1960,10 @@
     `;
     canvas.appendChild(statusBar);
 
+    // Cover always first
+    const coverRow = renderCover();
+    if (coverRow) canvas.appendChild(coverRow);
+
     sequence.forEach((spreadId, spreadIndex) => {
       const asgn = window.bookAssignments[spreadIndex] || { left: [], right: [] };
       const row = renderSpread(spreadId, asgn, spreadIndex);
@@ -2037,9 +2198,12 @@
       Array.from(document.querySelectorAll('input[name="fp"]:checked')).map(cb => cb.value)
     );
     const panel = document.getElementById('special-panel');
-    const needPanel = checked.has('FP1') || checked.has('FP3') || checked.has('FP4') || checked.has('FP5');
+    // Cover zone always visible; FP zones shown per selection
+    const hasFP  = checked.has('FP1') || checked.has('FP3') || checked.has('FP4') || checked.has('FP5');
+    const needPanel = true; // cover zone is always present
     panel.classList.toggle('visible', needPanel);
     document.documentElement.style.setProperty('--special-h', needPanel ? '68px' : '0px');
+    document.getElementById('special-zone-cover').style.display = 'flex';
     ['FP1', 'FP3', 'FP4', 'FP5'].forEach(fp => {
       document.getElementById('special-zone-' + fp).style.display = checked.has(fp) ? 'flex' : 'none';
     });
@@ -2125,7 +2289,8 @@
         URL.revokeObjectURL(photo.url);
         window.specialPhotos[fp].splice(i, 1);
         renderSpecialThumbs(fp);
-        if (window.photoPool.length) renderBook();
+        if (fp === 'cover') rerenderCover();
+        else if (window.photoPool.length) renderBook();
       });
       wrap.appendChild(rm);
       container.appendChild(wrap);
@@ -2161,7 +2326,11 @@
         }
       }
       renderSpecialThumbs(fp);
-      if (window.photoPool.length) renderBook();
+      if (fp === 'cover') {
+        rerenderCover();
+      } else if (window.photoPool.length) {
+        renderBook();
+      }
       this.value = '';
     });
   });
@@ -2203,8 +2372,9 @@
      VERIFY DATA ON LOAD
   ═══════════════════════════════════════════ */
 
-  // Show initial photo count hint on page load
+  // Show initial photo count hint and special panel on page load
   updatePhotoHint();
+  updateSpecialPanel();
 
   (function verifyData() {
     const d = window.SCRIBBLE_DATA;

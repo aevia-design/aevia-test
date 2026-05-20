@@ -1,8 +1,29 @@
-window.SCRIBBLE_DATA = {
+﻿window.SCRIBBLE_DATA = {
   template: 'scribble',
   pageSize: 200,
   bleed: 3,
   canvasPx: 600,
+
+  cover: {
+    svg: 'Cover/Artboard 1.svg',
+    sections: {
+      back:  { xMm: 0,   wMm: 200, bgColor: '#3d1f5c' },
+      spine: { xMm: 200, wMm: 9,   bgColor: '#fdd16f' },
+      front: { xMm: 209, wMm: 200, bgColor: '#f8ead9' },
+    },
+    slots: [
+      // center coords (mm) from Scribble_Template_Sizing_Cover.csv; pool:'cover' = special upload
+      { xMm: 309, yMm: 100, wMm: 140, hMm: 100, pool: 'cover' }
+    ],
+    captions: [
+      { key: 'year',      xMm: 309, yMm: 25,  wMm: 180, font: 'EB Garamond', sizePt: 35, align: 'center', label: 'Year' },
+      { key: 'name',      xMm: 309, yMm: 175, wMm: 180, font: 'NT Somic',    sizePt: 30, align: 'center', label: 'Name' },
+      { key: 'spineName', xMm: 205, yMm: 140, wMm: 130, font: 'EB Garamond', sizePt: 16, rotate: 270, label: 'Name (spine)' },
+      { key: 'spineYear', xMm: 205, yMm: 60,  wMm: 70,  font: 'NT Somic',    sizePt: 16, rotate: 270, label: 'Year (spine)' },
+    ]
+  },
+
+
   scale: 3,
   fonts: { display: 'NT Comic', body: 'EB Garamond' },
   colors: {
@@ -63,7 +84,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 1/SP 02 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 55, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } }
+              { slot: 1, x: 105, y: 55, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } },
               { slot: 2, x: 105, y: 150, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } }
             ]
           },
@@ -71,7 +92,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 1/SP 02 V Right.svg',
             slots: [
-              { slot: 1, x: 60, y: 100, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } }
+              { slot: 1, x: 60, y: 100, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } },
               { slot: 2, x: 150, y: 100, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } }
             ]
           },
@@ -87,7 +108,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 2/SP 03 H Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 55, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } }
+              { slot: 1, x: 95, y: 55, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } },
               { slot: 2, x: 95, y: 145, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } }
             ]
           },
@@ -95,7 +116,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 2/SP 03 V Left.svg',
             slots: [
-              { slot: 1, x: 50, y: 130, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } }
+              { slot: 1, x: 50, y: 130, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } },
               { slot: 2, x: 140, y: 70, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } }
             ]
           },
@@ -127,7 +148,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 3/SP 05 H Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 55, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } }
+              { slot: 1, x: 95, y: 55, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } },
               { slot: 2, x: 95, y: 145, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } }
             ]
           },
@@ -135,7 +156,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 3/SP 05 V Left.svg',
             slots: [
-              { slot: 1, x: 50, y: 70, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } }
+              { slot: 1, x: 50, y: 70, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } },
               { slot: 2, x: 140, y: 130, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } }
             ]
           },
@@ -167,7 +188,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#fdd16f',
             svg: 'SP Spread 4/SP 07 H Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 55, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } }
+              { slot: 1, x: 95, y: 55, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } },
               { slot: 2, x: 95, y: 145, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } }
             ]
           },
@@ -175,7 +196,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#fdd16f',
             svg: 'SP Spread 4/SP 07 V Left.svg',
             slots: [
-              { slot: 1, x: 50, y: 100, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } }
+              { slot: 1, x: 50, y: 100, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } },
               { slot: 2, x: 140, y: 100, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } }
             ]
           },
@@ -207,7 +228,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 5/SP 09 H Left.svg',
             slots: [
-              { slot: 1, x: 75, y: 55, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } }
+              { slot: 1, x: 75, y: 55, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } },
               { slot: 2, x: 115, y: 145, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } }
             ]
           },
@@ -215,7 +236,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 5/SP 09 V Left.svg',
             slots: [
-              { slot: 1, x: 50, y: 70, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } }
+              { slot: 1, x: 50, y: 70, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } },
               { slot: 2, x: 140, y: 130, w: 80, h: 107, ratio: '80:107', caption: { allowed: false } }
             ]
           },

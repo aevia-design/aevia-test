@@ -94,22 +94,52 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Likely cause: all 600×600 spread canvases remain in DOM and GPU layer is evicted when browser is backgrounded
 - Needs investigation: consider virtualisation, canvas reuse, or requestAnimationFrame-gated rendering
 
+## Session 2026-05-20 (later) — Cover renderer + image quality
+
+### Cover canvas background
+- Replaced per-section `<div>` backgrounds with a single CSS `linear-gradient` on the canvas element
+- Back and spine colors come from the SVG; front `bgColor` is the only user-facing config
+- Gradient covers 100% canvas height — eliminates cream strip from pixel rounding
+
+### Cover caption fixes
+- Line height tightened: `sizePt * 1.1` (was `* 1.3`)
+- Front captions: `top: capCY; transform: translateY(-50%)` — centers any number of lines correctly
+- Spine captions: `top: capCY - lineHpx/2` where `lineHpx = sizePt * (4/3) * 1.1` — correct px centering
+
+### Image quality improvements (cosmetic)
+- Added `image-rendering: smooth` to `.slot-photo` CSS — tells Chrome to use high-quality downscale immediately
+- Added `imageSmoothingQuality: 'high'` to canvas `drawImage` in `urlToBase64` (AI caption resize function)
+- Photo blobs stored as original `createObjectURL` — no re-encoding, no quality loss in storage pipeline
+
 </work_completed>
 
 <work_remaining>
 
 ## Plans not yet started
 
-### Plan 09-01 — Print export + resolution warnings + AI captions
-- Print CSS (`@page 206mm × 206mm`, hide UI controls, `break-after: page`)
-- "Print book" button → `window.print()`
-- Low-res warnings (min 1500px shortest side): badge on strip, yellow border on slot
-- Block RAW file uploads (.dng, .raw, .cr2, .nef, .arw)
-- AI caption endpoint (check `functions/generateCaption` exists first)
+### Plan 09-01 — Resolution warnings + RAW blocking + AI captions
+- Low-res warnings (min 1500px shortest side): badge on thumbnail strip, yellow border on slot
+- Block RAW file uploads (.dng, .raw, .cr2, .nef, .arw) at upload stage
+- Wire AI caption endpoint — check `functions/generateCaption` exists first
+- NOTE: `window.print()` dropped from this plan — browser PDF quality too low; real print is Puppeteer (Phase 2)
 
 ### Plan 10-01 — bloom.html FP selector + photo count calculator
 - Add "Personalise your book" section to bloom.html
 - 5 FP checkboxes + live photo count based on selections
+
+### Plan future — Caption text editor toolbar
+- Floating toolbar appears above focused caption contenteditable
+- Controls: font family (template fonts only), font size stepper, alignment (L/C/R), line spacing stepper
+- Per-caption styling (not per-selection) — updates inline styles + saves to window.bookCaptions
+- Start with cover captions, then extend to spread captions
+- No execCommand needed — direct style manipulation only
+
+## Print quality — critical architectural note for Phase 2 Puppeteer PDF
+- Preview renders at SCALE=3 (3px/mm ≈ 12dpi equivalent) — photo slots are ~150px CSS
+- This is fine for preview; source files are stored as original blob URLs (no re-encoding, no quality loss)
+- When building Puppeteer PDF: must use `deviceScaleFactor: 6` or higher so a 50mm slot outputs ≥590px (300dpi)
+- `@page` CSS must set dimensions in mm (`206mm × 206mm`), not px
+- DO NOT use `window.print()` for final print — browser PDF renderer ignores deviceScaleFactor; use Puppeteer headless only
 
 ## Performance TO-DO
 - Interface stalls 10-15 seconds when returning from alt-tab
@@ -134,6 +164,12 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Added in a previous session; removed this session
 - Modern browsers always auto-rotate — `naturalWidth/naturalHeight` is always correct visual dims
 - Do NOT add this swap back
+
+## Cover canvas — section bg divs replaced with CSS gradient
+- Old approach: one `<div>` per section with `height: 600px` — caused cream strip from pixel rounding
+- New approach: single `linear-gradient` on `canvas.style.background` covering 100% height
+- bgColor in `sections.back` and `sections.spine` are fallback colors for the gradient only — visual source of truth for back/spine is the SVG itself
+- Do NOT revert to div-per-section approach
 
 ## FP1 SVG masking
 - Old "copy" SVGs had opaque Background_Color rect — Kseniia deleted them
@@ -212,30 +248,25 @@ Check `functions/` to confirm this exists before wiring.
 <current_state>
 
 ## Completed and saved to disk
-- `pages/template-engine.html` — Plans 06-01, 06-02, 06-03 complete; FP1 heart clip working; orientation detection fixed
-- `assets/Template_Scribble/template-data.js` — bgColor per variant, SVG paths updated to non-copy filenames, heartClip flag on FP1 right slot
-
-## All committed and pushed (2026-05-20)
-- `pages/template-engine.html` — Plans 06-01, 06-02, 06-03 complete; FP1 heart clip; orientation fix
+- `pages/template-engine.html` — all plans through 08-02 complete; cover renderer working; image quality improved
 - `assets/Template_Scribble/template-data.js` — bgColor per variant, heartClip flag, SVG paths corrected
-- `assets/Template_Scribble/` — renamed from Template_Toddler; CSV and XLSX renamed to match
-- `pages/scribble.html` — new product page (renamed from sprout.html)
-- `pages/collections.html` — updated to Scribble card + link
-- `assets/templates.json` — new template catalogue file
-- `csv-to-template.js` — Node.js build script (CSV → template-data.js)
-- All SP/FP Spread SVGs — Kseniia's artwork updates committed
+
+## Committed and pushed (2026-05-20 earlier session)
+- `pages/template-engine.html`, `template-data.js`, all SP/FP SVGs, `scribble.html`, `collections.html`, `templates.json`, `csv-to-template.js`
+
+## Not yet committed (this session)
+- `pages/template-engine.html` — cover canvas gradient fix, caption positioning fixes, image-rendering: smooth
 
 ## In progress / not started
-- Plan 09-01 (print export + resolution warnings + AI captions): not started
+- Plan 09-01 (resolution warnings + RAW blocking + AI captions): not started
 - Plan 10-01 (bloom.html FP selector + photo count): not started
 
 ## Blocking items
-- None currently (FP1 heart now renders; orientation detection fixed)
-- FP1 heart frame decoration missing — nice-to-have, needs Kseniia SVG re-export
+- None
+- FP1 heart frame decoration still missing — nice-to-have, needs Kseniia SVG re-export
 
 ## Open questions
-- Does `functions/generateCaption` Cloud Function exist? (Check before Plan 09-01 Task 4)
-- FP2 right S slot — no bgColor means transparent/none canvas (currently handled correctly)
+- Does `functions/generateCaption` Cloud Function exist? (Check before Plan 09-01)
 - Performance: alt-tab stall (10-15s) — root cause not yet investigated
 
 </current_state>
