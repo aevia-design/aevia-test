@@ -69,7 +69,9 @@ npm run deploy
 | `pages/devotion.html` | Product page — Devotion template |
 | `pages/horizon.html` | Product page — Horizon template |
 
-**Pages referenced but not yet built:** `vows.html`, `radiance.html`, `wander.html`, `terrain.html`, `sprout.html`, `wonder.html`
+**Pages built:** `scribble.html` — Product page — Scribble template (kids)
+
+**Pages referenced but not yet built:** `vows.html`, `radiance.html`, `wander.html`, `terrain.html`, `wonder.html`
 
 ---
 

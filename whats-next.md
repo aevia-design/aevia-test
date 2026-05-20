@@ -33,7 +33,7 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Heart path (scaled from 566.93×566.93 SVG → 600×600 canvas):
   `M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z`
 - Canvas background `#fdd16f` (yellow) fills non-heart area naturally
-- Note: the heart frame decoration (border/bow artwork) is NOT visible in the SVG overlay for this page — Kseniia may want to re-export FP Birthday 02 R.svg as a standalone right-page file
+
 
 ### Orientation detection fix
 - Root cause: previous session added an EXIF Orientation swap (tags 5-8 → flip dims). This is wrong because modern browsers (Chrome, Firefox, Safari) auto-rotate images based on EXIF — `img.naturalWidth/naturalHeight` already returns correct visual dimensions.
@@ -51,11 +51,6 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 <work_remaining>
 
 ## Immediate / next session
-
-### FP1 heart frame decoration (ask Kseniia)
-- The heart frame border/bow artwork is missing from the SVG overlay for FP Birthday 02 R page
-- Kseniia should re-export FP Birthday 02 R as a standalone single-page SVG (not the 3-spread layout) so the heart decorations appear on the overlay
-- Current state: heart shape shows correctly (photo clipped to heart, yellow background around it) but no border/frame artwork on top
 
 ### Plan 06-03 verification
 - Confirm scroll view shows correct labels and spread counts for 40 and 80 page books

@@ -1,0 +1,53 @@
+﻿Type;Syb-type;Spread;Page;Slot;X (mm) - without bleed;Y (mm) - without bleed;Width (mm);Height (mm);captions allowed;captions_position;functional_photo;functional_text;bgColor;Aspect ratio;Orientation;Bleed;Page size
+Standard;n.a;0;Right H;1;105;70;150;100;yes;below (50mm from photo);n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;0;Right V;1;85;100;120;160;yes;upper right (5mm from photo);n.a;n.a;#f8ead9;03:04;vertical;3mm;200×200mm
+Standard;n.a;1;Left H;1;95;100;150;100;yes;below (10mm from photo);n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;1;Left V;1;95;90;120;160;yes;below (6mm from photo);n.a;n.a;#f8ead9;03:04;vertical;3mm;200×200mm
+Standard;n.a;1;Right H;1;105;55;120;80;no;;n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;1;Right H;2;105;150;120;80;no;;n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;1;Right V;1;60;100;80;107;no;;n.a;n.a;#f8ead9;80:107;vertical;3mm;200×200mm
+Standard;n.a;1;Right V;2;150;100;80;107;no;;n.a;n.a;#f8ead9;80:107;vertical;3mm;200×200mm
+Standard;n.a;2;Left H;1;95;55;120;80;no;;n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;2;Left H;2;95;145;120;80;no;;n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;2;Left V;1;50;130;80;107;no;;n.a;n.a;#f8ead9;80:107;vertical;3mm;200×200mm
+Standard;n.a;2;Left V;2;140;70;80;107;no;;n.a;n.a;#f8ead9;80:107;vertical;3mm;200×200mm
+Standard;n.a;2;Right H;1;105;100;150;100;no;;n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;2;Right V;1;105;100;120;160;no;;n.a;n.a;#f8ead9;03:04;vertical;3mm;200×200mm
+Standard;n.a;3;Left H;1;95;55;120;80;no;;n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;3;Left H;2;95;145;120;80;no;;n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;3;Left V;1;50;70;80;107;no;;n.a;n.a;#f8ead9;80:107;vertical;3mm;200×200mm
+Standard;n.a;3;Left V;2;140;130;80;107;no;;n.a;n.a;#f8ead9;80:107;vertical;3mm;200×200mm
+Standard;n.a;3;Right H;1;105;70;150;100;yes;below (50mm from photo);n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;3;Right V;1;85;100;120;160;yes;upper right (5mm from photo);n.a;n.a;#f8ead9;03:04;vertical;3mm;200×200mm
+Standard;n.a;4;Left H;1;95;55;120;80;no;;n.a;n.a;#fdd16f;03:02;horizontal;3mm;200×200mm
+Standard;n.a;4;Left H;2;95;145;120;80;no;;n.a;n.a;#fdd16f;03:02;horizontal;3mm;200×200mm
+Standard;n.a;4;Left V;1;50;100;80;107;no;;n.a;n.a;#fdd16f;80:107;vertical;3mm;200×200mm
+Standard;n.a;4;Left V;2;140;100;80;107;no;;n.a;n.a;#fdd16f;80:107;vertical;3mm;200×200mm
+Standard;n.a;4;Right H;1;105;100;150;100;yes;below (10mm from photo);n.a;n.a;#fdd16f;03:02;horizontal;3mm;200×200mm
+Standard;n.a;4;Right V;1;105;90;120;160;yes;below (6mm from photo);n.a;n.a;#fdd16f;03:04;vertical;3mm;200×200mm
+Standard;n.a;5;Left H;1;75;55;120;80;no;;n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;5;Left H;2;115;145;120;80;no;;n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;5;Left V;1;50;70;80;107;no;;n.a;n.a;#f8ead9;80:107;vertical;3mm;200×200mm
+Standard;n.a;5;Left V;2;140;130;80;107;no;;n.a;n.a;#f8ead9;80:107;vertical;3mm;200×200mm
+Standard;n.a;5;Right H;1;105;130;150;100;yes;above (7mm from photo);n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;5;Right V;1;105;110;120;160;yes;above (6mm from photo);n.a;n.a;#f8ead9;03:04;vertical;3mm;200×200mm
+Standard;n.a;6;Left H;1;95;100;150;100;yes;below (20mm from photo);n.a;n.a;#ff8773;03:02;horizontal;3mm;200×200mm
+Standard;n.a;6;Left V;1;95;90;120;160;yes;below (20mm from photo);n.a;n.a;#ff8773;03:04;vertical;3mm;200×200mm
+Standard;n.a;6;Right H;1;105;100;150;100;yes;below (5mm from photo);n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
+Standard;n.a;6;Right V;1;105;90;120;160;yes;below (5mm from photo);n.a;n.a;#f8ead9;03:04;vertical;3mm;200×200mm
+Functional;Birthday wishes;1;-;-;-;-;-;-;yes;center;no;yes;#fdd16f;n.a;square;3mm;200×200mm
+Functional;Heart photo;1;Right V;1;105;100;165;175;no;;yes;no;#fdd16f;33:35:00;vertical;3mm;200×200mm
+Functional;Funny words;2;-;-;-;-;-;-;yes;center;no;yes;#f8ead9;n.a;square;3mm;200×200mm
+Functional;n.a;2;Right S;1;100;100;200;200;no;;no;no;no background, full bleed photo;01:01;square;3mm;200×200mm
+Functional;Favourite toy;3;Left H;1;95;130;150;100;yes;above (10mm from photo);yes;yes;#c16ac1;03:02;horizontal;3mm;200×200mm
+Functional;Favourite toy;3;Left V;1;76;115;87;130;yes;upper right (8mm from photo);yes;yes;#c16ac1;87:130;;;
+Functional;n.a;3;Right H;1;105;100;150;100;no;;no;no;#f8ead9;03:02;horizontal;3mm;200×200mm
+Functional;n.a;3;Right V;1;105;100;120;160;no;;no;no;#f8ead9;03:04;vertical;3mm;200×200mm
+Functional;First steps;4;Left H;1;95;130;150;100;yes;above (30mm from photo);yes;yes;#f8ead9;03:02;horizontal;3mm;200×200mm
+Functional;First steps;4;Left V;1;95;118;93;139;yes;lower right (6mm from photo);yes;yes;#f8ead9;93:139;vertical;3mm;200×200mm
+Functional;n.a;4;Right H;1;105;70;150;100;no;below (50mm from photo);no;no;#f8ead9;03:02;horizontal;3mm;200×200mm
+Functional;n.a;4;Right V;1;105;100;120;160;no;below (5mm from photo);no;no;#f8ead9;03:04;vertical;3mm;200×200mm
+Functional;Art-Gallery;5;Left H;1;95;100;150;100;yes;below (20mm from photo);yes;yes;#ff8773;03:02;horizontal;3mm;200×200mm
+Functional;Art-Gallery;5;Right H;1;105;100;150;100;yes;below (20mm from photo);yes;yes;#f8ead9;03:02;horizontal;3mm;200×200mm
+Functional;Art-Gallery;5;Left V;1;95;100;110;140;yes;below (9mm from photo);yes;yes;#ff8773;11:14;vertical;3mm;200×200mm
+Functional;Art-Gallery;5;Right V;1;105;100;110;140;yes;below (9mm from photo);yes;yes;#f8ead9;11:14;vertical;3mm;200×200mm

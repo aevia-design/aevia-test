@@ -4,9 +4,34 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aevia — Template Engine (Staff)</title>
-  <script src="../assets/Template_Toddler/template-data.js"></script>
+  <script src="../assets/Template_Scribble/template-data.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <style>
+    @font-face {
+      font-family: 'NT Somic';
+      src: url('../assets/fonts/NTSomic-Regular.woff2') format('woff2');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'NT Somic';
+      src: url('../assets/fonts/NTSomic-Medium.woff2') format('woff2');
+      font-weight: 500; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'EB Garamond';
+      src: url('../assets/fonts/EBGaramond-Regular.woff2') format('woff2');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'EB Garamond';
+      src: url('../assets/fonts/EBGaramond-Italic.woff2') format('woff2');
+      font-weight: 400; font-style: italic; font-display: swap;
+    }
+    @font-face {
+      font-family: 'FirstTimeWriting';
+      src: url('../assets/fonts/FirstTimeWriting!.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
     :root {
       --bg:        #fafaf8;
       --surface:   #f3efe9;
@@ -18,6 +43,7 @@
       --serif:     Georgia, 'Times New Roman', serif;
       --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
       --config-h:  68px;
+      --special-h: 0px;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
@@ -104,58 +130,167 @@
       transition: background 0.15s, color 0.15s;
     }
     .config-upload-btn:hover { background: var(--text); color: var(--white); }
-
-    /* ── PHOTO STRIP ── */
-    .photo-strip-wrap {
-      display: none;
-      position: fixed; top: calc(69px + var(--config-h)); left: 0; right: 0; z-index: 80;
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      padding: 10px 40px;
+    .config-photo-hint {
+      font-size: 11px; color: var(--muted); white-space: nowrap; line-height: 1.4;
     }
-    .photo-strip-wrap.visible { display: block; }
-    .photo-strip {
-      display: flex; gap: 8px;
-      overflow-x: auto; overflow-y: hidden;
-      padding-bottom: 4px;
+    .config-photo-hint.hint-ok   { color: #5a9a5a; }
+    .config-photo-hint.hint-warn { color: #c07000; }
+    .config-photo-hint.hint-over { color: #b03030; }
+
+    /* ── SPECIAL PHOTO PANEL ── */
+    .special-panel {
+      position: fixed;
+      top: calc(69px + var(--config-h));
+      left: 0; right: 0;
+      z-index: 85;
+      background: #fdf8f3;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 40px;
+      display: none;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .special-panel.visible { display: flex; }
+    .special-zone {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .special-zone-label {
+      font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--muted); white-space: nowrap;
+    }
+    .special-upload-btn {
+      font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase;
+      border: 1px dashed var(--border); border-radius: 4px;
+      padding: 5px 12px; background: var(--white); cursor: pointer;
+      color: var(--muted);
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .special-upload-btn:hover { border-color: var(--text); color: var(--text); }
+    .special-thumbs {
+      display: flex; gap: 6px;
+    }
+    .special-thumb {
+      width: 48px; height: 48px; border-radius: 4px;
+      overflow: hidden; border: 1px solid var(--border);
+      position: relative; flex-shrink: 0; cursor: pointer;
+    }
+    .special-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .special-thumb-remove {
+      position: absolute; top: 1px; right: 2px;
+      font-size: 10px; color: var(--white); background: rgba(0,0,0,0.5);
+      border-radius: 2px; padding: 0 2px; cursor: pointer; line-height: 14px;
+    }
+
+    /* ── PHOTO SIDEBAR ── */
+    .photo-sidebar {
+      position: fixed;
+      top: calc(69px + var(--config-h) + var(--special-h));
+      left: 0; bottom: 0;
+      width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto; overflow-x: hidden;
+      z-index: 80;
+      padding: 16px 12px 40px;
       scrollbar-width: thin;
       scrollbar-color: var(--border) transparent;
     }
-    .photo-strip::-webkit-scrollbar { height: 4px; }
-    .photo-strip::-webkit-scrollbar-track { background: transparent; }
-    .photo-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .photo-sidebar::-webkit-scrollbar { width: 4px; }
+    .photo-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .photo-sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .sidebar-total {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 14px; padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-section-header {
+      font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin: 14px 0 8px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .sidebar-section-header .sidebar-count {
+      background: var(--border); color: var(--text);
+      border-radius: 100px; padding: 1px 7px; font-size: 10px;
+    }
+    .sidebar-section-header.unplaced .sidebar-count {
+      background: var(--accent-dk); color: #fff;
+    }
+    .sidebar-section-header.duplicates { color: #d04040; }
+    .sidebar-section-header.duplicates .sidebar-count { background: #d04040; color: #fff; }
+    .sidebar-thumbs { display: flex; flex-direction: column; gap: 8px; }
     .photo-thumb {
-      flex-shrink: 0;
-      width: 60px; height: 60px;
-      border-radius: 4px; overflow: hidden;
+      border-radius: 5px; overflow: hidden;
       border: 2px solid var(--border);
       background: var(--bg);
       position: relative;
+      cursor: grab;
     }
-    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
-    .photo-thumb.assigned { border-color: var(--border); opacity: 0.5; }
     .photo-thumb.unassigned { border-color: var(--accent-dk); }
+    .photo-thumb.assigned   { border-color: var(--border); opacity: 0.55; }
+    .photo-thumb.dragging   { opacity: 0.3; cursor: grabbing; }
+    .photo-sidebar.sidebar-drag-over { background: #e8f4e8; border-right-color: #6aaa6a; outline: 2px dashed #6aaa6a; outline-offset: -4px; }
+    /* landscape: full sidebar width, shorter height */
+    .photo-thumb[data-orient="H"] { width: 100%; height: 118px; }
+    /* portrait: narrower, taller — centered */
+    .photo-thumb[data-orient="V"] { width: 62%; height: 148px; margin: 0 auto; display: block; }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .photo-thumb .warn-badge {
-      position: absolute; bottom: 2px; right: 2px;
+      position: absolute; bottom: 3px; right: 3px;
       background: #f4ca6f; color: #493955;
-      font-size: 8px; padding: 1px 3px; border-radius: 2px;
-      font-weight: 700;
+      font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: 700;
     }
-    .photo-strip-label {
-      font-size: 11px; color: var(--muted); margin-bottom: 6px;
-      letter-spacing: 0.06em; text-transform: uppercase;
+    .photo-thumb .dup-badge {
+      position: absolute; top: 3px; right: 3px;
+      background: #d04040; color: #fff;
+      font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: 700;
     }
+    .photo-thumb .thumb-name {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.45); color: #fff;
+      font-size: 9px; padding: 3px 5px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .photo-slot[draggable="true"] { cursor: grab; }
+    .photo-slot.dragging { opacity: 0.35; }
+    .photo-slot.drag-over { outline: 2px solid var(--accent-dk); outline-offset: -2px; z-index: 3; }
 
     /* ── MAIN CONTENT AREA ── */
     .page-body {
-      padding-top: calc(69px + var(--config-h) + 32px);
+      padding-top: calc(69px + var(--config-h) + var(--special-h) + 32px);
+      padding-left: 260px;
       min-height: 100vh;
     }
-    .page-body.strip-visible {
-      padding-top: calc(69px + var(--config-h) + 88px + 32px);
+
+    /* ── DEBUG LOG (bottom) ── */
+    .debug-log-bottom {
+      margin: 48px 0 0;
+      border-radius: 6px; overflow: hidden;
+      border: 1px solid #333;
     }
-    .page-body.log-visible {
-      padding-top: calc(69px + var(--config-h) + 88px + 162px + 32px);
+    .debug-log-toggle {
+      background: #1a1a1a; color: #888;
+      font-size: 11px; font-family: monospace;
+      padding: 8px 16px; cursor: pointer;
+      user-select: none;
+      display: flex; align-items: center; gap: 8px;
     }
+    .debug-log-toggle:hover { color: #c8f0b0; }
+    .debug-log-toggle .toggle-arrow { transition: transform 0.15s; }
+    .debug-log-bottom.open .toggle-arrow { transform: rotate(90deg); }
+    .debug-log-inner {
+      display: none;
+      background: #1a1a1a; color: #c8f0b0;
+      font-family: monospace; font-size: 11px; line-height: 1.6;
+      padding: 10px 16px 14px;
+      max-height: 240px; overflow-y: auto;
+    }
+    .debug-log-bottom.open .debug-log-inner { display: block; }
+    .debug-log-line { white-space: pre; }
+    .debug-log-line.warn  { color: #f4ca6f; }
+    .debug-log-line.error { color: #f47e67; }
+    .debug-log-line.info  { color: #c8f0b0; }
+    .debug-log-line.muted { color: #888; }
 
     /* ── BOOK CANVAS ── */
     .book-canvas-wrap {
@@ -223,11 +358,21 @@
       margin-left: auto; display: flex; gap: 8px;
     }
     .spread-ctrl-btn {
-      font-size: 11px; letter-spacing: 0.04em;
+      font-size: 13px; letter-spacing: 0.04em;
       border: 1px solid var(--border); border-radius: 4px;
-      padding: 4px 10px; color: var(--muted);
-      opacity: 0.5; cursor: not-allowed;
+      padding: 3px 9px; color: var(--muted);
+      cursor: pointer; background: var(--bg);
+      transition: background 0.12s, color 0.12s;
     }
+    .spread-ctrl-btn:hover { background: var(--surface); color: var(--text); }
+    .spread-ctrl-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .spread-type-select {
+      font-family: var(--sans); font-size: 11px; color: var(--text);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 3px 6px; background: var(--bg); cursor: pointer;
+      outline: none; max-width: 130px;
+    }
+    .spread-type-select:focus { border-color: var(--text); }
     .spread-pages {
       display: flex; gap: 4px;
     }
@@ -272,23 +417,60 @@
       line-height: 1.4;
     }
 
-    /* ── DEBUG LOG ── */
-    .debug-log-wrap {
-      display: none;
-      position: fixed; left: 0; right: 0; z-index: 75;
-      top: calc(69px + var(--config-h) + 88px);
-      background: #1a1a1a; color: #c8f0b0;
-      font-family: monospace; font-size: 11px; line-height: 1.6;
-      padding: 10px 40px 12px;
-      border-bottom: 1px solid #333;
-      max-height: 160px; overflow-y: auto;
+    /* ── CAPTIONS ── */
+    .slot-caption {
+      position: absolute;
+      z-index: 3;
+      font-family: 'NT Somic', var(--sans);
+      font-size: 14pt;
+      line-height: 18pt;
+      letter-spacing: -0.02em;
+      color: #493955;
+      text-align: center;
+      outline: none;
+      border: none;
+      background: transparent;
+      cursor: text;
+      padding: 2px 4px;
+      border-radius: 2px;
+      transition: background 0.12s;
+      word-break: normal;
+      overflow-wrap: break-word;
+      white-space: normal;
     }
-    .debug-log-wrap.visible { display: block; }
-    .debug-log-line { white-space: pre; }
-    .debug-log-line.warn  { color: #f4ca6f; }
-    .debug-log-line.error { color: #f47e67; }
-    .debug-log-line.info  { color: #c8f0b0; }
-    .debug-log-line.muted { color: #888; }
+    .slot-caption:empty::before {
+      content: 'Add caption…';
+      font-size: 10pt;
+      color: #c0b8ae;
+      pointer-events: none;
+    }
+    .fp-text-panel {
+      font-size: 16pt;
+      line-height: 22pt;
+      z-index: 3;
+    }
+    .fp-text-panel:empty::before {
+      content: 'Click to add text…';
+      font-size: 11pt;
+    }
+    .slot-caption:focus {
+      background: rgba(255,255,255,0.75);
+      outline: 1px dashed #c0b8ae;
+      outline-offset: 2px;
+    }
+    .caption-ai-btn {
+      position: absolute;
+      z-index: 4;
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      border: 1px solid var(--border); border-radius: 100px;
+      padding: 2px 8px; background: var(--white); color: var(--muted);
+      cursor: pointer; opacity: 0; transition: opacity 0.15s, background 0.12s;
+      white-space: nowrap; line-height: 1.8;
+    }
+    .caption-ai-btn:hover { background: var(--text); color: var(--white); border-color: var(--text); opacity: 1 !important; }
+    .caption-ai-btn.loading { opacity: 1 !important; color: var(--muted); }
+    .page-canvas:hover .caption-ai-btn { opacity: 0.7; }
+    .caption-ai-btn:focus { opacity: 1; }
 
     /* ── FOOTER ── */
     .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 64px 56px 48px; }
@@ -359,19 +541,54 @@
   </div>
 
   <input type="file" id="photo-file-input" accept=".jpg,.jpeg,.heic,.heif" multiple hidden />
-  <button class="config-upload-btn" id="upload-btn">Upload Photos</button>
+  <button class="config-upload-btn" id="upload-btn">+ Add Photos</button>
+  <div class="config-photo-hint" id="config-photo-hint"></div>
 
 </div>
 
-<!-- ── PHOTO STRIP ── -->
-<div class="photo-strip-wrap" id="photo-strip-wrap">
-  <div class="photo-strip-label">Photos — <span id="strip-count">0</span> uploaded</div>
-  <div class="photo-strip" id="photo-strip"></div>
+<!-- ── SPECIAL PHOTO PANEL ── -->
+<div class="special-panel" id="special-panel">
+  <div class="special-zone" id="special-zone-FP1" style="display:none;">
+    <span class="special-zone-label">Birthday photo</span>
+    <button class="special-upload-btn" data-fp="FP1" data-max="1">+ Upload photo</button>
+    <div class="special-thumbs" id="special-thumbs-FP1"></div>
+    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP1" />
+  </div>
+  <div class="special-zone" id="special-zone-FP3" style="display:none;">
+    <span class="special-zone-label">Favourite toy</span>
+    <button class="special-upload-btn" data-fp="FP3" data-max="1">+ Upload photo</button>
+    <div class="special-thumbs" id="special-thumbs-FP3"></div>
+    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP3" />
+  </div>
+  <div class="special-zone" id="special-zone-FP4" style="display:none;">
+    <span class="special-zone-label">First steps</span>
+    <button class="special-upload-btn" data-fp="FP4" data-max="1">+ Upload photo</button>
+    <div class="special-thumbs" id="special-thumbs-FP4"></div>
+    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP4" />
+  </div>
+  <div class="special-zone" id="special-zone-FP5" style="display:none;">
+    <span class="special-zone-label">Art gallery (1–2)</span>
+    <button class="special-upload-btn" data-fp="FP5" data-max="2">+ Upload artwork</button>
+    <div class="special-thumbs" id="special-thumbs-FP5"></div>
+    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP5" />
+  </div>
 </div>
 
-<!-- ── DEBUG LOG ── -->
-<div class="debug-log-wrap" id="debug-log-wrap">
-  <div id="debug-log"></div>
+<!-- ── PHOTO SIDEBAR ── -->
+<div class="photo-sidebar" id="photo-sidebar" style="display:none;">
+  <div class="sidebar-total" id="sidebar-total">0 photos</div>
+  <div class="sidebar-section-header duplicates" id="sidebar-dup-header" style="display:none;">
+    Duplicates <span class="sidebar-count" id="sidebar-dup-count">0</span>
+  </div>
+  <div class="sidebar-thumbs" id="sidebar-duplicates"></div>
+  <div class="sidebar-section-header unplaced">
+    Unplaced <span class="sidebar-count" id="sidebar-unplaced-count">0</span>
+  </div>
+  <div class="sidebar-thumbs" id="sidebar-unplaced"></div>
+  <div class="sidebar-section-header">
+    Placed <span class="sidebar-count" id="sidebar-placed-count">0</span>
+  </div>
+  <div class="sidebar-thumbs" id="sidebar-placed"></div>
 </div>
 
 <!-- ── MAIN CONTENT ── -->
@@ -383,6 +600,12 @@
         <h3>No photos yet</h3>
         <p>Upload photos and configure the book above to begin. Photos will be sorted automatically by date taken.</p>
       </div>
+    </div>
+    <div class="debug-log-bottom" id="debug-log-bottom" style="display:none;">
+      <div class="debug-log-toggle" id="debug-log-toggle">
+        <span class="toggle-arrow">▶</span> Processing log
+      </div>
+      <div class="debug-log-inner" id="debug-log"></div>
     </div>
   </div>
 </div>
@@ -434,29 +657,80 @@
   window.photoPool       = [];   // [{ file, url, date, orientation, name, w, h, lowRes }]
   window.bookAssignments = {};   // { spreadIndex: { left:[poolIdx|null,...], right:[...] } }
   window.captionState    = {};   // { spreadIndex: { left:{1:'text'}, right:{1:'text'} } }
-  window.specialPhotos   = { FP3: [], FP4: [], FP5: [] };
+  window.specialPhotos   = { FP1: [], FP3: [], FP4: [], FP5: [] };
 
   const SCALE = 3;               // px per mm
   const HEIC_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/convertHeic';
-  const SVG_BASE      = '../assets/Template_Toddler/Spreads/';
+  const SVG_BASE      = '../assets/Template_Scribble/Spreads/';
+
+  /* ── TYPOGRAPHIC HELPERS ── */
+
+  function collectExistingCaptions() {
+    const caps = window.bookCaptions || {};
+    const result = [];
+    Object.values(caps).forEach(spreadCaps => {
+      Object.values(spreadCaps).forEach(sideCaps => {
+        Object.values(sideCaps).forEach(text => {
+          if (text && text.trim()) result.push(text.trim());
+        });
+      });
+    });
+    return result;
+  }
+
+  function applyTypographicRules(text) {
+    if (!text) return text;
+    const NBSP = ' ';
+    // Non-breaking space after short prepositions/articles
+    const preps = /\b(a|an|the|in|on|at|by|of|to|for|with|from|up|as|into|under|over|about|and|but|or) /gi;
+    text = text.replace(preps, (_, p) => p + ' ');
+    // Widow prevention: keep last two words together
+    text = text.replace(/ (\S+)$/, ' $1');
+    return text;
+  }
+
+  async function urlToBase64(url, maxPx = 1200) {
+    const resp = await fetch(url);
+    const blob = await resp.blob();
+    // Resize to maxPx before encoding — keeps payload well under 10 MB limit
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.round(img.naturalWidth  * scale);
+        const h = Math.round(img.naturalHeight * scale);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(blob);
+    });
+  }
 
   /* ── DEBUG LOG helpers ── */
   function dbLog(msg, level) {
-    const wrap = document.getElementById('debug-log-wrap');
-    const log  = document.getElementById('debug-log');
-    const line = document.createElement('div');
+    const bottom = document.getElementById('debug-log-bottom');
+    const log    = document.getElementById('debug-log');
+    const line   = document.createElement('div');
     line.className = 'debug-log-line ' + (level || 'info');
     line.textContent = msg;
     log.appendChild(line);
-    wrap.scrollTop = wrap.scrollHeight;
-    wrap.classList.add('visible');
-    document.getElementById('page-body').classList.add('log-visible');
+    log.scrollTop = log.scrollHeight;
+    bottom.style.display = '';
   }
   function dbClear() {
     document.getElementById('debug-log').innerHTML = '';
-    document.getElementById('debug-log-wrap').classList.remove('visible');
-    document.getElementById('page-body').classList.remove('log-visible');
+    document.getElementById('debug-log-bottom').style.display = 'none';
+    document.getElementById('debug-log-bottom').classList.remove('open');
   }
+  document.addEventListener('click', e => {
+    if (e.target.closest('#debug-log-toggle')) {
+      document.getElementById('debug-log-bottom').classList.toggle('open');
+    }
+  });
 
   /* ═══════════════════════════════════════════
      PHOTO PROCESSING  (EXIF + HEIC + orientation)
@@ -599,28 +873,30 @@
     const files = Array.from(this.files);
     if (!files.length) return;
 
-    // Revoke old objectURLs
-    window.photoPool.forEach(p => URL.revokeObjectURL(p.url));
-    window.photoPool = [];
-    window.bookAssignments = {};
-    window.captionState = {};
-    dbClear();
-
-    // Show loading state
+    // Show loading state without wiping existing photos
     document.getElementById('book-canvas').innerHTML =
       '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">⏳</div><h3>Processing photos…</h3></div>';
 
-    dbLog('═══ Processing ' + files.length + ' file(s) ═══', 'info');
+    dbLog('═══ Processing ' + files.length + ' new file(s) ═══', 'info');
 
     // Sequential processing — HEIC WASM has shared state, parallel corrupts it
-    const processed = [];
+    const newPhotos = [];
+    const existingNames = new Set(window.photoPool.filter(p => !p.duplicate).map(p => p.name));
     for (const file of files) {
       const result = await processOneFile(file);
-      if (result) processed.push(result);
+      if (!result) continue;
+      if (existingNames.has(file.name)) {
+        result.duplicate = true;
+        dbLog('  ⚠ Duplicate detected: ' + file.name + ' — will be flagged in sidebar', 'warn');
+      } else {
+        existingNames.add(file.name); // prevent double-adding the same file in one batch
+      }
+      newPhotos.push(result);
     }
 
-    // Sort: EXIF date → filename trailing number → upload order
-    processed.sort((a, b) => {
+    // Merge new photos into existing pool and re-sort everything by EXIF date → filename → original order
+    const merged = [...window.photoPool, ...newPhotos];
+    merged.sort((a, b) => {
       if (a.date && b.date) return new Date(a.date) - new Date(b.date);
       if (a.date && !b.date) return -1;
       if (!a.date && b.date) return 1;
@@ -628,55 +904,163 @@
       if (na !== null && nb !== null) return na - nb;
       if (na !== null) return -1;
       if (nb !== null) return 1;
-      return files.indexOf(a.file) - files.indexOf(b.file);
+      return 0;
     });
 
-    const hasAllExif = processed.every(p => p.date);
-    const sortMethod = hasAllExif ? 'EXIF date' : processed.some(p => filenameNumber(p.name) !== null) ? 'filename number' : 'upload order';
+    const hasAllExif = merged.every(p => p.date);
+    const sortMethod = hasAllExif ? 'EXIF date' : merged.some(p => filenameNumber(p.name) !== null) ? 'filename number' : 'upload order';
     dbLog('Sort method: ' + sortMethod, hasAllExif ? 'info' : 'warn');
-    dbLog('Final order: ' + processed.map((p, i) => (i + 1) + '. ' + p.name + ' [' + p.orientation.charAt(0).toUpperCase() + ']').join('  '), 'info');
+    dbLog('Final order: ' + merged.map((p, i) => (i + 1) + '. ' + p.name + ' [' + p.orientation.charAt(0).toUpperCase() + ']').join('  '), 'info');
 
-    window.photoPool = processed;
+    window.photoPool = merged;
+    window.bookAssignments = {};
+    window.captionState = {};
 
-    renderPhotoStrip();
+    renderPhotoSidebar();
     renderBook();
+    updatePhotoHint();
+    this.value = ''; // reset so the same file can be re-selected later if needed
   });
 
   /* ═══════════════════════════════════════════
-     PHOTO STRIP
+     PHOTO SIDEBAR
   ═══════════════════════════════════════════ */
 
-  function renderPhotoStrip() {
-    const strip = document.getElementById('photo-strip');
-    const wrap  = document.getElementById('photo-strip-wrap');
-    const body  = document.getElementById('page-body');
+  function makeSidebarThumb(photo, i) {
+    const orient = photo.orientation === 'vertical' ? 'V' : 'H';
+    const thumb = document.createElement('div');
+    thumb.className = 'photo-thumb unassigned';
+    thumb.dataset.index = i;
+    thumb.dataset.orient = orient;
+    thumb.title = photo.name;
+    thumb.draggable = true;
+    thumb.addEventListener('dragstart', e => {
+      window._dragType = 'strip';
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'strip', poolIdx: i }));
+      thumb.classList.add('dragging');
+    });
+    thumb.addEventListener('dragend', () => { window._dragType = null; thumb.classList.remove('dragging'); });
 
-    strip.innerHTML = '';
-    document.getElementById('strip-count').textContent = window.photoPool.length;
+    const img = document.createElement('img');
+    img.src = photo.url;
+    img.alt = photo.name;
+    img.draggable = false;
+    thumb.appendChild(img);
 
+    const nameEl = document.createElement('div');
+    nameEl.className = 'thumb-name';
+    nameEl.textContent = photo.name.replace(/\.[^.]+$/, '');
+    thumb.appendChild(nameEl);
+
+    if (photo.lowRes) {
+      const badge = document.createElement('div');
+      badge.className = 'warn-badge';
+      badge.textContent = '⚠ Low res';
+      thumb.appendChild(badge);
+    }
+
+    if (photo.duplicate) {
+      const badge = document.createElement('div');
+      badge.className = 'dup-badge';
+      badge.textContent = 'Duplicate';
+      thumb.appendChild(badge);
+      thumb.title = photo.name + ' — duplicate, will not be placed';
+      thumb.draggable = false;
+      thumb.style.opacity = '0.6';
+    }
+
+    return thumb;
+  }
+
+  function renderPhotoSidebar() {
+    const sidebar = document.getElementById('photo-sidebar');
+    sidebar.style.display = '';
+
+    const dupCount   = window.photoPool.filter(p => p.duplicate).length;
+    const totalCount = window.photoPool.length;
+    const dupNote    = dupCount > 0 ? ' (' + dupCount + ' duplicate' + (dupCount > 1 ? 's' : '') + ')' : '';
+    document.getElementById('sidebar-total').textContent =
+      totalCount + ' photo' + (totalCount !== 1 ? 's' : '') + ' uploaded' + dupNote;
+
+    // Build thumbs but don't sort into sections yet — updateSidebarState does that
+    // Store all thumbs keyed by index so updateSidebarState can move them
+    window._sidebarThumbs = {};
     window.photoPool.forEach((photo, i) => {
-      const thumb = document.createElement('div');
-      thumb.className = 'photo-thumb unassigned';
-      thumb.dataset.index = i;
-      thumb.title = photo.name;
-
-      const img = document.createElement('img');
-      img.src = photo.url;
-      img.alt = photo.name;
-      thumb.appendChild(img);
-
-      if (photo.lowRes) {
-        const badge = document.createElement('div');
-        badge.className = 'warn-badge';
-        badge.textContent = '⚠ Low res';
-        thumb.appendChild(badge);
-      }
-
-      strip.appendChild(thumb);
+      window._sidebarThumbs[i] = makeSidebarThumb(photo, i);
     });
 
-    wrap.classList.add('visible');
-    body.classList.add('strip-visible');
+    // Allow dropping a slot-photo onto the sidebar to unassign it
+    if (!sidebar._dropWired) {
+      sidebar._dropWired = true;
+      sidebar.addEventListener('dragover', e => {
+        if (window._dragType === 'slot') { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; sidebar.classList.add('sidebar-drag-over'); }
+      });
+      sidebar.addEventListener('dragleave', e => {
+        if (!sidebar.contains(e.relatedTarget)) sidebar.classList.remove('sidebar-drag-over');
+      });
+      sidebar.addEventListener('drop', e => {
+        sidebar.classList.remove('sidebar-drag-over');
+        let data;
+        try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+        if (data.type !== 'slot') return;
+        e.preventDefault();
+        const asgn = window.bookAssignments[data.spreadIndex];
+        if (!asgn || !asgn[data.side]) return;
+        asgn[data.side][data.slotIdx] = null;
+        const sid = window._bookSequence?.[data.spreadIndex];
+        if (sid?.startsWith('FP')) {
+          if (!window._fpAssignments) window._fpAssignments = {};
+          window._fpAssignments[sid] = asgn;
+        }
+        rerenderSpread(data.spreadIndex);
+        updateSidebarState();
+      });
+    }
+
+    updateSidebarState();
+  }
+
+  function updateSidebarState() {
+    const placed = new Set();
+    Object.values(window.bookAssignments).forEach(asgn => {
+      [...(asgn.left || []), ...(asgn.right || [])].forEach(idx => {
+        if (idx !== null && idx !== undefined) placed.add(idx);
+      });
+    });
+
+    const unplacedEl   = document.getElementById('sidebar-unplaced');
+    const placedEl     = document.getElementById('sidebar-placed');
+    const dupEl        = document.getElementById('sidebar-duplicates');
+    const dupHeader    = document.getElementById('sidebar-dup-header');
+    unplacedEl.innerHTML = '';
+    placedEl.innerHTML   = '';
+    dupEl.innerHTML      = '';
+
+    let unplacedCount = 0, placedCount = 0, dupCount = 0;
+    window.photoPool.forEach((photo, i) => {
+      const thumb = window._sidebarThumbs[i];
+      if (!thumb) return;
+      if (photo.duplicate) {
+        dupEl.appendChild(thumb);
+        dupCount++;
+      } else if (placed.has(i)) {
+        thumb.classList.add('assigned');
+        thumb.classList.remove('unassigned');
+        placedEl.appendChild(thumb);
+        placedCount++;
+      } else {
+        thumb.classList.add('unassigned');
+        thumb.classList.remove('assigned');
+        unplacedEl.appendChild(thumb);
+        unplacedCount++;
+      }
+    });
+
+    document.getElementById('sidebar-unplaced-count').textContent = unplacedCount;
+    document.getElementById('sidebar-placed-count').textContent   = placedCount;
+    document.getElementById('sidebar-dup-count').textContent      = dupCount;
+    dupHeader.style.display = dupCount > 0 ? '' : 'none';
   }
 
   /* ═══════════════════════════════════════════
@@ -685,14 +1069,14 @@
 
   /*
    * renderSpread(spreadId, photoSlice, spreadIndex)
-   *   spreadId    — key from TODDLER_DATA.spreads, e.g. 'SP1'
+   *   spreadId    — key from SCRIBBLE_DATA.spreads, e.g. 'SP1'
    *   photoSlice  — { left: [poolIdx|null,...], right: [...] }
    *   spreadIndex — integer, for bookAssignments + captionState keys
    *
    * Returns a .spread-row DOM element ready to append.
    */
   function renderSpread(spreadId, photoSlice, spreadIndex) {
-    const spreadDef = window.TODDLER_DATA.spreads[spreadId];
+    const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
     if (!spreadDef) { console.error('Unknown spreadId', spreadId); return null; }
 
     const row = document.createElement('div');
@@ -722,13 +1106,50 @@
 
     const controls = document.createElement('div');
     controls.className = 'spread-controls-strip';
-    ['↑ Move up', '↓ Move down', 'Change type ▼'].forEach(label => {
-      const btn = document.createElement('button');
-      btn.className = 'spread-ctrl-btn';
-      btn.textContent = label;
-      btn.disabled = true;
-      controls.appendChild(btn);
+
+    // ↑ / ↓ move buttons (SP0 is always first — never moveable)
+    const btnUp = document.createElement('button');
+    btnUp.className = 'spread-ctrl-btn';
+    btnUp.textContent = '↑';
+    btnUp.title = 'Move spread up';
+    btnUp.disabled = spreadIndex <= 1; // index 0 = SP0 fixed; index 1 = nothing above it to swap with
+    btnUp.addEventListener('click', () => moveSpread(spreadIndex, -1));
+
+    const btnDown = document.createElement('button');
+    btnDown.className = 'spread-ctrl-btn';
+    btnDown.textContent = '↓';
+    btnDown.title = 'Move spread down';
+    btnDown.disabled = spreadIndex === 0; // SP0 never moves
+    btnDown.addEventListener('click', () => moveSpread(spreadIndex, +1));
+
+    // Type selector — all standard SP types available; FPs come from config bar checkboxes
+    const typeSelect = document.createElement('select');
+    typeSelect.className = 'spread-type-select';
+    typeSelect.title = 'Change spread type';
+    const standardTypes = ['SP1','SP2','SP3','SP4','SP5','SP6'];
+    const fpTypes = ['FP1','FP2','FP3','FP4','FP5'];
+    [...standardTypes, ...fpTypes].forEach(id => {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = window.SCRIBBLE_DATA.spreads[id]?.label || id;
+      if (id === spreadId) opt.selected = true;
+      // Disable unique FP types already present elsewhere in the book
+      if (id.startsWith('FP') && id !== 'FP5' && id !== spreadId) {
+        if (window._bookSequence?.includes(id)) {
+          opt.disabled = true;
+          opt.textContent += ' ✓';
+        }
+      }
+      typeSelect.appendChild(opt);
     });
+    typeSelect.addEventListener('change', () => {
+      const ok = changeSpreadType(spreadIndex, typeSelect.value);
+      if (!ok) typeSelect.value = window._bookSequence?.[spreadIndex] ?? spreadId;
+    });
+
+    controls.appendChild(btnUp);
+    controls.appendChild(btnDown);
+    controls.appendChild(typeSelect);
     header.appendChild(controls);
 
     row.appendChild(header);
@@ -762,13 +1183,21 @@
       if (!pageDef) return;
 
       // Determine which orientation variant to use
-      // Take orientation from first assigned photo on this side
       const sideSlice = photoSlice[side] || [];
       let dominantOrientation = 'horizontal'; // default
-      for (const idx of sideSlice) {
-        if (idx !== null && window.photoPool[idx]) {
-          dominantOrientation = window.photoPool[idx].orientation || 'horizontal';
-          break;
+
+      if (spreadDef.allArtwork) {
+        // FP5: each page picks its variant independently based on its own artwork's orientation
+        const artIdx = side === 'left' ? 0 : 1;
+        const art = (window.specialPhotos[spreadId] || [])[artIdx];
+        if (art) dominantOrientation = art.orientation || 'horizontal';
+      } else {
+        // Regular spreads: take orientation from first assigned photo on this side
+        for (const idx of sideSlice) {
+          if (idx !== null && window.photoPool[idx]) {
+            dominantOrientation = window.photoPool[idx].orientation || 'horizontal';
+            break;
+          }
         }
       }
 
@@ -792,17 +1221,26 @@
       if (variant.svg) {
         const overlay = document.createElement('img');
         overlay.className = 'svg-overlay';
-        overlay.src = SVG_BASE + variant.svg;
+        overlay.dataset.src = SVG_BASE + variant.svg;
         overlay.alt = '';
-        overlay.loading = 'lazy';
         overlay.decoding = 'async';
         canvas.appendChild(overlay);
       }
 
       // Render photo slots
       variant.slots.forEach((slotDef, slotIdx) => {
-        const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
-        const photo   = poolIdx !== null ? window.photoPool[poolIdx] : null;
+        // Resolve photo — special/artwork pools pull from window.specialPhotos, not the main pool
+        let photo = null;
+        let isSpecialSlot = false;
+        if (slotDef.pool === 'special' || slotDef.pool === 'artwork') {
+          isSpecialSlot = true;
+          const spKey = spreadId; // e.g. 'FP3', 'FP4', 'FP5'
+          const spArr = window.specialPhotos[spKey] || [];
+          photo = spArr[slotIdx] || null;
+        } else {
+          const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
+          photo = poolIdx !== null ? window.photoPool[poolIdx] : null;
+        }
 
         const slotEl = document.createElement('div');
         slotEl.className = 'photo-slot';
@@ -828,9 +1266,8 @@
         if (photo) {
           const img = document.createElement('img');
           img.className = 'slot-photo';
-          img.src = photo.url;
+          img.dataset.src = photo.url;
           img.alt = photo.name;
-          img.loading = 'lazy';
           img.decoding = 'async';
           img.onerror = () => console.warn('Slot img failed to load:', photo.name, photo.url.slice(0,40));
           slotEl.appendChild(img);
@@ -838,16 +1275,284 @@
           if (photo.lowRes) {
             slotEl.style.outline = '3px solid #f4ca6f';
           }
+
+          // Special slots are fixed — not draggable or swappable
+          if (!isSpecialSlot) {
+            slotEl.draggable = true;
+            slotEl.addEventListener('dragstart', e => {
+              e.stopPropagation();
+              window._dragType = 'slot';
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', JSON.stringify({
+                type: 'slot', spreadIndex, side, slotIdx
+              }));
+              slotEl.classList.add('dragging');
+            });
+            slotEl.addEventListener('dragend', () => { window._dragType = null; slotEl.classList.remove('dragging'); });
+          }
         } else {
           const ph = document.createElement('div');
           ph.className = 'slot-placeholder';
-          ph.textContent = 'Drop photo here';
+          if (isSpecialSlot) {
+            const labels = { FP3: 'Upload toy photo above', FP4: 'Upload steps photo above', FP5: 'Upload artwork above' };
+            ph.textContent = labels[spreadId] || 'Upload special photo above';
+            ph.style.fontSize = '11px';
+            ph.style.borderStyle = 'dashed';
+          } else {
+            ph.textContent = 'Drop photo here';
+          }
           slotEl.appendChild(ph);
         }
 
+        // Special slots don't accept drops from the pool or other slots
+        if (!isSpecialSlot) {
+          slotEl.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            slotEl.classList.add('drag-over');
+          });
+          slotEl.addEventListener('dragleave', () => slotEl.classList.remove('drag-over'));
+          slotEl.addEventListener('drop', e => {
+            e.preventDefault();
+            slotEl.classList.remove('drag-over');
+            handleSlotDrop(e, spreadIndex, side, slotIdx);
+          });
+        }
+
         canvas.appendChild(slotEl);
+
+        // Caption overlay (sibling on canvas, outside slot so overflow:hidden doesn't clip it)
+        if (slotDef.caption?.allowed) {
+          const cap = slotDef.caption;
+
+          // Slot geometry (mm → px)
+          const sLeft = (slotDef.x - slotDef.w / 2) * SCALE;
+          const sTop  = (slotDef.y - slotDef.h / 2) * SCALE;
+          const sW    = slotDef.w * SCALE;
+          const sH    = slotDef.h * SCALE;
+          const gap   = (cap.offset || 0) * SCALE;
+          const capLineH = 26; // approx px height for one line at 14pt
+          const capH     = capLineH * 2;
+
+          // ── Position ──
+          let capLeft, capTop, capWidth;
+          if (cap.position === 'below') {
+            capLeft  = sLeft + sW * 0.05;
+            capTop   = sTop + sH + gap;
+            capWidth = sW * 0.90;
+          } else if (cap.position === 'above') {
+            capLeft  = sLeft + sW * 0.05;
+            capTop   = sTop - gap - capH;
+            capWidth = sW * 0.90;
+          } else if (cap.position === 'upper-right') {
+            // Horizontal text block in the right-margin corner, aligned to photo top
+            capLeft  = sLeft + sW + gap;
+            capTop   = sTop;
+            capWidth = Math.max(60, (200 * SCALE) - (sLeft + sW + gap) - 6);
+          } else {
+            capLeft  = sLeft + sW * 0.05;
+            capTop   = sTop + sH + gap;
+            capWidth = sW * 0.90;
+          }
+
+          // ── Caption editable element ──
+          const captionEl = document.createElement('div');
+          captionEl.className = 'slot-caption';
+          captionEl.contentEditable = 'true';
+          captionEl.spellcheck = false;
+          captionEl.style.left  = capLeft  + 'px';
+          captionEl.style.top   = capTop   + 'px';
+          captionEl.style.width = capWidth + 'px';
+          if (cap.position === 'upper-right') captionEl.style.textAlign = 'left';
+
+          const saved = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx];
+          if (saved) captionEl.textContent = applyTypographicRules(saved);
+
+          const saveCaption = () => {
+            const raw = captionEl.textContent.trim();
+            if (!window.bookCaptions) window.bookCaptions = {};
+            if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+            if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+            window.bookCaptions[spreadIndex][side][slotIdx] = raw;
+            return raw;
+          };
+
+          captionEl.addEventListener('focus', () => {
+            // Show raw text while editing (undo typographic substitutions)
+            const raw = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx] || '';
+            captionEl.textContent = raw;
+          });
+          captionEl.addEventListener('blur', () => {
+            const raw = saveCaption();
+            captionEl.textContent = applyTypographicRules(raw);
+          });
+          captionEl.addEventListener('mousedown', e => e.stopPropagation());
+          captionEl.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); captionEl.blur(); }
+          });
+
+          canvas.appendChild(captionEl);
+
+          // ── AI generate button ──
+          const aiBtn = document.createElement('button');
+          aiBtn.className = 'caption-ai-btn';
+          aiBtn.textContent = '✦ Generate';
+          aiBtn.title = 'Generate caption with AI';
+
+          // Position just above the caption field (or below if above-position)
+          if (cap.position === 'above') {
+            aiBtn.style.left = capLeft + 'px';
+            aiBtn.style.top  = (capTop - 22) + 'px';
+          } else if (cap.position === 'upper-right') {
+            aiBtn.style.left = capLeft + 'px';
+            aiBtn.style.top  = (capTop + capH + 4) + 'px';
+          } else {
+            aiBtn.style.left = capLeft + 'px';
+            aiBtn.style.top  = (capTop - 22) + 'px';
+          }
+
+          aiBtn.addEventListener('click', async () => {
+            const asgn = window.bookAssignments?.[spreadIndex];
+            const poolIdx = asgn?.[side]?.[slotIdx] ?? null;
+            if (poolIdx === null || poolIdx === undefined) return;
+            const photo = window.photoPool[poolIdx];
+            if (!photo?.url) return;
+
+            aiBtn.textContent = '…';
+            aiBtn.classList.add('loading');
+            aiBtn.disabled = true;
+            try {
+              const base64 = await urlToBase64(photo.url);
+              const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/generateCaption', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64, collection: 'kids', previousCaptions: collectExistingCaptions() }),
+              });
+              if (!resp.ok) throw new Error((await resp.json()).error || resp.statusText);
+              const { caption } = await resp.json();
+              if (!window.bookCaptions) window.bookCaptions = {};
+              if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+              if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+              window.bookCaptions[spreadIndex][side][slotIdx] = caption;
+              captionEl.textContent = applyTypographicRules(caption);
+            } catch (err) {
+              dbLog('⛔ Caption AI error: ' + err.message, 'warn');
+              aiBtn.textContent = '⚠ ' + (err.message.slice(0, 30) || 'Error');
+              setTimeout(() => { aiBtn.textContent = '✦ Generate'; }, 3000);
+            } finally {
+              aiBtn.classList.remove('loading');
+              aiBtn.disabled = false;
+            }
+          });
+
+          canvas.appendChild(aiBtn);
+        }
       });
 
+      // ── Text panel (FP1 Birthday wishes / FP2 Funny words left pages) ──
+      if (variant.textPanel?.caption?.allowed) {
+        const isFunnyWords = !!variant.textPanel.funnyWords;
+        const saved = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanel'] || '';
+
+        const panelEl = document.createElement('div');
+        panelEl.className = 'slot-caption fp-text-panel';
+        panelEl.contentEditable = 'true';
+        panelEl.spellcheck = false;
+        // Centred block covering middle 60% of the canvas
+        panelEl.style.left      = (200 * SCALE * 0.20) + 'px';
+        panelEl.style.top       = (200 * SCALE * 0.30) + 'px';
+        panelEl.style.width     = (200 * SCALE * 0.60) + 'px';
+        panelEl.style.textAlign = 'center';
+
+        if (isFunnyWords) {
+          panelEl.style.fontFamily  = "'FirstTimeWriting', cursive";
+          panelEl.style.fontSize    = (25 * SCALE) + 'px';
+          panelEl.style.lineHeight  = '1.4';
+          panelEl.style.whiteSpace  = 'pre-line';
+        }
+
+        const formatFunnyWords = (text) => {
+          if (!isFunnyWords) return text;
+          const words = text.trim().split(/\s+/).filter(Boolean).slice(0, 10);
+          return words.join('\n');
+        };
+
+        if (saved) panelEl.textContent = isFunnyWords ? formatFunnyWords(saved) : applyTypographicRules(saved);
+
+        const savePanelCaption = () => {
+          const raw = panelEl.textContent.trim();
+          if (!window.bookCaptions) window.bookCaptions = {};
+          if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+          if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+          window.bookCaptions[spreadIndex][side]['textPanel'] = raw;
+          return raw;
+        };
+
+        panelEl.addEventListener('focus', () => {
+          const stored = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanel'] || '';
+          panelEl.textContent = isFunnyWords ? formatFunnyWords(stored) : stored;
+        });
+        panelEl.addEventListener('blur', () => {
+          const raw = savePanelCaption();
+          panelEl.textContent = isFunnyWords ? formatFunnyWords(raw) : applyTypographicRules(raw);
+        });
+        panelEl.addEventListener('mousedown', e => e.stopPropagation());
+        panelEl.addEventListener('keydown', e => {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); panelEl.blur(); }
+        });
+
+        canvas.appendChild(panelEl);
+
+        // AI generate button below panel
+        const aiPanelBtn = document.createElement('button');
+        aiPanelBtn.className = 'caption-ai-btn';
+        aiPanelBtn.textContent = '✦ Generate';
+        aiPanelBtn.title = 'Generate text with AI';
+        aiPanelBtn.style.left = (200 * SCALE * 0.20) + 'px';
+        aiPanelBtn.style.top  = (200 * SCALE * 0.30 + 200 * SCALE * 0.40 + 4) + 'px';
+
+        aiPanelBtn.addEventListener('click', async () => {
+          // Use first assigned photo from this spread (either side) for context
+          const asgn = window.bookAssignments?.[spreadIndex];
+          let poolIdx = null;
+          for (const s of ['left', 'right']) {
+            const arr = asgn?.[s] || [];
+            const found = arr.find(v => v !== null && v !== undefined);
+            if (found !== undefined) { poolIdx = found; break; }
+          }
+          if (poolIdx === null) return;
+          const photo = window.photoPool[poolIdx];
+          if (!photo?.url) return;
+
+          aiPanelBtn.textContent = '…';
+          aiPanelBtn.classList.add('loading');
+          aiPanelBtn.disabled = true;
+          try {
+            const base64 = await urlToBase64(photo.url);
+            const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/generateCaption', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ image: base64, collection: 'kids', previousCaptions: collectExistingCaptions() }),
+            });
+            if (!resp.ok) throw new Error((await resp.json()).error || resp.statusText);
+            const { caption } = await resp.json();
+            if (!window.bookCaptions) window.bookCaptions = {};
+            if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+            if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+            window.bookCaptions[spreadIndex][side]['textPanel'] = caption;
+            panelEl.textContent = isFunnyWords ? formatFunnyWords(caption) : applyTypographicRules(caption);
+          } catch (err) {
+            dbLog('⛔ Text panel AI error: ' + err.message, 'warn');
+            aiPanelBtn.textContent = '⚠ ' + (err.message.slice(0, 30) || 'Error');
+            setTimeout(() => { aiPanelBtn.textContent = '✦ Generate'; }, 3000);
+          } finally {
+            aiPanelBtn.classList.remove('loading');
+            aiPanelBtn.disabled = false;
+          }
+        });
+
+        canvas.appendChild(aiPanelBtn);
+      }
 
       pagesWrap.appendChild(canvas);
     });
@@ -890,41 +1595,127 @@
   ═══════════════════════════════════════════ */
 
   function assignPhotosToSpreads(sequence, pool) {
-    const assignments = {};
-    let ptr = 0; // pointer into pool
+    // Exclude duplicates from slot assignment — they remain in window.photoPool for display
+    // but are invisible to the allocator. validIndices maps allocator positions → original pool indices.
+    const validIndices = pool.map((p, i) => p.duplicate ? null : i).filter(i => i !== null);
+    const validPool    = validIndices.map(i => pool[i]);
+    const assignments  = {};
+    let ptr = 0; // ptr into validPool / validIndices
 
-    const orientToKey = { horizontal: 'H', vertical: 'V', square: 'S' };
+    // Helper: resolve variant key for a pageDef given a desired orientation
+    function resolveVariant(pageDef, orient) {
+      const preferred = orient === 'vertical' ? 'V' : 'H';
+      if (pageDef[preferred]) return preferred;
+      if (pageDef['default']) return 'default';
+      return Object.keys(pageDef)[0];
+    }
+
+    // Helper: regular slot count for the best-matching variant on a page
+    function regularSlotCount(pageDef, orient) {
+      const vk = resolveVariant(pageDef, orient);
+      return (pageDef[vk]?.slots || []).filter(s => !s.pool || s.pool === 'regular').length;
+    }
 
     sequence.forEach((spreadId, spreadIndex) => {
-      const spreadDef = window.TODDLER_DATA.spreads[spreadId];
+      // FP spreads with no regular slots on either side (FP1, FP2, FP5): pinned, skip pool consumption
+      // FP3 and FP4 have a regular right page — they must fall through to the normal assignment logic
+      const spreadDef0 = window.SCRIBBLE_DATA.spreads[spreadId];
+      if (spreadId.startsWith('FP') && spreadDef0) {
+        const hasRegularSlots = ['left', 'right'].some(side => {
+          const pd = spreadDef0.pages[side];
+          if (!pd) return false;
+          const rv = pd['H'] || pd['V'] || pd[Object.keys(pd)[0]];
+          return (rv?.slots || []).some(s => !s.pool || s.pool === 'regular');
+        });
+        if (!hasRegularSlots) {
+          assignments[spreadIndex] = (window._fpAssignments && window._fpAssignments[spreadId])
+            ? window._fpAssignments[spreadId]
+            : { left: [], right: [] };
+          return;
+        }
+        // FP3/FP4: if pinned, use pinned assignment (preserves drag-drops); else fall through
+        if (window._fpAssignments && window._fpAssignments[spreadId]) {
+          assignments[spreadIndex] = window._fpAssignments[spreadId];
+          // Still advance the pool pointer by how many regular slots this spread uses
+          ptr += ['left', 'right'].reduce((sum, side) => {
+            const pd = spreadDef0.pages[side];
+            if (!pd) return sum;
+            const rv = pd['H'] || pd['V'] || pd[Object.keys(pd)[0]];
+            return sum + (rv?.slots || []).filter(s => !s.pool || s.pool === 'regular').length;
+          }, 0);
+          return;
+        }
+      }
+
+      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
       if (!spreadDef) return;
 
-      const assignment = { left: [], right: [] };
       const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
+      const assignment = { left: [], right: [] };
 
-      sides.forEach(side => {
+      // Build per-side slot-count info (use H variant as representative — H/V have same count)
+      const sideInfos = sides.map(side => {
         const pageDef = spreadDef.pages[side];
-        if (!pageDef) return;
+        if (!pageDef) return null;
+        const repVariant = pageDef['H'] || pageDef['V'] || pageDef[Object.keys(pageDef)[0]];
+        const slots = (repVariant?.slots || []).filter(s => !s.pool || s.pool === 'regular').length;
+        return { side, pageDef, slots };
+      }).filter(Boolean);
 
-        // Pick variant based on next available regular photo
-        const nextPhoto = pool[ptr];
-        let variantKey = nextPhoto ? (orientToKey[nextPhoto.orientation] || 'H') : 'H';
-        if (!pageDef[variantKey]) {
-          variantKey = pageDef['default'] ? 'default' : Object.keys(pageDef)[0];
-        }
-        const variant = pageDef[variantKey];
-        if (!variant || !variant.slots) return;
+      // Total regular photos consumed by this spread
+      const totalNeeded = sideInfos.reduce((sum, x) => sum + x.slots, 0);
+      const ptrStart = ptr;
+      const window_ = validPool.slice(ptrStart, ptrStart + totalNeeded);
+      ptr += window_.length;
 
-        const slotAssignments = [];
-        variant.slots.forEach(slotDef => {
-          if (slotDef.pool === 'special' || slotDef.pool === 'artwork') {
-            // Special/artwork photos handled separately (Plans 08-xx)
-            slotAssignments.push(null);
-          } else {
-            slotAssignments.push(ptr < pool.length ? ptr++ : null);
-          }
+      // Separate multi-slot (≥2) from single-slot sides
+      const multiSides  = sideInfos.filter(x => x.slots >= 2);
+      const singleSides = sideInfos.filter(x => x.slots === 1);
+
+      const usedLocal = new Set(); // indices within window_ that are already assigned
+
+      // Fill multi-slot sides first: pick best same-orientation group from the window
+      multiSides.forEach(({ side, pageDef, slots }) => {
+        // Count available photos by orientation
+        const byOrient = {};
+        window_.forEach((p, li) => {
+          if (usedLocal.has(li)) return;
+          if (!byOrient[p.orientation]) byOrient[p.orientation] = [];
+          byOrient[p.orientation].push(li);
         });
-        assignment[side] = slotAssignments;
+
+        // Pick orientation with most available photos (break ties: prefer what pool[ptr] would be)
+        let bestOrient = null, bestCount = -1;
+        Object.entries(byOrient).forEach(([o, idxs]) => {
+          if (idxs.length > bestCount) { bestOrient = o; bestCount = idxs.length; }
+        });
+
+        const chosen = (byOrient[bestOrient] || []).slice(0, slots);
+        chosen.forEach(li => usedLocal.add(li));
+
+        const variantKey = resolveVariant(pageDef, bestOrient || 'horizontal');
+        const variant = pageDef[variantKey];
+        let ci = 0;
+        assignment[side] = (variant?.slots || []).map(s => {
+          if (s.pool === 'special' || s.pool === 'artwork') return null;
+          const li = chosen[ci++];
+          return li !== undefined ? validIndices[ptrStart + li] : null;
+        });
+      });
+
+      // Fill single-slot sides with remaining photos (in original pool order)
+      const remaining = window_.map((_, li) => li).filter(li => !usedLocal.has(li));
+      singleSides.forEach(({ side, pageDef }, ri) => {
+        const li = remaining[ri];
+        const photo = li !== undefined ? window_[li] : null;
+        const variantKey = resolveVariant(pageDef, photo?.orientation || 'horizontal');
+        const variant = pageDef[variantKey];
+        let slotFilled = false;
+        assignment[side] = (variant?.slots || []).map(s => {
+          if (s.pool === 'special' || s.pool === 'artwork') return null;
+          if (!slotFilled) { slotFilled = true; return li !== undefined ? validIndices[ptrStart + li] : null; }
+          return null;
+        });
       });
 
       assignments[spreadIndex] = assignment;
@@ -953,12 +1744,15 @@
                              .map(cb => cb.value);
 
     const sequence = buildBookSequence(pageCount, selectedFPs);
+    window._bookSequence = sequence;
+    window._fpAssignments = {}; // reset FP pinned assignments on full rebuild
+    window.bookCaptions   = {}; // reset captions on full rebuild
     assignPhotosToSpreads(sequence, pool);
 
     // Count regular photo slots (excluding special/artwork)
     let regularSlots = 0;
     sequence.forEach((spreadId, si) => {
-      const spreadDef = window.TODDLER_DATA.spreads[spreadId];
+      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
       if (!spreadDef) return;
       const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
       const orientToKey = { horizontal: 'H', vertical: 'V', square: 'S' };
@@ -1015,48 +1809,413 @@
       if (row) canvas.appendChild(row);
     });
 
-    updateStripAssignedState();
+    setupSpreadObserver();
+    updateSidebarState();
   }
 
-  function updateStripAssignedState() {
-    const placed = new Set();
-    Object.values(window.bookAssignments).forEach(asgn => {
-      [...(asgn.left || []), ...(asgn.right || [])].forEach(idx => {
-        if (idx !== null && idx !== undefined) placed.add(idx);
-      });
+
+  /* ═══════════════════════════════════════════
+     DRAG-AND-DROP
+  ═══════════════════════════════════════════ */
+
+  /* ═══════════════════════════════════════════
+     SEQUENCE EDITOR — reorder + type swap
+  ═══════════════════════════════════════════ */
+
+  // Re-assign all photos from the current sequence and re-render every spread row in place.
+  // Preserves the status bar and does not clear the whole canvas.
+  function rebuildFromSequence() {
+    const seq = window._bookSequence;
+    if (!seq) return;
+    assignPhotosToSpreads(seq, window.photoPool);
+
+    // Re-render each spread row (keeps DOM order matching sequence order)
+    document.querySelectorAll('.spread-row').forEach(existingRow => {
+      const si = parseInt(existingRow.dataset.spreadIndex);
+      const spreadId = seq[si];
+      if (!spreadId) return;
+      const asgn = window.bookAssignments[si] || { left: [], right: [] };
+      const newRow = renderSpread(spreadId, asgn, si);
+      if (!newRow) return;
+      existingRow.replaceWith(newRow);
+      if (window._spreadObserver) window._spreadObserver.observe(newRow);
     });
-    document.querySelectorAll('.photo-thumb').forEach(thumb => {
-      const i = parseInt(thumb.dataset.index);
-      const isPlaced = placed.has(i);
-      thumb.classList.toggle('assigned',   isPlaced);
-      thumb.classList.toggle('unassigned', !isPlaced);
+
+    updateSidebarState();
+  }
+
+  // Move spread at `index` by `delta` (-1 = up, +1 = down). SP0 (index 0) is fixed.
+  function moveSpread(index, delta) {
+    const seq = window._bookSequence;
+    if (!seq) return;
+    const target = index + delta;
+    // SP0 at position 0 is always fixed — cannot move anything to/from index 0
+    if (index <= 0 || target <= 0 || target >= seq.length) return;
+    [seq[index], seq[target]] = [seq[target], seq[index]];
+    // Captions travel with the spread
+    if (window.bookCaptions) {
+      const tmp = window.bookCaptions[index];
+      window.bookCaptions[index] = window.bookCaptions[target];
+      window.bookCaptions[target] = tmp;
+    }
+    rebuildFromSequence();
+  }
+
+  // Change the spread type at `index` to `newSpreadId`. Returns false if blocked.
+  function changeSpreadType(index, newSpreadId) {
+    const seq = window._bookSequence;
+    if (!seq || index <= 0) return false;
+    if (seq[index] === newSpreadId) return true;
+
+    // FP1–FP4 can only appear once (FP5 = Art Gallery, unlimited)
+    if (newSpreadId.startsWith('FP') && newSpreadId !== 'FP5') {
+      if (seq.includes(newSpreadId)) {
+        const label = window.SCRIBBLE_DATA.spreads[newSpreadId]?.label || newSpreadId;
+        alert(`"${label}" is already in this book. Each special page can only appear once.`);
+        return false;
+      }
+    }
+
+    seq[index] = newSpreadId;
+    if (window.bookCaptions) delete window.bookCaptions[index]; // old captions don't apply to new type
+    rebuildFromSequence();
+    return true;
+  }
+
+  function rerenderSpread(spreadIndex) {
+    const existingRow = document.querySelector(`.spread-row[data-spread-index="${spreadIndex}"]`);
+    if (!existingRow) return;
+    const spreadId = existingRow.dataset.spreadId;
+    const asgn = window.bookAssignments[spreadIndex] || { left: [], right: [] };
+    const newRow = renderSpread(spreadId, asgn, spreadIndex);
+    if (!newRow) return;
+    existingRow.replaceWith(newRow);
+    if (window._spreadObserver) window._spreadObserver.observe(newRow);
+    hydrateSpreadRow(newRow); // user just interacted — show photos immediately
+  }
+
+  // Returns true if placing incomingPoolIdx into (spreadIndex, side, slotIdx) would mix orientations
+  // on a multi-slot page. incomingPoolIdx===null means unassigning (always allowed).
+  function wouldMixPage(spreadIndex, side, slotIdx, incomingPoolIdx) {
+    const sidAsgn = (window.bookAssignments[spreadIndex] || {})[side];
+    if (!sidAsgn || sidAsgn.length <= 1) return false; // single-slot page — no mixing possible
+    if (incomingPoolIdx === null || incomingPoolIdx === undefined) return false;
+    const incoming = window.photoPool[incomingPoolIdx];
+    if (!incoming) return false;
+    const others = sidAsgn
+      .map((idx, i) => i !== slotIdx ? idx : undefined)
+      .filter(idx => idx !== null && idx !== undefined)
+      .map(idx => window.photoPool[idx])
+      .filter(Boolean);
+    return others.some(p => p.orientation !== incoming.orientation);
+  }
+
+  function handleSlotDrop(e, targetSpreadIndex, targetSide, targetSlotIdx) {
+    let data;
+    try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+
+    const targetAsgn = window.bookAssignments[targetSpreadIndex];
+    if (!targetAsgn || !targetAsgn[targetSide]) return;
+
+    const currentInTarget = targetAsgn[targetSide][targetSlotIdx] !== undefined
+      ? targetAsgn[targetSide][targetSlotIdx] : null;
+
+    if (data.type === 'strip') {
+      if (wouldMixPage(targetSpreadIndex, targetSide, targetSlotIdx, data.poolIdx)) {
+        dbLog('⛔ Cannot place ' + window.photoPool[data.poolIdx]?.orientation + ' photo here — page has ' + targetAsgn[targetSide].length + ' slots and all must share the same orientation', 'warn');
+        return;
+      }
+      // Remove poolIdx from wherever it's currently assigned (avoids same photo in two slots)
+      const affectedSpreads = new Set([targetSpreadIndex]);
+      Object.entries(window.bookAssignments).forEach(([si, asgn]) => {
+        ['left', 'right'].forEach(s => {
+          if (!asgn[s]) return;
+          asgn[s].forEach((idx, i) => {
+            if (idx === data.poolIdx) { asgn[s][i] = null; affectedSpreads.add(parseInt(si)); }
+          });
+        });
+      });
+      targetAsgn[targetSide][targetSlotIdx] = data.poolIdx;
+      affectedSpreads.forEach(si => rerenderSpread(si));
+
+    } else if (data.type === 'slot') {
+      // Ignore drop onto self
+      if (data.spreadIndex === targetSpreadIndex && data.side === targetSide && data.slotIdx === targetSlotIdx) return;
+
+      const srcAsgn = window.bookAssignments[data.spreadIndex];
+      if (!srcAsgn || !srcAsgn[data.side]) return;
+      const srcPoolIdx = srcAsgn[data.side][data.slotIdx] !== undefined
+        ? srcAsgn[data.side][data.slotIdx] : null;
+
+      // Check both directions: incoming photo into target page, and displaced photo into source page
+      if (wouldMixPage(targetSpreadIndex, targetSide, targetSlotIdx, srcPoolIdx)) {
+        const name = srcPoolIdx !== null ? window.photoPool[srcPoolIdx]?.orientation : 'empty';
+        dbLog('⛔ Cannot place ' + name + ' photo here — would mix orientations on a multi-slot page', 'warn');
+        return;
+      }
+      if (currentInTarget !== null && wouldMixPage(data.spreadIndex, data.side, data.slotIdx, currentInTarget)) {
+        const name = window.photoPool[currentInTarget]?.orientation;
+        dbLog('⛔ Cannot swap — placing ' + name + ' photo back would mix orientations on a multi-slot page', 'warn');
+        return;
+      }
+
+      // Swap
+      srcAsgn[data.side][data.slotIdx] = currentInTarget;
+      targetAsgn[targetSide][targetSlotIdx] = srcPoolIdx;
+
+      const toRerender = new Set([data.spreadIndex, targetSpreadIndex]);
+      toRerender.forEach(si => rerenderSpread(si));
+    } else return;
+
+    // Sync _fpAssignments for any FP spreads touched by this drop
+    const touchedSpreads = new Set();
+    if (data.type === 'strip') {
+      touchedSpreads.add(targetSpreadIndex);
+    } else if (data.type === 'slot') {
+      touchedSpreads.add(targetSpreadIndex);
+      touchedSpreads.add(data.spreadIndex);
+    }
+    touchedSpreads.forEach(si => {
+      const sid = window._bookSequence?.[si];
+      if (sid?.startsWith('FP')) {
+        if (!window._fpAssignments) window._fpAssignments = {};
+        window._fpAssignments[sid] = window.bookAssignments[si];
+      }
+    });
+
+    updateSidebarState();
+  }
+
+  /* ═══════════════════════════════════════════
+     LAZY SPREAD HYDRATION
+  ═══════════════════════════════════════════ */
+
+  window._spreadObserver = null;
+
+  function hydrateSpreadRow(rowEl) {
+    rowEl.querySelectorAll('img[data-src]').forEach(img => {
+      if (!img.src || img.src === window.location.href) {
+        img.src = img.dataset.src;
+      }
+    });
+  }
+
+  function dehydrateSpreadRow(rowEl) {
+    rowEl.querySelectorAll('img[data-src]').forEach(img => {
+      img.removeAttribute('src');
+    });
+  }
+
+  function setupSpreadObserver() {
+    if (window._spreadObserver) window._spreadObserver.disconnect();
+    window._spreadObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          hydrateSpreadRow(entry.target);
+        } else {
+          dehydrateSpreadRow(entry.target);
+        }
+      });
+    }, { rootMargin: '800px 0px' }); // pre-load 800px above/below viewport
+
+    document.querySelectorAll('.spread-row').forEach(row => {
+      window._spreadObserver.observe(row);
     });
   }
 
   /* ── Config bar → re-render on change ── */
   document.getElementById('page-count-select').addEventListener('change', () => {
+    updatePhotoHint();
     if (window.photoPool.length) renderBook();
   });
+  /* ═══════════════════════════════════════════
+     SPECIAL PHOTO PANEL — SHOW/HIDE ZONES
+  ═══════════════════════════════════════════ */
+
+  function updateSpecialPanel() {
+    const checked = new Set(
+      Array.from(document.querySelectorAll('input[name="fp"]:checked')).map(cb => cb.value)
+    );
+    const panel = document.getElementById('special-panel');
+    const needPanel = checked.has('FP1') || checked.has('FP3') || checked.has('FP4') || checked.has('FP5');
+    panel.classList.toggle('visible', needPanel);
+    document.documentElement.style.setProperty('--special-h', needPanel ? '68px' : '0px');
+    ['FP1', 'FP3', 'FP4', 'FP5'].forEach(fp => {
+      document.getElementById('special-zone-' + fp).style.display = checked.has(fp) ? 'flex' : 'none';
+    });
+  }
+
+  /* ── Photo count hint ── */
+  function countRequiredSlots() {
+    const pageCount   = parseInt(document.getElementById('page-count-select').value);
+    const selectedFPs = Array.from(document.querySelectorAll('input[name="fp"]:checked')).map(cb => cb.value);
+    const sequence    = buildBookSequence(pageCount, selectedFPs);
+    const orientToKey = { horizontal: 'H', vertical: 'V', square: 'S' };
+    let total = 0;
+    sequence.forEach(spreadId => {
+      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+      if (!spreadDef) return;
+      const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
+      sides.forEach(side => {
+        const pageDef = spreadDef.pages[side];
+        if (!pageDef) return;
+        // Use H variant as baseline; fall back to first available
+        const variantKey = pageDef['H'] ? 'H' : (pageDef['default'] ? 'default' : Object.keys(pageDef)[0]);
+        const variant = pageDef[variantKey];
+        if (variant && variant.slots) {
+          total += variant.slots.filter(s => !s.pool || s.pool === 'regular').length;
+        }
+      });
+    });
+    return total;
+  }
+
+  function updatePhotoHint() {
+    const hint     = document.getElementById('config-photo-hint');
+    const needed   = countRequiredSlots();
+    const dups     = window.photoPool.filter(p => p.duplicate).length;
+    const have     = window.photoPool.length - dups; // usable photos only
+    hint.className = 'config-photo-hint';
+    if (window.photoPool.length === 0) {
+      hint.textContent = needed + ' photos needed for this book';
+      return;
+    }
+    const dupNote = dups > 0 ? ' · ' + dups + ' duplicate' + (dups > 1 ? 's' : '') + ' (remove from sidebar)' : '';
+    const diff = have - needed;
+    if (diff === 0) {
+      hint.classList.add(dups > 0 ? 'hint-warn' : 'hint-ok');
+      hint.textContent = '✓ ' + have + ' / ' + needed + ' usable photos' + dupNote;
+    } else if (diff > 0) {
+      hint.classList.add('hint-over');
+      hint.textContent = have + ' / ' + needed + ' — remove ' + diff + ' photo' + (diff > 1 ? 's' : '') + dupNote;
+    } else {
+      hint.classList.add('hint-warn');
+      hint.textContent = have + ' / ' + needed + ' — add ' + Math.abs(diff) + ' more photo' + (Math.abs(diff) > 1 ? 's' : '') + dupNote;
+    }
+  }
+
   document.querySelectorAll('input[name="fp"]').forEach(cb => {
     cb.addEventListener('change', () => {
+      updateSpecialPanel();
+      updatePhotoHint();
       if (window.photoPool.length) renderBook();
     });
   });
+
+
+  /* ═══════════════════════════════════════════
+     SPECIAL PHOTO UPLOAD HANDLER
+  ═══════════════════════════════════════════ */
+
+  function renderSpecialThumbs(fp) {
+    const container = document.getElementById('special-thumbs-' + fp);
+    container.innerHTML = '';
+    (window.specialPhotos[fp] || []).forEach((photo, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'special-thumb';
+      wrap.title = photo.name;
+      const img = document.createElement('img');
+      img.src = photo.url;
+      img.alt = photo.name;
+      wrap.appendChild(img);
+      const rm = document.createElement('span');
+      rm.className = 'special-thumb-remove';
+      rm.textContent = '✕';
+      rm.addEventListener('click', () => {
+        URL.revokeObjectURL(photo.url);
+        window.specialPhotos[fp].splice(i, 1);
+        renderSpecialThumbs(fp);
+        if (window.photoPool.length) renderBook();
+      });
+      wrap.appendChild(rm);
+      container.appendChild(wrap);
+    });
+  }
+
+  document.querySelectorAll('.special-upload-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fp = btn.dataset.fp;
+      document.querySelector('[data-fp-input="' + fp + '"]').click();
+    });
+  });
+
+  document.querySelectorAll('[data-fp-input]').forEach(input => {
+    input.addEventListener('change', async function () {
+      const fp = this.dataset.fpInput;
+      const max = parseInt(document.querySelector('.special-upload-btn[data-fp="' + fp + '"]').dataset.max);
+      const files = Array.from(this.files);
+      if (!files.length) return;
+
+      const slots = max - (window.specialPhotos[fp]?.length || 0);
+      if (slots <= 0) {
+        alert('Remove the existing photo first before uploading a new one.');
+        this.value = '';
+        return;
+      }
+
+      const toProcess = files.slice(0, slots);
+      for (const file of toProcess) {
+        const result = await processOneFile(file);
+        if (result) {
+          window.specialPhotos[fp].push(result);
+        }
+      }
+      renderSpecialThumbs(fp);
+      if (window.photoPool.length) renderBook();
+      this.value = '';
+    });
+  });
+
+  /* ═══════════════════════════════════════════
+     AUTO-SCROLL DURING DRAG
+  ═══════════════════════════════════════════ */
+
+  (function setupDragScroll() {
+    const EDGE = 120;  // px from viewport edge that triggers scroll
+    const SPEED = 12;  // px per frame
+    let rafId = null;
+    let scrollDir = 0; // -1 up, 0 none, 1 down
+
+    function scrollStep() {
+      if (scrollDir !== 0) {
+        window.scrollBy(0, scrollDir * SPEED);
+        rafId = requestAnimationFrame(scrollStep);
+      }
+    }
+
+    document.addEventListener('dragover', e => {
+      const y = e.clientY;
+      const vh = window.innerHeight;
+      if (y < EDGE) {
+        if (scrollDir !== -1) { scrollDir = -1; cancelAnimationFrame(rafId); rafId = requestAnimationFrame(scrollStep); }
+      } else if (y > vh - EDGE) {
+        if (scrollDir !== 1) { scrollDir = 1; cancelAnimationFrame(rafId); rafId = requestAnimationFrame(scrollStep); }
+      } else {
+        scrollDir = 0;
+      }
+    });
+
+    document.addEventListener('dragend', () => { scrollDir = 0; cancelAnimationFrame(rafId); });
+    document.addEventListener('drop',    () => { scrollDir = 0; cancelAnimationFrame(rafId); });
+  })();
 
   /* ═══════════════════════════════════════════
      VERIFY DATA ON LOAD
   ═══════════════════════════════════════════ */
 
+  // Show initial photo count hint on page load
+  updatePhotoHint();
+
   (function verifyData() {
-    const d = window.TODDLER_DATA;
-    if (!d) { console.error('TODDLER_DATA not loaded'); return; }
+    const d = window.SCRIBBLE_DATA;
+    if (!d) { console.error('SCRIBBLE_DATA not loaded'); return; }
     const keys = Object.keys(d.spreads);
     const expected = ['SP0','SP1','SP2','SP3','SP4','SP5','SP6','FP1','FP2','FP3','FP4','FP5'];
     const missing = expected.filter(k => !keys.includes(k));
     if (missing.length) {
-      console.error('TODDLER_DATA missing spread keys:', missing);
+      console.error('SCRIBBLE_DATA missing spread keys:', missing);
     } else {
-      console.log('TODDLER_DATA loaded — spreads:', keys.join(', '));
+      console.log('SCRIBBLE_DATA loaded — spreads:', keys.join(', '));
       console.log('SP1 right H slots:', d.spreads.SP1.pages.right.H.slots.length, '(expect 2)');
     }
   })();
