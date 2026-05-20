@@ -22,6 +22,27 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 ## template-data.js — bgColor at variant level (completed earlier)
 - bgColor per variant for all 12 spreads; SP0 label fixed; SP4 right V = `#fdd16f`
 
+## Session 2026-05-20 — CSV pipeline + Scribble rename
+
+### csv-to-template.js
+- New Node.js script at project root: reads `assets/Template_Scribble/Scribble_sizing_full.csv`, regenerates `template-data.js`
+- Preserves existing SVG paths; warns about any missing ones (TODO placeholders)
+- Run: `node csv-to-template.js` from project root after editing the CSV
+- `functional_photo` / `functional_text` columns drive pool types, textPanel, funnyWords flags
+
+### Scribble template renamed (was Toddler/Sprout)
+- All code, files, folders renamed to Scribble. Committed + pushed to Cloudflare.
+- `window.SCRIBBLE_DATA`, `assets/Template_Scribble/`, `pages/scribble.html`
+- `assets/templates.json` — new template catalogue file
+
+### FP2 Funny words + FirstTimeWriting! font
+- FP2 text panel uses FirstTimeWriting! font at 25pt, each word on its own row, max 10 words
+- Font file: `assets/fonts/FirstTimeWriting!.ttf`
+
+### FP1 special photo pool
+- FP1 right slot (`pool: 'special'`) — birthday photo upload zone appears in special panel when FP1 selected
+- `window.specialPhotos` keys: `['FP1', 'FP3', 'FP4', 'FP5']`
+
 ## Session 2026-05-19 — FP1 heart + orientation fixes
 
 ### FP1 SVG path fix
@@ -136,7 +157,7 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 
 ## template-data.js structure (critical)
 ```js
-window.TODDLER_DATA = {
+window.SCRIBBLE_DATA = {
   spreads: {
     SP0: { label: 'Spread 0', rightOnly: true, pages: { right: { H: { bgColor, svg, slots }, V: {...} } } },
     SP1: { ... },
@@ -183,11 +204,12 @@ Check `functions/` to confirm this exists before wiring.
 ## No frameworks
 - Pure HTML/CSS/JS — no React, Vue, build tools, npm on frontend
 - All JS inline in the HTML file
-- Asset paths from `pages/`: `../assets/Template_Toddler/...`
+- Asset paths from `pages/`: `../assets/Template_Scribble/...`
 
 ## Dev server
 - `npx serve . -p 8080` from project root
-- Template engine: `http://localhost:8080/pages/template-engine.html`
+- Template engine: `http://localhost:8080/pages/template-engine.html` (local only — not on Cloudflare)
+- Public website: `https://aevia-test.pages.dev/pages/collections`
 
 </critical_context>
 
@@ -195,21 +217,17 @@ Check `functions/` to confirm this exists before wiring.
 
 ## Completed and saved to disk
 - `pages/template-engine.html` — Plans 06-01, 06-02, 06-03 complete; FP1 heart clip working; orientation detection fixed
-- `assets/Template_Toddler/template-data.js` — bgColor per variant, SVG paths updated to non-copy filenames, heartClip flag on FP1 right slot
+- `assets/Template_Scribble/template-data.js` — bgColor per variant, SVG paths updated to non-copy filenames, heartClip flag on FP1 right slot
 
-## Untracked files to commit this session
-- `pages/template-engine.html` (new file — not yet in git)
-- `assets/Template_Toddler/template-data.js` (new file — not yet in git)
-- `assets/Template_Toddler/Spreads/FP Spread 1/FP Birthday 01 L.svg` (new, replaced by Kseniia)
-- `assets/Template_Toddler/Spreads/FP Spread 1/FP Birthday 02 R.svg` (new, replaced by Kseniia)
-
-## Deleted files (old "copy" SVGs — no longer needed)
-- `assets/Template_Toddler/Spreads/FP Spread 1/FP Birthday 01 L copy.svg` (deleted)
-- `assets/Template_Toddler/Spreads/FP Spread 1/FP Birthday 02 R copy.svg` (deleted)
-
-## Modified SVGs (Kseniia's artwork updates)
-- All SP Spread SVGs (SP Spread 0–6, all H/V variants) — modified by Kseniia
-- All FP Spread SVGs (FP Spread 2–5) — modified by Kseniia
+## All committed and pushed (2026-05-20)
+- `pages/template-engine.html` — Plans 06-01, 06-02, 06-03 complete; FP1 heart clip; orientation fix
+- `assets/Template_Scribble/template-data.js` — bgColor per variant, heartClip flag, SVG paths corrected
+- `assets/Template_Scribble/` — renamed from Template_Toddler; CSV and XLSX renamed to match
+- `pages/scribble.html` — new product page (renamed from sprout.html)
+- `pages/collections.html` — updated to Scribble card + link
+- `assets/templates.json` — new template catalogue file
+- `csv-to-template.js` — Node.js build script (CSV → template-data.js)
+- All SP/FP Spread SVGs — Kseniia's artwork updates committed
 
 ## In progress / not started
 - Plan 07-01 (drag-and-drop): not started
