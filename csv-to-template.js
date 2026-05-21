@@ -12,9 +12,10 @@
 const fs   = require('fs');
 const path = require('path');
 
-const DIR      = path.join(__dirname, 'assets/Template_Scribble');
-const CSV_PATH = path.join(DIR, 'Scribble_sizing_full.csv');
-const OUT_PATH = path.join(DIR, 'template-data.js');
+const DIR          = path.join(__dirname, 'assets/Template_Scribble');
+const CSV_PATH     = path.join(DIR, 'Scribble_sizing_full.csv');
+const COVER_CSV    = path.join(DIR, 'Scribble_Template_Sizing_Cover.csv');
+const OUT_PATH     = path.join(DIR, 'template-data.js');
 
 // ── 1. Parse CSV ───────────────────────────────────────────────────────────
 const rawLines = fs.readFileSync(CSV_PATH, 'utf8').split('\n').filter(l => l.trim());
@@ -228,7 +229,103 @@ function buildFunctionalSpread(spreadNum, rows) {
   return { type: 'functional', id, label, ...flags, pages };
 }
 
-// ── 8. Assemble all spreads ────────────────────────────────────────────────
+// ── 8. Parse cover CSV ────────────────────────────────────────────────────
+function parseCoverCsv(csvPath) {
+  const lines = fs.readFileSync(csvPath, 'utf8').split('\n').filter(l => l.trim());
+  // Strip BOM and deduplicate headers by appending index to duplicates
+  const rawHdrs = lines[0].split(';').map(h => h.trim().replace(/^﻿/, ''));
+  const hdrs = rawHdrs.map((h, i) => rawHdrs.indexOf(h) === i ? h : h + '_' + i);
+
+  const rows  = lines.slice(1).map(line => {
+    const parts = line.split(';');
+    const obj = {};
+    hdrs.forEach((h, i) => { obj[h] = (parts[i] || '').trim(); });
+    // Column 0 is always the page name regardless of header collision
+    obj['_page'] = (parts[0] || '').trim();
+    return obj;
+  });
+
+  const frontRow = rows.find(r => r['_page'] === 'Front page');
+  const spineRow = rows.find(r => r['_page'] === 'Spine');
+
+  // sections — widths come from CSV "Page size" field on front row
+  // spine width parsed from its own row if present, else keep existing value
+  const frontBg = (frontRow && frontRow['bgColor']) ? frontRow['bgColor'] : '#f8ead9';
+
+  // Parse font size string like "33pt" → number
+  function parsePt(s) { return parseInt((s || '0').replace('pt', ''), 10); }
+
+  // Front photo slot
+  const slots = [];
+  if (frontRow) {
+    slots.push({
+      xMm:  parseFloat(frontRow['Photo_X (mm)']),
+      yMm:  parseFloat(frontRow['Photo_Y (mm)']),
+      wMm:  parseFloat(frontRow['Photo_Width (mm)']),
+      hMm:  parseFloat(frontRow['Photo_Height (mm)']),
+      pool: 'cover'
+    });
+  }
+
+  // Captions
+  const captions = [];
+  if (frontRow && frontRow['captions allowed'] === 'yes') {
+    captions.push({
+      key: 'year', xMm: parseFloat(frontRow['Captions_1_X (mm)']), yMm: parseFloat(frontRow['Captions_1_Y (mm)']),
+      wMm: 180, font: frontRow['Captions_1_font'], sizePt: parsePt(frontRow['Captions_1_fontsize']),
+      align: 'center', label: 'Year'
+    });
+    captions.push({
+      key: 'name', xMm: parseFloat(frontRow['Captions_2_X (mm)']), yMm: parseFloat(frontRow['Captions_2_Y (mm)']),
+      wMm: 180, font: frontRow['Captions_2_font'], sizePt: parsePt(frontRow['Captions_2_fontsize']),
+      align: 'center', label: 'Name'
+    });
+  }
+  if (spineRow && spineRow['captions allowed'] === 'yes') {
+    captions.push({
+      key: 'spineName', xMm: parseFloat(spineRow['Captions_1_X (mm)']), yMm: parseFloat(spineRow['Captions_1_Y (mm)']),
+      wMm: 130, font: spineRow['Captions_1_font'], sizePt: parsePt(spineRow['Captions_1_fontsize']),
+      rotate: 270, label: 'Name (spine)'
+    });
+    captions.push({
+      key: 'spineYear', xMm: parseFloat(spineRow['Captions_2_X (mm)']), yMm: parseFloat(spineRow['Captions_2_Y (mm)']),
+      wMm: 70, font: spineRow['Captions_2_font'], sizePt: parsePt(spineRow['Captions_2_fontsize']),
+      rotate: 270, label: 'Year (spine)'
+    });
+  }
+
+  return { frontBg, slots, captions };
+}
+
+function serializeCover(c) {
+  let out = `  cover: {\n`;
+  out += `    svg: 'Cover/Artboard 1.svg',\n`;
+  out += `    sections: {\n`;
+  out += `      back:  { xMm: 0,   wMm: 200, bgColor: '#3d1f5c' },\n`;
+  out += `      spine: { xMm: 200, wMm: 9,   bgColor: '#fdd16f' },\n`;
+  out += `      front: { xMm: 209, wMm: 200, bgColor: '${c.frontBg}' },\n`;
+  out += `    },\n`;
+  out += `    slots: [\n`;
+  for (const s of c.slots) {
+    out += `      { xMm: ${s.xMm}, yMm: ${s.yMm}, wMm: ${s.wMm}, hMm: ${s.hMm}, pool: '${s.pool}' }\n`;
+  }
+  out += `    ],\n`;
+  out += `    captions: [\n`;
+  for (const cap of c.captions) {
+    let line = `      { key: '${cap.key}', xMm: ${cap.xMm}, yMm: ${cap.yMm}, wMm: ${cap.wMm}, font: '${cap.font}', sizePt: ${cap.sizePt}`;
+    if (cap.align)  line += `, align: '${cap.align}'`;
+    if (cap.rotate !== undefined) line += `, rotate: ${cap.rotate}`;
+    line += `, label: '${cap.label}' },\n`;
+    out += line;
+  }
+  out += `    ]\n`;
+  out += `  },\n\n`;
+  return out;
+}
+
+const coverData = fs.existsSync(COVER_CSV) ? parseCoverCsv(COVER_CSV) : null;
+
+// ── 9. Assemble all spreads ────────────────────────────────────────────────
 const spreads = {};
 
 for (const n of Object.keys(standardBySpread).sort((a, b) => +a - +b)) {
@@ -238,7 +335,7 @@ for (const n of Object.keys(functionalBySpread).sort((a, b) => +a - +b)) {
   spreads['FP' + n] = buildFunctionalSpread(n, functionalBySpread[n]);
 }
 
-// ── 9. Serialize ───────────────────────────────────────────────────────────
+// ── 10. Serialize ──────────────────────────────────────────────────────────
 function serializeCaption(c) {
   if (!c.allowed) return `{ allowed: false }`;
   let s = `{ allowed: true, position: '${c.position}'`;
@@ -272,7 +369,8 @@ function serializeVariant(vKey, v) {
     out += `${I}  textPanel: ${tpStr}\n`;
   } else {
     out += `${I}  slots: [\n`;
-    for (const s of (v.slots || [])) out += serializeSlot(s) + '\n';
+    const slotLines = (v.slots || []).map(s => serializeSlot(s));
+    out += slotLines.join(',\n') + (slotLines.length ? '\n' : '');
     out += `${I}  ]\n`;
   }
   out += `${I}},\n`;
@@ -303,13 +401,18 @@ function serializeSpread(key, sp) {
   return out;
 }
 
-// ── 10. Write output ───────────────────────────────────────────────────────
+// ── 11. Write output ───────────────────────────────────────────────────────
 let output = `window.SCRIBBLE_DATA = {
   template: 'scribble',
   pageSize: 200,
   bleed: 3,
   canvasPx: 600,
-  scale: 3,
+
+`;
+
+if (coverData) output += serializeCover(coverData);
+
+output += `  scale: 3,
   fonts: { display: 'NT Comic', body: 'EB Garamond' },
   colors: {
     plum:     '#493955',

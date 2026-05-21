@@ -1,4 +1,4 @@
-﻿window.SCRIBBLE_DATA = {
+window.SCRIBBLE_DATA = {
   template: 'scribble',
   pageSize: 200,
   bleed: 3,
@@ -12,17 +12,15 @@
       front: { xMm: 209, wMm: 200, bgColor: '#f8ead9' },
     },
     slots: [
-      // center coords (mm) from Scribble_Template_Sizing_Cover.csv; pool:'cover' = special upload
       { xMm: 309, yMm: 100, wMm: 140, hMm: 100, pool: 'cover' }
     ],
     captions: [
-      { key: 'year',      xMm: 309, yMm: 25,  wMm: 180, font: 'EB Garamond', sizePt: 35, align: 'center', label: 'Year' },
-      { key: 'name',      xMm: 309, yMm: 175, wMm: 180, font: 'NT Somic',    sizePt: 30, align: 'center', label: 'Name' },
-      { key: 'spineName', xMm: 205, yMm: 140, wMm: 130, font: 'EB Garamond', sizePt: 16, rotate: 270, label: 'Name (spine)' },
-      { key: 'spineYear', xMm: 205, yMm: 60,  wMm: 70,  font: 'NT Somic',    sizePt: 16, rotate: 270, label: 'Year (spine)' },
+      { key: 'year', xMm: 309, yMm: 25, wMm: 180, font: 'EB Garamond', sizePt: 33, align: 'center', label: 'Year' },
+      { key: 'name', xMm: 309, yMm: 175, wMm: 180, font: 'NT Somic', sizePt: 28, align: 'center', label: 'Name' },
+      { key: 'spineName', xMm: 204.5, yMm: 140, wMm: 130, font: 'EB Garamond', sizePt: 16, rotate: 270, label: 'Name (spine)' },
+      { key: 'spineYear', xMm: 205, yMm: 60, wMm: 70, font: 'NT Somic', sizePt: 16, rotate: 270, label: 'Year (spine)' },
     ]
   },
-
 
   scale: 3,
   fonts: { display: 'NT Comic', body: 'EB Garamond' },
@@ -356,7 +354,7 @@
           },
           V: {
             bgColor: '#c16ac1',
-            svg: 'TODO: FP3.left.V',
+            svg: 'FP Spread 3/FP Toy 05 V L.svg',
             slots: [
               { slot: 1, x: 76, y: 115, w: 87, h: 130, ratio: '87:130', pool: 'special', caption: { allowed: true, position: 'upper-right', offset: 8 } }
             ]
@@ -394,7 +392,7 @@
           },
           V: {
             bgColor: '#f8ead9',
-            svg: 'TODO: FP4.left.V',
+            svg: 'FP Spread 4/FP Steps 07 V L.svg',
             slots: [
               { slot: 1, x: 95, y: 118, w: 93, h: 139, ratio: '93:139', pool: 'special', caption: { allowed: true, position: 'lower-right', offset: 6 } }
             ]
