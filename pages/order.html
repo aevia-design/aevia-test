@@ -417,8 +417,15 @@ const ADDON_NOTE_PLACEHOLDERS = {
   'first-words':         "e.g. Mama, Dada, water, dog — in the order they arrived",
   'anniversary-caption': "e.g. First date: Rome, 2018 · Engaged: Lisbon, 2021 · Married: Vienna, 2023",
   'first-year-timeline': "e.g. Any key dates you'd like on the timeline — first crawl, first step, first tooth",
-  'fp2':                 "e.g. Noooo, More!, Biiiig, Why?, Pease (please), Up-up — list your favourite funny words, one per line",
+  'fp2':                 "e.g. Noooo, More!, Biiiig, Why?, Pease (please), Up-up",
 };
+
+const ADDON_HINTS = {
+  'fp2': 'Enter 3 to 10 of your child\'s funniest words or phrases, one per line.',
+};
+const DEFAULT_ADDON_HINT = 'Notes for this special page — text, dates, names, anything relevant.';
+
+const cancelledAddons = new Set();
 
 // ─────────────────────────────────────────────────────────────────
 // Parse URL params
@@ -498,15 +505,27 @@ function initSummary() {
     ALBUM_NOTE_PLACEHOLDERS[cat] || DEFAULT_NOTE_PLACEHOLDER;
 }
 
+function cancelAddon(slug, wrapId) {
+  cancelledAddons.add(slug);
+  document.getElementById(wrapId).style.display = 'none';
+}
+
 function initAddonFields() {
   const container = document.getElementById('addon-fields');
   ORDER.addons.filter(a => a.inputType === 'text').forEach(addon => {
-    const ph = ADDON_NOTE_PLACEHOLDERS[addon.slug] || "Add any notes you'd like us to include for this spread...";
+    const ph   = ADDON_NOTE_PLACEHOLDERS[addon.slug] || "Add any notes you'd like us to include for this spread...";
+    const hint = ADDON_HINTS[addon.slug] || DEFAULT_ADDON_HINT;
+    const wrapId = `addon-wrap-${addon.slug}`;
     const wrap = document.createElement('div');
     wrap.className = 'addon-field-wrap';
+    wrap.id = wrapId;
     wrap.innerHTML = `
-      <div class="addon-field-name">${addon.name}</div>
-      <div class="addon-field-hint">Notes for this special page — text, dates, names, anything relevant.</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <div class="addon-field-name">${addon.name}</div>
+        <button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
+          style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>
+      </div>
+      <div class="addon-field-hint">${hint}</div>
       <textarea id="addon-text-${addon.slug}" placeholder="${ph}" rows="3"
         style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;resize:vertical;"></textarea>
     `;
@@ -517,10 +536,16 @@ function initAddonFields() {
 function initSpecialPhotoZones() {
   const container = document.getElementById('special-photo-zones');
   ORDER.addons.filter(a => a.inputType === 'photo').forEach(addon => {
+    const wrapId = `addon-wrap-${addon.slug}`;
     const section = document.createElement('div');
     section.className = 'upload-section';
+    section.id = wrapId;
     section.innerHTML = `
-      <div class="upload-label">Special page</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <div class="upload-label">Special page</div>
+        <button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
+          style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>
+      </div>
       <div class="upload-heading">${addon.name}</div>
       <div class="upload-hint">One photo dedicated to this spread.</div>
       <div class="drop-zone" id="dz-special-${addon.slug}">
@@ -751,6 +776,35 @@ async function submitOrder() {
     errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
+
+  // Validate active addon fields
+  for (const addon of ORDER.addons) {
+    if (cancelledAddons.has(addon.slug)) continue;
+    if (addon.inputType === 'text') {
+      const val = (document.getElementById(`addon-text-${addon.slug}`) || {}).value || '';
+      const lines = val.trim().split('\n').map(l => l.trim()).filter(Boolean);
+      if (addon.slug === 'fp2') {
+        if (lines.length < 3 || lines.length > 10) {
+          errEl.textContent = 'Funny Words: please enter between 3 and 10 words or phrases (one per line), or remove this page.';
+          errEl.style.display = 'block';
+          errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+      } else if (!val.trim()) {
+        errEl.textContent = `Please fill in the notes for "${addon.name}", or remove this page.`;
+        errEl.style.display = 'block';
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    } else if (addon.inputType === 'photo') {
+      if (!specialFiles[addon.slug]) {
+        errEl.textContent = `Please upload a photo for "${addon.name}", or remove this page.`;
+        errEl.style.display = 'block';
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    }
+  }
   errEl.style.display = 'none';
 
   // Collect form data
@@ -759,8 +813,9 @@ async function submitOrder() {
   const albumNotes   = document.getElementById('album-notes').value.trim();
   const specialReq   = document.getElementById('special-requests').value.trim();
 
-  // Collect addon text notes
-  const addonNotes = ORDER.addons
+  // Collect addon text notes (skip cancelled)
+  const activeAddons = ORDER.addons.filter(a => !cancelledAddons.has(a.slug));
+  const addonNotes = activeAddons
     .filter(a => a.inputType === 'text')
     .map(a => {
       const val = (document.getElementById(`addon-text-${a.slug}`) || {}).value || '';
@@ -770,7 +825,7 @@ async function submitOrder() {
     .join('\n');
 
   const fullSpecialReq = [
-    ORDER.addons.length ? `Add-ons selected: ${ORDER.addons.map(a => a.name).join(', ')}` : null,
+    activeAddons.length ? `Add-ons selected: ${activeAddons.map(a => a.name).join(', ')}` : null,
     addonNotes || null,
     specialReq || null,
   ].filter(Boolean).join('\n\n');
@@ -783,8 +838,8 @@ async function submitOrder() {
   fileObjects.push(coverFile);
   filesMeta.push({ name: coverFile.name, type: mimeType(coverFile), fileType: 'cover' });
 
-  // Special page photos
-  ORDER.addons.filter(a => a.inputType === 'photo' && specialFiles[a.slug]).forEach(a => {
+  // Special page photos (skip cancelled)
+  activeAddons.filter(a => a.inputType === 'photo' && specialFiles[a.slug]).forEach(a => {
     const f = specialFiles[a.slug];
     fileObjects.push(f);
     filesMeta.push({ name: f.name, type: mimeType(f), fileType: 'special', addonSlug: a.slug });
