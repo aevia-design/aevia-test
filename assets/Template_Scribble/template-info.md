@@ -6,6 +6,7 @@ A warm, playful photobook template for the toddler years — filled with doodles
 
 - **NT Somic** — primary display font
 - **EB Garamond** — alternative / body text
+- **FirstTimeWriting** - font used for first-words functional page
 
 ## Colors
 

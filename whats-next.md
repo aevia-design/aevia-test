@@ -128,15 +128,11 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 
 ## Plans not yet started
 
-### Plan 09-01 — Resolution warnings + RAW blocking + AI captions
-- Low-res warnings (min 1500px shortest side): badge on thumbnail strip, yellow border on slot
-- Block RAW file uploads (.dng, .raw, .cr2, .nef, .arw) at upload stage
-- Wire AI caption endpoint — check `functions/generateCaption` exists first
-- NOTE: `window.print()` dropped from this plan — browser PDF quality too low; real print is Puppeteer (Phase 2)
+### Plan 09-01 — DONE
+- RAW blocking, low-res warnings, AI caption wiring all implemented in template-engine.html
 
-### Plan 10-01 — bloom.html FP selector + photo count calculator
-- Add "Personalise your book" section to bloom.html
-- 5 FP checkboxes + live photo count based on selections
+### Plan 10-01 — ABORTED
+- FP selector lives on scribble.html (chips + addons flow). bloom.html is irrelevant.
 
 ### Plan future — Caption text editor toolbar
 - Floating toolbar appears above focused caption contenteditable
@@ -259,25 +255,29 @@ Check `functions/` to confirm this exists before wiring.
 <current_state>
 
 ## Completed and saved to disk
-- `pages/template-engine.html` — all plans through 08-02 complete; cover renderer working; image quality improved
-- `assets/Template_Scribble/template-data.js` — bgColor per variant, heartClip flag, SVG paths corrected
+- `pages/template-engine.html` — all plans through 09-01 complete; cover renderer working; image quality improved
+- `assets/Template_Scribble/template-data.js` — bgColor per variant, heartClip flag, SVG paths corrected (except FP3.left.V and FP4.left.V — see below)
 
-## Committed and pushed (2026-05-20 earlier session)
-- `pages/template-engine.html`, `template-data.js`, all SP/FP SVGs, `scribble.html`, `collections.html`, `templates.json`, `csv-to-template.js`
+## Committed and pushed
+- All work through 2026-05-21 session committed. Two local commits ahead of origin were pushed.
 
-## Not yet committed (this session)
-- `pages/template-engine.html` — cover canvas gradient fix, caption positioning fixes, image-rendering: smooth
+## Known issues needing next-session fix
+- **FP3.left.V and FP4.left.V SVG paths** are TODO placeholders in template-data.js. Files exist on disk: `FP Spread 3/FP Toy 05 V L.svg` and `FP Spread 4/FP Steps 07 V L.svg`. Fix: run `node csv-to-template.js` then manually set these two paths.
+- **Cover CSV sync not implemented.** `window.SCRIBBLE_DATA.cover` is NOT defined in template-data.js. Cover renders via hardcoded data inside `renderCover()` in template-engine.html. Future work: parse Scribble_Template_Sizing_Cover.csv and generate `cover:` block in template-data.js. Approach TBD — do not assume the cover already reads from template-data.js.
 
 ## In progress / not started
-- Plan 09-01 (resolution warnings + RAW blocking + AI captions): not started
-- Plan 10-01 (bloom.html FP selector + photo count): not started
+- Plan 10-01 — Cover renderer audit + bug fixes (caption toolbar, cover CSV sync)
+- Plan 10-02 — Caption text editor toolbar (floating, per-caption styling)
+- Plan 11-01 — Photo count calculator on scribble.html
+- Plan 11-02 — getOrderAssets Cloud Function
+- Plan 11-03 — Order loading UI in template engine
+- Plan 12-01 — Puppeteer PDF export (GATED — need bleed/color/PDF version answers first)
 
 ## Blocking items
-- None
 - FP1 heart frame decoration still missing — nice-to-have, needs Kseniia SVG re-export
+- Plan 12-01 cannot start without print spec answers from user
 
 ## Open questions
-- Does `functions/generateCaption` Cloud Function exist? (Check before Plan 09-01)
 - Performance: alt-tab stall (10-15s) — root cause not yet investigated
 
 </current_state>
