@@ -24,7 +24,9 @@
     .addons{margin-bottom:30px;}.addon{display:flex;align-items:flex-start;gap:14px;padding:15px;border:1.5px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--white);cursor:pointer;transition:border-color 0.15s;}.addon:hover{border-color:#c4a882;}.addon.on{border-color:var(--text);box-shadow:inset 0 0 0 0.5px var(--text);}
     .chk{width:20px;height:20px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:background 0.15s,border-color 0.15s;}.addon.on .chk{background:var(--text);border-color:var(--text);}.chk svg{display:none;}.addon.on .chk svg{display:block;}
     .addon-body{flex:1;}.addon-name{font-size:13px;font-weight:600;margin-bottom:3px;}.addon-desc{font-size:12px;color:var(--muted);line-height:1.5;}
-    .addon-cost{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:3px 9px;border-radius:100px;flex-shrink:0;align-self:center;}
+    .addon-preview{width:88px;height:72px;flex-shrink:0;border-radius:3px;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;}.addon-preview img{width:100%;height:100%;object-fit:cover;}
+    .addon-cost{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:3px 9px;border-radius:100px;flex-shrink:0;align-self:flex-start;margin-top:2px;}
+    .photo-count{font-size:13px;color:var(--muted);line-height:1.6;padding:12px 14px;background:var(--surface);border-radius:4px;margin-bottom:24px;}
     .price-row{display:flex;align-items:baseline;gap:5px;margin-bottom:22px;}.price-sym{font-family:var(--serif);font-size:22px;color:var(--muted);}.price-val{font-family:var(--serif);font-size:52px;font-weight:400;letter-spacing:-0.03em;line-height:1;}.price-note{font-size:11px;color:var(--muted);}
     .cta{width:100%;background:var(--text);color:var(--white);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;padding:17px 32px;border-radius:3px;transition:background 0.2s;margin-bottom:11px;}.cta:hover{background:#2e2e2e;}.cta-note{text-align:center;font-size:11px;color:var(--muted);}
     .acc-wrap{border-top:1px solid var(--border);max-width:1160px;margin:0 auto;padding:0 56px;}.acc-item{border-bottom:1px solid var(--border);}
@@ -66,18 +68,54 @@
       </div>
     </div>
     <div class="addons">
-      <div class="section-label">Optional add-ons</div>
-      <div class="addon" onclick="xtra(this)">
+      <div class="section-label">Optional spreads — all free</div>
+
+      <div class="addon" onclick="xtra(this)" data-fp="FP1" data-photos="1">
+        <div class="addon-preview">
+          <svg width="40" height="40" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="8" stroke="#c4a882" stroke-width="1.4"/><path d="M10 14l2.5 2.5L18 10" stroke="#c4a882" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body"><div class="addon-name">Birthday spread</div><div class="addon-desc">A dedicated double-spread for the birthday celebration, with cake and candles theme</div></div>
-        <div class="addon-cost">Included</div>
+        <div class="addon-body"><div class="addon-name">Birthday spread</div><div class="addon-desc">A dedicated spread for the birthday celebration. Add birthday wishes and one special photo from the day.</div></div>
+        <div class="addon-cost">Free</div>
       </div>
-      <div class="addon" onclick="xtra(this)">
+
+      <div class="addon" onclick="xtra(this)" data-fp="FP2" data-photos="0">
+        <div class="addon-preview">
+          <svg width="40" height="40" viewBox="0 0 28 28" fill="none"><rect x="6" y="8" width="16" height="13" rx="2" stroke="#c4a882" stroke-width="1.4"/><line x1="9" y1="13" x2="19" y2="13" stroke="#c4a882" stroke-width="1.4" stroke-linecap="round"/><line x1="9" y1="16" x2="15" y2="16" stroke="#c4a882" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body"><div class="addon-name">Height chart</div><div class="addon-desc">A printed height and growth tracker page to fill in over time</div></div>
-        <div class="addon-cost">Included</div>
+        <div class="addon-body"><div class="addon-name">Funny words</div><div class="addon-desc">A spread for the things they say at this age — words and phrases worth keeping.</div></div>
+        <div class="addon-cost">Free</div>
+      </div>
+
+      <div class="addon" onclick="xtra(this)" data-fp="FP3" data-photos="1">
+        <div class="addon-preview">
+          <svg width="40" height="40" viewBox="0 0 28 28" fill="none"><rect x="5" y="9" width="18" height="13" rx="2" stroke="#c4a882" stroke-width="1.4"/><circle cx="10" cy="15" r="2.5" stroke="#c4a882" stroke-width="1.4"/><path d="M14 19l3-4 3 4" stroke="#c4a882" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="addon-body"><div class="addon-name">Favourite toy</div><div class="addon-desc">A quiet portrait spread. Add one photo of your child with the toy that went everywhere with them.</div></div>
+        <div class="addon-cost">Free</div>
+      </div>
+
+      <div class="addon" onclick="xtra(this)" data-fp="FP4" data-photos="1">
+        <div class="addon-preview">
+          <svg width="40" height="40" viewBox="0 0 28 28" fill="none"><path d="M8 20l4-8 4 5 2-3 4 6" stroke="#c4a882" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><line x1="5" y1="22" x2="23" y2="22" stroke="#c4a882" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="addon-body"><div class="addon-name">First steps</div><div class="addon-desc">The moment caught on camera. Add one photo and a milestone spread is dedicated entirely to this.</div></div>
+        <div class="addon-cost">Free</div>
+      </div>
+
+      <div class="addon" onclick="xtra(this)" data-fp="FP5" data-photos="2">
+        <div class="addon-preview">
+          <svg width="40" height="40" viewBox="0 0 28 28" fill="none"><path d="M7 20c2-4 4-8 6-6s2 5 4 3 3-5 5-3" stroke="#c4a882" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="11" r="2" stroke="#c4a882" stroke-width="1.4"/></svg>
+        </div>
+        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="addon-body"><div class="addon-name">Artwork gallery</div><div class="addon-desc">Their drawings, preserved. A gallery spread for one or two of their best scribbles.</div></div>
+        <div class="addon-cost">Free</div>
       </div>
     </div>
+    <div class="photo-count" id="photo-count">Your 40-page book will need approximately 35–44 photos in total.</div>
     <div class="price-row"><span class="price-sym">€</span><span class="price-val" id="price">70</span><span class="price-note">incl. design &amp; printing</span></div>
     <button class="cta" onclick="goToOrder()">Create your book</button>
     <p class="cta-note">You approve before we print. No charge until you're happy.</p>
@@ -99,16 +137,38 @@
   <div class="foot-base"><span>© 2026 Aevia. All rights reserved.</span><span>Terms of service</span></div>
 </footer>
 <script>
-  function pick(el,p){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');document.getElementById('price').textContent=p;}
-  function xtra(card){card.classList.toggle('on');card.querySelector('.addon-cost').textContent=card.classList.contains('on')?'Added \u2713':'Included';}
+  const BASE_PHOTOS = { '40': [35, 44], '80': [72, 88] };
+
+  function updatePhotoCount() {
+    const pages = document.querySelector('.chip.on .chip-label').textContent.replace(' pages', '');
+    const [lo, hi] = BASE_PHOTOS[pages] || [35, 44];
+    let extra = 0;
+    document.querySelectorAll('.addon.on').forEach(a => { extra += parseInt(a.dataset.photos || 0); });
+    document.getElementById('photo-count').textContent =
+      'Your ' + pages + '-page book will need approximately ' + (lo + extra) + '\u2013' + (hi + extra) + ' photos in total.';
+  }
+
+  function pick(el, p) {
+    el.closest('.chips').querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+    el.classList.add('on');
+    document.getElementById('price').textContent = p;
+    updatePhotoCount();
+  }
+
+  function xtra(card) {
+    card.classList.toggle('on');
+    card.querySelector('.addon-cost').textContent = card.classList.contains('on') ? 'Added \u2713' : 'Free';
+    updatePhotoCount();
+  }
+
   function goToOrder() {
     const price = document.getElementById('price').textContent;
     const selectedChip = document.querySelector('.chip.on');
     const pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
-    const addonNames = [];
-    document.querySelectorAll('.addon.on').forEach(a => addonNames.push(a.querySelector('.addon-name').textContent));
-    const params = new URLSearchParams({ template: 'Scribble', category: 'kids', pages, price: price, backUrl: 'scribble.html' });
-    addonNames.forEach(n => params.append('addonName', n));
+    const fps = [];
+    document.querySelectorAll('.addon.on').forEach(a => fps.push(a.dataset.fp));
+    const params = new URLSearchParams({ template: 'Scribble', category: 'kids', pages, price, back: 'scribble.html' });
+    fps.forEach(fp => params.append('fp', fp));
     window.location.href = 'order.html?' + params.toString();
   }
   function acc(btn){const item=btn.closest('.acc-item');const open=item.classList.contains('open');document.querySelectorAll('.acc-item').forEach(i=>i.classList.remove('open'));if(!open)item.classList.add('open');}
