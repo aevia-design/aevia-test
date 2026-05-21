@@ -94,6 +94,17 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Likely cause: all 600×600 spread canvases remain in DOM and GPU layer is evicted when browser is backgrounded
 - Needs investigation: consider virtualisation, canvas reuse, or requestAnimationFrame-gated rendering
 
+## Session 2026-05-21 — Housekeeping + Kseniia onboarding
+
+### Motif engine moved to main repo
+- `motif-engine/` copied from `.claude/worktrees/` to project root
+- Added `README.md` (setup, usage, motif table) and `.gitignore` (outputs/, node_modules/, .env excluded)
+- Kseniia onboarding plan: own Claude account, shared Replicate token, GitHub collaborator invite
+
+### CLAUDE.md + customer-journey-v1.md updated
+- CLAUDE.md: removed Webflow, corrected live URL, updated folder structure, added template engine + motif engine sections
+- customer-journey-v1.md: template engine marked as built, caption flow documented, Puppeteer constraints added, tech stack table updated
+
 ## Session 2026-05-20 (later) — Cover renderer + image quality
 
 ### Cover canvas background
