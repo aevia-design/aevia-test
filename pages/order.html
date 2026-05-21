@@ -510,25 +510,66 @@ function cancelAddon(slug, wrapId) {
   document.getElementById(wrapId).style.display = 'none';
 }
 
+function addFunnyWordRow(slug) {
+  const list = document.getElementById(`fp2-word-list`);
+  const count = list.children.length;
+  if (count >= 10) return;
+  const idx = count + 1;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+  row.innerHTML = `
+    <span style="min-width:22px;font-size:13px;color:var(--muted);text-align:right;">${idx}.</span>
+    <input type="text" placeholder="e.g. Noooo"
+      style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;" />
+  `;
+  list.appendChild(row);
+  if (list.children.length >= 10) {
+    document.getElementById('fp2-add-btn').style.display = 'none';
+  }
+}
+
 function initAddonFields() {
   const container = document.getElementById('addon-fields');
   ORDER.addons.filter(a => a.inputType === 'text').forEach(addon => {
-    const ph   = ADDON_NOTE_PLACEHOLDERS[addon.slug] || "Add any notes you'd like us to include for this spread...";
-    const hint = ADDON_HINTS[addon.slug] || DEFAULT_ADDON_HINT;
+    const hint   = ADDON_HINTS[addon.slug] || DEFAULT_ADDON_HINT;
     const wrapId = `addon-wrap-${addon.slug}`;
-    const wrap = document.createElement('div');
+    const wrap   = document.createElement('div');
     wrap.className = 'addon-field-wrap';
     wrap.id = wrapId;
-    wrap.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:baseline;">
-        <div class="addon-field-name">${addon.name}</div>
-        <button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
-          style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>
-      </div>
-      <div class="addon-field-hint">${hint}</div>
-      <textarea id="addon-text-${addon.slug}" placeholder="${ph}" rows="3"
-        style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;resize:vertical;"></textarea>
-    `;
+
+    if (addon.slug === 'fp2') {
+      // Structured word rows instead of free-form textarea
+      const rows3 = [1,2,3].map(i => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="min-width:22px;font-size:13px;color:var(--muted);text-align:right;">${i}.</span>
+          <input type="text" placeholder="e.g. ${['Noooo','More!','Biiiig'][i-1]}"
+            style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;" />
+        </div>`).join('');
+      wrap.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <div class="addon-field-name">${addon.name}</div>
+          <button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
+            style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>
+        </div>
+        <div class="addon-field-hint">${hint}</div>
+        <div id="fp2-word-list">${rows3}</div>
+        <button type="button" id="fp2-add-btn" onclick="addFunnyWordRow('${addon.slug}')"
+          style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;font-family:var(--sans);color:var(--muted);cursor:pointer;margin-top:2px;">+ Add another word</button>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;">Minimum 3 words, maximum 10.</div>
+      `;
+    } else {
+      const ph = ADDON_NOTE_PLACEHOLDERS[addon.slug] || "Add any notes you'd like us to include for this spread...";
+      wrap.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <div class="addon-field-name">${addon.name}</div>
+          <button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
+            style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>
+        </div>
+        <div class="addon-field-hint">${hint}</div>
+        <textarea id="addon-text-${addon.slug}" placeholder="${ph}" rows="3"
+          style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;resize:vertical;"></textarea>
+      `;
+    }
     container.appendChild(wrap);
   });
 }
@@ -781,20 +822,25 @@ async function submitOrder() {
   for (const addon of ORDER.addons) {
     if (cancelledAddons.has(addon.slug)) continue;
     if (addon.inputType === 'text') {
-      const val = (document.getElementById(`addon-text-${addon.slug}`) || {}).value || '';
-      const lines = val.trim().split('\n').map(l => l.trim()).filter(Boolean);
       if (addon.slug === 'fp2') {
-        if (lines.length < 3 || lines.length > 10) {
-          errEl.textContent = 'Funny Words: please enter between 3 and 10 words or phrases (one per line), or remove this page.';
+        const wordList = document.getElementById('fp2-word-list');
+        const filled = wordList
+          ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
+          : [];
+        if (filled.length < 3) {
+          errEl.textContent = 'Funny Words: please enter at least 3 words or phrases before submitting, or remove this page.';
           errEl.style.display = 'block';
           errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return;
         }
-      } else if (!val.trim()) {
-        errEl.textContent = `Please fill in the notes for "${addon.name}", or remove this page.`;
-        errEl.style.display = 'block';
-        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
+      } else {
+        const val = (document.getElementById(`addon-text-${addon.slug}`) || {}).value || '';
+        if (!val.trim()) {
+          errEl.textContent = `Please fill in the notes for "${addon.name}", or remove this page.`;
+          errEl.style.display = 'block';
+          errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
       }
     } else if (addon.inputType === 'photo') {
       if (!specialFiles[addon.slug]) {
@@ -818,8 +864,18 @@ async function submitOrder() {
   const addonNotes = activeAddons
     .filter(a => a.inputType === 'text')
     .map(a => {
-      const val = (document.getElementById(`addon-text-${a.slug}`) || {}).value || '';
-      return val ? `${a.name}: ${val.trim()}` : null;
+      let val;
+      if (a.slug === 'fp2') {
+        const wordList = document.getElementById('fp2-word-list');
+        const words = wordList
+          ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
+          : [];
+        val = words.join(', ');
+      } else {
+        val = (document.getElementById(`addon-text-${a.slug}`) || {}).value || '';
+        val = val.trim();
+      }
+      return val ? `${a.name}: ${val}` : null;
     })
     .filter(Boolean)
     .join('\n');
