@@ -161,15 +161,32 @@
     updatePhotoCount();
   }
 
+  const FP_META = {
+    FP1: { name: 'Birthday spread',   inputType: 'photo', slug: 'fp1' },
+    FP2: { name: 'Funny words',        inputType: 'text',  slug: 'fp2' },
+    FP3: { name: 'Favourite toy',      inputType: 'photo', slug: 'fp3' },
+    FP4: { name: 'First steps',        inputType: 'photo', slug: 'fp4' },
+    FP5: { name: 'Artwork gallery',    inputType: 'photo', slug: 'fp5' },
+  };
+
   function goToOrder() {
     const price = document.getElementById('price').textContent;
     const selectedChip = document.querySelector('.chip.on');
     const pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
-    const fps = [];
-    document.querySelectorAll('.addon.on').forEach(a => fps.push(a.dataset.fp));
-    const params = new URLSearchParams({ template: 'Scribble', category: 'kids', pages, price, back: 'scribble.html' });
-    fps.forEach(fp => params.append('fp', fp));
-    window.location.href = 'order.html?' + params.toString();
+    const selected = [];
+    document.querySelectorAll('.addon.on').forEach(a => {
+      const meta = FP_META[a.dataset.fp];
+      if (meta) selected.push(meta);
+    });
+    const urlParams = new URLSearchParams({
+      template: 'Scribble', category: 'kids', pages, price, back: 'scribble.html',
+    });
+    if (selected.length) {
+      urlParams.set('addons',       selected.map(m => m.name).join(','));
+      urlParams.set('addon_inputs', selected.map(m => m.inputType).join(','));
+      urlParams.set('addon_slugs',  selected.map(m => m.slug).join(','));
+    }
+    window.location.href = 'order.html?' + urlParams.toString();
   }
   function acc(btn){const item=btn.closest('.acc-item');const open=item.classList.contains('open');document.querySelectorAll('.acc-item').forEach(i=>i.classList.remove('open'));if(!open)item.classList.add('open');}
   const nav=document.querySelector('.nav');window.addEventListener('scroll',()=>{nav.style.background=window.scrollY>80?'rgba(250,250,248,0.97)':'rgba(250,250,248,0.92)';});
