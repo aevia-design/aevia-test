@@ -1,5 +1,5 @@
 # Customer Journey — Version 1
-_Last updated: 2026-04-06_
+_Last updated: 2026-05-21_
 
 This file tracks the full intended product flow. Update it as decisions are made and features are built.
 
@@ -9,150 +9,115 @@ This file tracks the full intended product flow. Update it as decisions are made
 
 ### 1. Customer opens website
 **Status:** Built  
-Pages: home, collections, product pages (9 templates)
+Pages: home, collections, product pages (multiple templates live)
 
 ---
 
 ### 2. Customer finds template, selects options
 **Status:** Built (basic)  
 Customer picks template + page count on product page.  
-**Not yet built:** special/add-on pages (e.g. title spread, caption pages, extra prints)
+Optional functional pages (e.g. birthday wishes, funny words, art gallery) selectable — photo count updates live.  
+**Not yet built:** FP selector + live photo count on bloom.html (Plan 10-01)
 
 ---
 
 ### 3–5. Customer uploads photos + submits order → GCS
 **Status:** Built  
 - Order form at `pages/order.html`
-- Firebase Cloud Function creates order number (AEV-XXX), uploads photos to GCS, saves order to Firestore, sends confirmation email to customer + internal notification to xenia@aevia.at
+- Firebase Cloud Function `createUploadSession` creates order number (AEV-XXX), uploads photos to GCS, saves order to Firestore, sends confirmation email to customer + internal notification to xenia@aevia.at
 
 ---
 
-### 6. Template auto-population (THE CORE AUTOMATION PROBLEM)
+### 6. Template auto-population
 
-**Goal:** Once photos are uploaded, a script reads their EXIF date metadata, sorts them chronologically, and pre-places them into the correct template — so the human reviewer only needs to make small adjustments rather than doing everything manually.
+**Decision made:** Templates are built in HTML/CSS. Staff uses a browser-based tool (`pages/template-engine.html`) to assemble the book. A Node.js/Puppeteer script will later render the final PDF.
 
-**Critical architecture decision: what format are templates in?**
+**How the staff tool works (built for Scribble template):**
+- Staff opens `template-engine.html`, uploads the customer's photos
+- Photos are sorted by EXIF date and auto-placed into spread slots
+- Staff drags photos between slots, reorders spreads, swaps spread types
+- Special functional pages (FP1–FP5) have dedicated upload zones
+- Captions are edited inline; AI suggestion button available per slot
 
-Options evaluated:
+**Template data architecture:**
+- Each template has a `template-data.js` defining spread types, slot coordinates, SVG overlays, background colors, caption positions, and special flags
+- Source of truth is a CSV (`Scribble_sizing_full.csv`); regenerate with `node csv-to-template.js`
+- Template engine reads generic flags from the data file — it is template-agnostic
 
-| Option | Pros | Cons | Verdict |
-|--------|------|------|---------|
-| Adobe InDesign + IDML scripting | Industry standard, exact print control | InDesign Server ~$800/mo, complex | Too expensive for MVP |
-| **HTML/CSS → PDF via Puppeteer** | Free, fully automatable, Claude can help build, PDF output accepted by print houses | Requires templates coded in HTML, not Adobe | **Recommended** |
-| Affinity Publisher scripting | Cheap license | Very limited automation APIs | Not viable |
-| Figma API | Easy to design in | Not built for print, poor PDF export | Not viable |
+**EXIF sorting:** Browser reads `DateTimeOriginal` from JPEG EXIF via a JS library. HEIC files are converted first via libheif WASM (sequentially — parallel conversion corrupts images due to shared WASM state).
 
-**Decision (pending confirmation):** Build templates in HTML/CSS. Generate print-ready PDF via Puppeteer (headless Chrome). This keeps everything in the existing Node.js stack and makes full automation possible.
-
-**What "digitizing" templates means in this approach:**
-- Each template (Bloom, Devotion, etc.) becomes an HTML layout file
-- Photo slots are `<div>` or `<img>` placeholders with defined dimensions
-- Caption slots are `<p>` placeholders
-- A Node.js script reads the order from Firestore, fetches photos from GCS, sorts by EXIF date, fills in the slots, and renders to PDF
-- After photos are pre-filled, needs to have an interface where they can change the order of photos and generate captions
-
-**EXIF sorting:** Use the `sharp` or `exiftool-vendored` Node.js library to read `DateTimeOriginal` from each photo.
-
-**Status:** Not yet started. Needs template format decision confirmed.
+**Status:** Built and working for Scribble template. Remaining work on the tool: resolution warnings, RAW file blocking (Plan 09-01). Other templates not yet digitised.
 
 ---
 
 ### 7. Captions
 
-Some template pages have caption placeholders. The flow:
+**Status:** Built (in template engine)
 
-1.  A check is conducted to see if the customer has left specific comments for certain photos. If so, these comments become the captions for these photos. If not, AEVIA arbitrates which photos are better suited to captions.
-2. After photos are pre-placed to the template, human based on placeholder on a given page can generate captions via API
-3. AI uses pre-defined tone of voice and set of rules to generate catpions
-4. Human revises captions or re-generates them multiple time
-5. Staff approves/edits, captions are saved to Firestore against the order
+Flow:
+1. Staff checks if customer left photo-specific comments in the order — if so, these seed the captions
+2. For each captionable slot, staff can click an AI button to generate a caption suggestion
+3. AI uses tone-of-voice rules from `functions/caption/caption-voice.md` and receives the last 8 captions as context to avoid repetition
+4. Staff edits or regenerates; captions saved in `window.bookCaptions` in the browser session
+5. Captions persist into the PDF when Puppeteer rendering is built (Phase 2)
 
-**Why an internal tool beats copy-pasting into Claude.ai:**
-- Photos stay in GCS — no manual download
-- Captions are saved directly to the order record
-- Can preview captions in the actual template layout before generating PDF
-- Batch workflow — all photos for one order in one screen
-- Brand tone can be enforced via system prompt (Claude API / GPT mini - tbd)
-
-**Status:** Small prototype module built. Depends on template system (step 6).
+**Caption voice rules (key):** No "A/An" opener, no trailing period, no trailing comma. Warm, personal, child-focused for Scribble template.
 
 ---
 
 ### 8. PDF generation
+**Status:** Not yet started
 
 Two PDFs per order:
-- **Preview PDF** — low resolution, watermarked, for customer approval
+- **Preview PDF** — lower resolution, watermarked, for customer approval
 - **Print PDF** — full resolution (300 DPI equivalent), no watermark, for print house
 
 **Tool:** Puppeteer (Node.js) — renders the filled HTML template to PDF.
 
-**Status:** Not yet started.
+**Critical:** Must use `deviceScaleFactor: 6+` and `@page` dimensions in mm (206mm × 206mm). Do NOT use `window.print()` — browser PDF renderer ignores deviceScaleFactor and produces too-low DPI output.
 
 ---
 
 ### 9. Sending preview to customer
+**Status:** Not yet started
 
-Options:
-- Email with PDF attachment (if file is small enough — preview PDFs for a 30-page book ~5–15MB)
-- Email with a link to a hosted PDF on GCS (signed URL, expires after X days)
-- Dedicated preview page on the site (nicer UX, but more work) - preffered option
-
-**Recommendation for MVP:** GCS signed URL in email. Keeps email lightweight and avoids attachment size limits.
-
-**Status:** Not yet started.
+**Plan:** Customer gets a link to a hosted preview on a dedicated page on the Aevia site (preferred over email attachment). GCS signed URL delivers the PDF; page is branded and shows order details.
 
 ---
 
 ### 10. Customer response
+**Status:** Not yet started
 
 Three cases:
 
 **a. Customer approves and pays**
-- Stripe Payment Link in the email (currently: manual, generated per order)
-- On payment: Stripe webhook fires → Cloud Function updates order status to `paid` in Firestore → Aevia notified
+- Stripe Checkout Session link in the preview email
+- On payment: Stripe webhook → Cloud Function updates order status to `paid` → Aevia notified
 
-**b. Customer requests a change (one revision)**
-- Customer suggests changes over the dedicated preview page on Aevia website (ideally they can do some micro changes themselves but not sure how interface would look like then; i.e. re-generate captions or change positioning of the photos)
-***if path above is hard to implement then need to re-think this step #10
+**b. Customer requests changes (one revision)**
+- Customer submits feedback via the preview page
+- Staff adjusts in `template-engine.html` and re-exports
 
-**Status:** Stripe Payment Link = manual for now. Webhooks and reminders = not yet started.
+**c. No response**
+- Firebase Scheduled Function sends reminder email after X days
 
 ---
 
 ### 11–12. Order sent to print house
+**Status:** Not started. Needs print house decision.
 
-**If print house has API (e.g. Prodigi, Gelato):**
+If print house has API (Prodigi, Gelato, or local Vienna partner):
 - On `paid` status: Cloud Function calls print API with order specs + print PDF URL
 - Print house pulls the PDF, queues printing
 
-**Open question:** Which print house will Aevia use? This determines feasibility of API integration.
-
-**Status:** Not started. Needs print house decision.
-
 ---
 
-### 13–14. Printing + shipping
+### 13–16. Printing, shipping, tracking, delivery
+**Status:** Not started
 
-Print house:
-- They handle shipping, generate tracking numbers
-- Customer address passed in the API call from step 11
-
----
-
-### 15. Tracking + customer notification
-
-**If print API:**
-- Webhook from print provider fires when order ships → Cloud Function captures tracking number → Aevia dashboard updated → Customer email sent with tracking link (from aevia@aevia.at or xenia@aevia.at)
-
-**Automated customer email** (e.g. "Your Aevia book is on its way!") with DHL/GLS tracking link — should come from Aevia, not the print house, to maintain brand experience.
-
----
-
-### 16. Delivery confirmation
-
-- Delivery provider (DHL etc.) sends delivery confirmation to customer automatically
-- Aevia dashboard: staff manually marks `delivered`, or a webhook from Prodigi/Gelato auto-updates
-- Orders older than X days in `in_delivery` status could be auto-flagged for follow-up
+- Print house handles shipping, generates tracking numbers
+- Webhook from print provider fires when shipped → Cloud Function → customer email with tracking link
+- Aevia dashboard auto-updates to `in_delivery` → `delivered`
 
 ---
 
@@ -162,7 +127,7 @@ Print house:
 new           → order submitted, photos uploaded
 designing     → Aevia is working on the layout
 needs_info    → problem with photos (low-res, wrong count, etc.) — can be set at any stage
-review_sent   → preview PDF sent to customer
+review_sent   → preview sent to customer
 approved      → customer approved the design
 paid          → payment received
 sent_to_print → order transmitted to print house
@@ -173,24 +138,26 @@ delivered     → confirmed delivered
 
 ---
 
-## Tech stack additions needed (beyond what's built)
+## Tech stack
 
-| Tool | Purpose | When needed |
-|------|---------|-------------|
-| `sharp` (Node.js) | Read EXIF metadata, resize images | Step 6 |
-| `puppeteer` (Node.js) | HTML → PDF generation | Step 8 |
-| `stripe` (Node.js + webhooks) | Payment processing | Step 10 |
-| Claude API (vision) | Caption suggestions | Step 7 |
-| Firebase Scheduled Functions | Reminder emails | Step 10c |
-| Print house API (Prodigi/Gelato TBD) | Send order to print | Step 11 |
-| Shipping carrier API or print API webhooks | Tracking numbers | Step 15 |
+| Tool | Purpose | Status |
+|------|---------|--------|
+| Firebase Cloud Functions (Node.js) | Order creation, emails, caption AI | Live |
+| Firestore | Order storage | Live |
+| GCS | Photo storage, PDF delivery | Live |
+| Claude API (vision) | Caption suggestions | Live (via generateCaption function) |
+| `libheif` WASM | HEIC → JPEG conversion in browser | Live (in template engine) |
+| Replicate API + Kevin Lucbert LoRA | Interior motif generation | Live (motif-engine/) |
+| `puppeteer` | HTML → PDF generation | Not yet built |
+| `stripe` | Payment processing | Not yet built |
+| Firebase Scheduled Functions | Reminder emails | Not yet built |
+| Print house API (TBD) | Send order to print | Not yet built |
 
 ---
 
 ## Open decisions
 
-1. **Template format** — HTML/CSS (recommended) vs Adobe?
-2. **Print house** — local (Vienna) vs API-capable (Prodigi, Gelato)?
-3. **Customer revision flow** — email-based vs web form?
-4. **Preview delivery** — PDF attachment vs GCS signed URL vs preview page?
-5. **Stripe** — Payment Links (manual) or Checkout Sessions (automated)?
+1. **Print house** — local Vienna partner vs. API-capable (Prodigi, Gelato)?
+2. **Preview delivery** — dedicated preview page vs. GCS signed URL in email?
+3. **Customer revision flow** — web form vs. email?
+4. **Stripe** — Payment Links (manual) or Checkout Sessions (automated)?
