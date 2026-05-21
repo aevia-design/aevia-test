@@ -43,23 +43,48 @@ _New file: `pages/template-engine.html`. Does not modify spread-preview.html._
 ### Phase 09 — Export + AI
 | Plan | Description | Status |
 |------|-------------|--------|
-| 09-01 | Print CSS for full book + AI caption button per slot + resolution warnings | ⬜ todo |
+| 09-01 | Resolution warnings + RAW blocking + AI caption wiring | ✅ done |
 
 ---
 
-### Phase 10 — bloom.html Amendments
+## v2.0 SHIPPED — Full Template Engine (Scribble)
+_Phases 05–09 complete. Staff manually uploads photos locally._
+
+---
+
+## v2.1 — Engine Finalization + Order Connection
+
+### Phase 10 — Template Engine Finalization
 | Plan | Description | Status |
 |------|-------------|--------|
-| 10-01 | FP selector section + photo count calculator + order form integration | ⬜ todo |
+| 10-01 | Cover renderer audit + fixes (gradient, spine width, caption positioning) | ⬜ todo |
+| 10-02 | Caption text editor toolbar (font, size, alignment, line spacing) | ⬜ todo |
+
+_10-01 and 10-02 are independent — either order._
+
+### Phase 11 — Order Flow Connection
+| Plan | Description | Status |
+|------|-------------|--------|
+| 11-01 | Photo count calculator on scribble.html (live min–max, format guidance) | ⬜ todo |
+| 11-02 | `getOrderAssets` Cloud Function (Firestore + GCS signed read URLs) | ⬜ todo |
+| 11-03 | Order loading UI in template engine (order number → auto-assemble book) | ⬜ todo |
+
+_11-01 is frontend-only, independent. 11-02 must precede 11-03._
 
 ---
 
-## v2.1 — GCS Integration (future)
-- Photos fetched from GCS signed URLs per order
-- Tool embedded in staff dashboard per order
-- Session saved to Firestore (photo assignments, captions, spread order)
+## v2.2 — Print Export
 
-## v3.0 — Customer Preview (future — pending Kseniia sign-off)
-- Customer-facing version of template engine (constrained UI)
+### Phase 12 — PDF Export
+| Plan | Description | Status |
+|------|-------------|--------|
+| 12-01 | Puppeteer PDF export (manifest → local Node.js script → 300 DPI PDF) | ⬜ todo |
+
+_Requires bleed/mark spec from user before implementation. Best after 11-03 for GCS URLs._
+
+---
+
+## v3.0 — Customer Preview (future)
+- Customer-facing preview of assembled book
 - Approve & Pay button
 - Caption editing only, no layout changes
