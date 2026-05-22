@@ -9,6 +9,10 @@ functions/node_modules/
 
 # Large assets — over Cloudflare Pages 25MB limit
 assets/business plan/
+assets/test photos/
+
+# Local Claude config / worktrees — not part of the project
+.claude/
 
 # OS junk
 desktop.ini

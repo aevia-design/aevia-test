@@ -347,7 +347,7 @@ window.SCRIBBLE_DATA = {
         left: {
           H: {
             bgColor: '#c16ac1',
-            svg: 'FP Spread 3/FP Toy 05 L.svg',
+            svg: 'FP Spread 3/FP Toy 05 H L.svg',
             slots: [
               { slot: 1, x: 95, y: 130, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, position: 'above', offset: 10, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
@@ -385,7 +385,7 @@ window.SCRIBBLE_DATA = {
         left: {
           H: {
             bgColor: '#f8ead9',
-            svg: 'FP Spread 4/FP Steps 07 L.svg',
+            svg: 'FP Spread 4/FP Steps 07 H L.svg',
             slots: [
               { slot: 1, x: 95, y: 130, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, position: 'above', offset: 30, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
@@ -423,14 +423,14 @@ window.SCRIBBLE_DATA = {
         left: {
           H: {
             bgColor: '#ff8773',
-            svg: 'FP Spread 5/FP Art H 09 Left.svg',
+            svg: 'FP Spread 5/FP Art 09 H L.svg',
             slots: [
               { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 20, font: 'EB Garamond', sizePt: 13, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35 } }
             ]
           },
           V: {
             bgColor: '#ff8773',
-            svg: 'FP Spread 5/FP Art V 09 Left.svg',
+            svg: 'FP Spread 5/FP Art 09 V L.svg',
             slots: [
               { slot: 1, x: 95, y: 100, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 9, font: 'EB Garamond', sizePt: 13, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35 } }
             ]
@@ -439,14 +439,14 @@ window.SCRIBBLE_DATA = {
         right: {
           H: {
             bgColor: '#f8ead9',
-            svg: 'FP Spread 5/FP Art H 10 Right.svg',
+            svg: 'FP Spread 5/FP Art 10 H R.svg',
             slots: [
               { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 20, font: 'EB Garamond', sizePt: 13, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35 } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
-            svg: 'FP Spread 5/FP Art V 12 Right.svg',
+            svg: 'FP Spread 5/FP Art 12 V R.svg',
             slots: [
               { slot: 1, x: 105, y: 100, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 9, font: 'EB Garamond', sizePt: 13, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35 } }
             ]

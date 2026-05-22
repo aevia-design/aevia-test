@@ -142,6 +142,17 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 
 <work_remaining>
 
+## Reliability fixes (completed this session)
+- SVG/photo load failures now show a red outline on the affected slot — visible to staff
+- Reordering or changing a spread type now warns if captions exist (they'd no longer match photos)
+- AI caption errors now stay visible ("⚠ Failed — click to retry") until staff retries successfully
+- HEIC conversion failures now show an alert listing all failed filenames with "re-export as JPEG" instruction
+- Image orientation load: 10s timeout added to prevent upload hanging on corrupted files
+- Removed unused `avoidMixedRightPage` dead code
+
+## HEIC / photo validation architecture note
+HEIC conversion in the template engine is a **temporary testing path** — it exists so staff can upload iPhone photos from their local drive during development. In production, photos arrive pre-processed from GCS after the customer upload flow. The real HEIC robustness and format validation work belongs in **Plan 12-x (order intake)**: validate format, resolution, and file integrity at upload time, before photos ever reach the template engine. The template engine should receive only clean, ready-to-use files.
+
 ## Plans not yet started
 
 ### Plan 09-01 — DONE
@@ -162,12 +173,45 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Typography defaults now come from template-data.js (CSV-driven); toolbar will read/override them per caption
 - Not yet started
 
-## Print quality — critical architectural note for Phase 2 Puppeteer PDF
-- Preview renders at SCALE=3 (3px/mm ≈ 12dpi equivalent) — photo slots are ~150px CSS
-- This is fine for preview; source files are stored as original blob URLs (no re-encoding, no quality loss)
-- When building Puppeteer PDF: must use `deviceScaleFactor: 6` or higher so a 50mm slot outputs ≥590px (300dpi)
-- `@page` CSS must set dimensions in mm (`206mm × 206mm`), not px
-- DO NOT use `window.print()` for final print — browser PDF renderer ignores deviceScaleFactor; use Puppeteer headless only
+## PDF export — architecture DECIDED (was Plan 12-01 "Puppeteer", now Plan 11)
+
+**Decision (2026-05-22, /solutioning):** Server-side compositing with **Sharp + pdf-lib**, NOT browser PDF.
+Build as a **standalone Node.js tool first** (test print quality with local photo uploads), then wire to
+order path later (Plan 12). Print specs are documented in `LEARNINGS.md`.
+
+**Why not Puppeteer/Playwright `page.pdf()`:** the browser PDF pipeline embeds raster images at the
+*rendered* resolution (CSS px × devicePixelRatio), not the photo's native resolution. Quality is bounded
+by the 600px preview canvas regardless of `deviceScaleFactor`. Behaviour is also undocumented and
+version-dependent — unacceptable for a production print path. Browser preview stays at SCALE=3 for staff
+review; print rendering is a completely separate pipeline.
+
+**Why Sharp + pdf-lib:** full pixel control, deterministic output, maps cleanly to future GCS flow (swap
+local file reads for downloads). Sharp re-encode at 95%+ JPEG is visually lossless for print. pdf-lib
+assembles pages at exact physical mm dimensions.
+
+**Pipeline (per content page):**
+- Canvas 2433×2433px (206mm × 300dpi); content area 2362×2362px; bleed offset 35px (3mm × 11.811px/mm)
+- Fill canvas with page bgColor (this IS the bleed — extends 3mm beyond content on all sides)
+- Each slot: load ORIGINAL photo → Sharp object-fit:cover crop to slot dims → composite at slot position
+- Composite SVG overlay (Sharp/librsvg rasterises vector art at 2362px — our SVGs have no embedded fonts)
+- pdf-lib: assemble page PNGs into multi-page PDF at 206×206mm
+
+**Cover (separate PDF):** canvas 481×272mm at 300dpi (5681×3213px); 18mm bleed wrap; back+spine(9mm)+front.
+
+## Plan 11 — Standalone PDF export (BUILD FIRST, before order integration)
+- **11-01** "Export State" button in template engine → downloads `book-state.json`
+  (sequence, assignments with photo filenames, bgColors, slot coords, special photo filenames, captions)
+- **11-02** `scripts/export-pdf.js` — content pages, photos + SVG overlay, NO captions yet.
+  Args: `--photos <dir> --state book-state.json --out <dir>`. This is the **print-quality validation gate.**
+- **11-03** Caption rendering layer (custom fonts NT Somic / EB Garamond / FirstTimeWriting via SVG text
+  with embedded font data, composited over each page)
+- **11-04** Cover PDF (front photo slot, spine, back; 18mm bleed)
+
+## Plan 12 — Order flow integration (AFTER PDF quality validated)
+- **12-01** Photo count calculator on scribble.html
+- **12-02** `getOrderAssets` Cloud Function
+- **12-03** Order loading UI in template engine
+- **12-04** PDF export wired to GCS / order path (production: photos download from GCS, not local dir)
 
 ## Performance TO-DO
 - Interface stalls 10-15 seconds when returning from alt-tab
@@ -291,18 +335,24 @@ Check `functions/` to confirm this exists before wiring.
 - **Caption multi-line:** fixed — use Shift+Enter to wrap to a new line within a caption.
 
 ## In progress / not started
-- Plan 11-01 — Photo count calculator on scribble.html
-- Plan 11-02 — getOrderAssets Cloud Function
-- Plan 11-03 — Order loading UI in template engine
-- Plan 12-01 — Puppeteer PDF export (GATED — need bleed/color/PDF version answers first)
+- **Plan 11 — Standalone PDF export (NEXT, build first):**
+  - 11-01 Export State button → book-state.json
+  - 11-02 scripts/export-pdf.js — content pages, photos + SVG, no captions (quality validation gate)
+  - 11-03 Caption rendering layer
+  - 11-04 Cover PDF
+- **Plan 12 — Order flow integration (after PDF validated):**
+  - 12-01 Photo count calculator on scribble.html
+  - 12-02 getOrderAssets Cloud Function
+  - 12-03 Order loading UI in template engine
+  - 12-04 PDF export wired to GCS / order path
 - Future — Extend caption toolbar to spread captions
 
 ## Blocking items
 - FP1 heart frame decoration still missing — nice-to-have, needs Kseniia SVG re-export
-- Plan 12-01 cannot start without print spec answers from user
 
 ## Open questions
 - Performance: alt-tab stall (10-15s) — root cause not yet investigated
+- Plan 11 dependencies: `sharp` + `pdf-lib` to be added (Node-side only, not frontend)
 
 </current_state>
 ```

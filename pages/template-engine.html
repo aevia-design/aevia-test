@@ -224,6 +224,18 @@
     .sidebar-section-header.duplicates { color: #d04040; }
     .sidebar-section-header.duplicates .sidebar-count { background: #d04040; color: #fff; }
     .sidebar-thumbs { display: flex; flex-direction: column; gap: 8px; }
+    /* special photo thumbs in sidebar */
+    .special-sidebar-thumb {
+      width: 100%; height: 90px; border-radius: 5px; overflow: hidden;
+      border: 1px solid var(--border); position: relative; background: var(--bg);
+    }
+    .special-sidebar-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .special-sidebar-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.52); color: #fff;
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 3px 6px; line-height: 1.4;
+    }
     .photo-thumb {
       border-radius: 5px; overflow: hidden;
       border: 2px solid var(--border);
@@ -655,6 +667,10 @@
 <!-- ── PHOTO SIDEBAR ── -->
 <div class="photo-sidebar" id="photo-sidebar" style="display:none;">
   <div class="sidebar-total" id="sidebar-total">0 photos</div>
+  <div class="sidebar-section-header" id="sidebar-special-header" style="display:none;">
+    Special <span class="sidebar-count" id="sidebar-special-count">0</span>
+  </div>
+  <div class="sidebar-thumbs" id="sidebar-special"></div>
   <div class="sidebar-section-header duplicates" id="sidebar-dup-header" style="display:none;">
     Duplicates <span class="sidebar-count" id="sidebar-dup-count">0</span>
   </div>
@@ -874,21 +890,26 @@
   }
 
   function getOrientationFromBlob(blob) {
-    return new Promise(resolve => {
-      const url = URL.createObjectURL(blob);
-      const img = new Image();
-      img.onload = () => {
-        const w = img.naturalWidth, h = img.naturalHeight;
-        const orientation = h > w ? 'vertical' : 'horizontal';
-        URL.revokeObjectURL(url);
-        resolve({ orientation, w, h });
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        resolve({ orientation: 'horizontal', w: 0, h: 0 });
-      };
-      img.src = url;
-    });
+    return Promise.race([
+      new Promise(resolve => {
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+          const w = img.naturalWidth, h = img.naturalHeight;
+          const orientation = h > w ? 'vertical' : 'horizontal';
+          URL.revokeObjectURL(url);
+          resolve({ orientation, w, h });
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve({ orientation: 'horizontal', w: 0, h: 0 });
+        };
+        img.src = url;
+      }),
+      new Promise(resolve =>
+        setTimeout(() => resolve({ orientation: 'horizontal', w: 0, h: 0 }), 10000)
+      ),
+    ]);
   }
 
   function filenameNumber(name) {
@@ -967,19 +988,7 @@
     return { file, url: objectURL, date, name: file.name, w, h, orientation, lowRes };
   }
 
-  // Ensure right page is all-H or all-V — move the odd-one-out to the left slot.
-  // Mirrors avoidMixedRightPage() from spread-preview.html.
-  function avoidMixedRightPage(arr) {
-    if (arr.length < 3) return { photos: arr, swapped: false };
-    const [p0, p1, p2] = arr;
-    if (p1.orientation === p2.orientation) return { photos: arr, swapped: false };
-    const hCount = arr.filter(p => p.orientation === 'horizontal').length;
-    const oddOrientation = hCount === 1 ? 'horizontal' : 'vertical';
-    const oddIndex = arr.findIndex(p => p.orientation === oddOrientation);
-    const rest = arr.filter((_, i) => i !== oddIndex);
-    dbLog('Swap: moved "' + arr[oddIndex].name + '" to left page to avoid mixed right-page orientations', 'warn');
-    return { photos: [arr[oddIndex], ...rest], swapped: true };
-  }
+
 
   /* ═══════════════════════════════════════════
      UPLOAD HANDLER
@@ -1001,10 +1010,11 @@
 
     // Sequential processing — HEIC WASM has shared state, parallel corrupts it
     const newPhotos = [];
+    const failedFiles = [];
     const existingNames = new Set(window.photoPool.filter(p => !p.duplicate).map(p => p.name));
     for (const file of files) {
       const result = await processOneFile(file);
-      if (!result) continue;
+      if (!result) { failedFiles.push(file.name); continue; }
       if (existingNames.has(file.name)) {
         result.duplicate = true;
         dbLog('  ⚠ Duplicate detected: ' + file.name + ' — will be flagged in sidebar', 'warn');
@@ -1039,6 +1049,15 @@
     renderPhotoSidebar();
     renderBook();
     updatePhotoHint();
+
+    if (failedFiles.length) {
+      alert(
+        failedFiles.length + ' file' + (failedFiles.length > 1 ? 's' : '') + ' could not be processed and were skipped:\n\n' +
+        failedFiles.map(n => '• ' + n).join('\n') +
+        '\n\nPlease re-export these as JPEG and upload again.'
+      );
+    }
+
     this.value = ''; // reset so the same file can be re-selected later if needed
   });
 
@@ -1642,11 +1661,18 @@
         if (art) dominantOrientation = art.orientation || 'horizontal';
       } else {
         // Regular spreads: take orientation from first assigned photo on this side
+        let found = false;
         for (const idx of sideSlice) {
           if (idx !== null && window.photoPool[idx]) {
             dominantOrientation = window.photoPool[idx].orientation || 'horizontal';
+            found = true;
             break;
           }
+        }
+        // Special-slot sides (e.g. FP3 left toy): no regular photos, drive variant from special photo
+        if (!found) {
+          const special = (window.specialPhotos[spreadId] || [])[0];
+          if (special) dominantOrientation = special.orientation || 'horizontal';
         }
       }
 
@@ -1718,7 +1744,11 @@
           img.dataset.src = photo.url;
           img.alt = photo.name;
           img.decoding = 'async';
-          img.onerror = () => console.warn('Slot img failed to load:', photo.name, photo.url.slice(0,40));
+          img.onerror = () => {
+            console.warn('Slot img failed to load:', photo.name, photo.url.slice(0,40));
+            slotEl.style.outline = '3px solid #e05252';
+            slotEl.title = 'Failed to load: ' + photo.name;
+          };
           slotEl.appendChild(img);
 
           if (photo.lowRes) {
@@ -1894,10 +1924,12 @@
               if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
               window.bookCaptions[spreadIndex][side][slotIdx] = caption;
               captionEl.textContent = applyTypographicRules(caption);
+              aiBtn.textContent = '✦ Generate';
+              aiBtn.title = '';
             } catch (err) {
               dbLog('⛔ Caption AI error: ' + err.message, 'warn');
-              aiBtn.textContent = '⚠ ' + (err.message.slice(0, 30) || 'Error');
-              setTimeout(() => { aiBtn.textContent = '✦ Generate'; }, 3000);
+              aiBtn.textContent = '⚠ Failed — click to retry';
+              aiBtn.title = err.message;
             } finally {
               aiBtn.classList.remove('loading');
               aiBtn.disabled = false;
@@ -2004,10 +2036,12 @@
             if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
             window.bookCaptions[spreadIndex][side]['textPanel'] = caption;
             panelEl.textContent = isFunnyWords ? formatFunnyWords(caption) : applyTypographicRules(caption);
+            aiPanelBtn.textContent = '✦ Generate';
+            aiPanelBtn.title = '';
           } catch (err) {
             dbLog('⛔ Text panel AI error: ' + err.message, 'warn');
-            aiPanelBtn.textContent = '⚠ ' + (err.message.slice(0, 30) || 'Error');
-            setTimeout(() => { aiPanelBtn.textContent = '✦ Generate'; }, 3000);
+            aiPanelBtn.textContent = '⚠ Failed — click to retry';
+            aiPanelBtn.title = err.message;
           } finally {
             aiPanelBtn.classList.remove('loading');
             aiPanelBtn.disabled = false;
@@ -2157,6 +2191,10 @@
         chosen.forEach(li => usedLocal.add(li));
 
         const variantKey = resolveVariant(pageDef, bestOrient || 'horizontal');
+        const preferredKey = (bestOrient || 'horizontal') === 'vertical' ? 'V' : 'H';
+        if (variantKey !== preferredKey) {
+          console.warn(`⚠ Spread ${spreadIndex} ${side}: ${bestOrient} photos placed in ${variantKey}-variant slot (no ${preferredKey} variant available)`);
+        }
         const variant = pageDef[variantKey];
         let ci = 0;
         assignment[side] = (variant?.slots || []).map(s => {
@@ -2171,7 +2209,13 @@
       singleSides.forEach(({ side, pageDef }, ri) => {
         const li = remaining[ri];
         const photo = li !== undefined ? window_[li] : null;
-        const variantKey = resolveVariant(pageDef, photo?.orientation || 'horizontal');
+        const photoOrient = photo?.orientation || 'horizontal';
+        const variantKey = resolveVariant(pageDef, photoOrient);
+        const preferredKey = photoOrient === 'vertical' ? 'V' : 'H';
+        if (photo && variantKey !== preferredKey) {
+          const name = photo.name || `pool[${validIndices[ptrStart + li]}]`;
+          console.warn(`⚠ Spread ${spreadIndex} ${side}: photo "${name}" (${photoOrient}) placed in ${variantKey}-variant slot (no ${preferredKey} variant available)`);
+        }
         const variant = pageDef[variantKey];
         let slotFilled = false;
         assignment[side] = (variant?.slots || []).map(s => {
@@ -2311,6 +2355,16 @@
     updateSidebarState();
   }
 
+  function hasCaptions() {
+    const bc = window.bookCaptions;
+    if (!bc) return false;
+    return Object.values(bc).some(spread =>
+      Object.values(spread).some(side =>
+        Object.values(side).some(v => v && v.trim())
+      )
+    );
+  }
+
   // Move spread at `index` by `delta` (-1 = up, +1 = down). SP0 (index 0) is fixed.
   function moveSpread(index, delta) {
     const seq = window._bookSequence;
@@ -2318,13 +2372,10 @@
     const target = index + delta;
     // SP0 at position 0 is always fixed — cannot move anything to/from index 0
     if (index <= 0 || target <= 0 || target >= seq.length) return;
+    if (hasCaptions() && !confirm('Reordering spreads will reassign photos — existing captions may no longer match their photos. Continue?')) return;
+    // Clear captions since photo assignments will change
+    window.bookCaptions = {};
     [seq[index], seq[target]] = [seq[target], seq[index]];
-    // Captions travel with the spread
-    if (window.bookCaptions) {
-      const tmp = window.bookCaptions[index];
-      window.bookCaptions[index] = window.bookCaptions[target];
-      window.bookCaptions[target] = tmp;
-    }
     rebuildFromSequence();
   }
 
@@ -2343,8 +2394,9 @@
       }
     }
 
+    if (hasCaptions() && window.bookCaptions?.[index] && !confirm('Changing spread type will clear its captions. Continue?')) return false;
     seq[index] = newSpreadId;
-    if (window.bookCaptions) delete window.bookCaptions[index]; // old captions don't apply to new type
+    if (window.bookCaptions) delete window.bookCaptions[index];
     rebuildFromSequence();
     return true;
   }
@@ -2462,6 +2514,11 @@
   function hydrateSpreadRow(rowEl) {
     rowEl.querySelectorAll('img[data-src]').forEach(img => {
       if (!img.src || img.src === window.location.href) {
+        img.onerror = () => {
+          img.style.outline = '3px solid #e05252';
+          img.title = 'Failed to load: ' + img.dataset.src;
+          console.warn('Spread asset failed to load:', img.dataset.src);
+        };
         img.src = img.dataset.src;
       }
     });
@@ -2595,12 +2652,50 @@
         URL.revokeObjectURL(photo.url);
         window.specialPhotos[fp].splice(i, 1);
         renderSpecialThumbs(fp);
+        renderSpecialSidebar();
         if (fp === 'cover') rerenderCover();
         else if (window.photoPool.length) renderBook();
       });
       wrap.appendChild(rm);
       container.appendChild(wrap);
     });
+  }
+
+  const SPECIAL_LABELS = {
+    cover: 'Cover',
+    FP1:   'Birthday',
+    FP3:   'Fav. toy',
+    FP4:   'First steps',
+    FP5:   'Art gallery',
+  };
+
+  function renderSpecialSidebar() {
+    const container = document.getElementById('sidebar-special');
+    const header    = document.getElementById('sidebar-special-header');
+    const countEl   = document.getElementById('sidebar-special-count');
+    container.innerHTML = '';
+
+    let total = 0;
+    Object.entries(window.specialPhotos).forEach(([fp, photos]) => {
+      photos.forEach(photo => {
+        total++;
+        const wrap = document.createElement('div');
+        wrap.className = 'special-sidebar-thumb';
+        wrap.title = photo.name;
+        const img = document.createElement('img');
+        img.src = photo.url;
+        img.alt = photo.name;
+        wrap.appendChild(img);
+        const label = document.createElement('div');
+        label.className = 'special-sidebar-label';
+        label.textContent = SPECIAL_LABELS[fp] || fp;
+        wrap.appendChild(label);
+        container.appendChild(wrap);
+      });
+    });
+
+    header.style.display = total > 0 ? '' : 'none';
+    countEl.textContent = total;
   }
 
   document.querySelectorAll('.special-upload-btn').forEach(btn => {
@@ -2632,6 +2727,7 @@
         }
       }
       renderSpecialThumbs(fp);
+      renderSpecialSidebar();
       if (fp === 'cover') {
         rerenderCover();
       } else if (window.photoPool.length) {
