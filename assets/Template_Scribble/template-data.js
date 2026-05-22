@@ -44,14 +44,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 0/SP 06 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 70, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 50 } }
+              { slot: 1, x: 105, y: 70, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 50, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 0/SP 06 V Right.svg',
             slots: [
-              { slot: 1, x: 85, y: 100, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'upper-right', offset: 5 } }
+              { slot: 1, x: 85, y: 100, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'upper-right', offset: 5, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
         },
@@ -66,14 +66,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 1/SP 01 H Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 10 } }
+              { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 10, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 1/SP 01 V Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 6 } }
+              { slot: 1, x: 95, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 6, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
         },
@@ -164,14 +164,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 3/SP 06 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 70, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 50 } }
+              { slot: 1, x: 105, y: 70, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 50, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 3/SP 06 V Right.svg',
             slots: [
-              { slot: 1, x: 85, y: 100, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'upper-right', offset: 5 } }
+              { slot: 1, x: 85, y: 100, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'upper-right', offset: 5, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
         },
@@ -204,14 +204,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#fdd16f',
             svg: 'SP Spread 4/SP 08 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 10 } }
+              { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 10, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
           V: {
             bgColor: '#fdd16f',
             svg: 'SP Spread 4/SP 08 V Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 6 } }
+              { slot: 1, x: 105, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 6, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
         },
@@ -244,14 +244,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 5/SP 10 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 130, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'above', offset: 7 } }
+              { slot: 1, x: 105, y: 130, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'above', offset: 7, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 5/SP 10 V Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 110, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'above', offset: 6 } }
+              { slot: 1, x: 105, y: 110, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'above', offset: 6, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
         },
@@ -266,14 +266,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#ff8773',
             svg: 'SP Spread 6/SP 11 H Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 20 } }
+              { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 20, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
           V: {
             bgColor: '#ff8773',
             svg: 'SP Spread 6/SP 11 V Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 20 } }
+              { slot: 1, x: 95, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 20, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
         },
@@ -282,14 +282,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 6/SP 12 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 5 } }
+              { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 5, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 6/SP 12 V Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 5 } }
+              { slot: 1, x: 105, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 5, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
         },
@@ -304,7 +304,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#fdd16f',
             svg: 'FP Spread 1/FP Birthday 01 L.svg',
             slots: [],
-            textPanel: { caption: { allowed: true, position: 'center' } }
+            textPanel: { caption: { allowed: true, position: 'center', font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
           },
         },
         right: {
@@ -327,7 +327,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'FP Spread 2/FP Words 03 L.svg',
             slots: [],
-            textPanel: { caption: { allowed: true, position: 'center' }, funnyWords: true }
+            textPanel: { caption: { allowed: true, position: 'center', font: 'FirstTimeWriting', sizePt: 20, style: 'regular', letterSpacing: 0, lineSpacing: 1.2 }, funnyWords: true }
           },
         },
         right: {
@@ -349,14 +349,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#c16ac1',
             svg: 'FP Spread 3/FP Toy 05 L.svg',
             slots: [
-              { slot: 1, x: 95, y: 130, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, position: 'above', offset: 10 } }
+              { slot: 1, x: 95, y: 130, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, position: 'above', offset: 10, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
           V: {
             bgColor: '#c16ac1',
             svg: 'FP Spread 3/FP Toy 05 V L.svg',
             slots: [
-              { slot: 1, x: 76, y: 115, w: 87, h: 130, ratio: '87:130', pool: 'special', caption: { allowed: true, position: 'upper-right', offset: 8 } }
+              { slot: 1, x: 76, y: 115, w: 87, h: 130, ratio: '87:130', pool: 'special', caption: { allowed: true, position: 'upper-right', offset: 8, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
         },
@@ -387,14 +387,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'FP Spread 4/FP Steps 07 L.svg',
             slots: [
-              { slot: 1, x: 95, y: 130, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, position: 'above', offset: 30 } }
+              { slot: 1, x: 95, y: 130, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, position: 'above', offset: 30, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'FP Spread 4/FP Steps 07 V L.svg',
             slots: [
-              { slot: 1, x: 95, y: 118, w: 93, h: 139, ratio: '93:139', pool: 'special', caption: { allowed: true, position: 'lower-right', offset: 6 } }
+              { slot: 1, x: 95, y: 118, w: 93, h: 139, ratio: '93:139', pool: 'special', caption: { allowed: true, position: 'lower-right', offset: 6, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28 } }
             ]
           },
         },
@@ -425,14 +425,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#ff8773',
             svg: 'FP Spread 5/FP Art H 09 Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 20 } }
+              { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 20, font: 'EB Garamond', sizePt: 13, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35 } }
             ]
           },
           V: {
             bgColor: '#ff8773',
             svg: 'FP Spread 5/FP Art V 09 Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 100, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 9 } }
+              { slot: 1, x: 95, y: 100, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 9, font: 'EB Garamond', sizePt: 13, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35 } }
             ]
           },
         },
@@ -441,14 +441,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'FP Spread 5/FP Art H 10 Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 20 } }
+              { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 20, font: 'EB Garamond', sizePt: 13, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35 } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'FP Spread 5/FP Art V 12 Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 100, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 9 } }
+              { slot: 1, x: 105, y: 100, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 9, font: 'EB Garamond', sizePt: 13, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35 } }
             ]
           },
         },

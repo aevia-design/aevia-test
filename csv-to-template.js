@@ -62,16 +62,40 @@ function normaliseRatio(raw) {
   return cleaned.split(':').map(n => String(parseInt(n, 10) || n)).join(':');
 }
 
-function parseCaption(allowedStr, posRaw) {
+function parseCaptionStyle(row) {
+  const font = (row['caption_font'] || '').trim();
+  if (!font || font === 'n.a') return {};
+  const result = { font };
+  const sizePt = parseInt((row['caption_size_pt'] || '').replace('pt', ''), 10);
+  if (sizePt) result.sizePt = sizePt;
+  const style = (row['caption_style'] || '').trim();
+  if (style && style !== 'n.a') result.style = style;
+  const ls = parseFloat(row['caption_letter_spacing']);
+  if (!isNaN(ls)) result.letterSpacing = ls;
+  const lsp = parseFloat(row['caption_line_spacing']);
+  if (!isNaN(lsp)) result.lineSpacing = lsp;
+  return result;
+}
+
+function parseCaption(allowedStr, posRaw, row) {
   if (allowedStr !== 'yes') return { allowed: false };
   const trimmed = (posRaw || '').trim();
-  if (!trimmed || trimmed === 'center') return { allowed: true, position: 'center' };
-  // "below (50mm from photo)", "upper right (5mm from photo)", etc.
-  const m = trimmed.match(/^([\w\s]+?)\s*\((\d+)mm/i);
-  if (!m) return { allowed: true, position: trimmed.toLowerCase().replace(/\s+/g, '-') };
-  const pos    = m[1].trim().toLowerCase().replace(/\s+/g, '-');
-  const offset = parseInt(m[2], 10);
-  return { allowed: true, position: pos, offset };
+  let cap;
+  if (!trimmed || trimmed === 'center') {
+    cap = { allowed: true, position: 'center' };
+  } else {
+    // "below (50mm from photo)", "upper right (5mm from photo)", etc.
+    const m = trimmed.match(/^([\w\s]+?)\s*\((\d+)mm/i);
+    if (!m) {
+      cap = { allowed: true, position: trimmed.toLowerCase().replace(/\s+/g, '-') };
+    } else {
+      const pos    = m[1].trim().toLowerCase().replace(/\s+/g, '-');
+      const offset = parseInt(m[2], 10);
+      cap = { allowed: true, position: pos, offset };
+    }
+  }
+  if (row) Object.assign(cap, parseCaptionStyle(row));
+  return cap;
 }
 
 function orientToVariantKey(orientStr) {
@@ -89,7 +113,7 @@ function buildSlot(row, slotNumber, isFunctional) {
   const w = parseInt(row['Width (mm)'],             10);
   const h = parseInt(row['Height (mm)'],            10);
   const ratio   = normaliseRatio(row['Aspect ratio']);
-  const caption = parseCaption(row['captions allowed'], row['captions_position']);
+  const caption = parseCaption(row['captions allowed'], row['captions_position'], row);
 
   const slot = { slot: slotNumber, x, y, w, h };
   if (ratio) slot.ratio = ratio;
@@ -190,7 +214,7 @@ function buildFunctionalSpread(spreadNum, rows) {
     const tr     = textRows[0];
     const svgKey = `${id}.left.default`;
     const textPanel = {
-      caption: { allowed: true, position: 'center' },
+      caption: { allowed: true, position: 'center', ...parseCaptionStyle(tr) },
       ...(tr['Syb-type'] === 'Funny words' ? { funnyWords: true } : {})
     };
     pages.left = {
@@ -339,7 +363,12 @@ for (const n of Object.keys(functionalBySpread).sort((a, b) => +a - +b)) {
 function serializeCaption(c) {
   if (!c.allowed) return `{ allowed: false }`;
   let s = `{ allowed: true, position: '${c.position}'`;
-  if (c.offset !== undefined) s += `, offset: ${c.offset}`;
+  if (c.offset       !== undefined) s += `, offset: ${c.offset}`;
+  if (c.font)                       s += `, font: '${c.font}'`;
+  if (c.sizePt       !== undefined) s += `, sizePt: ${c.sizePt}`;
+  if (c.style)                      s += `, style: '${c.style}'`;
+  if (c.letterSpacing !== undefined) s += `, letterSpacing: ${c.letterSpacing}`;
+  if (c.lineSpacing   !== undefined) s += `, lineSpacing: ${c.lineSpacing}`;
   s += ` }`;
   return s;
 }
@@ -361,7 +390,15 @@ function serializeVariant(vKey, v) {
   out += `${I}  svg: '${v.svg}',\n`;
   if (v.textPanel) {
     const tp = v.textPanel;
-    let tpStr = `{ caption: { allowed: ${tp.caption.allowed}, position: '${tp.caption.position}' }`;
+    const tc = tp.caption;
+    let tpCap = `{ allowed: ${tc.allowed}, position: '${tc.position}'`;
+    if (tc.font)                       tpCap += `, font: '${tc.font}'`;
+    if (tc.sizePt       !== undefined) tpCap += `, sizePt: ${tc.sizePt}`;
+    if (tc.style)                      tpCap += `, style: '${tc.style}'`;
+    if (tc.letterSpacing !== undefined) tpCap += `, letterSpacing: ${tc.letterSpacing}`;
+    if (tc.lineSpacing   !== undefined) tpCap += `, lineSpacing: ${tc.lineSpacing}`;
+    tpCap += ` }`;
+    let tpStr = `{ caption: ${tpCap}`;
     if (tp.funnyWords) tpStr += `, funnyWords: true`;
     tpStr += ` }`;
     // slots first, then textPanel (matches existing convention)

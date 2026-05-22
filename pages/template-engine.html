@@ -1814,11 +1814,21 @@
           captionEl.style.width = capWidth + 'px';
           if (cap.position === 'upper-right') captionEl.style.textAlign = 'left';
 
+          // Typography from template-data (CSV source of truth)
+          if (cap.font)                        captionEl.style.fontFamily    = `'${cap.font}', var(--sans)`;
+          if (cap.sizePt)                      captionEl.style.fontSize      = cap.sizePt + 'pt';
+          if (cap.lineSpacing)                 captionEl.style.lineHeight    = cap.lineSpacing;
+          if (cap.letterSpacing !== undefined) captionEl.style.letterSpacing = cap.letterSpacing + 'em';
+          if (cap.style === 'italic')          captionEl.style.fontStyle     = 'italic';
+          if (cap.style === 'semibold')        captionEl.style.fontWeight    = '600';
+          else if (cap.style === 'medium')     captionEl.style.fontWeight    = '500';
+          else if (cap.style === 'bold')       captionEl.style.fontWeight    = '700';
+
           const saved = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx];
-          if (saved) captionEl.textContent = applyTypographicRules(saved);
+          if (saved) captionEl.innerText = applyTypographicRules(saved);
 
           const saveCaption = () => {
-            const raw = captionEl.textContent.trim();
+            const raw = captionEl.innerText.trim();
             if (!window.bookCaptions) window.bookCaptions = {};
             if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
             if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
@@ -1829,11 +1839,11 @@
           captionEl.addEventListener('focus', () => {
             // Show raw text while editing (undo typographic substitutions)
             const raw = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx] || '';
-            captionEl.textContent = raw;
+            captionEl.innerText = raw;
           });
           captionEl.addEventListener('blur', () => {
             const raw = saveCaption();
-            captionEl.textContent = applyTypographicRules(raw);
+            captionEl.innerText = applyTypographicRules(raw);
           });
           captionEl.addEventListener('mousedown', e => e.stopPropagation());
           captionEl.addEventListener('keydown', e => {
@@ -1913,12 +1923,16 @@
         panelEl.style.width     = (200 * SCALE * 0.60) + 'px';
         panelEl.style.textAlign = 'center';
 
-        if (isFunnyWords) {
-          panelEl.style.fontFamily  = "'FirstTimeWriting', cursive";
-          panelEl.style.fontSize    = (25 * SCALE) + 'px';
-          panelEl.style.lineHeight  = '1.4';
-          panelEl.style.whiteSpace  = 'pre-line';
+        // Typography from template-data (CSV source of truth)
+        const tpCap = variant.textPanel.caption;
+        if (tpCap.font)                        panelEl.style.fontFamily    = `'${tpCap.font}', var(--sans)`;
+        if (tpCap.sizePt) {
+          // funnyWords panel is scaled to the canvas (px); regular text panels use pt
+          panelEl.style.fontSize = isFunnyWords ? (tpCap.sizePt * SCALE) + 'px' : tpCap.sizePt + 'pt';
         }
+        if (tpCap.lineSpacing)                 panelEl.style.lineHeight    = tpCap.lineSpacing;
+        if (tpCap.letterSpacing !== undefined) panelEl.style.letterSpacing = tpCap.letterSpacing + 'em';
+        if (isFunnyWords)                      panelEl.style.whiteSpace    = 'pre-line';
 
         const formatFunnyWords = (text) => {
           if (!isFunnyWords) return text;
