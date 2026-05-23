@@ -31,8 +31,8 @@ Standard;n.a;5;Left V;1;50;70;80;107;no;;;;;;;n.a;n.a;#f8ead9;80:107;vertical;3m
 Standard;n.a;5;Left V;2;140;130;80;107;no;;;;;;;n.a;n.a;#f8ead9;80:107;vertical;3mm;200×200mm
 Standard;n.a;5;Right H;1;105;130;150;100;yes;above (7mm from photo);NT Somic;14pt;regular;-0.02;1.28;n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
 Standard;n.a;5;Right V;1;105;110;120;160;yes;above (6mm from photo);NT Somic;14pt;regular;-0.02;1.28;n.a;n.a;#f8ead9;03:04;vertical;3mm;200×200mm
-Standard;n.a;6;Left H;1;95;100;150;100;yes;below (20mm from photo);NT Somic;14pt;regular;-0.02;1.28;n.a;n.a;#ff8773;03:02;horizontal;3mm;200×200mm
-Standard;n.a;6;Left V;1;95;90;120;160;yes;below (20mm from photo);NT Somic;14pt;regular;-0.02;1.28;n.a;n.a;#ff8773;03:04;vertical;3mm;200×200mm
+Standard;n.a;6;Left H;1;95;100;150;100;yes;below (10mm from photo);NT Somic;14pt;regular;-0.02;1.28;n.a;n.a;#ff8773;03:02;horizontal;3mm;200×200mm
+Standard;n.a;6;Left V;1;95;90;120;160;yes;below (10mm from photo);NT Somic;14pt;regular;-0.02;1.28;n.a;n.a;#ff8773;03:04;vertical;3mm;200×200mm
 Standard;n.a;6;Right H;1;105;100;150;100;yes;below (5mm from photo);NT Somic;14pt;regular;-0.02;1.28;n.a;n.a;#f8ead9;03:02;horizontal;3mm;200×200mm
 Standard;n.a;6;Right V;1;105;90;120;160;yes;below (5mm from photo);NT Somic;14pt;regular;-0.02;1.28;n.a;n.a;#f8ead9;03:04;vertical;3mm;200×200mm
 Functional;Birthday wishes;1;-;-;-;-;-;-;yes;center;NT Somic;16pt;regular;-0.02;1.28;no;yes;#fdd16f;n.a;square;3mm;200×200mm

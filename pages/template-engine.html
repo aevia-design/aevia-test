@@ -127,6 +127,14 @@
       background: var(--surface); border-color: var(--border); color: var(--text);
     }
 
+    .config-export-btn {
+      flex-shrink: 0;
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      border: 1px solid var(--border); border-radius: 100px;
+      padding: 9px 22px; color: var(--muted);
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .config-export-btn:hover { border-color: var(--text); color: var(--text); }
     .config-upload-btn {
       margin-left: auto; flex-shrink: 0;
       font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
@@ -625,6 +633,7 @@
   </div>
 
   <input type="file" id="photo-file-input" accept=".jpg,.jpeg,.heic,.heif" multiple hidden />
+  <button class="config-export-btn" id="export-state-btn">Export State</button>
   <button class="config-upload-btn" id="upload-btn">+ Add Photos</button>
   <div class="config-photo-hint" id="config-photo-hint"></div>
 
@@ -997,6 +1006,54 @@
   document.getElementById('upload-btn').addEventListener('click', () => {
     document.getElementById('photo-file-input').click();
   });
+
+  /* ───────────────────────────────────────────
+     EXPORT STATE
+  ═══════════════════════════════════════════ */
+
+  function exportBookState() {
+    const seq = window._bookSequence;
+    if (!seq || !seq.length) { alert('No book to export — upload photos first.'); return; }
+
+    // Resolve pool indices → filenames
+    const assignments = {};
+    for (const [si, sides] of Object.entries(window.bookAssignments || {})) {
+      assignments[si] = {};
+      for (const side of ['left', 'right']) {
+        if (!sides[side]) continue;
+        assignments[si][side] = sides[side].map(idx => {
+          const p = idx !== null ? window.photoPool[idx] : null;
+          return p ? { name: p.name, orientation: p.orientation } : null;
+        });
+      }
+    }
+
+    // Special photos: one filename per key (max 1 per key)
+    const specialPhotos = {};
+    for (const [key, arr] of Object.entries(window.specialPhotos || {})) {
+      const names = arr.filter(Boolean).map(p => p.name || null);
+      if (names.length) specialPhotos[key] = names[0]; // cover/FP3/FP4 have max 1
+    }
+
+    const state = {
+      template: 'scribble',
+      pageCount: parseInt(document.getElementById('page-count-select').value, 10),
+      sequence: seq,
+      assignments,
+      specialPhotos,
+      captions: window.bookCaptions || {},
+      coverCaptionStyles: window.coverCaptionStyles || {},
+    };
+
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'book-state.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  document.getElementById('export-state-btn').addEventListener('click', exportBookState);
 
   document.getElementById('photo-file-input').addEventListener('change', async function () {
     const files = Array.from(this.files);

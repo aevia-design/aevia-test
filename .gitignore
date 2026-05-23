@@ -11,6 +11,9 @@ functions/node_modules/
 assets/business plan/
 assets/test photos/
 
+# PDF export test output
+pdf-out/
+
 # Local Claude config / worktrees — not part of the project
 .claude/
 

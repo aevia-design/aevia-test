@@ -335,11 +335,11 @@ Check `functions/` to confirm this exists before wiring.
 - **Caption multi-line:** fixed — use Shift+Enter to wrap to a new line within a caption.
 
 ## In progress / not started
-- **Plan 11 — Standalone PDF export (NEXT, build first):**
-  - 11-01 Export State button → book-state.json
-  - 11-02 scripts/export-pdf.js — content pages, photos + SVG, no captions (quality validation gate)
-  - 11-03 Caption rendering layer
-  - 11-04 Cover PDF
+- **Plan 11 — Standalone PDF export:**
+  - ~~11-01 Export State button → book-state.json~~ **DONE**
+  - ~~11-02 scripts/export-pdf.js — content pages, photos + SVG~~ **DONE** — photo placement, SVG overlay, FP1 heart clip all working
+  - ~~11-03 Caption rendering layer~~ **DONE** — vector text via pdf-lib + fontkit; all 6 fonts embedded with `{ subset: false }` (woff2 fix)
+  - **11-04 Cover PDF** — NEXT: 481×272mm canvas, 18mm bleed, back+spine(9mm)+front
 - **Plan 12 — Order flow integration (after PDF validated):**
   - 12-01 Photo count calculator on scribble.html
   - 12-02 getOrderAssets Cloud Function
@@ -352,7 +352,7 @@ Check `functions/` to confirm this exists before wiring.
 
 ## Open questions
 - Performance: alt-tab stall (10-15s) — root cause not yet investigated
-- Plan 11 dependencies: `sharp` + `pdf-lib` to be added (Node-side only, not frontend)
+- PDF file size: currently PNG pages (large); switch to JPEG compression once print quality confirmed
 
 </current_state>
 ```
