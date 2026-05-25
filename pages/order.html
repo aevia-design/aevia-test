@@ -591,32 +591,109 @@ function initAddonFields() {
 }
 
 function initSpecialPhotoZones() {
-  const container = document.getElementById('special-photo-zones');
-  ORDER.addons.filter(a => a.inputType === 'photo').forEach(addon => {
-    const wrapId = `addon-wrap-${addon.slug}`;
+  // Legacy — replaced by initFPSections(). Kept for reference only.
+}
+
+// ─────────────────────────────────────────────────────────────────
+// FP sections — photo zone(s) + text field per functional page
+// Called from goToStep2(); reads SCRIBBLE_DATA for photo count + text prompts
+// ─────────────────────────────────────────────────────────────────
+function initFPSections() {
+  const container = document.getElementById('fp-sections');
+  container.innerHTML = '';
+
+  ORDER.addons.filter(a => !cancelledAddons.has(a.slug)).forEach(addon => {
+    const fpKey    = addon.slug.toUpperCase(); // 'fp1' → 'FP1'
+    const fpData   = window.SCRIBBLE_DATA?.spreads?.[fpKey];
+    const photoMeta = fpData?.orderFormPhoto;
+    const textMeta  = fpData?.orderFormMeta;
+    const wrapId   = `addon-wrap-${addon.slug}`;
+
     const section = document.createElement('div');
     section.className = 'upload-section';
     section.id = wrapId;
-    section.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+
+    // ── Header
+    let html = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
         <div class="upload-label">Special page</div>
         <button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
           style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>
       </div>
       <div class="upload-heading">${addon.name}</div>
-      <div class="upload-hint">One photo dedicated to this spread.</div>
-      <div class="drop-zone" id="dz-special-${addon.slug}">
-        <input type="file" accept=".jpg,.jpeg,.png,.heic,.dng,.raw,.nef,.cr2,.arw,.orf,.rw2"
-               onchange="handleSpecialFile('${addon.slug}', this.files[0])" />
-        <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <div class="dz-text"><strong>Choose photo</strong> or drag here</div>
-      </div>
-      <div class="single-preview" id="special-preview-${addon.slug}">
-        <div class="single-preview-inner" id="special-preview-inner-${addon.slug}"></div>
-        <div class="single-preview-name" id="special-preview-name-${addon.slug}"></div>
-      </div>
     `;
+
+    // ── Photo zone(s)
+    if (photoMeta) {
+      html += `<div class="upload-hint">${photoMeta.hint}</div>`;
+      const count = photoMeta.count || 1;
+      for (let i = 0; i < count; i++) {
+        const slotKey   = count > 1 ? `${addon.slug}-${i}` : addon.slug;
+        const slotLabel = count > 1
+          ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:500;">${i === 0 ? 'Photo 1 — left page' : 'Photo 2 — right page'}</div>`
+          : '';
+        html += `
+          ${slotLabel}
+          <div class="drop-zone" id="dz-special-${slotKey}" style="${count > 1 && i < count - 1 ? 'margin-bottom:16px;' : ''}">
+            <input type="file" accept=".jpg,.jpeg,.png,.heic" onchange="handleSpecialFile('${slotKey}', this.files[0])" />
+            <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="dz-text"><strong>Choose photo</strong> or drag here</div>
+            <div class="dz-formats">JPG · PNG · HEIC</div>
+          </div>
+          <div class="single-preview" id="special-preview-${slotKey}">
+            <div class="single-preview-inner" id="special-preview-inner-${slotKey}"></div>
+            <div class="single-preview-name" id="special-preview-name-${slotKey}"></div>
+          </div>
+        `;
+      }
+    }
+
+    // ── Text / caption field
+    if (textMeta) {
+      html += `<div style="margin-top:${photoMeta ? '22px' : '0'};">`;
+      html += `<div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${textMeta.textPrompt || 'Notes'}</div>`;
+      html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${textMeta.hint}</div>`;
+
+      if (textMeta.funnyWords) {
+        const maxWords = textMeta.maxWords || 10;
+        const minWords = textMeta.minWords || 3;
+        const rows3 = [1,2,3].map(i => `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="min-width:22px;font-size:13px;color:var(--muted);text-align:right;">${i}.</span>
+            <input type="text" placeholder="e.g. ${['Noooo','More!','Biiiig'][i-1]}"
+              style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;" />
+          </div>`).join('');
+        html += `
+          <div id="fp-word-list-${addon.slug}">${rows3}</div>
+          <button type="button" id="fp-add-btn-${addon.slug}" onclick="addWordRow('${addon.slug}',${maxWords})"
+            style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;font-family:var(--sans);color:var(--muted);cursor:pointer;margin-top:2px;">+ Add another word</button>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px;">Minimum ${minWords} words, maximum ${maxWords}.</div>
+        `;
+      } else {
+        html += `
+          <textarea id="addon-text-${addon.slug}" placeholder="${textMeta.placeholder || ''}" rows="3"
+            style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;resize:vertical;"></textarea>
+        `;
+      }
+      html += '</div>';
+    }
+
+    section.innerHTML = html;
     container.appendChild(section);
+  });
+}
+
+function initSpecialDragDrop() {
+  document.querySelectorAll('#fp-sections .drop-zone').forEach(el => {
+    const slotKey = el.id.replace('dz-special-', '');
+    el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+    el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      el.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) handleSpecialFile(slotKey, file);
+    });
   });
 }
 
@@ -659,8 +736,13 @@ function goToStep2() {
   const regularSpreads = Math.max(1, spreads - activeFpCount);
   const minPhotos = Math.round(regularSpreads * 1.5);
   const nicePhotos = regularSpreads * 3;
-  document.getElementById('photo-count-min').textContent = minPhotos;
+  window._photoCountMin  = minPhotos;
+  window._photoCountNice = nicePhotos;
+  document.getElementById('photo-count-min').textContent  = minPhotos;
   document.getElementById('photo-count-nice').textContent = nicePhotos;
+  // Update drop zone text with target count
+  const dzMainText = document.querySelector('#dz-main .dz-text');
+  if (dzMainText) dzMainText.innerHTML = `<strong>Choose ${minPhotos}–${nicePhotos} photos</strong> or drag here`;
 
   // Build FP sections (photo + text per FP) and drag-drop for special zones
   initFPSections();
@@ -815,7 +897,9 @@ function renderPhotoGrid() {
   const n = mainFiles.length;
   if (n > 0) {
     const lowResCount = mainFiles.filter(f => f._lowRes).length;
-    let countText = `${n} photo${n !== 1 ? 's' : ''} selected`;
+    const target = (window._photoCountMin && window._photoCountNice)
+      ? ` · target ${window._photoCountMin}–${window._photoCountNice}` : '';
+    let countText = `${n} photo${n !== 1 ? 's' : ''} selected${target}`;
     if (lowResCount > 0) {
       countText += ` · ${lowResCount} may be too low-resolution for print (shortest side under 1500px)`;
     }
@@ -868,34 +952,45 @@ async function submitOrder() {
     return;
   }
 
-  // Validate active addon fields
+  // Validate active FP sections using SCRIBBLE_DATA
   for (const addon of ORDER.addons) {
     if (cancelledAddons.has(addon.slug)) continue;
-    if (addon.inputType === 'text') {
-      const meta = getFpMeta(addon.slug);
-      if (meta && meta.funnyWords) {
-        const wordList = document.getElementById(`fp-word-list-${addon.slug}`);
-        const filled = wordList
-          ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
-          : [];
-        if (filled.length < (meta.minWords || 3)) {
-          errEl.textContent = `${addon.name}: please enter at least ${meta.minWords || 3} words or phrases, or remove this page.`;
-          errEl.style.display = 'block';
-          errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          return;
-        }
-      } else {
-        const val = (document.getElementById(`addon-text-${addon.slug}`) || {}).value || '';
-        if (!val.trim()) {
-          errEl.textContent = `Please fill in the notes for "${addon.name}", or remove this page.`;
+    const fpKey    = addon.slug.toUpperCase();
+    const fpData   = window.SCRIBBLE_DATA?.spreads?.[fpKey];
+    const photoMeta = fpData?.orderFormPhoto;
+    const textMeta  = fpData?.orderFormMeta;
+
+    // Validate photo slot(s)
+    if (photoMeta) {
+      const count = photoMeta.count || 1;
+      for (let i = 0; i < count; i++) {
+        const slotKey = count > 1 ? `${addon.slug}-${i}` : addon.slug;
+        if (!specialFiles[slotKey]) {
+          const label = count > 1 ? `${addon.name} (photo ${i + 1})` : addon.name;
+          errEl.textContent = `Please upload a photo for "${label}", or remove this page.`;
           errEl.style.display = 'block';
           errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return;
         }
       }
-    } else if (addon.inputType === 'photo') {
-      if (!specialFiles[addon.slug]) {
-        errEl.textContent = `Please upload a photo for "${addon.name}", or remove this page.`;
+    }
+
+    // Validate text field
+    if (textMeta && textMeta.funnyWords) {
+      const wordList = document.getElementById(`fp-word-list-${addon.slug}`);
+      const filled = wordList
+        ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
+        : [];
+      if (filled.length < (textMeta.minWords || 3)) {
+        errEl.textContent = `${addon.name}: please enter at least ${textMeta.minWords || 3} words or phrases, or remove this page.`;
+        errEl.style.display = 'block';
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    } else if (textMeta) {
+      const val = (document.getElementById(`addon-text-${addon.slug}`) || {}).value || '';
+      if (!val.trim()) {
+        errEl.textContent = `Please fill in "${textMeta.textPrompt || addon.name}", or remove this page.`;
         errEl.style.display = 'block';
         errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
@@ -910,34 +1005,30 @@ async function submitOrder() {
   const albumNotes   = document.getElementById('album-notes').value.trim();
   const specialReq   = document.getElementById('special-requests').value.trim();
 
-  // Collect addon text notes (skip cancelled)
+  // Collect FP texts and assemble specialRequests string
   const activeAddons = ORDER.addons.filter(a => !cancelledAddons.has(a.slug));
-  const fpTexts = {};  // structured { slug: value } — stored in Firestore separately
-  const addonNotes = activeAddons
-    .filter(a => a.inputType === 'text')
-    .map(a => {
-      const meta = getFpMeta(a.slug);
-      let val;
-      if (meta && meta.funnyWords) {
-        const wordList = document.getElementById(`fp-word-list-${a.slug}`);
-        const words = wordList
-          ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
-          : [];
-        val = words.join(', ');
-        if (words.length) fpTexts[a.slug] = words;
-      } else {
-        val = (document.getElementById(`addon-text-${a.slug}`) || {}).value || '';
-        val = val.trim();
-        if (val) fpTexts[a.slug] = val;
-      }
-      return val ? `${a.name}: ${val}` : null;
-    })
-    .filter(Boolean)
-    .join('\n');
+  const fpTexts = {};
+  const addonNoteLines = [];
+  activeAddons.forEach(a => {
+    const fpKey   = a.slug.toUpperCase();
+    const fpData  = window.SCRIBBLE_DATA?.spreads?.[fpKey];
+    const textMeta = fpData?.orderFormMeta;
+    if (!textMeta) return;
+    if (textMeta.funnyWords) {
+      const wordList = document.getElementById(`fp-word-list-${a.slug}`);
+      const words = wordList
+        ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
+        : [];
+      if (words.length) { fpTexts[a.slug] = words; addonNoteLines.push(`${a.name}: ${words.join(', ')}`); }
+    } else {
+      const val = (document.getElementById(`addon-text-${a.slug}`) || {}).value?.trim() || '';
+      if (val) { fpTexts[a.slug] = val; addonNoteLines.push(`${a.name}: ${val}`); }
+    }
+  });
 
   const fullSpecialReq = [
     activeAddons.length ? `Add-ons selected: ${activeAddons.map(a => a.name).join(', ')}` : null,
-    addonNotes || null,
+    addonNoteLines.length ? addonNoteLines.join('\n') : null,
     specialReq || null,
   ].filter(Boolean).join('\n\n');
 
@@ -949,11 +1040,20 @@ async function submitOrder() {
   fileObjects.push(coverFile);
   filesMeta.push({ name: coverFile.name, type: mimeType(coverFile), fileType: 'cover' });
 
-  // Special page photos (skip cancelled)
-  activeAddons.filter(a => a.inputType === 'photo' && specialFiles[a.slug]).forEach(a => {
-    const f = specialFiles[a.slug];
-    fileObjects.push(f);
-    filesMeta.push({ name: f.name, type: mimeType(f), fileType: 'special', addonSlug: a.slug });
+  // Special page photos (skip cancelled); FP5 has 2 slots (fp5-0, fp5-1)
+  activeAddons.forEach(a => {
+    const fpKey    = a.slug.toUpperCase();
+    const fpData   = window.SCRIBBLE_DATA?.spreads?.[fpKey];
+    const photoMeta = fpData?.orderFormPhoto;
+    if (!photoMeta) return;
+    const count = photoMeta.count || 1;
+    for (let i = 0; i < count; i++) {
+      const slotKey = count > 1 ? `${a.slug}-${i}` : a.slug;
+      const f = specialFiles[slotKey];
+      if (!f) continue;
+      fileObjects.push(f);
+      filesMeta.push({ name: f.name, type: mimeType(f), fileType: 'special', addonSlug: a.slug, ...(count > 1 ? { slotIndex: i } : {}) });
+    }
   });
 
   // Main photos
