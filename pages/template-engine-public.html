@@ -1,0 +1,2998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aevia — Template Engine (Staff)</title>
+  <script src="../assets/Template_Scribble/scribble-data.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+  <style>
+    @font-face {
+      font-family: 'NT Somic';
+      src: url('../assets/fonts/NTSomic-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'NT Somic';
+      src: url('../assets/fonts/NTSomic-Medium.ttf') format('truetype');
+      font-weight: 500; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'NT Somic';
+      src: url('../assets/fonts/NTSomic-Bold.ttf') format('truetype');
+      font-weight: 700; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'EB Garamond';
+      src: url('../assets/fonts/EBGaramond-VariableFont_wght.ttf') format('truetype');
+      font-weight: 400 900; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'EB Garamond';
+      src: url('../assets/fonts/EBGaramond-Italic-VariableFont_wght.ttf') format('truetype');
+      font-weight: 400 900; font-style: italic; font-display: swap;
+    }
+    @font-face {
+      font-family: 'FirstTimeWriting';
+      src: url('../assets/fonts/FirstTimeWriting!.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    :root {
+      --bg:        #fafaf8;
+      --surface:   #f3efe9;
+      --border:    #e4dfd8;
+      --text:      #1a1a1a;
+      --muted:     #7d7570;
+      --accent-dk: #a8895f;
+      --white:     #ffffff;
+      --serif:     Georgia, 'Times New Roman', serif;
+      --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      --config-h:  68px;
+      --special-h: 0px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    img { display: block; max-width: 100%; }
+    button { cursor: pointer; border: none; background: none; font: inherit; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ── NAV ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 56px;
+      background: rgba(250,250,248,0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo img { height: 28px; width: auto; display: block; }
+    .nav-logo-text { font-family: var(--serif); font-size: 18px; letter-spacing: -0.01em; }
+    .nav-links { display: flex; gap: 32px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .nav-links a { transition: color 0.15s; } .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid var(--text); padding: 8px 20px; border-radius: 100px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-cta:hover { background: var(--text); color: var(--white); }
+    .nav-burger { display: none; flex-direction: column; gap: 5px; padding: 4px; }
+    .nav-burger span { display: block; width: 22px; height: 1.5px; background: var(--text); }
+
+    /* ── CONFIG BAR ── */
+    .config-bar {
+      position: fixed; top: 69px; left: 0; right: 0; z-index: 90;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      height: var(--config-h);
+      display: flex; align-items: center; gap: 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .config-group {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .config-label {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); white-space: nowrap;
+    }
+    .config-select {
+      font-family: var(--sans); font-size: 13px; color: var(--text);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 6px 10px; background: var(--bg);
+      cursor: pointer; outline: none;
+      transition: border-color 0.15s;
+    }
+    .config-select:focus { border-color: var(--text); }
+
+    .config-divider {
+      width: 1px; height: 32px; background: var(--border); flex-shrink: 0;
+    }
+
+    .fp-group {
+      display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;
+    }
+    .fp-checkbox-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; color: var(--muted);
+      cursor: pointer; padding: 4px 8px; border-radius: 4px;
+      border: 1px solid transparent;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .fp-checkbox-item input[type="checkbox"] { accent-color: var(--text); cursor: pointer; }
+    .fp-checkbox-item:hover { border-color: var(--border); color: var(--text); }
+    .fp-checkbox-item:has(input:checked) {
+      background: var(--surface); border-color: var(--border); color: var(--text);
+    }
+
+    .config-export-btn {
+      flex-shrink: 0;
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      border: 1px solid var(--border); border-radius: 100px;
+      padding: 9px 22px; color: var(--muted);
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .config-export-btn:hover { border-color: var(--text); color: var(--text); }
+    .config-upload-btn {
+      margin-left: auto; flex-shrink: 0;
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      border: 1px solid var(--text); border-radius: 100px;
+      padding: 9px 22px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .config-upload-btn:hover { background: var(--text); color: var(--white); }
+    .config-photo-hint {
+      font-size: 11px; color: var(--muted); white-space: nowrap; line-height: 1.4;
+    }
+    .config-photo-hint.hint-ok   { color: #5a9a5a; }
+    .config-photo-hint.hint-warn { color: #c07000; }
+    .config-photo-hint.hint-over { color: #b03030; }
+
+    /* ── SPECIAL PHOTO PANEL ── */
+    .special-panel {
+      position: fixed;
+      top: calc(69px + var(--config-h));
+      left: 0; right: 0;
+      z-index: 85;
+      background: #fdf8f3;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 40px;
+      display: none;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .special-panel.visible { display: flex; }
+    .special-zone {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .special-zone-label {
+      font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--muted); white-space: nowrap;
+    }
+    .special-upload-btn {
+      font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase;
+      border: 1px dashed var(--border); border-radius: 4px;
+      padding: 5px 12px; background: var(--white); cursor: pointer;
+      color: var(--muted);
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .special-upload-btn:hover { border-color: var(--text); color: var(--text); }
+    .special-thumbs {
+      display: flex; gap: 6px;
+    }
+    .special-thumb {
+      width: 48px; height: 48px; border-radius: 4px;
+      overflow: hidden; border: 1px solid var(--border);
+      position: relative; flex-shrink: 0; cursor: pointer;
+    }
+    .special-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .special-thumb-remove {
+      position: absolute; top: 1px; right: 2px;
+      font-size: 10px; color: var(--white); background: rgba(0,0,0,0.5);
+      border-radius: 2px; padding: 0 2px; cursor: pointer; line-height: 14px;
+    }
+
+    /* ── PHOTO SIDEBAR ── */
+    .photo-sidebar {
+      position: fixed;
+      top: calc(69px + var(--config-h) + var(--special-h));
+      left: 0; bottom: 0;
+      width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto; overflow-x: hidden;
+      z-index: 80;
+      padding: 16px 12px 40px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .photo-sidebar::-webkit-scrollbar { width: 4px; }
+    .photo-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .photo-sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .sidebar-total {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 14px; padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-section-header {
+      font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin: 14px 0 8px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .sidebar-section-header .sidebar-count {
+      background: var(--border); color: var(--text);
+      border-radius: 100px; padding: 1px 7px; font-size: 10px;
+    }
+    .sidebar-section-header.unplaced .sidebar-count {
+      background: var(--accent-dk); color: #fff;
+    }
+    .sidebar-section-header.duplicates { color: #d04040; }
+    .sidebar-section-header.duplicates .sidebar-count { background: #d04040; color: #fff; }
+    .sidebar-thumbs { display: flex; flex-direction: column; gap: 8px; }
+    /* special photo thumbs in sidebar */
+    .special-sidebar-thumb {
+      width: 100%; height: 90px; border-radius: 5px; overflow: hidden;
+      border: 1px solid var(--border); position: relative; background: var(--bg);
+    }
+    .special-sidebar-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .special-sidebar-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.52); color: #fff;
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 3px 6px; line-height: 1.4;
+    }
+    .photo-thumb {
+      border-radius: 5px; overflow: hidden;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      position: relative;
+      cursor: grab;
+    }
+    .photo-thumb.unassigned { border-color: var(--accent-dk); }
+    .photo-thumb.assigned   { border-color: var(--border); opacity: 0.55; }
+    .photo-thumb.dragging   { opacity: 0.3; cursor: grabbing; }
+    .photo-sidebar.sidebar-drag-over { background: #e8f4e8; border-right-color: #6aaa6a; outline: 2px dashed #6aaa6a; outline-offset: -4px; }
+    /* landscape: full sidebar width, shorter height */
+    .photo-thumb[data-orient="H"] { width: 100%; height: 118px; }
+    /* portrait: narrower, taller — centered */
+    .photo-thumb[data-orient="V"] { width: 62%; height: 148px; margin: 0 auto; display: block; }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .photo-thumb .warn-badge {
+      position: absolute; bottom: 3px; right: 3px;
+      background: #f4ca6f; color: #493955;
+      font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: 700;
+    }
+    .photo-thumb .dup-badge {
+      position: absolute; top: 3px; right: 3px;
+      background: #d04040; color: #fff;
+      font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: 700;
+    }
+    .photo-thumb .thumb-name {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.45); color: #fff;
+      font-size: 9px; padding: 3px 5px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .photo-slot[draggable="true"] { cursor: grab; }
+    .photo-slot.dragging { opacity: 0.35; }
+    .photo-slot.drag-over { outline: 2px solid var(--accent-dk); outline-offset: -2px; z-index: 3; }
+
+    /* ── MAIN CONTENT AREA ── */
+    .page-body {
+      padding-top: calc(69px + var(--config-h) + var(--special-h) + 32px);
+      padding-left: 260px;
+      min-height: 100vh;
+    }
+
+    /* ── DEBUG LOG (bottom) ── */
+    .debug-log-bottom {
+      margin: 48px 0 0;
+      border-radius: 6px; overflow: hidden;
+      border: 1px solid #333;
+    }
+    .debug-log-toggle {
+      background: #1a1a1a; color: #888;
+      font-size: 11px; font-family: monospace;
+      padding: 8px 16px; cursor: pointer;
+      user-select: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .debug-log-toggle:hover { color: #c8f0b0; }
+    .debug-log-toggle .toggle-arrow { transition: transform 0.15s; }
+    .debug-log-bottom.open .toggle-arrow { transform: rotate(90deg); }
+    .debug-log-inner {
+      display: none;
+      background: #1a1a1a; color: #c8f0b0;
+      font-family: monospace; font-size: 11px; line-height: 1.6;
+      padding: 10px 16px 14px;
+      max-height: 240px; overflow-y: auto;
+    }
+    .debug-log-bottom.open .debug-log-inner { display: block; }
+    .debug-log-line { white-space: pre; }
+    .debug-log-line.warn  { color: #f4ca6f; }
+    .debug-log-line.error { color: #f47e67; }
+    .debug-log-line.info  { color: #c8f0b0; }
+    .debug-log-line.muted { color: #888; }
+
+    /* ── BOOK CANVAS ── */
+    .book-canvas-wrap {
+      max-width: 1400px; margin: 0 auto;
+      padding: 0 40px 80px;
+    }
+    #book-canvas {
+      min-height: 400px;
+    }
+    .canvas-placeholder {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 400px;
+      border: 2px dashed var(--border); border-radius: 8px;
+      color: var(--muted); text-align: center;
+      padding: 60px 40px;
+    }
+    .canvas-placeholder-icon {
+      font-size: 48px; margin-bottom: 20px; opacity: 0.4;
+    }
+    .canvas-placeholder h3 {
+      font-family: var(--serif); font-size: 22px; font-weight: 400;
+      color: var(--text); margin-bottom: 10px;
+    }
+    .canvas-placeholder p {
+      font-size: 14px; color: var(--muted); max-width: 380px; line-height: 1.6;
+    }
+
+    /* ── PHOTO STATUS BAR ── */
+    .photo-status-bar {
+      display: flex; gap: 24px; align-items: center;
+      padding: 12px 0 20px;
+      font-size: 12px; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+    .photo-status-bar .stat { display: flex; gap: 6px; align-items: center; }
+    .photo-status-bar .stat-value { font-size: 14px; font-weight: 600; color: var(--text); }
+    .photo-status-bar .stat-value.warn { color: #c0860a; }
+
+    /* ── SPREAD ROW ── */
+    .spread-row {
+      margin-bottom: 48px;
+    }
+    .spread-row-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 10px;
+    }
+    .spread-index-badge {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      flex-shrink: 0;
+    }
+    .spread-title {
+      font-size: 12px; color: var(--text); font-weight: 500;
+    }
+    .spread-type-tag {
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); border: 1px solid var(--border);
+      border-radius: 100px; padding: 2px 8px;
+    }
+    .spread-type-tag.fp { color: #8060a8; border-color: #c8aae0; background: #f5f0fc; }
+    .spread-controls-strip {
+      margin-left: auto; display: flex; gap: 8px;
+    }
+    .spread-ctrl-btn {
+      font-size: 13px; letter-spacing: 0.04em;
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 3px 9px; color: var(--muted);
+      cursor: pointer; background: var(--bg);
+      transition: background 0.12s, color 0.12s;
+    }
+    .spread-ctrl-btn:hover { background: var(--surface); color: var(--text); }
+    .spread-ctrl-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .spread-type-select {
+      font-family: var(--sans); font-size: 11px; color: var(--text);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 3px 6px; background: var(--bg); cursor: pointer;
+      outline: none; max-width: 130px;
+    }
+    .spread-type-select:focus { border-color: var(--text); }
+    .spread-pages {
+      display: flex; gap: 4px;
+    }
+    @media (max-width: 1399px) {
+      .spread-pages { flex-direction: column; gap: 2px; }
+      .spread-pages::after {
+        content: ''; display: block; height: 1px;
+        background: var(--border); margin: 6px 0;
+        display: none; /* separator only shown between stacked pages */
+      }
+    }
+    .page-canvas {
+      position: relative;
+      width: 600px; height: 600px;
+      background: #FDF1E5;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .cover-canvas {
+      width: 1227px !important; /* (200 + 9 + 200)mm × 3px/mm */
+      height: 600px !important;
+    }
+    .cover-canvas .svg-overlay {
+      width: 1227px;
+      height: 600px;
+    }
+    .cover-caption:empty::before {
+      content: attr(data-label);
+      font-size: 10pt;
+      color: #c0b8ae;
+      pointer-events: none;
+    }
+    /* Caption toolbar */
+    #cover-caption-toolbar {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+      padding: 6px 10px;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      font-family: system-ui, sans-serif;
+      font-size: 12px;
+      color: #333;
+      min-width: 520px;
+    }
+    #cover-caption-toolbar.visible { display: flex; }
+    .tb-group { display: flex; align-items: center; gap: 5px; }
+    .tb-sep { width: 1px; height: 20px; background: #e0e0e0; }
+    .tb-label { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.06em; }
+    .tb-select {
+      font-family: system-ui, sans-serif;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 3px 6px;
+      background: #fafafa;
+      cursor: pointer;
+    }
+    .tb-pill {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 100px;
+      border: 1px solid #ddd;
+      background: #fafafa;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .tb-pill.active { background: #333; color: #fff; border-color: #333; }
+    .tb-stepper { display: flex; align-items: center; gap: 3px; }
+    .tb-stepper button {
+      width: 22px; height: 22px;
+      border: 1px solid #ddd; border-radius: 4px;
+      background: #fafafa; cursor: pointer;
+      font-size: 14px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tb-stepper button:hover { background: #eee; }
+    .tb-stepper span { min-width: 32px; text-align: center; font-variant-numeric: tabular-nums; }
+    .page-canvas.right-only-hidden { display: none; }
+    .page-canvas .svg-overlay {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+    /* fallback bg — overridden per variant by variant.bgColor */
+    .photo-slot {
+      position: absolute;
+      overflow: hidden;
+      background: #e8dfd0;
+      z-index: 1;
+    }
+    .photo-slot img.slot-photo {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: smooth;
+    }
+    .photo-slot .slot-placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: #a8a094; text-align: center; padding: 8px;
+      line-height: 1.4;
+    }
+
+    /* ── CAPTIONS ── */
+    .slot-caption {
+      position: absolute;
+      z-index: 3;
+      font-family: 'NT Somic', var(--sans);
+      font-size: 14pt;
+      line-height: 18pt;
+      letter-spacing: -0.02em;
+      color: #493955;
+      text-align: center;
+      outline: none;
+      border: none;
+      background: transparent;
+      cursor: text;
+      padding: 2px 4px;
+      border-radius: 2px;
+      transition: background 0.12s;
+      word-break: normal;
+      overflow-wrap: break-word;
+      white-space: normal;
+    }
+    .slot-caption:empty::before {
+      content: 'Add caption…';
+      font-size: 10pt;
+      color: #c0b8ae;
+      pointer-events: none;
+    }
+    .fp-text-panel {
+      font-size: 16pt;
+      line-height: 22pt;
+      z-index: 3;
+    }
+    .fp-text-panel:empty::before {
+      content: 'Click to add text…';
+      font-size: 11pt;
+    }
+    .slot-caption:focus {
+      background: rgba(255,255,255,0.75);
+      outline: 1px dashed #c0b8ae;
+      outline-offset: 2px;
+    }
+    .caption-ai-btn {
+      position: absolute;
+      z-index: 4;
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      border: 1px solid var(--border); border-radius: 100px;
+      padding: 2px 8px; background: var(--white); color: var(--muted);
+      cursor: pointer; opacity: 0; transition: opacity 0.15s, background 0.12s;
+      white-space: nowrap; line-height: 1.8;
+    }
+    .caption-ai-btn:hover { background: var(--text); color: var(--white); border-color: var(--text); opacity: 1 !important; }
+    .caption-ai-btn.loading { opacity: 1 !important; color: var(--muted); }
+    .page-canvas:hover .caption-ai-btn { opacity: 0.7; }
+    .caption-ai-btn:focus { opacity: 1; }
+
+    /* ── FOOTER ── */
+    .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 64px 56px 48px; }
+    .footer-inner { max-width: 1160px; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 48px; }
+    .foot-logo { font-family: var(--serif); font-size: 20px; margin-bottom: 14px; }
+    .foot-brand p { font-size: 13px; color: var(--muted); line-height: 1.7; max-width: 220px; }
+    .foot-form { margin-top: 20px; display: flex; gap: 8px; }
+    .foot-form input { flex: 1; background: var(--white); border: 1px solid var(--border); border-radius: 3px; padding: 8px 12px; font-size: 12px; font-family: var(--sans); color: var(--text); outline: none; }
+    .foot-form input:focus { border-color: var(--text); }
+    .foot-form button { background: var(--text); color: var(--white); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 16px; border-radius: 3px; }
+    .foot-col h5 { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+    .foot-col a { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; transition: color 0.15s; }
+    .foot-col a:hover { color: var(--text); }
+    .foot-base { max-width: 1160px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="home.html" class="nav-logo">
+    <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+    <span class="nav-logo-text" style="display:none;">aevia</span>
+  </a>
+  <div class="nav-links">
+    <a href="home.html">Home</a>
+    <a href="about.html">About us</a>
+    <a href="help.html">Help</a>
+  </div>
+  <a href="collections.html" class="nav-cta">Our Collections</a>
+  <button class="nav-burger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ── CONFIG BAR ── -->
+<div class="config-bar">
+
+  <div class="config-group">
+    <label class="config-label" for="page-count-select">Page count</label>
+    <select class="config-select" id="page-count-select">
+      <option value="40">40</option>
+      <option value="80">80</option>
+    </select>
+  </div>
+
+  <div class="config-divider"></div>
+
+  <div class="config-group">
+    <span class="config-label">Functional pages</span>
+    <div class="fp-group">
+      <label class="fp-checkbox-item">
+        <input type="checkbox" name="fp" value="FP1" /> Birthday wishes
+      </label>
+      <label class="fp-checkbox-item">
+        <input type="checkbox" name="fp" value="FP2" /> Funny words
+      </label>
+      <label class="fp-checkbox-item">
+        <input type="checkbox" name="fp" value="FP3" /> Favourite toy
+      </label>
+      <label class="fp-checkbox-item">
+        <input type="checkbox" name="fp" value="FP4" /> First steps
+      </label>
+      <label class="fp-checkbox-item">
+        <input type="checkbox" name="fp" value="FP5" /> Art gallery
+      </label>
+    </div>
+  </div>
+
+  <input type="file" id="photo-file-input" accept=".jpg,.jpeg,.heic,.heif" multiple hidden />
+  <button class="config-export-btn" id="export-state-btn">Export State</button>
+  <button class="config-upload-btn" id="upload-btn">+ Add Photos</button>
+  <div class="config-photo-hint" id="config-photo-hint"></div>
+
+</div>
+
+<!-- ── SPECIAL PHOTO PANEL ── -->
+<div class="special-panel" id="special-panel">
+  <div class="special-zone" id="special-zone-cover" style="display:none;">
+    <span class="special-zone-label">Cover photo</span>
+    <button class="special-upload-btn" data-fp="cover" data-max="1">+ Upload photo</button>
+    <div class="special-thumbs" id="special-thumbs-cover"></div>
+    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="cover" />
+  </div>
+  <div class="special-zone" id="special-zone-FP1" style="display:none;">
+    <span class="special-zone-label">Birthday photo</span>
+    <button class="special-upload-btn" data-fp="FP1" data-max="1">+ Upload photo</button>
+    <div class="special-thumbs" id="special-thumbs-FP1"></div>
+    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP1" />
+  </div>
+  <div class="special-zone" id="special-zone-FP3" style="display:none;">
+    <span class="special-zone-label">Favourite toy</span>
+    <button class="special-upload-btn" data-fp="FP3" data-max="1">+ Upload photo</button>
+    <div class="special-thumbs" id="special-thumbs-FP3"></div>
+    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP3" />
+  </div>
+  <div class="special-zone" id="special-zone-FP4" style="display:none;">
+    <span class="special-zone-label">First steps</span>
+    <button class="special-upload-btn" data-fp="FP4" data-max="1">+ Upload photo</button>
+    <div class="special-thumbs" id="special-thumbs-FP4"></div>
+    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP4" />
+  </div>
+  <div class="special-zone" id="special-zone-FP5" style="display:none;">
+    <span class="special-zone-label">Art gallery (1–2)</span>
+    <button class="special-upload-btn" data-fp="FP5" data-max="2">+ Upload artwork</button>
+    <div class="special-thumbs" id="special-thumbs-FP5"></div>
+    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP5" />
+  </div>
+</div>
+
+<!-- ── PHOTO SIDEBAR ── -->
+<div class="photo-sidebar" id="photo-sidebar" style="display:none;">
+  <div class="sidebar-total" id="sidebar-total">0 photos</div>
+  <div class="sidebar-section-header" id="sidebar-special-header" style="display:none;">
+    Special <span class="sidebar-count" id="sidebar-special-count">0</span>
+  </div>
+  <div class="sidebar-thumbs" id="sidebar-special"></div>
+  <div class="sidebar-section-header duplicates" id="sidebar-dup-header" style="display:none;">
+    Duplicates <span class="sidebar-count" id="sidebar-dup-count">0</span>
+  </div>
+  <div class="sidebar-thumbs" id="sidebar-duplicates"></div>
+  <div class="sidebar-section-header unplaced">
+    Unplaced <span class="sidebar-count" id="sidebar-unplaced-count">0</span>
+  </div>
+  <div class="sidebar-thumbs" id="sidebar-unplaced"></div>
+  <div class="sidebar-section-header">
+    Placed <span class="sidebar-count" id="sidebar-placed-count">0</span>
+  </div>
+  <div class="sidebar-thumbs" id="sidebar-placed"></div>
+</div>
+
+<!-- ── MAIN CONTENT ── -->
+<div class="page-body" id="page-body">
+  <div class="book-canvas-wrap">
+    <div id="book-canvas">
+      <div class="canvas-placeholder">
+        <div class="canvas-placeholder-icon">&#128218;</div>
+        <h3>No photos yet</h3>
+        <p>Upload photos and configure the book above to begin. Photos will be sorted automatically by date taken.</p>
+      </div>
+    </div>
+    <div class="debug-log-bottom" id="debug-log-bottom" style="display:none;">
+      <div class="debug-log-toggle" id="debug-log-toggle">
+        <span class="toggle-arrow">▶</span> Processing log
+      </div>
+      <div class="debug-log-inner" id="debug-log"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="foot-brand">
+      <div class="foot-logo">
+        <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia" style="height:28px; width:auto;"
+             onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');" />
+      </div>
+      <p>A premium photo book studio in Vienna. We design and print; you keep forever.</p>
+      <div class="foot-form">
+        <input type="email" placeholder="Email address" />
+        <button>Subscribe</button>
+      </div>
+    </div>
+    <div class="foot-col">
+      <h5>Products</h5>
+      <a href="collections.html">All templates</a>
+      <a href="collections.html#love">Love</a>
+      <a href="collections.html#kids">Kids</a>
+      <a href="collections.html#adventures">Adventures</a>
+    </div>
+    <div class="foot-col">
+      <h5>Company</h5>
+      <a href="about.html">Our story</a>
+      <a href="home.html#how">How it works</a>
+      <a href="#">Quality promise</a>
+    </div>
+    <div class="foot-col">
+      <h5>Support</h5>
+      <a href="help.html">FAQ</a>
+      <a href="#">Instagram</a>
+      <a href="help.html#contact">Contact</a>
+    </div>
+  </div>
+  <div class="foot-base">
+    <span>© 2026 Aevia. All rights reserved.</span>
+    <span>Terms of service</span>
+  </div>
+</footer>
+
+<!-- Cover caption styling toolbar (fixed, shown on caption focus) -->
+<div id="cover-caption-toolbar">
+  <span class="tb-label" id="tb-caption-label">Caption</span>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <span class="tb-label">Font</span>
+    <select class="tb-select" id="tb-font"></select>
+  </div>
+  <div class="tb-group" id="tb-style-group"></div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <span class="tb-label">Size</span>
+    <div class="tb-stepper">
+      <button id="tb-size-down">−</button>
+      <span id="tb-size-val"></span>
+      <button id="tb-size-up">+</button>
+    </div>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <span class="tb-label">Line spacing</span>
+    <div class="tb-stepper">
+      <button id="tb-line-down">−</button>
+      <span id="tb-line-val"></span>
+      <button id="tb-line-up">+</button>
+    </div>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <span class="tb-label">Letter spacing</span>
+    <div class="tb-stepper">
+      <button id="tb-ls-down">−</button>
+      <span id="tb-ls-val"></span>
+      <button id="tb-ls-up">+</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ═══════════════════════════════════════════
+     GLOBAL STATE
+  ═══════════════════════════════════════════ */
+  window.photoPool          = [];   // [{ file, url, date, orientation, name, w, h, lowRes }]
+  window.bookAssignments    = {};   // { spreadIndex: { left:[poolIdx|null,...], right:[...] } }
+  window.captionState       = {};   // { spreadIndex: { left:{1:'text'}, right:{1:'text'} } }
+  window.specialPhotos      = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
+  window.coverCaptionStyles  = {};   // { year: { font, weight, style, sizePt, lineSpacing, letterSpacing }, name: {...} }
+  window.spreadCaptionStyles = {};   // { spreadIndex: { side: { slotIdx: { font, weight, italic, sizePt, lineSpacing, letterSpacing } } } }
+
+  const SCALE = 3;               // px per mm
+  const HEIC_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/convertHeic';
+  const SVG_BASE      = '../assets/Template_Scribble/Spreads/';
+
+  /* ── TYPOGRAPHIC HELPERS ── */
+
+  function collectExistingCaptions() {
+    const caps = window.bookCaptions || {};
+    const result = [];
+    Object.values(caps).forEach(spreadCaps => {
+      Object.values(spreadCaps).forEach(sideCaps => {
+        Object.values(sideCaps).forEach(text => {
+          if (text && text.trim()) result.push(text.trim());
+        });
+      });
+    });
+    return result;
+  }
+
+  function applyTypographicRules(text) {
+    if (!text) return text;
+    const NBSP = ' ';
+    // Non-breaking space after short prepositions/articles
+    const preps = /\b(a|an|the|in|on|at|by|of|to|for|with|from|up|as|into|under|over|about|and|but|or) /gi;
+    text = text.replace(preps, (_, p) => p + ' ');
+    // Widow prevention: keep last two words together
+    text = text.replace(/ (\S+)$/, ' $1');
+    return text;
+  }
+
+  async function urlToBase64(url, maxPx = 1200) {
+    const resp = await fetch(url);
+    const blob = await resp.blob();
+    // Resize to maxPx before encoding — keeps payload well under 10 MB limit
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.round(img.naturalWidth  * scale);
+        const h = Math.round(img.naturalHeight * scale);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const ctx2d = c.getContext('2d');
+        ctx2d.imageSmoothingEnabled = true;
+        ctx2d.imageSmoothingQuality = 'high';
+        ctx2d.drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(blob);
+    });
+  }
+
+  /* ── DEBUG LOG helpers ── */
+  function dbLog(msg, level) {
+    const bottom = document.getElementById('debug-log-bottom');
+    const log    = document.getElementById('debug-log');
+    const line   = document.createElement('div');
+    line.className = 'debug-log-line ' + (level || 'info');
+    line.textContent = msg;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+    bottom.style.display = '';
+  }
+  function dbClear() {
+    document.getElementById('debug-log').innerHTML = '';
+    document.getElementById('debug-log-bottom').style.display = 'none';
+    document.getElementById('debug-log-bottom').classList.remove('open');
+  }
+  document.addEventListener('click', e => {
+    if (e.target.closest('#debug-log-toggle')) {
+      document.getElementById('debug-log-bottom').classList.toggle('open');
+    }
+  });
+
+  /* ═══════════════════════════════════════════
+     PHOTO PROCESSING  (EXIF + HEIC + orientation)
+  ═══════════════════════════════════════════ */
+
+  function isRaw(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    return ['dng','raw','cr2','nef','arw'].includes(ext);
+  }
+
+  async function isHeicFile(file) {
+    if (file.type === 'image/heic' || file.type === 'image/heif') return true;
+    if (/\.(heic|heif)$/i.test(file.name)) return true;
+    try {
+      const buf = await file.slice(0, 12).arrayBuffer();
+      const b = new Uint8Array(buf);
+      const ftyp  = String.fromCharCode(b[4], b[5], b[6], b[7]);
+      const brand = String.fromCharCode(b[8], b[9], b[10], b[11]);
+      return ftyp === 'ftyp' && /heic|heix|hevc|hevx|mif1|msf1/i.test(brand);
+    } catch (e) { return false; }
+  }
+
+  function getOrientationFromBlob(blob) {
+    return Promise.race([
+      new Promise(resolve => {
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+          const w = img.naturalWidth, h = img.naturalHeight;
+          const orientation = h > w ? 'vertical' : 'horizontal';
+          URL.revokeObjectURL(url);
+          resolve({ orientation, w, h });
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve({ orientation: 'horizontal', w: 0, h: 0 });
+        };
+        img.src = url;
+      }),
+      new Promise(resolve =>
+        setTimeout(() => resolve({ orientation: 'horizontal', w: 0, h: 0 }), 10000)
+      ),
+    ]);
+  }
+
+  function filenameNumber(name) {
+    const match = name.replace(/\.[^.]+$/, '').match(/(\d+)\D*$/);
+    return match ? parseInt(match[1], 10) : null;
+  }
+
+  async function processOneFile(file) {
+    if (isRaw(file)) {
+      dbLog('✗ BLOCKED (RAW): ' + file.name, 'error');
+      alert('RAW files are not supported.\nPlease export "' + file.name + '" as JPEG first.');
+      return null;
+    }
+
+    dbLog('→ Processing: ' + file.name + ' (' + (file.type || 'unknown type') + ', ' + (file.size / 1024 | 0) + ' KB)', 'muted');
+
+    let date = null;
+    let exifOrientation = 1;
+    let displayBlob = file;
+
+    // 1. EXIF date + orientation tag
+    try {
+      const exif = await exifr.parse(file, ['DateTimeOriginal', 'Orientation']);
+      if (exif && exif.DateTimeOriginal) {
+        date = exif.DateTimeOriginal;
+        dbLog('  EXIF date: ' + date, 'muted');
+      } else {
+        dbLog('  EXIF date: none', 'muted');
+      }
+      if (exif && exif.Orientation) exifOrientation = exif.Orientation;
+    } catch (e) { dbLog('  EXIF read failed: ' + e.message, 'muted'); }
+
+    // 2. HEIC → JPEG (with retry, matching spread-preview.html)
+    if (await isHeicFile(file)) {
+      dbLog('  HEIC detected — converting…', 'warn');
+      let lastErr;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const resp = await fetch(HEIC_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: file,
+          });
+          if (!resp.ok) throw new Error('Server error ' + resp.status);
+          const blob = await resp.blob();
+          if (blob.size < 1000) throw new Error('Empty response (' + blob.size + ' bytes)');
+          displayBlob = blob;
+          lastErr = null;
+          dbLog('  HEIC → JPEG OK (attempt ' + attempt + ', ' + (blob.size / 1024 | 0) + ' KB)', 'info');
+          // Try to get EXIF date from converted JPEG if not already found
+          if (!date) {
+            try {
+              const exif2 = await exifr.parse(displayBlob, ['DateTimeOriginal']);
+              if (exif2 && exif2.DateTimeOriginal) { date = exif2.DateTimeOriginal; dbLog('  EXIF date from converted JPEG: ' + date, 'muted'); }
+            } catch (e) { /* ignore */ }
+          }
+          break;
+        } catch (e) { lastErr = e; dbLog('  HEIC attempt ' + attempt + ' failed: ' + e.message, 'warn'); }
+      }
+      if (lastErr) {
+        dbLog('✗ HEIC conversion failed: ' + file.name, 'error');
+        return null;
+      }
+    }
+
+    // 3. Orientation — read visual pixel dims from browser Image object.
+    //    Modern browsers (Chrome, Firefox, Safari) auto-rotate images based on EXIF Orientation,
+    //    so img.naturalWidth/naturalHeight always reflect the correct visual orientation.
+    //    We do NOT apply any additional EXIF swap — that would double-rotate and invert the result.
+    const { orientation, w, h } = await getOrientationFromBlob(displayBlob);
+    const objectURL = URL.createObjectURL(displayBlob);
+    const lowRes = w > 0 && Math.min(w, h) < 1500;
+
+    dbLog('  ✓ ' + orientation.toUpperCase() + '  ' + w + '×' + h + (exifOrientation !== 1 ? ' [EXIF orient=' + exifOrientation + ']' : '') + (lowRes ? '  ⚠ LOW RES' : ''), orientation === 'vertical' ? 'info' : 'muted');
+
+    return { file, url: objectURL, date, name: file.name, w, h, orientation, lowRes };
+  }
+
+
+
+  /* ═══════════════════════════════════════════
+     UPLOAD HANDLER
+  ═══════════════════════════════════════════ */
+
+  document.getElementById('upload-btn').addEventListener('click', () => {
+    document.getElementById('photo-file-input').click();
+  });
+
+  /* ───────────────────────────────────────────
+     EXPORT STATE
+  ═══════════════════════════════════════════ */
+
+  function exportBookState() {
+    const seq = window._bookSequence;
+    if (!seq || !seq.length) { alert('No book to export — upload photos first.'); return; }
+
+    // Resolve pool indices → filenames
+    const assignments = {};
+    for (const [si, sides] of Object.entries(window.bookAssignments || {})) {
+      assignments[si] = {};
+      for (const side of ['left', 'right']) {
+        if (!sides[side]) continue;
+        assignments[si][side] = sides[side].map(idx => {
+          const p = idx !== null ? window.photoPool[idx] : null;
+          return p ? { name: p.name, orientation: p.orientation } : null;
+        });
+      }
+    }
+
+    // Special photos: one filename per key (max 1 per key), except FP5 which stores [left, right]
+    const specialPhotos = {};
+    for (const [key, arr] of Object.entries(window.specialPhotos || {})) {
+      const names = arr.filter(Boolean).map(p => p.name || null);
+      if (!names.length) continue;
+      if (key === 'FP5') {
+        specialPhotos[key] = names; // array: [leftPhoto, rightPhoto]
+      } else {
+        specialPhotos[key] = names[0]; // cover/FP1/FP3/FP4 have max 1
+      }
+    }
+
+    // Collect cover caption texts from their contenteditable DOM elements
+    const coverCaptions = {};
+    document.querySelectorAll('.cover-caption[data-cover-caption-key]').forEach(el => {
+      const key = el.dataset.coverCaptionKey;
+      const text = el.innerText.trim();
+      if (key && text) coverCaptions[key] = text;
+    });
+
+    const state = {
+      template: 'scribble',
+      pageCount: parseInt(document.getElementById('page-count-select').value, 10),
+      sequence: seq,
+      assignments,
+      specialPhotos,
+      captions: window.bookCaptions || {},
+      coverCaptions,
+      coverCaptionStyles: window.coverCaptionStyles || {},
+      spreadCaptionStyles: window.spreadCaptionStyles || {},
+    };
+
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'book-state.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  document.getElementById('export-state-btn').addEventListener('click', exportBookState);
+
+  document.getElementById('photo-file-input').addEventListener('change', async function () {
+    const files = Array.from(this.files);
+    if (!files.length) return;
+
+    // Show loading state without wiping existing photos
+    document.getElementById('book-canvas').innerHTML =
+      '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">⏳</div><h3>Processing photos…</h3></div>';
+
+    dbLog('═══ Processing ' + files.length + ' new file(s) ═══', 'info');
+
+    // Sequential processing — HEIC WASM has shared state, parallel corrupts it
+    const newPhotos = [];
+    const failedFiles = [];
+    const existingNames = new Set(window.photoPool.filter(p => !p.duplicate).map(p => p.name));
+    for (const file of files) {
+      const result = await processOneFile(file);
+      if (!result) { failedFiles.push(file.name); continue; }
+      if (existingNames.has(file.name)) {
+        result.duplicate = true;
+        dbLog('  ⚠ Duplicate detected: ' + file.name + ' — will be flagged in sidebar', 'warn');
+      } else {
+        existingNames.add(file.name); // prevent double-adding the same file in one batch
+      }
+      newPhotos.push(result);
+    }
+
+    // Merge new photos into existing pool and re-sort everything by EXIF date → filename → original order
+    const merged = [...window.photoPool, ...newPhotos];
+    merged.sort((a, b) => {
+      if (a.date && b.date) return new Date(a.date) - new Date(b.date);
+      if (a.date && !b.date) return -1;
+      if (!a.date && b.date) return 1;
+      const na = filenameNumber(a.name), nb = filenameNumber(b.name);
+      if (na !== null && nb !== null) return na - nb;
+      if (na !== null) return -1;
+      if (nb !== null) return 1;
+      return 0;
+    });
+
+    const hasAllExif = merged.every(p => p.date);
+    const sortMethod = hasAllExif ? 'EXIF date' : merged.some(p => filenameNumber(p.name) !== null) ? 'filename number' : 'upload order';
+    dbLog('Sort method: ' + sortMethod, hasAllExif ? 'info' : 'warn');
+    dbLog('Final order: ' + merged.map((p, i) => (i + 1) + '. ' + p.name + ' [' + p.orientation.charAt(0).toUpperCase() + ']').join('  '), 'info');
+
+    window.photoPool = merged;
+    window.bookAssignments = {};
+    window.captionState = {};
+
+    renderPhotoSidebar();
+    renderBook();
+    updatePhotoHint();
+
+    if (failedFiles.length) {
+      alert(
+        failedFiles.length + ' file' + (failedFiles.length > 1 ? 's' : '') + ' could not be processed and were skipped:\n\n' +
+        failedFiles.map(n => '• ' + n).join('\n') +
+        '\n\nPlease re-export these as JPEG and upload again.'
+      );
+    }
+
+    this.value = ''; // reset so the same file can be re-selected later if needed
+  });
+
+  /* ═══════════════════════════════════════════
+     PHOTO SIDEBAR
+  ═══════════════════════════════════════════ */
+
+  function makeSidebarThumb(photo, i) {
+    const orient = photo.orientation === 'vertical' ? 'V' : 'H';
+    const thumb = document.createElement('div');
+    thumb.className = 'photo-thumb unassigned';
+    thumb.dataset.index = i;
+    thumb.dataset.orient = orient;
+    thumb.title = photo.name;
+    thumb.draggable = true;
+    thumb.addEventListener('dragstart', e => {
+      window._dragType = 'strip';
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'strip', poolIdx: i }));
+      thumb.classList.add('dragging');
+    });
+    thumb.addEventListener('dragend', () => { window._dragType = null; thumb.classList.remove('dragging'); });
+
+    const img = document.createElement('img');
+    img.src = photo.url;
+    img.alt = photo.name;
+    img.draggable = false;
+    thumb.appendChild(img);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'thumb-name';
+    nameEl.textContent = photo.name.replace(/\.[^.]+$/, '');
+    thumb.appendChild(nameEl);
+
+    if (photo.lowRes) {
+      const badge = document.createElement('div');
+      badge.className = 'warn-badge';
+      badge.textContent = '⚠ Low res';
+      thumb.appendChild(badge);
+    }
+
+    if (photo.duplicate) {
+      const badge = document.createElement('div');
+      badge.className = 'dup-badge';
+      badge.textContent = 'Duplicate';
+      thumb.appendChild(badge);
+      thumb.title = photo.name + ' — duplicate, will not be placed';
+      thumb.draggable = false;
+      thumb.style.opacity = '0.6';
+    }
+
+    return thumb;
+  }
+
+  function renderPhotoSidebar() {
+    const sidebar = document.getElementById('photo-sidebar');
+    sidebar.style.display = '';
+
+    const dupCount   = window.photoPool.filter(p => p.duplicate).length;
+    const totalCount = window.photoPool.length;
+    const dupNote    = dupCount > 0 ? ' (' + dupCount + ' duplicate' + (dupCount > 1 ? 's' : '') + ')' : '';
+    document.getElementById('sidebar-total').textContent =
+      totalCount + ' photo' + (totalCount !== 1 ? 's' : '') + ' uploaded' + dupNote;
+
+    // Build thumbs but don't sort into sections yet — updateSidebarState does that
+    // Store all thumbs keyed by index so updateSidebarState can move them
+    window._sidebarThumbs = {};
+    window.photoPool.forEach((photo, i) => {
+      window._sidebarThumbs[i] = makeSidebarThumb(photo, i);
+    });
+
+    // Allow dropping a slot-photo onto the sidebar to unassign it
+    if (!sidebar._dropWired) {
+      sidebar._dropWired = true;
+      sidebar.addEventListener('dragover', e => {
+        if (window._dragType === 'slot') { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; sidebar.classList.add('sidebar-drag-over'); }
+      });
+      sidebar.addEventListener('dragleave', e => {
+        if (!sidebar.contains(e.relatedTarget)) sidebar.classList.remove('sidebar-drag-over');
+      });
+      sidebar.addEventListener('drop', e => {
+        sidebar.classList.remove('sidebar-drag-over');
+        let data;
+        try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+        if (data.type !== 'slot') return;
+        e.preventDefault();
+        const asgn = window.bookAssignments[data.spreadIndex];
+        if (!asgn || !asgn[data.side]) return;
+        asgn[data.side][data.slotIdx] = null;
+        const sid = window._bookSequence?.[data.spreadIndex];
+        if (sid?.startsWith('FP')) {
+          if (!window._fpAssignments) window._fpAssignments = {};
+          window._fpAssignments[sid] = asgn;
+        }
+        rerenderSpread(data.spreadIndex);
+        updateSidebarState();
+      });
+    }
+
+    updateSidebarState();
+  }
+
+  function updateSidebarState() {
+    const placed = new Set();
+    Object.values(window.bookAssignments).forEach(asgn => {
+      [...(asgn.left || []), ...(asgn.right || [])].forEach(idx => {
+        if (idx !== null && idx !== undefined) placed.add(idx);
+      });
+    });
+
+    const unplacedEl   = document.getElementById('sidebar-unplaced');
+    const placedEl     = document.getElementById('sidebar-placed');
+    const dupEl        = document.getElementById('sidebar-duplicates');
+    const dupHeader    = document.getElementById('sidebar-dup-header');
+    unplacedEl.innerHTML = '';
+    placedEl.innerHTML   = '';
+    dupEl.innerHTML      = '';
+
+    let unplacedCount = 0, placedCount = 0, dupCount = 0;
+    window.photoPool.forEach((photo, i) => {
+      const thumb = window._sidebarThumbs[i];
+      if (!thumb) return;
+      if (photo.duplicate) {
+        dupEl.appendChild(thumb);
+        dupCount++;
+      } else if (placed.has(i)) {
+        thumb.classList.add('assigned');
+        thumb.classList.remove('unassigned');
+        placedEl.appendChild(thumb);
+        placedCount++;
+      } else {
+        thumb.classList.add('unassigned');
+        thumb.classList.remove('assigned');
+        unplacedEl.appendChild(thumb);
+        unplacedCount++;
+      }
+    });
+
+    document.getElementById('sidebar-unplaced-count').textContent = unplacedCount;
+    document.getElementById('sidebar-placed-count').textContent   = placedCount;
+    document.getElementById('sidebar-dup-count').textContent      = dupCount;
+    dupHeader.style.display = dupCount > 0 ? '' : 'none';
+  }
+
+  /* ═══════════════════════════════════════════
+     SINGLE SPREAD RENDERER
+  ═══════════════════════════════════════════ */
+
+  /* ═══════════════════════════════════════════
+     COVER RENDERER
+  ═══════════════════════════════════════════ */
+
+  function renderCover() {
+    const coverDef = window.SCRIBBLE_DATA.cover;
+    if (!coverDef) return null;
+
+    const secs  = coverDef.sections;
+    const totalW = (secs.back.wMm + secs.spine.wMm + secs.front.wMm) * SCALE; // 1227px
+
+    const row = document.createElement('div');
+    row.className = 'spread-row';
+    row.dataset.spreadId = 'cover';
+
+    const header = document.createElement('div');
+    header.className = 'spread-row-header';
+    header.innerHTML = `
+      <div class="spread-index-badge">C</div>
+      <span class="spread-title">Cover</span>
+      <span class="spread-type-tag">Cover</span>
+    `;
+    row.appendChild(header);
+
+    const pagesWrap = document.createElement('div');
+    pagesWrap.className = 'spread-pages';
+
+    const canvas = document.createElement('div');
+    canvas.className = 'page-canvas cover-canvas';
+
+    // Canvas background gradient — covers full height at any zoom/rounding.
+    // Back and spine colors come from the SVG; front bgColor is the only user-facing config.
+    {
+      const spineStartPx = secs.back.wMm * SCALE;
+      const frontStartPx = (secs.back.wMm + secs.spine.wMm) * SCALE;
+      const backColor  = secs.back.bgColor  || '#3d1f5c';
+      const spineColor = secs.spine.bgColor || '#fdd16f';
+      const frontColor = secs.front.bgColor || '#f8ead9';
+      canvas.style.background = `linear-gradient(90deg, ${backColor} 0px ${spineStartPx}px, ${spineColor} ${spineStartPx}px ${frontStartPx}px, ${frontColor} ${frontStartPx}px 100%)`;
+    }
+
+    // SVG overlay
+    const svgImg = document.createElement('img');
+    svgImg.className = 'svg-overlay';
+    svgImg.src = SVG_BASE + coverDef.svg;
+    svgImg.alt = '';
+    canvas.appendChild(svgImg);
+
+    // Photo slot (center-based coords from CSV)
+    const slotDef = coverDef.slots[0];
+    const slotW   = slotDef.wMm * SCALE;
+    const slotH   = slotDef.hMm * SCALE;
+    const slotL   = slotDef.xMm * SCALE - slotW / 2;
+    const slotT   = slotDef.yMm * SCALE - slotH / 2;
+
+    const slot = document.createElement('div');
+    slot.className = 'photo-slot';
+    slot.style.cssText = `left:${slotL}px;top:${slotT}px;width:${slotW}px;height:${slotH}px;z-index:1;`;
+
+    const coverPhoto = (window.specialPhotos.cover || [])[0];
+    if (coverPhoto) {
+      const img = document.createElement('img');
+      img.className = 'slot-photo';
+      img.src = coverPhoto.url;
+      slot.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'slot-placeholder';
+      ph.textContent = 'Cover photo';
+      slot.appendChild(ph);
+    }
+    canvas.appendChild(slot);
+
+    // Captions (center-based coords)
+    const savedCoverCaps = window.bookCaptions['cover'] || {};
+    coverDef.captions.forEach(capDef => {
+      const capW  = capDef.wMm * SCALE;
+      const capCX = capDef.xMm * SCALE;
+      const capCY = capDef.yMm * SCALE;
+
+      // Merge CSV defaults with any user overrides
+      const ov       = window.coverCaptionStyles[capDef.key] || {};
+      const font     = ov.font    || capDef.font;
+      const weight   = ov.weight !== undefined ? ov.weight : 400;
+      const italic   = ov.italic  || false;
+      const sizePt   = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
+      const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
+      const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
+
+      const fontSize = sizePt + 'pt';
+      const lineH    = (sizePt * lineSpacing).toFixed(1) + 'pt';
+      const lineHpx  = sizePt * (4 / 3) * lineSpacing;
+
+      const cap = document.createElement('div');
+      cap.className = 'slot-caption cover-caption';
+      cap.contentEditable = 'true';
+      cap.dataset.coverCaptionKey = capDef.key;
+      cap.dataset.label = capDef.label;
+
+      let posCSS;
+      if (capDef.rotate) {
+        const top = capCY - lineHpx / 2;
+        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:center;z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
+      } else {
+        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${capDef.align || 'center'};z-index:3;transform:translateY(-50%);`;
+      }
+      cap.style.cssText = posCSS;
+
+      if (savedCoverCaps[capDef.key]) cap.textContent = savedCoverCaps[capDef.key];
+
+      cap.addEventListener('input', () => {
+        if (!window.bookCaptions['cover']) window.bookCaptions['cover'] = {};
+        window.bookCaptions['cover'][capDef.key] = cap.textContent;
+      });
+
+      cap.addEventListener('focus', () => showCoverCaptionToolbar(capDef, cap));
+
+      canvas.appendChild(cap);
+    });
+
+    pagesWrap.appendChild(canvas);
+    row.appendChild(pagesWrap);
+    return row;
+  }
+
+  function rerenderCover() {
+    const existing = document.querySelector('.spread-row[data-spread-id="cover"]');
+    const newRow = renderCover();
+    if (!newRow) return;
+    if (existing) existing.replaceWith(newRow);
+    else {
+      const bookCanvas = document.getElementById('book-canvas');
+      const firstSpread = bookCanvas.querySelector('.spread-row:not([data-spread-id="cover"])');
+      if (firstSpread) bookCanvas.insertBefore(newRow, firstSpread);
+      else bookCanvas.appendChild(newRow);
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     COVER CAPTION TOOLBAR
+  ═══════════════════════════════════════════ */
+
+  const COVER_FONTS = [
+    { label: 'NT Somic',          value: 'NT Somic',          styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
+    { label: 'EB Garamond',       value: 'EB Garamond',       styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Semi-Bold', weight: 600, italic: false }] },
+    { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }], funnyWordsOnly: true },
+  ];
+
+  let _tbMode       = 'cover';  // 'cover' | 'spread'
+  let _tbCapDef     = null;     // coverDef.captions entry (cover mode)
+  let _tbCapEl      = null;     // the active DOM element
+  let _tbSpreadCtx  = null;     // { spreadIndex, side, slotIdx, capDef } (spread mode)
+
+  // Returns the current style value for `prop` from whichever storage is active.
+  function getTbStyle(prop, defaultVal) {
+    if (_tbMode === 'cover' && _tbCapDef) {
+      const ov = window.coverCaptionStyles[_tbCapDef.key] || {};
+      return ov[prop] !== undefined ? ov[prop] : (_tbCapDef[prop] !== undefined ? _tbCapDef[prop] : defaultVal);
+    }
+    if (_tbMode === 'spread' && _tbSpreadCtx) {
+      const { spreadIndex, side, slotIdx, capDef } = _tbSpreadCtx;
+      const ov = window.spreadCaptionStyles?.[spreadIndex]?.[side]?.[slotIdx] || {};
+      return ov[prop] !== undefined ? ov[prop] : (capDef[prop] !== undefined ? capDef[prop] : defaultVal);
+    }
+    return defaultVal;
+  }
+
+  function showCoverCaptionToolbar(capDef, capEl) {
+    _tbMode      = 'cover';
+    _tbSpreadCtx = null;
+    _tbCapDef    = capDef;
+    _tbCapEl  = capEl;
+
+    const ov = window.coverCaptionStyles[capDef.key] || {};
+    const currentFont  = ov.font    || capDef.font;
+    const currentWeight = ov.weight !== undefined ? ov.weight : 400;
+    const currentItalic = ov.italic || false;
+    const currentSize  = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
+    const currentLine  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
+    const currentLS    = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
+
+    // Label
+    document.getElementById('tb-caption-label').textContent = capDef.label;
+
+
+    // Font select
+    const sel = document.getElementById('tb-font');
+    sel.innerHTML = '';
+    COVER_FONTS.filter(f => !f.funnyWordsOnly).forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.value; opt.textContent = f.label;
+      if (f.value === currentFont) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    // Style pills
+    rebuildStylePills(currentFont, currentWeight, currentItalic);
+
+    // Size stepper
+    document.getElementById('tb-size-val').textContent = currentSize + 'pt';
+    document.getElementById('tb-line-val').textContent = currentLine.toFixed(2);
+    document.getElementById('tb-ls-val').textContent   = currentLS.toFixed(2) + 'em';
+
+    // Position toolbar: above front captions, to the right of rotated spine captions
+    const rect = capEl.getBoundingClientRect();
+    const tb   = document.getElementById('cover-caption-toolbar');
+    if (capDef.rotate) {
+      tb.style.top  = Math.max(8, rect.top) + 'px';
+      tb.style.left = (rect.right + 12) + 'px';
+    } else {
+      tb.style.top  = Math.max(8, rect.top - 58) + 'px';
+      tb.style.left = Math.max(8, rect.left) + 'px';
+    }
+    tb.classList.add('visible');
+  }
+
+  function showSpreadCaptionToolbar(spreadIndex, side, slotIdx, capDef, capEl) {
+    _tbMode      = 'spread';
+    _tbCapDef    = null;
+    _tbCapEl     = capEl;
+    _tbSpreadCtx = { spreadIndex, side, slotIdx, capDef };
+
+    const ov            = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
+    const currentFont   = ov.font          !== undefined ? ov.font   : capDef.font;
+    const currentWeight = ov.weight        !== undefined ? ov.weight : (capDef.style === 'bold' ? 700 : capDef.style === 'semibold' ? 600 : capDef.style === 'medium' ? 500 : 400);
+    const currentItalic = ov.italic        !== undefined ? ov.italic : capDef.style === 'italic';
+    const currentSize   = ov.sizePt        !== undefined ? ov.sizePt : capDef.sizePt;
+    const currentLine   = ov.lineSpacing   !== undefined ? ov.lineSpacing   : (capDef.lineSpacing   || 1.28);
+    const currentLS     = ov.letterSpacing !== undefined ? ov.letterSpacing : (capDef.letterSpacing || 0);
+
+    document.getElementById('tb-caption-label').textContent = 'Caption';
+
+    const isFunnyWordsPanel = capDef.font === 'FirstTimeWriting';
+    const sel = document.getElementById('tb-font');
+    sel.innerHTML = '';
+    COVER_FONTS.filter(f => !f.funnyWordsOnly || isFunnyWordsPanel).forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.value; opt.textContent = f.label;
+      if (f.value === currentFont) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    rebuildStylePills(currentFont, currentWeight, currentItalic);
+    document.getElementById('tb-size-val').textContent = currentSize + 'pt';
+    document.getElementById('tb-line-val').textContent = currentLine.toFixed(2);
+    document.getElementById('tb-ls-val').textContent   = currentLS.toFixed(2) + 'em';
+
+    const rect = capEl.getBoundingClientRect();
+    const tb   = document.getElementById('cover-caption-toolbar');
+    tb.style.top  = Math.max(8, rect.top - 58) + 'px';
+    tb.style.left = Math.max(8, rect.left) + 'px';
+    tb.classList.add('visible');
+  }
+
+
+  function rebuildStylePills(fontValue, activeWeight, activeItalic) {
+    const group = document.getElementById('tb-style-group');
+    group.innerHTML = '';
+    // Style pills shown for both cover and spread captions.
+    // In spread mode, pills write to spreadCaptionStyles (read by PDF export).
+    // B/I execCommand buttons remain for visual-only inline markup in the engine preview.
+    const fontDef = COVER_FONTS.find(f => f.value === fontValue);
+    if (!fontDef) return;
+    fontDef.styles.forEach(s => {
+      const pill = document.createElement('button');
+      pill.className = 'tb-pill';
+      pill.textContent = s.label;
+      if (s.weight === activeWeight && s.italic === activeItalic) pill.classList.add('active');
+      pill.addEventListener('mousedown', e => {
+        e.preventDefault(); // keep focus on contenteditable
+        tbUpdate({ weight: s.weight, italic: s.italic });
+        group.querySelectorAll('.tb-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+      });
+      group.appendChild(pill);
+    });
+  }
+
+  function tbUpdate(patch) {
+    if (_tbMode === 'cover') {
+      if (!_tbCapDef) return;
+      const key = _tbCapDef.key;
+      if (!window.coverCaptionStyles[key]) {
+        window.coverCaptionStyles[key] = {
+          font: _tbCapDef.font, weight: 400, italic: false,
+          sizePt: _tbCapDef.sizePt, lineSpacing: 1.1, letterSpacing: 0,
+        };
+      }
+      Object.assign(window.coverCaptionStyles[key], patch);
+      applyStyleToCapEl(key);
+    } else {
+      if (!_tbSpreadCtx || !_tbCapEl) return;
+      const { spreadIndex, side, slotIdx, capDef } = _tbSpreadCtx;
+      const si = String(spreadIndex);
+      if (!window.spreadCaptionStyles[si]) window.spreadCaptionStyles[si] = {};
+      if (!window.spreadCaptionStyles[si][side]) window.spreadCaptionStyles[si][side] = {};
+      if (!window.spreadCaptionStyles[si][side][slotIdx]) {
+        window.spreadCaptionStyles[si][side][slotIdx] = {
+          font: capDef.font,
+          weight: capDef.style === 'bold' ? 700 : capDef.style === 'semibold' ? 600 : capDef.style === 'medium' ? 500 : 400,
+          italic: capDef.style === 'italic',
+          sizePt: capDef.sizePt,
+          lineSpacing: capDef.lineSpacing || 1.28,
+          letterSpacing: capDef.letterSpacing || 0,
+        };
+      }
+      Object.assign(window.spreadCaptionStyles[si][side][slotIdx], patch);
+      applyStyleToSpreadCapEl();
+    }
+  }
+
+  function applyStyleToCapEl(key) {
+    const el = document.querySelector(`.cover-caption[data-cover-caption-key="${key}"]`);
+    if (!el) return;
+    const capDef = window.SCRIBBLE_DATA.cover.captions.find(c => c.key === key);
+    if (!capDef) return;
+    const ov = window.coverCaptionStyles[key] || {};
+    el.style.fontFamily    = `'${ov.font || capDef.font}', serif`;
+    el.style.fontWeight    = ov.weight || 400;
+    el.style.fontStyle     = ov.italic ? 'italic' : 'normal';
+    el.style.fontSize      = (ov.sizePt || capDef.sizePt) + 'pt';
+    const lsMult = ov.lineSpacing !== undefined ? ov.lineSpacing : 1.1;
+    el.style.lineHeight    = ((ov.sizePt || capDef.sizePt) * lsMult).toFixed(1) + 'pt';
+    el.style.letterSpacing = (ov.letterSpacing || 0) + 'em';
+  }
+
+  function applyStyleToSpreadCapEl() {
+    if (!_tbCapEl || !_tbSpreadCtx) return;
+    const { spreadIndex, side, slotIdx, capDef } = _tbSpreadCtx;
+    const ov = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
+    const font          = ov.font          !== undefined ? ov.font          : capDef.font;
+    const weight        = ov.weight        !== undefined ? ov.weight        : (capDef.style === 'bold' ? 700 : capDef.style === 'semibold' ? 600 : capDef.style === 'medium' ? 500 : 400);
+    const italic        = ov.italic        !== undefined ? ov.italic        : capDef.style === 'italic';
+    const sizePt        = ov.sizePt        !== undefined ? ov.sizePt        : capDef.sizePt;
+    const lineSpacing   = ov.lineSpacing   !== undefined ? ov.lineSpacing   : (capDef.lineSpacing   || 1.28);
+    const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : (capDef.letterSpacing || 0);
+    // FunnyWords panel uses canvas-scaled px (sizePt * SCALE) for accurate print representation;
+    // all other spread captions use CSS pt directly.
+    const isFunnyWordsEl = capDef.font === 'FirstTimeWriting';
+    _tbCapEl.style.fontFamily    = `'${font}', serif`;
+    _tbCapEl.style.fontWeight    = weight;
+    _tbCapEl.style.fontStyle     = italic ? 'italic' : 'normal';
+    _tbCapEl.style.fontSize      = isFunnyWordsEl ? (sizePt * SCALE) + 'px' : sizePt + 'pt';
+    _tbCapEl.style.lineHeight    = lineSpacing;
+    _tbCapEl.style.letterSpacing = letterSpacing + 'em';
+  }
+
+  // Toolbar event wiring (runs once on DOMContentLoaded)
+  document.addEventListener('DOMContentLoaded', () => {
+    const tb = document.getElementById('cover-caption-toolbar');
+
+    // Hide toolbar when clicking outside toolbar and outside any caption
+    document.addEventListener('mousedown', e => {
+      if (!tb.contains(e.target) && !e.target.closest('.cover-caption') && !e.target.closest('.slot-caption')) {
+        tb.classList.remove('visible');
+        _tbCapDef = null; _tbCapEl = null; _tbSpreadCtx = null; _tbMode = 'cover';
+      }
+    });
+
+    // Font select
+    document.getElementById('tb-font').addEventListener('change', e => {
+      const newFont = e.target.value;
+      const fontDef = COVER_FONTS.find(f => f.value === newFont);
+      const firstStyle = fontDef ? fontDef.styles[0] : { weight: 400, italic: false };
+      tbUpdate({ font: newFont, weight: firstStyle.weight, italic: firstStyle.italic });
+      rebuildStylePills(newFont, firstStyle.weight, firstStyle.italic);
+      document.getElementById('tb-size-val').textContent = getTbStyle('sizePt', 14) + 'pt';
+    });
+
+    // Size stepper
+    document.getElementById('tb-size-down').addEventListener('mousedown', e => {
+      e.preventDefault();
+      if (!_tbCapDef && !_tbSpreadCtx) return;
+      const cur = getTbStyle('sizePt', 14);
+      const next = Math.max(6, cur - 1);
+      tbUpdate({ sizePt: next });
+      document.getElementById('tb-size-val').textContent = next + 'pt';
+    });
+    document.getElementById('tb-size-up').addEventListener('mousedown', e => {
+      e.preventDefault();
+      if (!_tbCapDef && !_tbSpreadCtx) return;
+      const cur = getTbStyle('sizePt', 14);
+      const next = Math.min(120, cur + 1);
+      tbUpdate({ sizePt: next });
+      document.getElementById('tb-size-val').textContent = next + 'pt';
+    });
+
+    // Line spacing stepper (step 0.05)
+    document.getElementById('tb-line-down').addEventListener('mousedown', e => {
+      e.preventDefault();
+      if (!_tbCapDef && !_tbSpreadCtx) return;
+      const cur = getTbStyle('lineSpacing', 1.2);
+      const next = Math.max(0.5, parseFloat((cur - 0.05).toFixed(2)));
+      tbUpdate({ lineSpacing: next });
+      document.getElementById('tb-line-val').textContent = next.toFixed(2);
+    });
+    document.getElementById('tb-line-up').addEventListener('mousedown', e => {
+      e.preventDefault();
+      if (!_tbCapDef && !_tbSpreadCtx) return;
+      const cur = getTbStyle('lineSpacing', 1.2);
+      const next = Math.min(3.0, parseFloat((cur + 0.05).toFixed(2)));
+      tbUpdate({ lineSpacing: next });
+      document.getElementById('tb-line-val').textContent = next.toFixed(2);
+    });
+
+    // Letter spacing stepper (step 0.02em)
+    document.getElementById('tb-ls-down').addEventListener('mousedown', e => {
+      e.preventDefault();
+      if (!_tbCapDef && !_tbSpreadCtx) return;
+      const cur = getTbStyle('letterSpacing', 0);
+      const next = Math.max(-0.2, parseFloat((cur - 0.02).toFixed(2)));
+      tbUpdate({ letterSpacing: next });
+      document.getElementById('tb-ls-val').textContent = next.toFixed(2) + 'em';
+    });
+    document.getElementById('tb-ls-up').addEventListener('mousedown', e => {
+      e.preventDefault();
+      if (!_tbCapDef && !_tbSpreadCtx) return;
+      const cur = getTbStyle('letterSpacing', 0);
+      const next = Math.min(0.5, parseFloat((cur + 0.02).toFixed(2)));
+      tbUpdate({ letterSpacing: next });
+      document.getElementById('tb-ls-val').textContent = next.toFixed(2) + 'em';
+    });
+
+  });
+
+  /*
+   * renderSpread(spreadId, photoSlice, spreadIndex)
+   *   spreadId    — key from SCRIBBLE_DATA.spreads, e.g. 'SP1'
+   *   photoSlice  — { left: [poolIdx|null,...], right: [...] }
+   *   spreadIndex — integer, for bookAssignments + captionState keys
+   *
+   * Returns a .spread-row DOM element ready to append.
+   */
+  function renderSpread(spreadId, photoSlice, spreadIndex) {
+    const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+    if (!spreadDef) { console.error('Unknown spreadId', spreadId); return null; }
+
+    const row = document.createElement('div');
+    row.className = 'spread-row';
+    row.dataset.spreadId    = spreadId;
+    row.dataset.spreadIndex = spreadIndex;
+
+    // ── Spread header ──
+    const header = document.createElement('div');
+    header.className = 'spread-row-header';
+
+    const badge = document.createElement('div');
+    badge.className = 'spread-index-badge';
+    badge.textContent = spreadIndex + 1;
+    header.appendChild(badge);
+
+    const title = document.createElement('div');
+    title.className = 'spread-title';
+    title.textContent = spreadDef.label;
+    header.appendChild(title);
+
+    const isFP = spreadId.startsWith('FP');
+    const typeTag = document.createElement('div');
+    typeTag.className = 'spread-type-tag' + (isFP ? ' fp' : '');
+    typeTag.textContent = isFP ? 'Functional' : 'Standard';
+    header.appendChild(typeTag);
+
+    const controls = document.createElement('div');
+    controls.className = 'spread-controls-strip';
+
+    // ↑ / ↓ move buttons (SP0 is always first — never moveable)
+    const btnUp = document.createElement('button');
+    btnUp.className = 'spread-ctrl-btn';
+    btnUp.textContent = '↑';
+    btnUp.title = 'Move spread up';
+    btnUp.disabled = spreadIndex <= 1; // index 0 = SP0 fixed; index 1 = nothing above it to swap with
+    btnUp.addEventListener('click', () => moveSpread(spreadIndex, -1));
+
+    const btnDown = document.createElement('button');
+    btnDown.className = 'spread-ctrl-btn';
+    btnDown.textContent = '↓';
+    btnDown.title = 'Move spread down';
+    btnDown.disabled = spreadIndex === 0; // SP0 never moves
+    btnDown.addEventListener('click', () => moveSpread(spreadIndex, +1));
+
+    // Type selector — all standard SP types available; FPs come from config bar checkboxes
+    const typeSelect = document.createElement('select');
+    typeSelect.className = 'spread-type-select';
+    typeSelect.title = 'Change spread type';
+    const standardTypes = ['SP1','SP2','SP3','SP4','SP5','SP6'];
+    const fpTypes = ['FP1','FP2','FP3','FP4','FP5'];
+    [...standardTypes, ...fpTypes].forEach(id => {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = window.SCRIBBLE_DATA.spreads[id]?.label || id;
+      if (id === spreadId) opt.selected = true;
+      // Disable unique FP types already present elsewhere in the book
+      if (id.startsWith('FP') && id !== 'FP5' && id !== spreadId) {
+        if (window._bookSequence?.includes(id)) {
+          opt.disabled = true;
+          opt.textContent += ' ✓';
+        }
+      }
+      typeSelect.appendChild(opt);
+    });
+    typeSelect.addEventListener('change', () => {
+      const ok = changeSpreadType(spreadIndex, typeSelect.value);
+      if (!ok) typeSelect.value = window._bookSequence?.[spreadIndex] ?? spreadId;
+    });
+
+    controls.appendChild(btnUp);
+    controls.appendChild(btnDown);
+    controls.appendChild(typeSelect);
+    header.appendChild(controls);
+
+    row.appendChild(header);
+
+    const pagesWrap = document.createElement('div');
+    pagesWrap.className = 'spread-pages';
+    row.appendChild(pagesWrap);
+
+    const sides = ['left', 'right'];
+
+    // For rightOnly spreads (SP0), render a blank left page with a placeholder label
+    if (spreadDef.rightOnly) {
+      const blankPage = document.createElement('div');
+      blankPage.className = 'page-canvas';
+      blankPage.style.background = '#ffffff';
+      blankPage.style.display = 'flex';
+      blankPage.style.alignItems = 'center';
+      blankPage.style.justifyContent = 'center';
+      blankPage.dataset.side = 'left';
+      blankPage.dataset.variant = 'blank';
+      const blankLabel = document.createElement('div');
+      blankLabel.style.cssText = 'font-size:13px;color:#b0a89e;text-align:center;line-height:1.6;';
+      blankLabel.innerHTML = '← Cover / Back<br><span style="font-size:11px;opacity:0.6;">Not yet designed</span>';
+      blankPage.appendChild(blankLabel);
+      pagesWrap.appendChild(blankPage);
+    }
+
+    sides.forEach(side => {
+      if (spreadDef.rightOnly && side === 'left') return;
+      const pageDef = spreadDef.pages[side];
+      if (!pageDef) return;
+
+      // Determine which orientation variant to use
+      const sideSlice = photoSlice[side] || [];
+      let dominantOrientation = 'horizontal'; // default
+
+      if (spreadDef.allArtwork) {
+        // FP5: each page picks its variant independently based on its own artwork's orientation
+        const artIdx = side === 'left' ? 0 : 1;
+        const art = (window.specialPhotos[spreadId] || [])[artIdx];
+        if (art) dominantOrientation = art.orientation || 'horizontal';
+      } else {
+        // Regular spreads: take orientation from first assigned photo on this side
+        let found = false;
+        for (const idx of sideSlice) {
+          if (idx !== null && window.photoPool[idx]) {
+            dominantOrientation = window.photoPool[idx].orientation || 'horizontal';
+            found = true;
+            break;
+          }
+        }
+        // Special-slot sides (e.g. FP3 left toy): no regular photos, drive variant from special photo
+        if (!found) {
+          const special = (window.specialPhotos[spreadId] || [])[0];
+          if (special) dominantOrientation = special.orientation || 'horizontal';
+        }
+      }
+
+      // Map orientation string → template-data variant key
+      const orientToKey = { horizontal: 'H', vertical: 'V', square: 'S' };
+      // Variant selection: prefer exact match, then 'default', then first key
+      let variantKey = orientToKey[dominantOrientation] || 'H';
+      if (!pageDef[variantKey]) {
+        variantKey = pageDef['default'] ? 'default' : Object.keys(pageDef)[0];
+      }
+      const variant = pageDef[variantKey];
+      if (!variant) return;
+
+      const canvas = document.createElement('div');
+      canvas.className = 'page-canvas';
+      canvas.dataset.side    = side;
+      canvas.dataset.variant = variantKey;
+      if (variant.bgColor) canvas.style.background = variant.bgColor;
+
+      // SVG background first (z-index 0), photos on top (z-index 1)
+      if (variant.svg) {
+        const overlay = document.createElement('img');
+        overlay.className = 'svg-overlay';
+        overlay.dataset.src = SVG_BASE + variant.svg;
+        overlay.alt = '';
+        overlay.decoding = 'async';
+        canvas.appendChild(overlay);
+      }
+
+      // Render photo slots
+      variant.slots.forEach((slotDef, slotIdx) => {
+        // Resolve photo — special/artwork pools pull from window.specialPhotos, not the main pool
+        let photo = null;
+        let isSpecialSlot = false;
+        if (slotDef.pool === 'special' || slotDef.pool === 'artwork') {
+          isSpecialSlot = true;
+          const spKey = spreadId; // e.g. 'FP3', 'FP4', 'FP5'
+          const spArr = window.specialPhotos[spKey] || [];
+          photo = spArr[slotIdx] || null;
+        } else {
+          const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
+          photo = poolIdx !== null ? window.photoPool[poolIdx] : null;
+        }
+
+        const slotEl = document.createElement('div');
+        slotEl.className = 'photo-slot';
+        if (slotDef.heartClip) {
+          // Full-canvas slot — SVG overlay PNG provides yellow masking around heart
+          slotEl.style.left   = '0px';
+          slotEl.style.top    = '0px';
+          slotEl.style.width  = (200 * SCALE) + 'px';
+          slotEl.style.height = (200 * SCALE) + 'px';
+        } else {
+          slotEl.style.left   = ((slotDef.x - slotDef.w / 2) * SCALE) + 'px';
+          slotEl.style.top    = ((slotDef.y - slotDef.h / 2) * SCALE) + 'px';
+          slotEl.style.width  = (slotDef.w * SCALE) + 'px';
+          slotEl.style.height = (slotDef.h * SCALE) + 'px';
+        }
+        slotEl.dataset.slot = slotDef.slot;
+        if (slotDef.heartClip) {
+          // Heart path scaled from original 566.93×566.93 SVG space to 600×600 canvas
+          slotEl.style.clipPath = "path('M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z')";
+          slotEl.style.background = 'transparent';
+        }
+
+        if (photo) {
+          const img = document.createElement('img');
+          img.className = 'slot-photo';
+          img.dataset.src = photo.url;
+          img.alt = photo.name;
+          img.decoding = 'async';
+          img.onerror = () => {
+            console.warn('Slot img failed to load:', photo.name, photo.url.slice(0,40));
+            slotEl.style.outline = '3px solid #e05252';
+            slotEl.title = 'Failed to load: ' + photo.name;
+          };
+          slotEl.appendChild(img);
+
+          if (photo.lowRes) {
+            slotEl.style.outline = '3px solid #f4ca6f';
+          }
+
+          // Special slots are fixed — not draggable or swappable
+          if (!isSpecialSlot) {
+            slotEl.draggable = true;
+            slotEl.addEventListener('dragstart', e => {
+              e.stopPropagation();
+              window._dragType = 'slot';
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', JSON.stringify({
+                type: 'slot', spreadIndex, side, slotIdx
+              }));
+              slotEl.classList.add('dragging');
+            });
+            slotEl.addEventListener('dragend', () => { window._dragType = null; slotEl.classList.remove('dragging'); });
+          }
+        } else {
+          const ph = document.createElement('div');
+          ph.className = 'slot-placeholder';
+          if (isSpecialSlot) {
+            const labels = { FP3: 'Upload toy photo above', FP4: 'Upload steps photo above', FP5: 'Upload artwork above' };
+            ph.textContent = labels[spreadId] || 'Upload special photo above';
+            ph.style.fontSize = '11px';
+            ph.style.borderStyle = 'dashed';
+          } else {
+            ph.textContent = 'Drop photo here';
+          }
+          slotEl.appendChild(ph);
+        }
+
+        // Special slots don't accept drops from the pool or other slots
+        if (!isSpecialSlot) {
+          slotEl.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            slotEl.classList.add('drag-over');
+          });
+          slotEl.addEventListener('dragleave', () => slotEl.classList.remove('drag-over'));
+          slotEl.addEventListener('drop', e => {
+            e.preventDefault();
+            slotEl.classList.remove('drag-over');
+            handleSlotDrop(e, spreadIndex, side, slotIdx);
+          });
+        }
+
+        canvas.appendChild(slotEl);
+
+        // Caption overlay (sibling on canvas, outside slot so overflow:hidden doesn't clip it)
+        if (slotDef.caption?.allowed) {
+          const cap = slotDef.caption;
+
+          // Slot geometry (mm → px)
+          const sLeft = (slotDef.x - slotDef.w / 2) * SCALE;
+          const sTop  = (slotDef.y - slotDef.h / 2) * SCALE;
+          const sW    = slotDef.w * SCALE;
+          const sH    = slotDef.h * SCALE;
+          const gap   = (cap.offset || 0) * SCALE;
+          const capLineH = 26; // approx px height for one line at 14pt
+          const capH     = capLineH * 2;
+
+          // ── Position ──
+          let capLeft, capTop, capWidth;
+          if (cap.position === 'below') {
+            capLeft  = sLeft + sW * 0.05;
+            capTop   = sTop + sH + gap;
+            capWidth = sW * 0.90;
+          } else if (cap.position === 'above') {
+            capLeft  = sLeft + sW * 0.05;
+            capTop   = sTop - gap - capH;
+            capWidth = sW * 0.90;
+          } else if (cap.position === 'upper-right') {
+            // Horizontal text block in the right-margin corner, aligned to photo top
+            capLeft  = sLeft + sW + gap;
+            capTop   = sTop;
+            capWidth = Math.max(60, (200 * SCALE) - (sLeft + sW + gap) - 6);
+          } else if (cap.position === 'lower-right') {
+            // Horizontal text block in the right-margin, aligned to photo bottom (mirrors upper-right)
+            capLeft  = sLeft + sW + gap;
+            capTop   = sTop + sH - capH;
+            capWidth = Math.max(60, (200 * SCALE) - (sLeft + sW + gap) - 6);
+          } else {
+            capLeft  = sLeft + sW * 0.05;
+            capTop   = sTop + sH + gap;
+            capWidth = sW * 0.90;
+          }
+
+          // ── Caption editable element ──
+          const captionEl = document.createElement('div');
+          captionEl.className = 'slot-caption';
+          captionEl.contentEditable = 'true';
+          captionEl.spellcheck = false;
+          captionEl.style.left  = capLeft  + 'px';
+          captionEl.style.top   = capTop   + 'px';
+          captionEl.style.width = capWidth + 'px';
+          captionEl.style.textAlign = cap.align || 'center';
+          if (cap.position === 'lower-right') captionEl.style.zIndex = '3';
+
+          // Typography: CSV defaults merged with any user overrides from spreadCaptionStyles
+          const _scsOv = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
+          const _font   = _scsOv.font          !== undefined ? _scsOv.font          : cap.font;
+          const _weight = _scsOv.weight        !== undefined ? _scsOv.weight        : (cap.style === 'bold' ? 700 : cap.style === 'semibold' ? 600 : cap.style === 'medium' ? 500 : 400);
+          const _italic = _scsOv.italic        !== undefined ? _scsOv.italic        : cap.style === 'italic';
+          const _sizePt = _scsOv.sizePt        !== undefined ? _scsOv.sizePt        : cap.sizePt;
+          const _lineS  = _scsOv.lineSpacing   !== undefined ? _scsOv.lineSpacing   : (cap.lineSpacing   || 1.28);
+          const _letS   = _scsOv.letterSpacing !== undefined ? _scsOv.letterSpacing : (cap.letterSpacing || 0);
+          if (_font)   captionEl.style.fontFamily    = `'${_font}', var(--sans)`;
+          if (_sizePt) captionEl.style.fontSize      = _sizePt + 'pt';
+          captionEl.style.lineHeight    = _lineS;
+          captionEl.style.letterSpacing = _letS + 'em';
+          captionEl.style.fontWeight    = _weight;
+          captionEl.style.fontStyle     = _italic ? 'italic' : 'normal';
+
+          const saved = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx];
+          if (saved) captionEl.innerHTML = saved.includes('<') ? saved : applyTypographicRules(saved);
+
+          const saveCaption = () => {
+            // Save innerHTML to preserve inline bold/italic spans
+            const html = captionEl.innerHTML.trim();
+            if (!window.bookCaptions) window.bookCaptions = {};
+            if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+            if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+            window.bookCaptions[spreadIndex][side][slotIdx] = html;
+            return html;
+          };
+
+          captionEl.addEventListener('focus', () => {
+            const stored = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx] || '';
+            // Restore as-is (may contain inline markup)
+            captionEl.innerHTML = stored;
+            showSpreadCaptionToolbar(spreadIndex, side, slotIdx, cap, captionEl);
+          });
+          captionEl.addEventListener('blur', () => {
+            const html = saveCaption();
+            captionEl.innerHTML = html;
+          });
+          captionEl.addEventListener('mousedown', e => e.stopPropagation());
+          captionEl.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); captionEl.blur(); }
+          });
+
+          canvas.appendChild(captionEl);
+
+          // ── AI generate button ──
+          const aiBtn = document.createElement('button');
+          aiBtn.className = 'caption-ai-btn';
+          aiBtn.textContent = '✦ Generate';
+          aiBtn.title = 'Generate caption with AI';
+
+          // Position just above the caption field (or below if above-position)
+          if (cap.position === 'above') {
+            aiBtn.style.left = capLeft + 'px';
+            aiBtn.style.top  = (capTop - 22) + 'px';
+          } else if (cap.position === 'upper-right') {
+            aiBtn.style.left = capLeft + 'px';
+            aiBtn.style.top  = (capTop + capH + 4) + 'px';
+          } else {
+            aiBtn.style.left = capLeft + 'px';
+            aiBtn.style.top  = (capTop - 22) + 'px';
+          }
+
+          aiBtn.addEventListener('click', async () => {
+            const asgn = window.bookAssignments?.[spreadIndex];
+            const poolIdx = asgn?.[side]?.[slotIdx] ?? null;
+            if (poolIdx === null || poolIdx === undefined) return;
+            const photo = window.photoPool[poolIdx];
+            if (!photo?.url) return;
+
+            aiBtn.textContent = '…';
+            aiBtn.classList.add('loading');
+            aiBtn.disabled = true;
+            try {
+              const base64 = await urlToBase64(photo.url);
+              const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/generateCaption', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64, collection: 'kids', previousCaptions: collectExistingCaptions() }),
+              });
+              if (!resp.ok) throw new Error((await resp.json()).error || resp.statusText);
+              const { caption } = await resp.json();
+              if (!window.bookCaptions) window.bookCaptions = {};
+              if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+              if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+              window.bookCaptions[spreadIndex][side][slotIdx] = applyTypographicRules(caption);
+              captionEl.innerHTML = applyTypographicRules(caption);
+              aiBtn.textContent = '✦ Generate';
+              aiBtn.title = '';
+            } catch (err) {
+              dbLog('⛔ Caption AI error: ' + err.message, 'warn');
+              aiBtn.textContent = '⚠ Failed — click to retry';
+              aiBtn.title = err.message;
+            } finally {
+              aiBtn.classList.remove('loading');
+              aiBtn.disabled = false;
+            }
+          });
+
+          canvas.appendChild(aiBtn);
+        }
+      });
+
+      // ── Text panel (FP1 Birthday wishes / FP2 Funny words left pages) ──
+      if (variant.textPanel?.caption?.allowed) {
+        const isFunnyWords = !!variant.textPanel.funnyWords;
+        const saved = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanel'] || '';
+
+        const panelEl = document.createElement('div');
+        panelEl.className = 'slot-caption fp-text-panel';
+        panelEl.contentEditable = 'true';
+        panelEl.spellcheck = false;
+        // Centred block covering middle 60% of the canvas
+        panelEl.style.left      = (200 * SCALE * 0.20) + 'px';
+        panelEl.style.top       = (200 * SCALE * 0.30) + 'px';
+        panelEl.style.width     = (200 * SCALE * 0.60) + 'px';
+        panelEl.style.textAlign = 'center';
+
+        // Typography from template-data (CSV source of truth)
+        const tpCap = variant.textPanel.caption;
+        if (tpCap.font)                        panelEl.style.fontFamily    = `'${tpCap.font}', var(--sans)`;
+        if (tpCap.sizePt) {
+          // funnyWords panel is scaled to the canvas (px); regular text panels use pt
+          panelEl.style.fontSize = isFunnyWords ? (tpCap.sizePt * SCALE) + 'px' : tpCap.sizePt + 'pt';
+        }
+        if (tpCap.lineSpacing)                 panelEl.style.lineHeight    = tpCap.lineSpacing;
+        if (tpCap.letterSpacing !== undefined) panelEl.style.letterSpacing = tpCap.letterSpacing + 'em';
+        // Line breaks handled via <br> tags (innerHTML round-trip) — pre-line not needed
+
+        const formatFunnyWords = (text) => {
+          if (!isFunnyWords) return text;
+          const words = text.trim().split(/\s+/).filter(Boolean).slice(0, 10);
+          return words.join('\n');
+        };
+
+        // Helpers: convert between stored plain text (newlines) and innerHTML (<br> tags)
+        const panelToPlain = () => {
+          // Normalize Chrome's <div> wrapping and <br> tags to \n, then strip remaining tags
+          return panelEl.innerHTML
+            .replace(/<div>/gi, '\n').replace(/<\/div>/gi, '')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .trim();
+        };
+        const plainToPanel = (text) => {
+          panelEl.innerHTML = text.replace(/\n/g, '<br>');
+        };
+
+        if (saved) plainToPanel(isFunnyWords ? formatFunnyWords(saved) : applyTypographicRules(saved));
+
+        const savePanelCaption = () => {
+          const raw = panelToPlain();
+          if (!window.bookCaptions) window.bookCaptions = {};
+          if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+          if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+          window.bookCaptions[spreadIndex][side]['textPanel'] = raw;
+          return raw;
+        };
+
+        panelEl.addEventListener('focus', () => {
+          const stored = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanel'] || '';
+          plainToPanel(isFunnyWords ? formatFunnyWords(stored) : stored);
+          showSpreadCaptionToolbar(spreadIndex, side, 'textPanel', tpCap, panelEl);
+        });
+        panelEl.addEventListener('blur', () => {
+          const raw = savePanelCaption();
+          plainToPanel(isFunnyWords ? formatFunnyWords(raw) : applyTypographicRules(raw));
+        });
+        panelEl.addEventListener('mousedown', e => e.stopPropagation());
+        panelEl.addEventListener('keydown', e => {
+          if (e.key === 'Escape') { e.preventDefault(); panelEl.blur(); return; }
+          // Insert a <br> on Enter so line breaks survive innerHTML round-trips
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            document.execCommand('insertLineBreak');
+          }
+        });
+
+        canvas.appendChild(panelEl);
+
+        // AI generate button below panel
+        const aiPanelBtn = document.createElement('button');
+        aiPanelBtn.className = 'caption-ai-btn';
+        aiPanelBtn.textContent = '✦ Generate';
+        aiPanelBtn.title = 'Generate text with AI';
+        aiPanelBtn.style.left = (200 * SCALE * 0.20) + 'px';
+        aiPanelBtn.style.top  = (200 * SCALE * 0.30 + 200 * SCALE * 0.40 + 4) + 'px';
+
+        aiPanelBtn.addEventListener('click', async () => {
+          // Use first assigned photo from this spread (either side) for context
+          const asgn = window.bookAssignments?.[spreadIndex];
+          let poolIdx = null;
+          for (const s of ['left', 'right']) {
+            const arr = asgn?.[s] || [];
+            const found = arr.find(v => v !== null && v !== undefined);
+            if (found !== undefined) { poolIdx = found; break; }
+          }
+          if (poolIdx === null) return;
+          const photo = window.photoPool[poolIdx];
+          if (!photo?.url) return;
+
+          aiPanelBtn.textContent = '…';
+          aiPanelBtn.classList.add('loading');
+          aiPanelBtn.disabled = true;
+          try {
+            const base64 = await urlToBase64(photo.url);
+            const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/generateCaption', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ image: base64, collection: 'kids', previousCaptions: collectExistingCaptions() }),
+            });
+            if (!resp.ok) throw new Error((await resp.json()).error || resp.statusText);
+            const { caption } = await resp.json();
+            if (!window.bookCaptions) window.bookCaptions = {};
+            if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+            if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+            window.bookCaptions[spreadIndex][side]['textPanel'] = caption;
+            plainToPanel(isFunnyWords ? formatFunnyWords(caption) : applyTypographicRules(caption));
+            aiPanelBtn.textContent = '✦ Generate';
+            aiPanelBtn.title = '';
+          } catch (err) {
+            dbLog('⛔ Text panel AI error: ' + err.message, 'warn');
+            aiPanelBtn.textContent = '⚠ Failed — click to retry';
+            aiPanelBtn.title = err.message;
+          } finally {
+            aiPanelBtn.classList.remove('loading');
+            aiPanelBtn.disabled = false;
+          }
+        });
+
+        canvas.appendChild(aiPanelBtn);
+      }
+
+      pagesWrap.appendChild(canvas);
+    });
+
+    return row;
+  }
+
+  /* ═══════════════════════════════════════════
+     BOOK SEQUENCE BUILDER
+  ═══════════════════════════════════════════ */
+
+  function buildBookSequence(pageCount, selectedFPs) {
+    const totalSpreads  = pageCount / 2;
+    const remaining     = totalSpreads - 1;
+    const standardCount = remaining - selectedFPs.length;
+
+    // Cycle SP1–SP6 for however many standard slots are needed
+    const stdIds = ['SP1','SP2','SP3','SP4','SP5','SP6'];
+    const standards = [];
+    for (let i = 0; i < standardCount; i++) {
+      standards.push(stdIds[i % stdIds.length]);
+    }
+
+    // Calculate insertion positions for FPs (evenly spaced), then insert right-to-left
+    // so earlier insertions don't shift later positions.
+    const fpCount = selectedFPs.length;
+    const positions = selectedFPs.map((_, i) =>
+      Math.round((i + 1) * (standards.length + 1) / (fpCount + 1))
+    );
+    // Insert from last position to first to avoid index shifting
+    for (let i = fpCount - 1; i >= 0; i--) {
+      standards.splice(positions[i], 0, selectedFPs[i]);
+    }
+
+    return ['SP0', ...standards];
+  }
+
+  /* ═══════════════════════════════════════════
+     PHOTO ALLOCATOR
+  ═══════════════════════════════════════════ */
+
+  function assignPhotosToSpreads(sequence, pool) {
+    // Exclude duplicates from slot assignment — they remain in window.photoPool for display
+    // but are invisible to the allocator. validIndices maps allocator positions → original pool indices.
+    const validIndices = pool.map((p, i) => p.duplicate ? null : i).filter(i => i !== null);
+    const validPool    = validIndices.map(i => pool[i]);
+    const assignments  = {};
+    let ptr = 0; // ptr into validPool / validIndices
+
+    // Helper: resolve variant key for a pageDef given a desired orientation
+    function resolveVariant(pageDef, orient) {
+      const preferred = orient === 'vertical' ? 'V' : 'H';
+      if (pageDef[preferred]) return preferred;
+      if (pageDef['default']) return 'default';
+      return Object.keys(pageDef)[0];
+    }
+
+    // Helper: regular slot count for the best-matching variant on a page
+    function regularSlotCount(pageDef, orient) {
+      const vk = resolveVariant(pageDef, orient);
+      return (pageDef[vk]?.slots || []).filter(s => !s.pool || s.pool === 'regular').length;
+    }
+
+    sequence.forEach((spreadId, spreadIndex) => {
+      // FP spreads with no regular slots on either side (FP1, FP2, FP5): pinned, skip pool consumption
+      // FP3 and FP4 have a regular right page — they must fall through to the normal assignment logic
+      const spreadDef0 = window.SCRIBBLE_DATA.spreads[spreadId];
+      if (spreadId.startsWith('FP') && spreadDef0) {
+        const hasRegularSlots = ['left', 'right'].some(side => {
+          const pd = spreadDef0.pages[side];
+          if (!pd) return false;
+          const rv = pd['H'] || pd['V'] || pd[Object.keys(pd)[0]];
+          return (rv?.slots || []).some(s => !s.pool || s.pool === 'regular');
+        });
+        if (!hasRegularSlots) {
+          assignments[spreadIndex] = (window._fpAssignments && window._fpAssignments[spreadId])
+            ? window._fpAssignments[spreadId]
+            : { left: [], right: [] };
+          return;
+        }
+        // FP3/FP4: if pinned, use pinned assignment (preserves drag-drops); else fall through
+        if (window._fpAssignments && window._fpAssignments[spreadId]) {
+          assignments[spreadIndex] = window._fpAssignments[spreadId];
+          // Still advance the pool pointer by how many regular slots this spread uses
+          ptr += ['left', 'right'].reduce((sum, side) => {
+            const pd = spreadDef0.pages[side];
+            if (!pd) return sum;
+            const rv = pd['H'] || pd['V'] || pd[Object.keys(pd)[0]];
+            return sum + (rv?.slots || []).filter(s => !s.pool || s.pool === 'regular').length;
+          }, 0);
+          return;
+        }
+      }
+
+      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+      if (!spreadDef) return;
+
+      const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
+      const assignment = { left: [], right: [] };
+
+      // Build per-side slot-count info (use H variant as representative — H/V have same count)
+      const sideInfos = sides.map(side => {
+        const pageDef = spreadDef.pages[side];
+        if (!pageDef) return null;
+        const repVariant = pageDef['H'] || pageDef['V'] || pageDef[Object.keys(pageDef)[0]];
+        const slots = (repVariant?.slots || []).filter(s => !s.pool || s.pool === 'regular').length;
+        return { side, pageDef, slots };
+      }).filter(Boolean);
+
+      // Total regular photos consumed by this spread
+      const totalNeeded = sideInfos.reduce((sum, x) => sum + x.slots, 0);
+      const ptrStart = ptr;
+      const window_ = validPool.slice(ptrStart, ptrStart + totalNeeded);
+      ptr += window_.length;
+
+      // Separate multi-slot (≥2) from single-slot sides
+      const multiSides  = sideInfos.filter(x => x.slots >= 2);
+      const singleSides = sideInfos.filter(x => x.slots === 1);
+
+      const usedLocal = new Set(); // indices within window_ that are already assigned
+
+      // Fill multi-slot sides first: pick best same-orientation group from the window
+      multiSides.forEach(({ side, pageDef, slots }) => {
+        // Count available photos by orientation
+        const byOrient = {};
+        window_.forEach((p, li) => {
+          if (usedLocal.has(li)) return;
+          if (!byOrient[p.orientation]) byOrient[p.orientation] = [];
+          byOrient[p.orientation].push(li);
+        });
+
+        // Pick orientation with most available photos (break ties: prefer what pool[ptr] would be)
+        let bestOrient = null, bestCount = -1;
+        Object.entries(byOrient).forEach(([o, idxs]) => {
+          if (idxs.length > bestCount) { bestOrient = o; bestCount = idxs.length; }
+        });
+
+        const chosen = (byOrient[bestOrient] || []).slice(0, slots);
+        chosen.forEach(li => usedLocal.add(li));
+
+        const variantKey = resolveVariant(pageDef, bestOrient || 'horizontal');
+        const preferredKey = (bestOrient || 'horizontal') === 'vertical' ? 'V' : 'H';
+        if (variantKey !== preferredKey) {
+          console.warn(`⚠ Spread ${spreadIndex} ${side}: ${bestOrient} photos placed in ${variantKey}-variant slot (no ${preferredKey} variant available)`);
+        }
+        const variant = pageDef[variantKey];
+        let ci = 0;
+        assignment[side] = (variant?.slots || []).map(s => {
+          if (s.pool === 'special' || s.pool === 'artwork') return null;
+          const li = chosen[ci++];
+          return li !== undefined ? validIndices[ptrStart + li] : null;
+        });
+      });
+
+      // Fill single-slot sides with remaining photos (in original pool order)
+      const remaining = window_.map((_, li) => li).filter(li => !usedLocal.has(li));
+      singleSides.forEach(({ side, pageDef }, ri) => {
+        const li = remaining[ri];
+        const photo = li !== undefined ? window_[li] : null;
+        const photoOrient = photo?.orientation || 'horizontal';
+        const variantKey = resolveVariant(pageDef, photoOrient);
+        const preferredKey = photoOrient === 'vertical' ? 'V' : 'H';
+        if (photo && variantKey !== preferredKey) {
+          const name = photo.name || `pool[${validIndices[ptrStart + li]}]`;
+          console.warn(`⚠ Spread ${spreadIndex} ${side}: photo "${name}" (${photoOrient}) placed in ${variantKey}-variant slot (no ${preferredKey} variant available)`);
+        }
+        const variant = pageDef[variantKey];
+        let slotFilled = false;
+        assignment[side] = (variant?.slots || []).map(s => {
+          if (s.pool === 'special' || s.pool === 'artwork') return null;
+          if (!slotFilled) { slotFilled = true; return li !== undefined ? validIndices[ptrStart + li] : null; }
+          return null;
+        });
+      });
+
+      assignments[spreadIndex] = assignment;
+    });
+
+    window.bookAssignments = assignments;
+    return assignments;
+  }
+
+  /* ═══════════════════════════════════════════
+     FULL BOOK RENDERER
+  ═══════════════════════════════════════════ */
+
+  function renderBook() {
+    const canvas = document.getElementById('book-canvas');
+    canvas.innerHTML = '';
+
+    const pool = window.photoPool;
+    if (!pool.length) {
+      canvas.innerHTML = '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">📷</div><h3>No photos yet</h3><p>Upload photos to begin.</p></div>';
+      return;
+    }
+
+    const pageCount  = parseInt(document.getElementById('page-count-select').value);
+    const selectedFPs = Array.from(document.querySelectorAll('input[name="fp"]:checked'))
+                             .map(cb => cb.value);
+
+    const sequence = buildBookSequence(pageCount, selectedFPs);
+    window._bookSequence = sequence;
+    window._fpAssignments = {}; // reset FP pinned assignments on full rebuild
+    window.bookCaptions   = {}; // reset captions on full rebuild
+    assignPhotosToSpreads(sequence, pool);
+
+    // Count regular photo slots (excluding special/artwork)
+    let regularSlots = 0;
+    sequence.forEach((spreadId, si) => {
+      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+      if (!spreadDef) return;
+      const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
+      const orientToKey = { horizontal: 'H', vertical: 'V', square: 'S' };
+      sides.forEach(side => {
+        const pageDef = spreadDef.pages[side];
+        if (!pageDef) return;
+        const asgn = window.bookAssignments[si];
+        const firstIdx = asgn && asgn[side] ? asgn[side].find(x => x !== null) : null;
+        const nextPhoto = firstIdx !== null && firstIdx !== undefined ? pool[firstIdx] : pool[0];
+        let variantKey = nextPhoto ? (orientToKey[nextPhoto.orientation] || 'H') : 'H';
+        if (!pageDef[variantKey]) variantKey = pageDef['default'] ? 'default' : Object.keys(pageDef)[0];
+        const variant = pageDef[variantKey];
+        if (variant && variant.slots) {
+          regularSlots += variant.slots.filter(s => !s.pool || s.pool === 'regular').length;
+        }
+      });
+    });
+
+    dbLog('Book: ' + sequence.join(' → '), 'muted');
+    dbLog('Spreads: ' + sequence.length + '  |  Photo slots: ' + regularSlots + '  |  Photos uploaded: ' + pool.length, 'info');
+    if (pool.length > regularSlots) {
+      dbLog('⚠ ' + (pool.length - regularSlots) + ' photo(s) won\'t fit — increase page count or remove functional pages', 'warn');
+    } else if (pool.length < regularSlots) {
+      dbLog('⚠ ' + (regularSlots - pool.length) + ' slot(s) will be empty — upload more photos', 'warn');
+    } else {
+      dbLog('✓ Photos fill book exactly', 'info');
+    }
+
+    // Photo status bar
+    const placed = new Set();
+    Object.values(window.bookAssignments).forEach(asgn => {
+      [...(asgn.left||[]), ...(asgn.right||[])].forEach(idx => {
+        if (idx !== null && idx !== undefined) placed.add(idx);
+      });
+    });
+    const assignedCount   = placed.size;
+    const unassignedCount = pool.length - assignedCount;
+    const emptySlots      = Math.max(0, regularSlots - pool.length);
+
+    const statusBar = document.createElement('div');
+    statusBar.className = 'photo-status-bar';
+    statusBar.innerHTML = `
+      <div class="stat"><span class="stat-value">${pool.length}</span> photos uploaded</div>
+      <div class="stat"><span class="stat-value">${assignedCount}</span> placed in book</div>
+      <div class="stat"><span class="stat-value ${unassignedCount > 0 ? 'warn' : ''}">${unassignedCount}</span> unplaced</div>
+      <div class="stat"><span class="stat-value ${emptySlots > 0 ? 'warn' : ''}">${emptySlots}</span> empty slots</div>
+      <div class="stat" style="margin-left:auto;color:var(--muted);font-size:11px;">${sequence.length} spreads · ${pageCount} pages</div>
+    `;
+    canvas.appendChild(statusBar);
+
+    // Cover always first
+    const coverRow = renderCover();
+    if (coverRow) canvas.appendChild(coverRow);
+
+    sequence.forEach((spreadId, spreadIndex) => {
+      const asgn = window.bookAssignments[spreadIndex] || { left: [], right: [] };
+      const row = renderSpread(spreadId, asgn, spreadIndex);
+      if (row) canvas.appendChild(row);
+    });
+
+    setupSpreadObserver();
+    updateSidebarState();
+  }
+
+
+  /* ═══════════════════════════════════════════
+     DRAG-AND-DROP
+  ═══════════════════════════════════════════ */
+
+  /* ═══════════════════════════════════════════
+     SEQUENCE EDITOR — reorder + type swap
+  ═══════════════════════════════════════════ */
+
+  // Re-assign all photos from the current sequence and re-render every spread row in place.
+  // Preserves the status bar and does not clear the whole canvas.
+  function rebuildFromSequence() {
+    const seq = window._bookSequence;
+    if (!seq) return;
+    assignPhotosToSpreads(seq, window.photoPool);
+
+    // Re-render each spread row (keeps DOM order matching sequence order)
+    document.querySelectorAll('.spread-row').forEach(existingRow => {
+      const si = parseInt(existingRow.dataset.spreadIndex);
+      const spreadId = seq[si];
+      if (!spreadId) return;
+      const asgn = window.bookAssignments[si] || { left: [], right: [] };
+      const newRow = renderSpread(spreadId, asgn, si);
+      if (!newRow) return;
+      existingRow.replaceWith(newRow);
+      if (window._spreadObserver) window._spreadObserver.observe(newRow);
+    });
+
+    updateSidebarState();
+  }
+
+  function hasCaptions() {
+    const bc = window.bookCaptions;
+    if (!bc) return false;
+    return Object.values(bc).some(spread =>
+      Object.values(spread).some(side =>
+        Object.values(side).some(v => v && v.trim())
+      )
+    );
+  }
+
+  // Move spread at `index` by `delta` (-1 = up, +1 = down). SP0 (index 0) is fixed.
+  function moveSpread(index, delta) {
+    const seq = window._bookSequence;
+    if (!seq) return;
+    const target = index + delta;
+    // SP0 at position 0 is always fixed — cannot move anything to/from index 0
+    if (index <= 0 || target <= 0 || target >= seq.length) return;
+    if (hasCaptions() && !confirm('Reordering spreads will reassign photos — existing captions may no longer match their photos. Continue?')) return;
+    // Clear captions since photo assignments will change
+    window.bookCaptions = {};
+    [seq[index], seq[target]] = [seq[target], seq[index]];
+    rebuildFromSequence();
+  }
+
+  // Change the spread type at `index` to `newSpreadId`. Returns false if blocked.
+  function changeSpreadType(index, newSpreadId) {
+    const seq = window._bookSequence;
+    if (!seq || index <= 0) return false;
+    if (seq[index] === newSpreadId) return true;
+
+    // FP1–FP4 can only appear once (FP5 = Art Gallery, unlimited)
+    if (newSpreadId.startsWith('FP') && newSpreadId !== 'FP5') {
+      if (seq.includes(newSpreadId)) {
+        const label = window.SCRIBBLE_DATA.spreads[newSpreadId]?.label || newSpreadId;
+        alert(`"${label}" is already in this book. Each special page can only appear once.`);
+        return false;
+      }
+    }
+
+    if (hasCaptions() && window.bookCaptions?.[index] && !confirm('Changing spread type will clear its captions. Continue?')) return false;
+    seq[index] = newSpreadId;
+    if (window.bookCaptions) delete window.bookCaptions[index];
+    rebuildFromSequence();
+    return true;
+  }
+
+  function rerenderSpread(spreadIndex) {
+    const existingRow = document.querySelector(`.spread-row[data-spread-index="${spreadIndex}"]`);
+    if (!existingRow) return;
+    const spreadId = existingRow.dataset.spreadId;
+    const asgn = window.bookAssignments[spreadIndex] || { left: [], right: [] };
+    const newRow = renderSpread(spreadId, asgn, spreadIndex);
+    if (!newRow) return;
+    existingRow.replaceWith(newRow);
+    if (window._spreadObserver) window._spreadObserver.observe(newRow);
+    hydrateSpreadRow(newRow); // user just interacted — show photos immediately
+  }
+
+  // Returns true if placing incomingPoolIdx into (spreadIndex, side, slotIdx) would mix orientations
+  // on a multi-slot page. incomingPoolIdx===null means unassigning (always allowed).
+  function wouldMixPage(spreadIndex, side, slotIdx, incomingPoolIdx) {
+    const sidAsgn = (window.bookAssignments[spreadIndex] || {})[side];
+    if (!sidAsgn || sidAsgn.length <= 1) return false; // single-slot page — no mixing possible
+    if (incomingPoolIdx === null || incomingPoolIdx === undefined) return false;
+    const incoming = window.photoPool[incomingPoolIdx];
+    if (!incoming) return false;
+    const others = sidAsgn
+      .map((idx, i) => i !== slotIdx ? idx : undefined)
+      .filter(idx => idx !== null && idx !== undefined)
+      .map(idx => window.photoPool[idx])
+      .filter(Boolean);
+    return others.some(p => p.orientation !== incoming.orientation);
+  }
+
+  function handleSlotDrop(e, targetSpreadIndex, targetSide, targetSlotIdx) {
+    let data;
+    try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+
+    const targetAsgn = window.bookAssignments[targetSpreadIndex];
+    if (!targetAsgn || !targetAsgn[targetSide]) return;
+
+    const currentInTarget = targetAsgn[targetSide][targetSlotIdx] !== undefined
+      ? targetAsgn[targetSide][targetSlotIdx] : null;
+
+    if (data.type === 'strip') {
+      if (wouldMixPage(targetSpreadIndex, targetSide, targetSlotIdx, data.poolIdx)) {
+        dbLog('⛔ Cannot place ' + window.photoPool[data.poolIdx]?.orientation + ' photo here — page has ' + targetAsgn[targetSide].length + ' slots and all must share the same orientation', 'warn');
+        return;
+      }
+      // Remove poolIdx from wherever it's currently assigned (avoids same photo in two slots)
+      const affectedSpreads = new Set([targetSpreadIndex]);
+      Object.entries(window.bookAssignments).forEach(([si, asgn]) => {
+        ['left', 'right'].forEach(s => {
+          if (!asgn[s]) return;
+          asgn[s].forEach((idx, i) => {
+            if (idx === data.poolIdx) { asgn[s][i] = null; affectedSpreads.add(parseInt(si)); }
+          });
+        });
+      });
+      targetAsgn[targetSide][targetSlotIdx] = data.poolIdx;
+      affectedSpreads.forEach(si => rerenderSpread(si));
+
+    } else if (data.type === 'slot') {
+      // Ignore drop onto self
+      if (data.spreadIndex === targetSpreadIndex && data.side === targetSide && data.slotIdx === targetSlotIdx) return;
+
+      const srcAsgn = window.bookAssignments[data.spreadIndex];
+      if (!srcAsgn || !srcAsgn[data.side]) return;
+      const srcPoolIdx = srcAsgn[data.side][data.slotIdx] !== undefined
+        ? srcAsgn[data.side][data.slotIdx] : null;
+
+      // Check both directions: incoming photo into target page, and displaced photo into source page
+      if (wouldMixPage(targetSpreadIndex, targetSide, targetSlotIdx, srcPoolIdx)) {
+        const name = srcPoolIdx !== null ? window.photoPool[srcPoolIdx]?.orientation : 'empty';
+        dbLog('⛔ Cannot place ' + name + ' photo here — would mix orientations on a multi-slot page', 'warn');
+        return;
+      }
+      if (currentInTarget !== null && wouldMixPage(data.spreadIndex, data.side, data.slotIdx, currentInTarget)) {
+        const name = window.photoPool[currentInTarget]?.orientation;
+        dbLog('⛔ Cannot swap — placing ' + name + ' photo back would mix orientations on a multi-slot page', 'warn');
+        return;
+      }
+
+      // Swap
+      srcAsgn[data.side][data.slotIdx] = currentInTarget;
+      targetAsgn[targetSide][targetSlotIdx] = srcPoolIdx;
+
+      const toRerender = new Set([data.spreadIndex, targetSpreadIndex]);
+      toRerender.forEach(si => rerenderSpread(si));
+    } else return;
+
+    // Sync _fpAssignments for any FP spreads touched by this drop
+    const touchedSpreads = new Set();
+    if (data.type === 'strip') {
+      touchedSpreads.add(targetSpreadIndex);
+    } else if (data.type === 'slot') {
+      touchedSpreads.add(targetSpreadIndex);
+      touchedSpreads.add(data.spreadIndex);
+    }
+    touchedSpreads.forEach(si => {
+      const sid = window._bookSequence?.[si];
+      if (sid?.startsWith('FP')) {
+        if (!window._fpAssignments) window._fpAssignments = {};
+        window._fpAssignments[sid] = window.bookAssignments[si];
+      }
+    });
+
+    updateSidebarState();
+  }
+
+  /* ═══════════════════════════════════════════
+     LAZY SPREAD HYDRATION
+  ═══════════════════════════════════════════ */
+
+  window._spreadObserver = null;
+
+  function hydrateSpreadRow(rowEl) {
+    rowEl.querySelectorAll('img[data-src]').forEach(img => {
+      if (!img.src || img.src === window.location.href) {
+        img.onerror = () => {
+          img.style.outline = '3px solid #e05252';
+          img.title = 'Failed to load: ' + img.dataset.src;
+          console.warn('Spread asset failed to load:', img.dataset.src);
+        };
+        img.src = img.dataset.src;
+      }
+    });
+  }
+
+  function dehydrateSpreadRow(rowEl) {
+    rowEl.querySelectorAll('img[data-src]').forEach(img => {
+      img.removeAttribute('src');
+    });
+  }
+
+  function setupSpreadObserver() {
+    if (window._spreadObserver) window._spreadObserver.disconnect();
+    window._spreadObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          hydrateSpreadRow(entry.target);
+        } else {
+          dehydrateSpreadRow(entry.target);
+        }
+      });
+    }, { rootMargin: '800px 0px' }); // pre-load 800px above/below viewport
+
+    document.querySelectorAll('.spread-row').forEach(row => {
+      window._spreadObserver.observe(row);
+    });
+  }
+
+  /* ── Config bar → re-render on change ── */
+  document.getElementById('page-count-select').addEventListener('change', () => {
+    updatePhotoHint();
+    if (window.photoPool.length) renderBook();
+  });
+  /* ═══════════════════════════════════════════
+     SPECIAL PHOTO PANEL — SHOW/HIDE ZONES
+  ═══════════════════════════════════════════ */
+
+  function updateSpecialPanel() {
+    const checked = new Set(
+      Array.from(document.querySelectorAll('input[name="fp"]:checked')).map(cb => cb.value)
+    );
+    const panel = document.getElementById('special-panel');
+    // Cover zone always visible; FP zones shown per selection
+    const hasFP  = checked.has('FP1') || checked.has('FP3') || checked.has('FP4') || checked.has('FP5');
+    const needPanel = true; // cover zone is always present
+    panel.classList.toggle('visible', needPanel);
+    document.documentElement.style.setProperty('--special-h', needPanel ? '68px' : '0px');
+    document.getElementById('special-zone-cover').style.display = 'flex';
+    ['FP1', 'FP3', 'FP4', 'FP5'].forEach(fp => {
+      document.getElementById('special-zone-' + fp).style.display = checked.has(fp) ? 'flex' : 'none';
+    });
+  }
+
+  /* ── Photo count hint ── */
+  function countRequiredSlots() {
+    const pageCount   = parseInt(document.getElementById('page-count-select').value);
+    const selectedFPs = Array.from(document.querySelectorAll('input[name="fp"]:checked')).map(cb => cb.value);
+    const sequence    = buildBookSequence(pageCount, selectedFPs);
+    const orientToKey = { horizontal: 'H', vertical: 'V', square: 'S' };
+    let total = 0;
+    sequence.forEach(spreadId => {
+      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+      if (!spreadDef) return;
+      const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
+      sides.forEach(side => {
+        const pageDef = spreadDef.pages[side];
+        if (!pageDef) return;
+        // Use H variant as baseline; fall back to first available
+        const variantKey = pageDef['H'] ? 'H' : (pageDef['default'] ? 'default' : Object.keys(pageDef)[0]);
+        const variant = pageDef[variantKey];
+        if (variant && variant.slots) {
+          total += variant.slots.filter(s => !s.pool || s.pool === 'regular').length;
+        }
+      });
+    });
+    return total;
+  }
+
+  function updatePhotoHint() {
+    const hint     = document.getElementById('config-photo-hint');
+    const needed   = countRequiredSlots();
+    const dups     = window.photoPool.filter(p => p.duplicate).length;
+    const have     = window.photoPool.length - dups; // usable photos only
+    hint.className = 'config-photo-hint';
+    if (window.photoPool.length === 0) {
+      hint.textContent = needed + ' photos needed for this book';
+      return;
+    }
+    const dupNote = dups > 0 ? ' · ' + dups + ' duplicate' + (dups > 1 ? 's' : '') + ' (remove from sidebar)' : '';
+    const diff = have - needed;
+    if (diff === 0) {
+      hint.classList.add(dups > 0 ? 'hint-warn' : 'hint-ok');
+      hint.textContent = '✓ ' + have + ' / ' + needed + ' usable photos' + dupNote;
+    } else if (diff > 0) {
+      hint.classList.add('hint-over');
+      hint.textContent = have + ' / ' + needed + ' — remove ' + diff + ' photo' + (diff > 1 ? 's' : '') + dupNote;
+    } else {
+      hint.classList.add('hint-warn');
+      hint.textContent = have + ' / ' + needed + ' — add ' + Math.abs(diff) + ' more photo' + (Math.abs(diff) > 1 ? 's' : '') + dupNote;
+    }
+  }
+
+  document.querySelectorAll('input[name="fp"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      updateSpecialPanel();
+      updatePhotoHint();
+      if (window.photoPool.length) renderBook();
+    });
+  });
+
+
+  /* ═══════════════════════════════════════════
+     SPECIAL PHOTO UPLOAD HANDLER
+  ═══════════════════════════════════════════ */
+
+  function renderSpecialThumbs(fp) {
+    const container = document.getElementById('special-thumbs-' + fp);
+    container.innerHTML = '';
+    (window.specialPhotos[fp] || []).forEach((photo, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'special-thumb';
+      wrap.title = photo.name;
+      const img = document.createElement('img');
+      img.src = photo.url;
+      img.alt = photo.name;
+      wrap.appendChild(img);
+      const rm = document.createElement('span');
+      rm.className = 'special-thumb-remove';
+      rm.textContent = '✕';
+      rm.addEventListener('click', () => {
+        URL.revokeObjectURL(photo.url);
+        window.specialPhotos[fp].splice(i, 1);
+        renderSpecialThumbs(fp);
+        renderSpecialSidebar();
+        if (fp === 'cover') rerenderCover();
+        else if (window.photoPool.length) renderBook();
+      });
+      wrap.appendChild(rm);
+      container.appendChild(wrap);
+    });
+  }
+
+  const SPECIAL_LABELS = {
+    cover: 'Cover',
+    FP1:   'Birthday',
+    FP3:   'Fav. toy',
+    FP4:   'First steps',
+    FP5:   'Art gallery',
+  };
+
+  function renderSpecialSidebar() {
+    const container = document.getElementById('sidebar-special');
+    const header    = document.getElementById('sidebar-special-header');
+    const countEl   = document.getElementById('sidebar-special-count');
+    container.innerHTML = '';
+
+    let total = 0;
+    Object.entries(window.specialPhotos).forEach(([fp, photos]) => {
+      photos.forEach(photo => {
+        total++;
+        const wrap = document.createElement('div');
+        wrap.className = 'special-sidebar-thumb';
+        wrap.title = photo.name;
+        const img = document.createElement('img');
+        img.src = photo.url;
+        img.alt = photo.name;
+        wrap.appendChild(img);
+        const label = document.createElement('div');
+        label.className = 'special-sidebar-label';
+        label.textContent = SPECIAL_LABELS[fp] || fp;
+        wrap.appendChild(label);
+        container.appendChild(wrap);
+      });
+    });
+
+    header.style.display = total > 0 ? '' : 'none';
+    countEl.textContent = total;
+  }
+
+  document.querySelectorAll('.special-upload-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fp = btn.dataset.fp;
+      document.querySelector('[data-fp-input="' + fp + '"]').click();
+    });
+  });
+
+  document.querySelectorAll('[data-fp-input]').forEach(input => {
+    input.addEventListener('change', async function () {
+      const fp = this.dataset.fpInput;
+      const max = parseInt(document.querySelector('.special-upload-btn[data-fp="' + fp + '"]').dataset.max);
+      const files = Array.from(this.files);
+      if (!files.length) return;
+
+      const slots = max - (window.specialPhotos[fp]?.length || 0);
+      if (slots <= 0) {
+        alert('Remove the existing photo first before uploading a new one.');
+        this.value = '';
+        return;
+      }
+
+      const toProcess = files.slice(0, slots);
+      for (const file of toProcess) {
+        const result = await processOneFile(file);
+        if (result) {
+          window.specialPhotos[fp].push(result);
+        }
+      }
+      renderSpecialThumbs(fp);
+      renderSpecialSidebar();
+      if (fp === 'cover') {
+        rerenderCover();
+      } else if (window.photoPool.length) {
+        renderBook();
+      }
+      this.value = '';
+    });
+  });
+
+  /* ═══════════════════════════════════════════
+     AUTO-SCROLL DURING DRAG
+  ═══════════════════════════════════════════ */
+
+  (function setupDragScroll() {
+    const EDGE = 120;  // px from viewport edge that triggers scroll
+    const SPEED = 12;  // px per frame
+    let rafId = null;
+    let scrollDir = 0; // -1 up, 0 none, 1 down
+
+    function scrollStep() {
+      if (scrollDir !== 0) {
+        window.scrollBy(0, scrollDir * SPEED);
+        rafId = requestAnimationFrame(scrollStep);
+      }
+    }
+
+    document.addEventListener('dragover', e => {
+      const y = e.clientY;
+      const vh = window.innerHeight;
+      if (y < EDGE) {
+        if (scrollDir !== -1) { scrollDir = -1; cancelAnimationFrame(rafId); rafId = requestAnimationFrame(scrollStep); }
+      } else if (y > vh - EDGE) {
+        if (scrollDir !== 1) { scrollDir = 1; cancelAnimationFrame(rafId); rafId = requestAnimationFrame(scrollStep); }
+      } else {
+        scrollDir = 0;
+      }
+    });
+
+    document.addEventListener('dragend', () => { scrollDir = 0; cancelAnimationFrame(rafId); });
+    document.addEventListener('drop',    () => { scrollDir = 0; cancelAnimationFrame(rafId); });
+  })();
+
+  /* ═══════════════════════════════════════════
+     VERIFY DATA ON LOAD
+  ═══════════════════════════════════════════ */
+
+  // Show initial photo count hint and special panel on page load
+  updatePhotoHint();
+  updateSpecialPanel();
+
+  (function verifyData() {
+    const d = window.SCRIBBLE_DATA;
+    if (!d) { console.error('SCRIBBLE_DATA not loaded'); return; }
+    const keys = Object.keys(d.spreads);
+    const expected = ['SP0','SP1','SP2','SP3','SP4','SP5','SP6','FP1','FP2','FP3','FP4','FP5'];
+    const missing = expected.filter(k => !keys.includes(k));
+    if (missing.length) {
+      console.error('SCRIBBLE_DATA missing spread keys:', missing);
+    } else {
+      console.log('SCRIBBLE_DATA loaded — spreads:', keys.join(', '));
+      console.log('SP1 right H slots:', d.spreads.SP1.pages.right.H.slots.length, '(expect 2)');
+    }
+  })();
+</script>
+
+</body>
+</html>
