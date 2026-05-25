@@ -19,7 +19,7 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Responsive layout (stacked at <1400px)
 - SP0 blank left placeholder "← Cover / Back / Not yet designed"
 
-## template-data.js — bgColor at variant level (completed earlier)
+## scribble-data.js — bgColor at variant level (completed earlier)
 - bgColor per variant for all 12 spreads; SP0 label fixed; SP4 right V = `#fdd16f`
 
 ## Session 2026-05-20 — Plans 07-01 through 08-02 (completed)
@@ -52,7 +52,7 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 ## Session 2026-05-20 — CSV pipeline + Scribble rename
 
 ### csv-to-template.js
-- New Node.js script at project root: reads `assets/Template_Scribble/Scribble_sizing_full.csv`, regenerates `template-data.js`
+- New Node.js script at project root: reads `assets/Template_Scribble/Scribble_sizing_full.csv`, regenerates `scribble-data.js`
 - Preserves existing SVG paths; warns about any missing ones (TODO placeholders)
 - Run: `node csv-to-template.js` from project root after editing the CSV
 - `functional_photo` / `functional_text` columns drive pool types, textPanel, funnyWords flags
@@ -73,7 +73,7 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 ## Session 2026-05-19 — FP1 heart + orientation fixes
 
 ### FP1 SVG path fix
-- `template-data.js` SVG paths updated from `FP Birthday 01 L copy.svg` → `FP Birthday 01 L.svg` and `FP Birthday 02 R copy.svg` → `FP Birthday 02 R.svg` (Kseniia replaced the files)
+- `scribble-data.js` SVG paths updated from `FP Birthday 01 L copy.svg` → `FP Birthday 01 L.svg` and `FP Birthday 02 R copy.svg` → `FP Birthday 02 R.svg` (Kseniia replaced the files)
 
 ### Heart photo clip (FP1 right page)
 - Root cause found: `FP Birthday 02 R.svg` is a 3-spread export. The heart frame artwork uses `cls-4` clipped to x=674 (outside the 0–566 viewBox) — it never renders. Only `cls-2` (a small decorative corner element) is visible.
@@ -106,7 +106,7 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Toolbar positions to the right of the spine element (not above) to avoid canvas overlap
 
 ### csv-to-template.js generates cover: block
-- Parses `Scribble_Template_Sizing_Cover.csv`; emits `cover:` block in template-data.js
+- Parses `Scribble_Template_Sizing_Cover.csv`; emits `cover:` block in scribble-data.js
 - Two bugs fixed: duplicate `Page` CSV header (use column index 0); serializer missing commas between multi-slot arrays
 - FP3.left.V and FP4.left.V SVG paths now generated correctly by the script (no longer need manual patch)
 
@@ -170,7 +170,7 @@ HEIC conversion in the template engine is a **temporary testing path** — it ex
 
 ### Plan future — Extend toolbar to spread captions
 - Same toolbar concept for spread slot captions (contenteditable overlays on slots where `captions: true`)
-- Typography defaults now come from template-data.js (CSV-driven); toolbar will read/override them per caption
+- Typography defaults now come from scribble-data.js (CSV-driven); toolbar will read/override them per caption
 - Not yet started
 
 ## PDF export — architecture DECIDED (was Plan 12-01 "Puppeteer", now Plan 11)
@@ -226,8 +226,8 @@ assembles pages at exact physical mm dimensions.
 - Parallel HEIC conversion corrupts images due to shared WASM state — always keep sequential
 
 ## CSV as source of truth
-- `csv-to-template.js` is now the build script — edit CSV, run script, template-data.js regenerates
-- Cover CSV (`Scribble_Template_Sizing_Cover.csv`) also parsed; cover: block in template-data.js is generated, not hand-maintained
+- `csv-to-template.js` is now the build script — edit CSV, run script, scribble-data.js regenerates
+- Cover CSV (`Scribble_Template_Sizing_Cover.csv`) also parsed; cover: block in scribble-data.js is generated, not hand-maintained
 - Spread SVG paths are preserved by the script (not overwritten)
 - Caption typography (font, sizePt, style, letterSpacing, lineSpacing) is in the spreads CSV and emitted into every caption object — template-engine.html reads from there, not hardcoded CSS
 
@@ -256,12 +256,12 @@ assembles pages at exact physical mm dimensions.
 
 ## Architecture constants
 - SCALE = 3 (px/mm): 200mm page = 600px canvas
-- Bleed = 3mm per side; coordinates in template-data.js WITHOUT bleed (content area only)
+- Bleed = 3mm per side; coordinates in scribble-data.js WITHOUT bleed (content area only)
 - Page size for print: 206mm × 206mm (200mm + 3mm bleed each side)
 - Book sizes: 40 pages (20 spreads) or 80 pages (40 spreads) — no other options
 - SP0 is rightOnly: left page always blank white
 
-## template-data.js structure (critical)
+## scribble-data.js structure (critical)
 ```js
 window.SCRIBBLE_DATA = {
   spreads: {
@@ -324,7 +324,7 @@ Check `functions/` to confirm this exists before wiring.
 ## Completed and saved to disk
 - `pages/template-engine.html` — B/I execCommand buttons removed; FP5 save now stores array `[leftName, rightName]`
 - `scripts/export-pdf.js` — FP5 `pool === 'artwork'` fix; legacy string fallback for old book-state.json; upper-right / lower-right caption positions; captions_color + captions_alignment end-to-end; style pills for spread captions
-- `assets/Template_Scribble/template-data.js` — captions_color (#493955) + captions_alignment columns wired
+- `assets/Template_Scribble/scribble-data.js` — captions_color (#493955) + captions_alignment columns wired
 - `assets/Template_Scribble/Scribble_sizing_full.csv` — captions_color + captions_alignment columns added
 
 ## Committed and pushed

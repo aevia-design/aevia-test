@@ -19,7 +19,7 @@ aevia-test/
 ├── assets/
 │   ├── images/             — logos and UI images
 │   ├── fonts/              — custom fonts used in templates
-│   ├── Template_Scribble/  — Scribble template assets (SVGs, template-data.js)
+│   ├── Template_Scribble/  — Scribble template assets (SVGs, scribble-data.js)
 │   └── templates.json      — template catalogue (name, slug, page counts, etc.)
 ├── context/                — design principles, style guide, customer journey
 ├── functions/              — Firebase Cloud Functions (backend, already deployed)
@@ -32,7 +32,7 @@ aevia-test/
 ├── motif-engine/           — AI motif generation tool (Kevin Lucbert style, Replicate API)
 ├── scripts/                — one-off utility scripts
 ├── sessions/               — Claude session decision logs (YYYY-MM-DD.md)
-├── csv-to-template.js      — regenerates template-data.js from CSV
+├── csv-to-template.js      — regenerates scribble-data.js from CSV
 ├── firebase.json           — Firebase project config
 ├── .firebaserc             — Firebase project ID: aevia-uploads
 └── cors.json               — GCS bucket CORS config
@@ -84,7 +84,7 @@ npm run deploy
 
 **Currently implemented for:** Scribble template (kids/toddler photobook)
 
-**Template data:** `assets/Template_Scribble/template-data.js` — defines all spread types, slot coordinates, SVG overlays, background colors, caption positions, and special flags. Generated from `assets/Template_Scribble/Scribble_sizing_full.csv` via `node csv-to-template.js`.
+**Template data:** `assets/Template_Scribble/scribble-data.js` — defines all spread types, slot coordinates, SVG overlays, background colors, caption positions, and special flags. Generated from `assets/Template_Scribble/Scribble_sizing_full.csv` via `node csv-to-template.js`. Each template gets its own `<name>-data.js` file; pipeline code reads from it rather than hardcoding template-specific values.
 
 **Architecture constants:**
 - SCALE = 3 (px/mm): 200mm page = 600px canvas

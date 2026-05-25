@@ -1,9 +1,9 @@
 /**
  * csv-to-template.js
  * Reads assets/Template_Scribble/Scribble_sizing_full.csv and regenerates
- * assets/Template_Scribble/template-data.js
+ * assets/Template_Scribble/scribble-data.js
  *
- * SVG file paths are preserved from the existing template-data.js.
+ * SVG file paths are preserved from the existing scribble-data.js.
  * New variants added in the CSV get a TODO placeholder SVG path.
  *
  * Run: node csv-to-template.js
@@ -15,7 +15,7 @@ const path = require('path');
 const DIR          = path.join(__dirname, 'assets/Template_Scribble');
 const CSV_PATH     = path.join(DIR, 'Scribble_sizing_full.csv');
 const COVER_CSV    = path.join(DIR, 'Scribble_Template_Sizing_Cover.csv');
-const OUT_PATH     = path.join(DIR, 'template-data.js');
+const OUT_PATH     = path.join(DIR, 'scribble-data.js');
 
 // ── 1. Parse CSV ───────────────────────────────────────────────────────────
 const rawLines = fs.readFileSync(CSV_PATH, 'utf8').split('\n').filter(l => l.trim());
@@ -28,7 +28,7 @@ const rows = rawLines.slice(1).map(line => {
   return obj;
 });
 
-// ── 2. Extract SVG paths from existing template-data.js ───────────────────
+// ── 2. Extract SVG paths from existing scribble-data.js ───────────────────
 // Returns map: { 'SP0.right.H': 'SP Spread 0/SP 06 H Right.svg', ... }
 function extractSvgPaths(filePath) {
   const map = {};
@@ -487,7 +487,7 @@ console.log('✓ Written', OUT_PATH);
 // Warn about any TODO placeholders
 const todos = [...output.matchAll(/svg: 'TODO: ([^']+)'/g)].map(m => m[1]);
 if (todos.length) {
-  console.log('\n⚠  SVG paths missing — add these manually in template-data.js:');
+  console.log('\n⚠  SVG paths missing — add these manually in scribble-data.js:');
   todos.forEach(t => console.log('   ' + t));
 } else {
   console.log('✓ All SVG paths resolved from existing file.');

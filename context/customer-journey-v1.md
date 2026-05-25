@@ -40,7 +40,7 @@ Optional functional pages (e.g. birthday wishes, funny words, art gallery) selec
 - Captions are edited inline; AI suggestion button available per slot
 
 **Template data architecture:**
-- Each template has a `template-data.js` defining spread types, slot coordinates, SVG overlays, background colors, caption positions, and special flags
+- Each template has its own `<name>-data.js` (e.g. `scribble-data.js`) defining spread types, slot coordinates, SVG overlays, background colors, caption positions, and special flags. Pipeline code reads from this file; new templates add a new data file without changing the pipeline.
 - Source of truth is a CSV (`Scribble_sizing_full.csv`); regenerate with `node csv-to-template.js`
 - Template engine reads generic flags from the data file — it is template-agnostic
 

@@ -57,7 +57,7 @@ const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
 
 // template-data.js assigns to window.SCRIBBLE_DATA
 global.window = {};
-require(path.resolve(__dirname, '../assets/Template_Scribble/template-data.js'));
+require(path.resolve(__dirname, '../assets/Template_Scribble/scribble-data.js'));
 const DATA = global.window.SCRIBBLE_DATA;
 
 // ── Print constants ───────────────────────────────────────────────────────────
