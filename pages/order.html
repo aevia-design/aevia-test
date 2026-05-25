@@ -221,7 +221,7 @@
       <!-- Form (left) -->
       <div>
         <h1 class="form-heading">Your details</h1>
-        <p class="form-sub">We'll use this to send your order confirmation and reach you when your preview is ready.</p>
+        <p class="form-sub">We use these to send your confirmation and contact you when your preview is ready.</p>
 
         <div class="field-row">
           <div class="field">
@@ -237,7 +237,7 @@
         <div class="field">
           <label for="album-notes">About your album</label>
           <textarea id="album-notes" rows="4"></textarea>
-          <p class="field-note">A sentence about the occasion — dates, names, context you'd like us to carry through the design.</p>
+          <p class="field-note">The occasion, names, dates. Anything we should carry through the design.</p>
         </div>
 
         <hr class="divider" />
@@ -296,7 +296,7 @@
     <div class="upload-section">
       <div class="upload-label">Required</div>
       <div class="upload-heading">Cover photo</div>
-      <div class="upload-hint">One photo for your book cover. We'll typeset the title and your names over it — choose something that sets the mood for the whole album.</div>
+      <div class="upload-hint">One photo for the cover. Pick something that sets the mood.</div>
 
       <div class="drop-zone" id="dz-cover">
         <input type="file" accept=".jpg,.jpeg,.png,.heic" onchange="handleCoverFile(this.files[0])" />
@@ -323,13 +323,13 @@
 
       <!-- Photo count callout -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 18px;margin-bottom:18px;font-size:13px;line-height:1.6;">
-        <strong>How many photos?</strong> Aim for at least <strong id="photo-count-min">—</strong> — around <strong id="photo-count-nice">—</strong> gives us the best selection to work with. You can always upload more than we need.
+        Upload <strong id="photo-count-min">—</strong> photos. <span id="photo-count-nice" style="display:none;"></span>One per slot in your book. Send more if you have them.
       </div>
 
       <!-- Smartphone tip -->
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;font-size:12px;color:var(--muted);line-height:1.6;">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;margin-top:2px;"><rect x="4" y="1" width="8" height="14" rx="1.5" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="12.5" r="0.8" fill="currentColor"/></svg>
-        <span>For the best quality and automatic date sorting, upload directly from your phone — photos taken with a smartphone camera contain metadata that helps us arrange your book chronologically.</span>
+        <span>Upload from your phone for best quality. Smartphone photos include date metadata we use to sort your book.</span>
       </div>
 
       <div class="drop-zone" id="dz-main">
@@ -353,7 +353,7 @@
     <div class="submit-section">
       <div class="error-msg" id="err-step2"></div>
       <button class="btn-primary" id="submit-btn" onclick="submitOrder()">Submit your order</button>
-      <p class="submit-note">You won't be charged until you review and approve the final design.<br>We'll send a preview within 48 hours.</p>
+      <p class="submit-note">No payment until you approve the design.<br>Preview within 48 hours.</p>
 
       <div class="progress-wrap" id="progress-wrap">
         <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
@@ -667,8 +667,18 @@ function initFPSections() {
           <div id="fp-word-list-${addon.slug}">${rows3}</div>
           <button type="button" id="fp-add-btn-${addon.slug}" onclick="addWordRow('${addon.slug}',${maxWords})"
             style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;font-family:var(--sans);color:var(--muted);cursor:pointer;margin-top:2px;">+ Add another word</button>
-          <div style="font-size:12px;color:var(--muted);margin-top:8px;">Minimum ${minWords} words, maximum ${maxWords}.</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px;">Min ${minWords}, max ${maxWords}.</div>
         `;
+      } else if (textMeta.count > 1) {
+        // Multi-caption (e.g. FP5: one caption per page)
+        const labels = textMeta.labels || Array.from({ length: textMeta.count }, (_, i) => `Caption ${i + 1}`);
+        for (let ci = 0; ci < textMeta.count; ci++) {
+          html += `
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;">${labels[ci]}</div>
+            <textarea id="addon-text-${addon.slug}-${ci}" placeholder="${textMeta.placeholder || ''}" rows="2"
+              style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;resize:vertical;margin-bottom:${ci < textMeta.count - 1 ? '14px' : '0'};"></textarea>
+          `;
+        }
       } else {
         html += `
           <textarea id="addon-text-${addon.slug}" placeholder="${textMeta.placeholder || ''}" rows="3"
@@ -731,18 +741,17 @@ function goToStep2() {
   document.getElementById('step2-bar').innerHTML = parts.join(' ');
 
   // Photo count guidance
+  // SP0 is right-side only (1 slot); each regular content spread has 1 slot per side (2 total)
   const spreads = parseInt(ORDER.pages) / 2;
   const activeFpCount = ORDER.addons.filter(a => !cancelledAddons.has(a.slug)).length;
-  const regularSpreads = Math.max(1, spreads - activeFpCount);
-  const minPhotos = Math.round(regularSpreads * 1.5);
-  const nicePhotos = regularSpreads * 3;
-  window._photoCountMin  = minPhotos;
-  window._photoCountNice = nicePhotos;
-  document.getElementById('photo-count-min').textContent  = minPhotos;
-  document.getElementById('photo-count-nice').textContent = nicePhotos;
+  const regularSpreads = Math.max(0, spreads - 1 - activeFpCount); // exclude SP0 and FPs
+  const targetPhotos = 1 + regularSpreads * 2; // SP0 right slot + 2 per regular spread
+  window._photoCountTarget = targetPhotos;
+  document.getElementById('photo-count-min').textContent  = targetPhotos;
+  document.getElementById('photo-count-nice').textContent = targetPhotos;
   // Update drop zone text with target count
   const dzMainText = document.querySelector('#dz-main .dz-text');
-  if (dzMainText) dzMainText.innerHTML = `<strong>Choose ${minPhotos}–${nicePhotos} photos</strong> or drag here`;
+  if (dzMainText) dzMainText.innerHTML = `<strong>Choose ${targetPhotos} photos</strong> or drag here`;
 
   // Build FP sections (photo + text per FP) and drag-drop for special zones
   initFPSections();
@@ -832,7 +841,12 @@ function handleSpecialFile(slug, file) {
 // File handling — main photos
 // ─────────────────────────────────────────────────────────────────
 function handleMainFiles(fileList) {
-  const newFiles = Array.from(fileList);
+  const existingNames = new Set(mainFiles.map(f => f.name));
+  const newFiles = Array.from(fileList).filter(f => {
+    if (existingNames.has(f.name)) return false; // skip duplicate
+    existingNames.add(f.name);
+    return true;
+  });
   mainFiles = mainFiles.concat(newFiles);
   renderPhotoGrid();
   // Async resolution check for JPEG/PNG (non-blocking)
@@ -884,6 +898,13 @@ function renderPhotoGrid() {
       thumb.appendChild(badge);
     }
 
+    // Filename label
+    const nameEl = document.createElement('div');
+    nameEl.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.45);color:#fff;font-size:9px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.02em;';
+    nameEl.textContent = file.name;
+    nameEl.title = file.name;
+    thumb.appendChild(nameEl);
+
     const rm = document.createElement('button');
     rm.className = 'photo-thumb-remove';
     rm.innerHTML = '×';
@@ -897,9 +918,8 @@ function renderPhotoGrid() {
   const n = mainFiles.length;
   if (n > 0) {
     const lowResCount = mainFiles.filter(f => f._lowRes).length;
-    const target = (window._photoCountMin && window._photoCountNice)
-      ? ` · target ${window._photoCountMin}–${window._photoCountNice}` : '';
-    let countText = `${n} photo${n !== 1 ? 's' : ''} selected${target}`;
+    const target = window._photoCountTarget ? ` of ${window._photoCountTarget}` : '';
+    let countText = `${n}${target} photo${n !== 1 ? 's' : ''} selected`;
     if (lowResCount > 0) {
       countText += ` · ${lowResCount} may be too low-resolution for print (shortest side under 1500px)`;
     }
@@ -987,6 +1007,18 @@ async function submitOrder() {
         errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
+    } else if (textMeta && textMeta.count > 1) {
+      // Multi-caption validation (e.g. FP5)
+      for (let ci = 0; ci < textMeta.count; ci++) {
+        const val = (document.getElementById(`addon-text-${addon.slug}-${ci}`) || {}).value || '';
+        if (!val.trim()) {
+          const labels = textMeta.labels || [];
+          errEl.textContent = `Please fill in "${labels[ci] || `Caption ${ci + 1}`}" for ${addon.name}, or remove this page.`;
+          errEl.style.display = 'block';
+          errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+      }
     } else if (textMeta) {
       const val = (document.getElementById(`addon-text-${addon.slug}`) || {}).value || '';
       if (!val.trim()) {
@@ -1020,6 +1052,13 @@ async function submitOrder() {
         ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
         : [];
       if (words.length) { fpTexts[a.slug] = words; addonNoteLines.push(`${a.name}: ${words.join(', ')}`); }
+    } else if (textMeta.count > 1) {
+      const captions = [];
+      for (let ci = 0; ci < textMeta.count; ci++) {
+        const val = (document.getElementById(`addon-text-${a.slug}-${ci}`) || {}).value?.trim() || '';
+        captions.push(val);
+      }
+      if (captions.some(Boolean)) { fpTexts[a.slug] = captions; addonNoteLines.push(`${a.name}: ${captions.join(' / ')}`); }
     } else {
       const val = (document.getElementById(`addon-text-${a.slug}`) || {}).value?.trim() || '';
       if (val) { fpTexts[a.slug] = val; addonNoteLines.push(`${a.name}: ${val}`); }

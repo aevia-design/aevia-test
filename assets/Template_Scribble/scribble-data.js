@@ -298,11 +298,11 @@ window.SCRIBBLE_DATA = {
 
     FP1: {
       type: 'functional', id: 'FP1', label: 'Birthday wishes', textLeft: true,
-      orderFormPhoto: { count: 1, hint: 'One photo for the birthday spread — it will appear in a heart-shaped frame.' },
+      orderFormPhoto: { count: 1, hint: 'One photo for this spread. It goes in a heart-shaped frame.' },
       orderFormMeta: {
-        textPrompt: 'Birthday wishes text',
-        hint: 'The text that will appear on the birthday wishes spread — a short message, poem, or heartfelt note.',
-        placeholder: 'e.g. Happy first birthday, little Leo! Your laughter has been our greatest adventure this year.',
+        textPrompt: 'Birthday wishes',
+        hint: 'Short message, poem, or note for this spread.',
+        placeholder: 'e.g. Happy first birthday, Leo!',
       },
       pages: {
         left: {
@@ -360,8 +360,8 @@ window.SCRIBBLE_DATA = {
       orderFormPhoto: { count: 1, hint: "One photo of your child's favourite toy." },
       orderFormMeta: {
         textPrompt: 'Favourite toy caption',
-        hint: "A short caption for the photo — the toy's name, a funny detail, or a brief note.",
-        placeholder: "e.g. Mr. Bear — Leo's inseparable companion since day one",
+        hint: "Name, funny detail, or brief note about the toy.",
+        placeholder: "e.g. Mr. Bear, Leo's companion since day one",
       },
       pages: {
         left: {
@@ -404,8 +404,8 @@ window.SCRIBBLE_DATA = {
       orderFormPhoto: { count: 1, hint: 'One photo of the first steps moment.' },
       orderFormMeta: {
         textPrompt: 'First steps caption',
-        hint: 'A short caption for the first steps photo — a date, a milestone, or a brief note.',
-        placeholder: 'e.g. First steps — 14 October 2024',
+        hint: 'Date, milestone, or brief note.',
+        placeholder: 'e.g. First steps, 14 October 2024',
       },
       pages: {
         left: {
@@ -447,9 +447,11 @@ window.SCRIBBLE_DATA = {
       type: 'functional', id: 'FP5', label: 'Art-Gallery', allArtwork: true,
       orderFormPhoto: { count: 2, hint: "Two photos of your child's artwork — one per page of the gallery spread." },
       orderFormMeta: {
-        textPrompt: 'Art gallery title',
-        hint: 'A title or label for the art gallery spread — usually the child\'s name + age.',
-        placeholder: "e.g. Leo's masterpieces, age 2",
+        textPrompt: 'Art gallery captions',
+        hint: 'A short caption for each artwork.',
+        count: 2,
+        labels: ['Caption — left page', 'Caption — right page'],
+        placeholder: "e.g. Blue period, age 2",
       },
       pages: {
         left: {
