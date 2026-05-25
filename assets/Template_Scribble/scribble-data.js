@@ -301,8 +301,8 @@ window.SCRIBBLE_DATA = {
       orderFormPhoto: { count: 1, hint: 'One photo for this spread. It goes in a heart-shaped frame.' },
       orderFormMeta: {
         textPrompt: 'Birthday wishes',
-        hint: 'Short message, poem, or note for this spread.',
-        placeholder: 'e.g. Happy first birthday, Leo!',
+        hint: 'Short message, poem, or note for this spread. Include the date of the birthday.',
+        placeholder: 'e.g. Happy first birthday, Leo! 14 March 2024.',
       },
       pages: {
         left: {
