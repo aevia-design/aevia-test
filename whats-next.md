@@ -148,6 +148,29 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Snapshot of template-engine.html deployed to Cloudflare Pages for demo/sharing
 - Local template-engine.html is the working version; public copy is a separate file
 
+## Session 2026-05-25 (session 3) — Order form polish
+
+### TO-DOs #45 + #46 — DONE
+- #45: Quality badge on FP photo upload — ✓ OK (green) / LOW RES (red) for JPEG/PNG; skipped for FP5 art gallery (scanned art is intentionally low-res)
+- #46: `scripts/simulate-photo-count.js` — all orientation combos produce identical slot counts in Scribble; H-only estimate is exact, no range needed
+
+### Order form bug fixes
+- `cancelAddon()` now calls `updateStep2Bar()` — photo count recalculates when FP removed
+- Cover photo now has same res badge as FP zones
+
+### HEIC conversion in order form
+- `convertHeic()` calls same Cloud Function as template engine (`convertHeic` at Firebase europe-west1)
+- All upload zones (cover, FP, main pool) convert HEIC → JPEG before displaying thumbnail
+- "Converting…" indicator shown while in flight (overlay in grid; text in single-preview)
+- Res check runs on the converted JPEG blob (was previously skipped for HEIC)
+
+### Lightbox
+- Click any photo (grid thumbnail, cover preview, FP preview) → full-screen lightbox
+- Click outside or × to close; zoom-in cursor on thumbnails
+
+### Copy
+- "Send more if you have them" removed — count is now exact
+
 </work_completed>
 
 <work_remaining>
@@ -167,10 +190,6 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Not yet started
 
 ## Order form (pages/order.html) — Plan 12
-
-### Plan 12-01 — Remaining small items (TO-DOs #45, #46)
-- #45: Image quality indicator on FP photo upload (green checkmark / LOW RES badge per zone)
-- #46: Photo count simulation — run all orientation combos to verify calcPhotoTarget() accuracy
 
 ### Plan 12-02 — Firestore schema additions (not started)
 - `fpTexts`, `fpSelections`, `photoCount` fields in Firestore doc
@@ -319,24 +338,31 @@ Response: { caption: 'suggested text string' }
 
 <current_state>
 
-## Completed and committed (through 2026-05-25 session 2)
+## Completed and committed (through 2026-05-25 session 3)
 
-- **Plan 11 (all sub-plans)** — DONE. PDF export with preview/print modes, cover + content pages.
-- **Plan 12-01** — COMPLETE. Order form FP refactor fully implemented and pushed:
+- **Plan 11 (all sub-plans)** — DONE.
+- **Plan 12-01** — COMPLETE. Order form FP refactor + all polish items done:
   - `initFPSections()` + `initSpecialDragDrop()` — photo + text per FP in Step 2
-  - FP5: 2 upload zones + 2 caption fields
-  - FP3: caption field added
-  - `calcPhotoTarget()` — accurate slot count using engine's own sequence logic
-  - Duplicate detection, thumbnail filenames, RAW stripped, copy cleaned
-- `assets/Template_Scribble/scribble-data.js` — `orderFormPhoto` and `orderFormMeta` on all FPs
-- `pages/template-engine-public.html` — Cloudflare snapshot of engine
+  - `calcPhotoTarget()` — exact slot count (verified by simulation)
+  - HEIC conversion: `convertHeic()` uses same Cloud Function as engine; all upload zones converted
+  - Quality badges: ✓ OK / LOW RES on cover, FP zones (except FP5), main pool; HEIC gets checked post-conversion
+  - "Converting…" indicator while HEIC conversion is in flight
+  - Lightbox: click any photo to preview full-screen
+  - `cancelAddon()` now recalculates photo count
+  - Copy cleaned; "Send more if you have them" removed
+- **TO-DOs #45 + #46** — DONE and marked in TO-DOS.md
+- `scripts/simulate-photo-count.js` — orientation simulation tool
+
+## Known issues / watch-outs
+- HEIC conversion silent failure: if Cloud Function fails all 3 retries, no error shown to user; cover/FP previews may show blank
+- FP1 heart frame decoration still missing (Kseniia SVG re-export needed)
+- Template engine scroll performance (#43) — not investigated
 
 ## Next priorities
 
-1. **TO-DO #45** — FP photo upload quality indicator (green checkmark / LOW RES badge per FP zone)
-2. **TO-DO #46** — Photo count simulation: all orientation combos to verify calcPhotoTarget()
-3. **Plan 12-02** — Firestore schema additions (fpTexts, fpSelections, photoCount)
-4. **Plan 12-03** — Engine "Load order" flow (fetch Firestore doc + GCS photos)
+1. **Plan 12-02** — Firestore schema additions (`fpTexts`, `fpSelections`, `photoCount`)
+2. **Plan 12-03** — Engine "Load order" flow (fetch Firestore doc + GCS photos)
+3. **Plan 12-04** — PDF export wired to GCS / order path
 
 ## Known issues / open questions
 - Caption bold/italic in PDF: must use style pills (NOT Ctrl+B). Book-state.json must be re-exported after changing styles.
