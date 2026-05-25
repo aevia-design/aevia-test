@@ -298,8 +298,9 @@ window.SCRIBBLE_DATA = {
 
     FP1: {
       type: 'functional', id: 'FP1', label: 'Birthday wishes', textLeft: true,
+      orderFormPhoto: { count: 1, hint: 'One photo for the birthday spread — it will appear in a heart-shaped frame.' },
       orderFormMeta: {
-        textPrompt: 'Birthday wishes',
+        textPrompt: 'Birthday wishes text',
         hint: 'The text that will appear on the birthday wishes spread — a short message, poem, or heartfelt note.',
         placeholder: 'e.g. Happy first birthday, little Leo! Your laughter has been our greatest adventure this year.',
       },
@@ -326,6 +327,7 @@ window.SCRIBBLE_DATA = {
 
     FP2: {
       type: 'functional', id: 'FP2', label: 'Funny words', textLeft: true,
+      orderFormPhoto: null,  // no photo needed from customer
       orderFormMeta: {
         textPrompt: 'Funny words',
         hint: "Enter 3 to 10 of your child's funniest words or phrases, one per line.",
@@ -355,6 +357,7 @@ window.SCRIBBLE_DATA = {
 
     FP3: {
       type: 'functional', id: 'FP3', label: 'Favourite toy', specialLeft: true,
+      orderFormPhoto: { count: 1, hint: "One photo of your child's favourite toy." },
       orderFormMeta: null,  // no text input needed; staff writes caption from the photo
       pages: {
         left: {
@@ -394,6 +397,7 @@ window.SCRIBBLE_DATA = {
 
     FP4: {
       type: 'functional', id: 'FP4', label: 'First steps', specialLeft: true,
+      orderFormPhoto: { count: 1, hint: 'One photo of the first steps moment.' },
       orderFormMeta: {
         textPrompt: 'First steps caption',
         hint: 'A short caption for the first steps photo — a date, a milestone, or a brief note.',
@@ -437,6 +441,7 @@ window.SCRIBBLE_DATA = {
 
     FP5: {
       type: 'functional', id: 'FP5', label: 'Art-Gallery', allArtwork: true,
+      orderFormPhoto: { count: 2, hint: "Two photos of your child's artwork — one per page of the gallery spread." },
       orderFormMeta: {
         textPrompt: 'Art gallery title',
         hint: 'A title or label for the art gallery spread — usually the child\'s name + age.',

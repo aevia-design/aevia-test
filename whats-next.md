@@ -208,10 +208,10 @@ assembles pages at exact physical mm dimensions.
 - **11-04** Cover PDF (front photo slot, spine, back; 18mm bleed)
 
 ## Plan 12 — Order flow integration (AFTER PDF quality validated)
-- **12-01** Photo count calculator on scribble.html
-- **12-02** `getOrderAssets` Cloud Function
-- **12-03** Order loading UI in template engine
-- **12-04** PDF export wired to GCS / order path (production: photos download from GCS, not local dir)
+- **12-01** Order form improvements — PARTIALLY DONE (see current_state)
+- **12-02** Firestore schema additions (`fpTexts`, `fpSelections`, `photoCount` fields) — not started
+- **12-03** Engine "Load order" flow — staff enters order number → engine fetches Firestore doc + downloads photos from GCS signed URLs, pre-populates FP text panels — not started
+- **12-04** PDF export wired to GCS / order path (production: photos download from GCS, not local dir) — not started
 
 ## Performance TO-DO
 - Interface stalls 10-15 seconds when returning from alt-tab
@@ -321,28 +321,27 @@ Check `functions/` to confirm this exists before wiring.
 
 <current_state>
 
-## Completed and saved to disk
-- `pages/template-engine.html` — B/I execCommand buttons removed; FP5 save now stores array `[leftName, rightName]`
-- `scripts/export-pdf.js` — FP5 `pool === 'artwork'` fix; legacy string fallback for old book-state.json; upper-right / lower-right caption positions; captions_color + captions_alignment end-to-end; style pills for spread captions
-- `assets/Template_Scribble/scribble-data.js` — captions_color (#493955) + captions_alignment columns wired
-- `assets/Template_Scribble/Scribble_sizing_full.csv` — captions_color + captions_alignment columns added
+## Completed and committed (through 2026-05-25)
+- **Plan 11 (all sub-plans 11-01 → 11-04)** — DONE. `scripts/export-pdf.js` with `--mode preview|print`, cover PDF (445×236mm, 18mm bleed), per-page print PDFs. Cover captions (front + spine) rendered. `coverCaptions` exported from engine.
+- `assets/Template_Scribble/scribble-data.js` — renamed from `template-data.js`; all live code updated. `orderFormMeta` added per FP (text prompt, hint, placeholder, funnyWords flag).
+- `pages/template-engine-public.html` — snapshot of template engine deployed to Cloudflare Pages at `https://aevia-test.pages.dev/pages/template-engine-public.html`. Local `template-engine.html` untouched.
+- **Plan 12-01 (partial)** — `functions/upload.js` accepts + saves `fpTexts` to Firestore. `order.html`: `getFpMeta()` drives addon fields from `SCRIBBLE_DATA.spreads[key].orderFormMeta`; async resolution check (LOW RES badge); `fpTexts` collected + sent. RAW formats stripped from all file inputs. Photo count callout box + smartphone upload hint added.
 
-## Committed and pushed
-- All work through 2026-05-25 session committed and pushed.
+## In progress — NOT YET COMMITTED (working tree only)
+**Order form Step 2 restructure:**
+- `scribble-data.js`: `orderFormPhoto: { count, hint }` added to all FPs (FP5 has `count: 2`)
+- `order.html`: `addon-fields` div removed from Step 1; `special-photo-zones` renamed to `fp-sections`; `initAddonFields` removed from init; photo count callout + phone hint in Step 2 HTML
+
+**Still needs to be written to complete this refactor:**
+- `initFPSections()` — renders one section per FP with photo zone(s) + text field co-located
+- `initSpecialDragDrop()` — wires drag-drop on newly created zones
+- Multi-slot handling for FP5 (slug keys `fp5-0`, `fp5-1` in `specialFiles`)
+- Validation + `fpTexts` collection updated for new structure
+- `handleSpecialFile()` signature unchanged, but FP5 slots need numbered variants
 
 ## Known issues
-- Caption bold/italic in PDF: uses style pills (Regular/Medium/Bold buttons in toolbar), NOT Ctrl+B. `spreadCaptionStyles` must be set in engine and book-state.json re-exported before PDF run.
-- Any existing `book-state.json` with `FP5: "string"` format still works (legacy fallback) but will show same photo on both art gallery pages. Re-export from engine to get correct left/right split.
-
-## In progress / not started
-- **Plan 11 — Standalone PDF export:**
-  - ~~11-01~~ ~~11-02~~ ~~11-03~~ **DONE**
-  - **11-04 Cover PDF** — NEXT: 481×272mm canvas, 18mm bleed, back+spine(9mm)+front
-- **Plan 12 — Order flow integration (after PDF validated):**
-  - 12-01 Photo count calculator on scribble.html
-  - 12-02 getOrderAssets Cloud Function
-  - 12-03 Order loading UI in template engine
-  - 12-04 PDF export wired to GCS / order path
+- Caption bold/italic in PDF: style pills only (NOT Ctrl+B). `spreadCaptionStyles` must be set in engine and book-state.json re-exported.
+- Any existing `book-state.json` with `FP5: "string"` format still works (legacy fallback) but shows same photo both pages.
 
 ## Blocking items
 - FP1 heart frame decoration still missing — nice-to-have, needs Kseniia SVG re-export
