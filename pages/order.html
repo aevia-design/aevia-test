@@ -520,6 +520,7 @@ function initSummary() {
 function cancelAddon(slug, wrapId) {
   cancelledAddons.add(slug);
   document.getElementById(wrapId).style.display = 'none';
+  updateStep2Bar(); // recalculate required photo count
 }
 
 // Returns orderFormMeta from SCRIBBLE_DATA for a given addon slug (e.g. 'fp2' → FP2)
@@ -777,18 +778,6 @@ function handleCoverFile(file) {
   const inner   = document.getElementById('cover-preview-inner');
   inner.innerHTML = '';
 
-  if (isImage(file)) {
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(file);
-    inner.appendChild(img);
-  } else {
-    inner.innerHTML = `
-      <div class="file-icon">
-        ${fileIconSvg()}
-        <span>${fileExt(file)}</span>
-      </div>`;
-  }
-
   const removeBtn = document.createElement('button');
   removeBtn.className = 'single-preview-remove';
   removeBtn.innerHTML = '×';
@@ -797,6 +786,35 @@ function handleCoverFile(file) {
     preview.style.display = 'none';
     document.getElementById('dz-cover').style.display = '';
   };
+
+  if (isImage(file)) {
+    const objUrl = URL.createObjectURL(file);
+    const img = document.createElement('img');
+    img.src = objUrl;
+    img.onerror = () => {
+      inner.innerHTML = `<div class="file-icon">${fileIconSvg()}<span>${fileExt(file)}</span></div>`;
+      inner.appendChild(removeBtn);
+    };
+    inner.appendChild(img);
+
+    if (/\.(jpe?g|png)$/i.test(file.name)) {
+      const checker = new Image();
+      checker.onload = () => {
+        const minDim = Math.min(checker.naturalWidth, checker.naturalHeight);
+        const badge = document.createElement('div');
+        badge.className = minDim < 1500 ? 'low-res-badge' : 'res-ok-badge';
+        badge.textContent = minDim < 1500 ? 'LOW RES' : '✓ OK';
+        inner.appendChild(badge);
+      };
+      checker.src = objUrl;
+    }
+  } else {
+    inner.innerHTML = `
+      <div class="file-icon">
+        ${fileIconSvg()}
+        <span>${fileExt(file)}</span>
+      </div>`;
+  }
   inner.appendChild(removeBtn);
 
   document.getElementById('cover-preview-name').textContent = file.name;
@@ -822,7 +840,9 @@ function handleSpecialFile(slug, file) {
     inner.appendChild(img);
 
     // Async resolution check — badge appears once image dimensions are known
-    if (/\.(jpe?g|png)$/i.test(file.name)) {
+    // Skip for FP5 art gallery: scanned artwork is intentionally low-res
+    const isFP5 = slug.startsWith('fp5');
+    if (!isFP5 && /\.(jpe?g|png)$/i.test(file.name)) {
       const checker = new Image();
       checker.onload = () => {
         const minDim = Math.min(checker.naturalWidth, checker.naturalHeight);
@@ -900,6 +920,10 @@ function renderPhotoGrid() {
       const img = document.createElement('img');
       img.src = file._objUrl;
       img.alt = '';
+      // HEIC can't be decoded natively in Chrome/Firefox — fall back to file icon
+      img.onerror = () => {
+        thumb.innerHTML = `<div class="file-badge">${fileIconSvg()}<span>${fileExt(file)}</span></div>`;
+      };
       thumb.appendChild(img);
     } else {
       thumb.innerHTML = `<div class="file-badge">${fileIconSvg()}<span>${fileExt(file)}</span></div>`;
