@@ -298,6 +298,11 @@ window.SCRIBBLE_DATA = {
 
     FP1: {
       type: 'functional', id: 'FP1', label: 'Birthday wishes', textLeft: true,
+      orderFormMeta: {
+        textPrompt: 'Birthday wishes',
+        hint: 'The text that will appear on the birthday wishes spread — a short message, poem, or heartfelt note.',
+        placeholder: 'e.g. Happy first birthday, little Leo! Your laughter has been our greatest adventure this year.',
+      },
       pages: {
         left: {
           default: {
@@ -321,6 +326,13 @@ window.SCRIBBLE_DATA = {
 
     FP2: {
       type: 'functional', id: 'FP2', label: 'Funny words', textLeft: true,
+      orderFormMeta: {
+        textPrompt: 'Funny words',
+        hint: "Enter 3 to 10 of your child's funniest words or phrases, one per line.",
+        funnyWords: true,
+        minWords: 3,
+        maxWords: 10,
+      },
       pages: {
         left: {
           default: {
@@ -343,6 +355,7 @@ window.SCRIBBLE_DATA = {
 
     FP3: {
       type: 'functional', id: 'FP3', label: 'Favourite toy', specialLeft: true,
+      orderFormMeta: null,  // no text input needed; staff writes caption from the photo
       pages: {
         left: {
           H: {
@@ -381,6 +394,11 @@ window.SCRIBBLE_DATA = {
 
     FP4: {
       type: 'functional', id: 'FP4', label: 'First steps', specialLeft: true,
+      orderFormMeta: {
+        textPrompt: 'First steps caption',
+        hint: 'A short caption for the first steps photo — a date, a milestone, or a brief note.',
+        placeholder: 'e.g. First steps — 14 October 2024',
+      },
       pages: {
         left: {
           H: {
@@ -419,6 +437,11 @@ window.SCRIBBLE_DATA = {
 
     FP5: {
       type: 'functional', id: 'FP5', label: 'Art-Gallery', allArtwork: true,
+      orderFormMeta: {
+        textPrompt: 'Art gallery title',
+        hint: 'A title or label for the art gallery spread — usually the child\'s name + age.',
+        placeholder: "e.g. Leo's masterpieces, age 2",
+      },
       pages: {
         left: {
           H: {

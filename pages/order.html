@@ -164,7 +164,12 @@
 
     /* ── Footer ── */
     .footer-min { border-top: 1px solid var(--border); padding: 28px 56px; text-align: center; font-size: 11px; color: var(--muted); margin-top: 48px; }
+
+    /* ── Resolution warning badge ── */
+    .low-res-badge { position:absolute;bottom:0;left:0;right:0;background:rgba(170,50,20,0.88);color:#fff;font-size:9px;text-align:center;padding:3px 2px;letter-spacing:0.06em;font-weight:600; }
+    .low-res-note { font-size:12px;color:#8b3a2e;margin-top:10px; }
   </style>
+<script src="../assets/Template_Scribble/scribble-data.js"></script>
 </head>
 <body>
 
@@ -510,62 +515,67 @@ function cancelAddon(slug, wrapId) {
   document.getElementById(wrapId).style.display = 'none';
 }
 
-function addFunnyWordRow(slug) {
-  const list = document.getElementById(`fp2-word-list`);
+// Returns orderFormMeta from SCRIBBLE_DATA for a given addon slug (e.g. 'fp2' → FP2)
+function getFpMeta(slug) {
+  const key = slug.toUpperCase();
+  return window.SCRIBBLE_DATA?.spreads?.[key]?.orderFormMeta || null;
+}
+
+function addWordRow(slug, maxWords) {
+  const list = document.getElementById(`fp-word-list-${slug}`);
   const count = list.children.length;
-  if (count >= 10) return;
+  if (count >= maxWords) return;
   const idx = count + 1;
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
   row.innerHTML = `
     <span style="min-width:22px;font-size:13px;color:var(--muted);text-align:right;">${idx}.</span>
-    <input type="text" placeholder="e.g. Noooo"
+    <input type="text" placeholder="e.g. ..."
       style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;" />
   `;
   list.appendChild(row);
-  if (list.children.length >= 10) {
-    document.getElementById('fp2-add-btn').style.display = 'none';
+  if (list.children.length >= maxWords) {
+    document.getElementById(`fp-add-btn-${slug}`).style.display = 'none';
   }
 }
 
 function initAddonFields() {
   const container = document.getElementById('addon-fields');
   ORDER.addons.filter(a => a.inputType === 'text').forEach(addon => {
-    const hint   = ADDON_HINTS[addon.slug] || DEFAULT_ADDON_HINT;
+    const meta   = getFpMeta(addon.slug);
+    const hint   = (meta && meta.hint) || DEFAULT_ADDON_HINT;
     const wrapId = `addon-wrap-${addon.slug}`;
     const wrap   = document.createElement('div');
     wrap.className = 'addon-field-wrap';
     wrap.id = wrapId;
 
-    if (addon.slug === 'fp2') {
-      // Structured word rows instead of free-form textarea
+    const header = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <div class="addon-field-name">${addon.name}</div>
+        <button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
+          style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>
+      </div>
+      <div class="addon-field-hint">${hint}</div>
+    `;
+
+    if (meta && meta.funnyWords) {
+      const maxWords = meta.maxWords || 10;
+      const minWords = meta.minWords || 3;
       const rows3 = [1,2,3].map(i => `
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           <span style="min-width:22px;font-size:13px;color:var(--muted);text-align:right;">${i}.</span>
           <input type="text" placeholder="e.g. ${['Noooo','More!','Biiiig'][i-1]}"
             style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;" />
         </div>`).join('');
-      wrap.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:baseline;">
-          <div class="addon-field-name">${addon.name}</div>
-          <button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
-            style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>
-        </div>
-        <div class="addon-field-hint">${hint}</div>
-        <div id="fp2-word-list">${rows3}</div>
-        <button type="button" id="fp2-add-btn" onclick="addFunnyWordRow('${addon.slug}')"
+      wrap.innerHTML = header + `
+        <div id="fp-word-list-${addon.slug}">${rows3}</div>
+        <button type="button" id="fp-add-btn-${addon.slug}" onclick="addWordRow('${addon.slug}',${maxWords})"
           style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;font-family:var(--sans);color:var(--muted);cursor:pointer;margin-top:2px;">+ Add another word</button>
-        <div style="font-size:12px;color:var(--muted);margin-top:8px;">Minimum 3 words, maximum 10.</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;">Minimum ${minWords} words, maximum ${maxWords}.</div>
       `;
     } else {
-      const ph = ADDON_NOTE_PLACEHOLDERS[addon.slug] || "Add any notes you'd like us to include for this spread...";
-      wrap.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:baseline;">
-          <div class="addon-field-name">${addon.name}</div>
-          <button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
-            style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>
-        </div>
-        <div class="addon-field-hint">${hint}</div>
+      const ph = (meta && meta.placeholder) || ADDON_NOTE_PLACEHOLDERS[addon.slug] || "Add any notes you'd like us to include for this spread...";
+      wrap.innerHTML = header + `
         <textarea id="addon-text-${addon.slug}" placeholder="${ph}" rows="3"
           style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;resize:vertical;"></textarea>
       `;
@@ -636,6 +646,15 @@ function goToStep2() {
     parts.push(`<span class="sep">·</span><span>€${ORDER.price}</span>`);
   }
   document.getElementById('step2-bar').innerHTML = parts.join(' ');
+
+  // Photo count guidance
+  const spreads = parseInt(ORDER.pages) / 2;
+  const activeFpCount = ORDER.addons.filter(a => !cancelledAddons.has(a.slug)).length;
+  const regularSpreads = Math.max(1, spreads - activeFpCount);
+  const minPhotos = Math.round(regularSpreads * 1.5);
+  const nicePhotos = regularSpreads * 3;
+  document.getElementById('main-photos-hint').textContent =
+    `Aim for at least ${minPhotos} photos — around ${nicePhotos} gives us the best selection to work with. You can always upload more than we need.`;
 
   // Build special photo zones now (depends on addons)
   initSpecialPhotoZones();
@@ -727,6 +746,17 @@ function handleMainFiles(fileList) {
   const newFiles = Array.from(fileList);
   mainFiles = mainFiles.concat(newFiles);
   renderPhotoGrid();
+  // Async resolution check for JPEG/PNG (non-blocking)
+  newFiles.forEach(f => {
+    if (!/\.(jpe?g|png)$/i.test(f.name)) return;
+    if (!f._objUrl) f._objUrl = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => {
+      const minDim = Math.min(img.naturalWidth, img.naturalHeight);
+      if (minDim < 1500) { f._lowRes = true; renderPhotoGrid(); }
+    };
+    img.src = f._objUrl;
+  });
 }
 
 function removeMainFile(idx) {
@@ -758,6 +788,13 @@ function renderPhotoGrid() {
       thumb.innerHTML = `<div class="file-badge">${fileIconSvg()}<span>${fileExt(file)}</span></div>`;
     }
 
+    if (file._lowRes) {
+      const badge = document.createElement('div');
+      badge.className = 'low-res-badge';
+      badge.textContent = 'LOW RES';
+      thumb.appendChild(badge);
+    }
+
     const rm = document.createElement('button');
     rm.className = 'photo-thumb-remove';
     rm.innerHTML = '×';
@@ -770,7 +807,13 @@ function renderPhotoGrid() {
 
   const n = mainFiles.length;
   if (n > 0) {
-    countEl.textContent = `${n} photo${n !== 1 ? 's' : ''} selected`;
+    const lowResCount = mainFiles.filter(f => f._lowRes).length;
+    let countText = `${n} photo${n !== 1 ? 's' : ''} selected`;
+    if (lowResCount > 0) {
+      countText += ` · ${lowResCount} may be too low-resolution for print (shortest side under 1500px)`;
+    }
+    countEl.textContent = countText;
+    countEl.className = 'photo-count' + (lowResCount > 0 ? ' low-res-note' : '');
     countEl.style.display = 'block';
     addMore.style.display = 'inline-flex';
     document.getElementById('dz-main').style.display = 'none';
@@ -822,13 +865,14 @@ async function submitOrder() {
   for (const addon of ORDER.addons) {
     if (cancelledAddons.has(addon.slug)) continue;
     if (addon.inputType === 'text') {
-      if (addon.slug === 'fp2') {
-        const wordList = document.getElementById('fp2-word-list');
+      const meta = getFpMeta(addon.slug);
+      if (meta && meta.funnyWords) {
+        const wordList = document.getElementById(`fp-word-list-${addon.slug}`);
         const filled = wordList
           ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
           : [];
-        if (filled.length < 3) {
-          errEl.textContent = 'Funny Words: please enter at least 3 words or phrases before submitting, or remove this page.';
+        if (filled.length < (meta.minWords || 3)) {
+          errEl.textContent = `${addon.name}: please enter at least ${meta.minWords || 3} words or phrases, or remove this page.`;
           errEl.style.display = 'block';
           errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return;
@@ -861,19 +905,23 @@ async function submitOrder() {
 
   // Collect addon text notes (skip cancelled)
   const activeAddons = ORDER.addons.filter(a => !cancelledAddons.has(a.slug));
+  const fpTexts = {};  // structured { slug: value } — stored in Firestore separately
   const addonNotes = activeAddons
     .filter(a => a.inputType === 'text')
     .map(a => {
+      const meta = getFpMeta(a.slug);
       let val;
-      if (a.slug === 'fp2') {
-        const wordList = document.getElementById('fp2-word-list');
+      if (meta && meta.funnyWords) {
+        const wordList = document.getElementById(`fp-word-list-${a.slug}`);
         const words = wordList
           ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
           : [];
         val = words.join(', ');
+        if (words.length) fpTexts[a.slug] = words;
       } else {
         val = (document.getElementById(`addon-text-${a.slug}`) || {}).value || '';
         val = val.trim();
+        if (val) fpTexts[a.slug] = val;
       }
       return val ? `${a.name}: ${val}` : null;
     })
@@ -929,6 +977,7 @@ async function submitOrder() {
         files:           filesMeta,
         photoNotes:      albumNotes,
         specialRequests: fullSpecialReq,
+        fpTexts:         Object.keys(fpTexts).length ? fpTexts : null,
       }),
     });
 
