@@ -38,9 +38,13 @@ const getArg = (flag) => { const i = args.indexOf(flag); return i !== -1 ? args[
 const photosDir = getArg('--photos');
 const stateFile = getArg('--state') || 'book-state.json';
 const outDir    = getArg('--out')   || 'pdf-out';
+// --mode preview  → single combined preview.pdf (cover + all content pages)
+// --mode print    → individual PDFs in <outDir>/print/  (cover.pdf + page-001.pdf etc.)
+// default: preview
+const mode = getArg('--mode') || 'preview';
 
 if (!photosDir) {
-  console.error('Usage: node scripts/export-pdf.js --photos <dir> [--state book-state.json] [--out pdf-out]');
+  console.error('Usage: node scripts/export-pdf.js --photos <dir> [--state book-state.json] [--out pdf-out] [--mode preview|print]');
   process.exit(1);
 }
 if (!fs.existsSync(photosDir)) { console.error('Photos dir not found:', photosDir); process.exit(1); }
@@ -386,24 +390,281 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
   }
 }
 
+// ── Cover rendering ───────────────────────────────────────────────────────────
+// Cover canvas: back(200mm) + spine(9mm) + front(200mm) = 409mm wide × 200mm tall
+// With 18mm bleed on all outer edges: 445×236mm total
+const COVER_BLEED_MM    = 18;
+const COVER_CONTENT_W   = 200 + 9 + 200;   // 409mm
+const COVER_CONTENT_H   = 200;              // 200mm
+const COVER_FULL_W_MM   = COVER_CONTENT_W + COVER_BLEED_MM * 2;   // 445mm
+const COVER_FULL_H_MM   = COVER_CONTENT_H + COVER_BLEED_MM * 2;   // 236mm
+const COVER_FULL_W_PX   = Math.round(COVER_FULL_W_MM * MM_TO_PX); // 5256px
+const COVER_FULL_H_PX   = Math.round(COVER_FULL_H_MM * MM_TO_PX); // 2787px
+const COVER_BLEED_PX    = Math.round(COVER_BLEED_MM * MM_TO_PX);  // 213px
+
+// Render the full cover spread as a PNG buffer.
+// coverDef = DATA.cover; coverPhoto = filename string; coverCaptions = { year, name, spineName, spineYear }
+async function renderCoverImage(coverDef, coverPhotoName, photosDir) {
+  const { sections, slots, svg } = coverDef;
+  // Cover SVG lives in the same Spreads/ folder as content SVGs (ASSET_BASE already points there)
+  const COVER_ASSET_BASE = ASSET_BASE;
+
+  // Build the background: three coloured horizontal sections + bleed fill.
+  // Strategy: fill entire canvas with back bgColor (leftmost section), then overlay
+  // spine and front sections at their correct x positions, then add bleed extensions.
+  const backColor  = hexToSharpColor(sections.back.bgColor);
+  const spineColor = hexToSharpColor(sections.spine.bgColor);
+  const frontColor = hexToSharpColor(sections.front.bgColor);
+
+  // Start with solid back color covering the whole canvas (this fills left bleed area too)
+  let canvas = sharp({
+    create: { width: COVER_FULL_W_PX, height: COVER_FULL_H_PX, channels: 4,
+               background: { r: backColor.r, g: backColor.g, b: backColor.b, alpha: 1 } }
+  }).png();
+
+  const composites = [];
+
+  // Spine section rectangle
+  const spineXPx = COVER_BLEED_PX + Math.round(sections.spine.xMm * MM_TO_PX);
+  const spineWPx = Math.round(sections.spine.wMm * MM_TO_PX);
+  const spineRect = await sharp({
+    create: { width: spineWPx, height: COVER_FULL_H_PX, channels: 4,
+               background: { r: spineColor.r, g: spineColor.g, b: spineColor.b, alpha: 1 } }
+  }).png().toBuffer();
+  composites.push({ input: spineRect, left: spineXPx, top: 0 });
+
+  // Front section rectangle (extends to right bleed edge)
+  const frontXPx = COVER_BLEED_PX + Math.round(sections.front.xMm * MM_TO_PX);
+  const frontWPx = COVER_FULL_W_PX - frontXPx;
+  const frontRect = await sharp({
+    create: { width: frontWPx, height: COVER_FULL_H_PX, channels: 4,
+               background: { r: frontColor.r, g: frontColor.g, b: frontColor.b, alpha: 1 } }
+  }).png().toBuffer();
+  composites.push({ input: frontRect, left: frontXPx, top: 0 });
+
+  // ── Front photo slot ──────────────────────────────────────────────────────
+  if (coverPhotoName) {
+    const pPath = path.join(photosDir, coverPhotoName);
+    if (fs.existsSync(pPath)) {
+      const slot = slots[0]; // single cover photo slot
+      // slot coords are center-based in mm, measured from back left edge (x=0)
+      const sw = Math.round(slot.wMm * MM_TO_PX);
+      const sh = Math.round(slot.hMm * MM_TO_PX);
+      const sx = COVER_BLEED_PX + Math.round((slot.xMm - slot.wMm / 2) * MM_TO_PX);
+      const sy = COVER_BLEED_PX + Math.round((slot.yMm - slot.hMm / 2) * MM_TO_PX);
+      try {
+        const photoBuffer = await sharp(pPath)
+          .resize(sw, sh, { fit: 'cover', position: 'centre' })
+          .png().toBuffer();
+        composites.push({ input: photoBuffer, left: sx, top: sy });
+      } catch (e) {
+        console.warn(`  ⚠ Cover photo failed: ${e.message}`);
+      }
+    } else {
+      console.warn(`  ⚠ Cover photo not found: ${coverPhotoName}`);
+    }
+  }
+
+  // ── SVG overlay ─────────────────────────────────────────────────────────
+  if (svg) {
+    const svgPath = path.join(COVER_ASSET_BASE, svg);
+    if (fs.existsSync(svgPath)) {
+      try {
+        // SVG covers the 409×200mm content area; place it at bleed offset
+        const svgW = Math.round(COVER_CONTENT_W * MM_TO_PX);
+        const svgH = Math.round(COVER_CONTENT_H * MM_TO_PX);
+        const svgBuffer = await sharp(fs.readFileSync(svgPath))
+          .resize(svgW, svgH, { fit: 'fill' })
+          .png().toBuffer();
+        composites.push({ input: svgBuffer, left: COVER_BLEED_PX, top: COVER_BLEED_PX });
+      } catch (e) {
+        console.warn(`  ⚠ Cover SVG overlay failed: ${e.message}`);
+      }
+    } else {
+      console.warn(`  ⚠ Cover SVG not found: ${svg}`);
+    }
+  }
+
+  const buf = await canvas.composite(composites).toBuffer();
+  return buf;
+}
+
+// Draw cover captions onto a pdf-lib page.
+// coverDef.captions has: key, xMm, yMm, font, sizePt, align, rotate (optional)
+// xMm/yMm are center coords measured from the left edge of the back section (not including bleed)
+function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionStyles, pageSizeWPt, pageSizeHPt) {
+  if (!coverCaptions) return;
+  const COVER_BLEED_PT = COVER_BLEED_MM * MM_TO_PT;
+
+  for (const capDef of coverDef.captions) {
+    const text = (coverCaptions[capDef.key] || '').trim();
+    if (!text) continue;
+
+    const ov = coverCaptionStyles?.[capDef.key] || {};
+    const fontName = ov.font || capDef.font || 'NT Somic';
+    const style    = ov.weight >= 700 ? 'bold' : ov.weight >= 600 ? 'semibold' : ov.italic ? 'italic' : 'regular';
+    const font = lookupFont(fontMap, fontName, style);
+    if (!font) { console.warn(`  ⚠ Cover caption font not found: ${fontName}`); continue; }
+
+    const sizePt      = ov.sizePt || capDef.sizePt || 20;
+    const lineSpacing = sizePt * (ov.lineSpacing || 1.28);
+    const charSpacing = ((ov.letterSpacing || 0)) * sizePt;
+    const lines = text.split('\n').filter(l => l.trim());
+
+    // xMm is center-x in content space (from back left edge = 0)
+    // pdf-lib: y=0 bottom; page width = COVER_FULL_W_MM; page height = COVER_FULL_H_MM
+    const isRotated = !!capDef.rotate; // spine captions are rotated 90° (rotate: 270)
+
+    if (isRotated) {
+      // Spine captions: text runs vertically. We rotate the draw call.
+      // pdf-lib rotate is counter-clockwise in radians; rotate:270 in template = 90° CCW = Math.PI/2
+      const rotRad = ((capDef.rotate || 270) % 360) * Math.PI / 180;
+      // Position the center of the caption
+      const centerXPt = COVER_BLEED_PT + capDef.xMm * MM_TO_PT;
+      const centerYPt = pageSizeHPt - COVER_BLEED_PT - capDef.yMm * MM_TO_PT;
+      // Each line is drawn at the centre; for vertical text stack lines horizontally (since rotated)
+      const totalW = lines.reduce((sum, l) => sum + font.widthOfTextAtSize(l, sizePt), 0)
+                   + (lines.length - 1) * lineSpacing;
+      let curX = centerXPt - totalW / 2;
+      for (const line of lines) {
+        const lineW = font.widthOfTextAtSize(line, sizePt);
+        pg.drawText(line, {
+          x: curX, y: centerYPt - sizePt * 0.3,
+          size: sizePt, font, characterSpacing: charSpacing,
+          rotate: { type: 'degrees', angle: capDef.rotate || 270 },
+        });
+        curX += lineW + lineSpacing;
+      }
+    } else {
+      // Front cover captions: horizontal text centered at capDef.xMm
+      const totalLines = lines.length;
+      const blockH = totalLines * lineSpacing;
+      // yMm is vertical center of the caption block
+      const startYPt = pageSizeHPt - COVER_BLEED_PT - capDef.yMm * MM_TO_PT + blockH / 2 - sizePt * 0.75;
+      lines.forEach((line, li) => {
+        const textW = font.widthOfTextAtSize(line, sizePt) + charSpacing * Math.max(0, line.length - 1);
+        const centerXPt = COVER_BLEED_PT + capDef.xMm * MM_TO_PT;
+        const xPt = capDef.align === 'left'  ? centerXPt - capDef.wMm / 2 * MM_TO_PT
+                  : capDef.align === 'right' ? centerXPt + capDef.wMm / 2 * MM_TO_PT - textW
+                  :                            centerXPt - textW / 2;
+        pg.drawText(line, {
+          x: xPt, y: startYPt - li * lineSpacing,
+          size: sizePt, font, characterSpacing: charSpacing,
+        });
+      });
+    }
+  }
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
+  const isPrint = mode === 'print';
+  const printDir = path.join(outDir, 'print');
+  if (isPrint) fs.mkdirSync(printDir, { recursive: true });
+
   console.log(`\n📖 Aevia PDF export`);
   console.log(`   Template : ${state.template}`);
   console.log(`   Pages    : ${state.pageCount}`);
   console.log(`   Spreads  : ${state.sequence.length}`);
   console.log(`   Photos   : ${photosDir}`);
-  console.log(`   Output   : ${outDir}/content.pdf`);
+  console.log(`   Mode     : ${mode}`);
+  console.log(`   Output   : ${isPrint ? printDir : path.join(outDir, 'preview.pdf')}`);
   console.log(`   Canvas   : ${FULL_PX}×${FULL_PX}px (${FULL_MM}mm at ${DPI}dpi)\n`);
 
-  const pdfDoc = await PDFDocument.create();
   const PAGE_SIZE_PT = FULL_MM / 25.4 * 72; // 206mm in PDF points
-  const fontMap = await embedAllFonts(pdfDoc);
+
+  // For preview mode: one shared PDFDocument; for print mode: we create one per page.
+  let previewDoc = null;
+  let previewFontMap = null;
+  if (!isPrint) {
+    previewDoc = await PDFDocument.create();
+    previewFontMap = await embedAllFonts(previewDoc);
+  }
+
+  // Helper: write a single-page print PDF and return nothing; used in print mode.
+  async function writePrintPage(label, imgBuf, captionFn) {
+    const doc = await PDFDocument.create();
+    const fm  = await embedAllFonts(doc);
+    const img = await doc.embedPng(imgBuf);
+    const pg  = doc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
+    pg.drawImage(img, { x: 0, y: 0, width: PAGE_SIZE_PT, height: PAGE_SIZE_PT });
+    if (captionFn) captionFn(pg, fm);
+    const bytes = await doc.save();
+    fs.writeFileSync(path.join(printDir, label), bytes);
+  }
+
+  // Helper: add a page to the preview PDF.
+  async function addPreviewPage(imgBuf, captionFn) {
+    const img = await previewDoc.embedPng(imgBuf);
+    const pg  = previewDoc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
+    pg.drawImage(img, { x: 0, y: 0, width: PAGE_SIZE_PT, height: PAGE_SIZE_PT });
+    if (captionFn) captionFn(pg, previewFontMap);
+  }
 
   const specialPhotos        = state.specialPhotos        || {};
   const captions             = state.captions             || {};
+  const coverCaptions        = state.coverCaptions        || {};
+  const coverCaptionStyles   = state.coverCaptionStyles   || {};
   const spreadCaptionStyles  = state.spreadCaptionStyles  || {};
   let pageNum = 0;
+
+  // ── Cover ────────────────────────────────────────────────────────────────────
+  console.log('  [cover] Rendering cover spread…');
+  const coverDef      = DATA.cover;
+  const coverPhotoName = typeof specialPhotos.cover === 'string'
+    ? specialPhotos.cover : specialPhotos.cover?.name;
+
+  try {
+    const coverBuf = await renderCoverImage(coverDef, coverPhotoName, photosDir);
+
+    const COVER_W_PT = COVER_FULL_W_MM / 25.4 * 72;
+    const COVER_H_PT = COVER_FULL_H_MM / 25.4 * 72;
+
+    if (isPrint) {
+      // For print: cover is its own PDF at correct wide dimensions
+      const doc = await PDFDocument.create();
+      const fm  = await embedAllFonts(doc);
+      const img = await doc.embedPng(coverBuf);
+      const pg  = doc.addPage([COVER_W_PT, COVER_H_PT]);
+      pg.drawImage(img, { x: 0, y: 0, width: COVER_W_PT, height: COVER_H_PT });
+      drawCoverCaptions(pg, fm, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT);
+      fs.writeFileSync(path.join(printDir, 'cover.pdf'), await doc.save());
+      console.log('  ✓ cover.pdf');
+    } else {
+      // For preview: add cover as first page (wide) then continue with square content pages
+      const img = await previewDoc.embedPng(coverBuf);
+      const pg  = previewDoc.addPage([COVER_W_PT, COVER_H_PT]);
+      pg.drawImage(img, { x: 0, y: 0, width: COVER_W_PT, height: COVER_H_PT });
+      drawCoverCaptions(pg, previewFontMap, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT);
+      console.log('  ✓ cover added to preview');
+    }
+  } catch (e) {
+    console.log(`  ✗ cover failed: ${e.message}`);
+  }
+
+  // ── Content pages ────────────────────────────────────────────────────────────
+
+  // Pick variants based on assigned photo orientations.
+  // For FP spreads where one side has no regular photos but has a special photo,
+  // probe the special photo's actual dimensions to determine V vs H.
+  async function pickVariantWithSpecial(photos, spreadId, isLeft) {
+    if (photos.length > 0) return pickVariant(photos);
+    const spRaw = specialPhotos[spreadId];
+    let spName;
+    if (Array.isArray(spRaw)) {
+      const entry = spRaw[isLeft ? 0 : 1];
+      spName = typeof entry === 'string' ? entry : entry?.name;
+    } else {
+      spName = typeof spRaw === 'string' ? spRaw : spRaw?.name;
+    }
+    if (!spName) return 'H';
+    const spPath = photoPath(spName);
+    if (!fs.existsSync(spPath)) return 'H';
+    try {
+      const meta = await sharp(spPath).metadata();
+      return (meta.height > meta.width) ? 'V' : 'H';
+    } catch (e) { return 'H'; }
+  }
 
   for (let si = 0; si < state.sequence.length; si++) {
     const spreadId  = state.sequence[si];
@@ -414,30 +675,6 @@ async function main() {
     const leftArr  = asgn.left  || [];
     const rightArr = asgn.right || [];
 
-    // Pick variants based on assigned photo orientations.
-    // For FP spreads where one side has no regular photos but has a special photo,
-    // probe the special photo's actual dimensions to determine V vs H.
-    async function pickVariantWithSpecial(photos, spreadId, isLeft) {
-      if (photos.length > 0) return pickVariant(photos);
-      // No regular photos — check if a special/artwork photo determines the variant.
-      // specialPhotos[id] is a string for single-photo FPs (FP1/FP3/FP4),
-      // or an array for FP5 art gallery (index 0 = left, index 1 = right).
-      const spRaw = specialPhotos[spreadId];
-      let spName;
-      if (Array.isArray(spRaw)) {
-        const entry = spRaw[isLeft ? 0 : 1];
-        spName = typeof entry === 'string' ? entry : entry?.name;
-      } else {
-        spName = typeof spRaw === 'string' ? spRaw : spRaw?.name;
-      }
-      if (!spName) return 'H';
-      const spPath = photoPath(spName);
-      if (!fs.existsSync(spPath)) return 'H';
-      try {
-        const meta = await sharp(spPath).metadata();
-        return (meta.height > meta.width) ? 'V' : 'H';
-      } catch (e) { return 'H'; }
-    }
     const leftVariant  = await pickVariantWithSpecial(leftArr, spreadId, true);
     const rightVariant = await pickVariantWithSpecial(rightArr, spreadId, false);
 
@@ -447,22 +684,28 @@ async function main() {
     if (!spreadDef.rightOnly) {
       const leftDef = getPageDef(pages.left, leftVariant);
       if (leftDef) {
+        pageNum++;
+        const label = `page-${String(pageNum).padStart(3, '0')}.pdf`;
         process.stdout.write(`  [${si+1}/${state.sequence.length}] ${spreadId} left (${leftVariant})… `);
         try {
           const buf = await renderPage(spreadId, 'left', leftDef, leftArr, specialPhotos);
-          const img = await pdfDoc.embedPng(buf);
-          const pg  = pdfDoc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
-          pg.drawImage(img, { x: 0, y: 0, width: PAGE_SIZE_PT, height: PAGE_SIZE_PT });
-          drawCaptions(pg, fontMap, leftDef, String(si), 'left', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles);
-          pageNum++;
+          const capFn = (pg, fm) => drawCaptions(pg, fm, leftDef, String(si), 'left', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles);
+          if (isPrint) { await writePrintPage(label, buf, capFn); }
+          else         { await addPreviewPage(buf, capFn); }
           console.log(`✓ (page ${pageNum})`);
         } catch (e) {
           console.log(`✗ ${e.message}`);
         }
       } else {
-        // Blank white left page (e.g. rightOnly spreads that still need a placeholder)
-        const pg = pdfDoc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
+        // Blank left page placeholder
         pageNum++;
+        if (!isPrint) {
+          previewDoc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
+        } else {
+          const doc = await PDFDocument.create();
+          doc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
+          fs.writeFileSync(path.join(printDir, `page-${String(pageNum).padStart(3, '0')}.pdf`), await doc.save());
+        }
         console.log(`  [${si+1}] ${spreadId} left — blank (page ${pageNum})`);
       }
     }
@@ -470,14 +713,14 @@ async function main() {
     // ── Right page ───────────────────────────────────────────────────────────
     const rightDef = getPageDef(pages.right, rightVariant);
     if (rightDef) {
+      pageNum++;
+      const label = `page-${String(pageNum).padStart(3, '0')}.pdf`;
       process.stdout.write(`  [${si+1}/${state.sequence.length}] ${spreadId} right (${rightVariant})… `);
       try {
         const buf = await renderPage(spreadId, 'right', rightDef, rightArr, specialPhotos);
-        const img = await pdfDoc.embedPng(buf);
-        const pg  = pdfDoc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
-        pg.drawImage(img, { x: 0, y: 0, width: PAGE_SIZE_PT, height: PAGE_SIZE_PT });
-        drawCaptions(pg, fontMap, rightDef, String(si), 'right', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles);
-        pageNum++;
+        const capFn = (pg, fm) => drawCaptions(pg, fm, rightDef, String(si), 'right', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles);
+        if (isPrint) { await writePrintPage(label, buf, capFn); }
+        else         { await addPreviewPage(buf, capFn); }
         console.log(`✓ (page ${pageNum})`);
       } catch (e) {
         console.log(`✗ ${e.message}`);
@@ -485,12 +728,15 @@ async function main() {
     }
   }
 
-  const pdfBytes = await pdfDoc.save();
-  const outPath  = path.join(outDir, 'content.pdf');
-  fs.writeFileSync(outPath, pdfBytes);
-
-  console.log(`\n✅ Done — ${pageNum} pages → ${outPath}`);
-  console.log(`   File size: ${(pdfBytes.length / 1024 / 1024).toFixed(1)} MB\n`);
+  if (!isPrint) {
+    const pdfBytes = await previewDoc.save();
+    const outPath  = path.join(outDir, 'preview.pdf');
+    fs.writeFileSync(outPath, pdfBytes);
+    console.log(`\n✅ Done — cover + ${pageNum} pages → ${outPath}`);
+    console.log(`   File size: ${(pdfBytes.length / 1024 / 1024).toFixed(1)} MB\n`);
+  } else {
+    console.log(`\n✅ Done — cover + ${pageNum} pages → ${printDir}/`);
+  }
 }
 
 main().catch(e => { console.error('Fatal:', e); process.exit(1); });

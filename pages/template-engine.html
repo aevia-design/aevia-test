@@ -1041,6 +1041,14 @@
       }
     }
 
+    // Collect cover caption texts from their contenteditable DOM elements
+    const coverCaptions = {};
+    document.querySelectorAll('.cover-caption[data-cover-caption-key]').forEach(el => {
+      const key = el.dataset.coverCaptionKey;
+      const text = el.innerText.trim();
+      if (key && text) coverCaptions[key] = text;
+    });
+
     const state = {
       template: 'scribble',
       pageCount: parseInt(document.getElementById('page-count-select').value, 10),
@@ -1048,6 +1056,7 @@
       assignments,
       specialPhotos,
       captions: window.bookCaptions || {},
+      coverCaptions,
       coverCaptionStyles: window.coverCaptionStyles || {},
       spreadCaptionStyles: window.spreadCaptionStyles || {},
     };
