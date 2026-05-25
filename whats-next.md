@@ -82,17 +82,9 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
   `M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z`
 - Canvas background `#fdd16f` (yellow) fills non-heart area naturally
 
-
 ### Orientation detection fix
 - Root cause: previous session added an EXIF Orientation swap (tags 5-8 → flip dims). This is wrong because modern browsers (Chrome, Firefox, Safari) auto-rotate images based on EXIF — `img.naturalWidth/naturalHeight` already returns correct visual dimensions.
 - Fix: removed the swap entirely. Orientation is now determined purely from `img.naturalWidth > img.naturalHeight`, which is always the correct visual orientation regardless of EXIF tag presence.
-- Tested with 53 DTS_PARENTHOOD professional JPEGs (no EXIF Orientation tag) — all correctly detected.
-- User noted "didn't spot any deviations on first sample" — continuing to monitor with other samples.
-
-## Performance issue logged (TO-DO added)
-- After alt-tab and return to browser, interface takes 10-15 seconds to respond to scrolling
-- Likely cause: all 600×600 spread canvases remain in DOM and GPU layer is evicted when browser is backgrounded
-- Needs investigation: consider virtualisation, canvas reuse, or requestAnimationFrame-gated rendering
 
 ## Session 2026-05-21 (later) — Caption toolbar + font + CSV sync
 
@@ -115,7 +107,6 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 ### Motif engine moved to main repo
 - `motif-engine/` copied from `.claude/worktrees/` to project root
 - Added `README.md` (setup, usage, motif table) and `.gitignore` (outputs/, node_modules/, .env excluded)
-- Kseniia onboarding plan: own Claude account, shared Replicate token, GitHub collaborator invite
 
 ### CLAUDE.md + customer-journey-v1.md updated
 - CLAUDE.md: removed Webflow, corrected live URL, updated folder structure, added template engine + motif engine sections
@@ -133,90 +124,74 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Front captions: `top: capCY; transform: translateY(-50%)` — centers any number of lines correctly
 - Spine captions: `top: capCY - lineHpx/2` where `lineHpx = sizePt * (4/3) * 1.1` — correct px centering
 
-### Image quality improvements (cosmetic)
-- Added `image-rendering: smooth` to `.slot-photo` CSS — tells Chrome to use high-quality downscale immediately
-- Added `imageSmoothingQuality: 'high'` to canvas `drawImage` in `urlToBase64` (AI caption resize function)
-- Photo blobs stored as original `createObjectURL` — no re-encoding, no quality loss in storage pipeline
+## Session 2026-05-22 + later — Plan 11 (PDF export) and Plan 12-01 (order form)
+
+### Plan 11 (all sub-plans 11-01 → 11-04) — DONE
+- `scripts/export-pdf.js` with `--mode preview|print`
+- Cover PDF (445×236mm, 18mm bleed); per-page print PDFs
+- Cover captions (front + spine) rendered; `coverCaptions` exported from engine
+- `book-state.json` export button in engine
+
+### Plan 12-01 (partial, now COMPLETE) — Order form FP refactor
+- `initFPSections()`: renders photo zone(s) + text field per FP in Step 2 (co-located)
+- FP5: 2 upload zones (fp5-0 / fp5-1); per-page captions (array stored in fpTexts.fp5)
+- FP3: caption field added (reversed earlier null decision — left page has photo + caption)
+- All FPs: RAW formats stripped from accept attributes
+- Duplicate detection: files with same name skipped silently
+- Thumbnails: filename label shown on each photo
+- `calcPhotoTarget()`: mirrors engine's buildBookSequence + slot counting; assumes H orientation
+- Validation + fpTexts collection use SCRIBBLE_DATA directly (not URL inputType)
+- Copy cleaned: em-dashes removed, hints shortened in form and scribble-data.js
+- Public site was broken (initFPSections called but not defined) — fixed and pushed
+
+### template-engine-public.html
+- Snapshot of template-engine.html deployed to Cloudflare Pages for demo/sharing
+- Local template-engine.html is the working version; public copy is a separate file
 
 </work_completed>
 
 <work_remaining>
 
-## Reliability fixes (completed this session)
-- SVG/photo load failures now show a red outline on the affected slot — visible to staff
-- Reordering or changing a spread type now warns if captions exist (they'd no longer match photos)
-- AI caption errors now stay visible ("⚠ Failed — click to retry") until staff retries successfully
-- HEIC conversion failures now show an alert listing all failed filenames with "re-export as JPEG" instruction
-- Image orientation load: 10s timeout added to prevent upload hanging on corrupted files
-- Removed unused `avoidMixedRightPage` dead code
+## Template engine (pages/template-engine.html)
 
-## HEIC / photo validation architecture note
-HEIC conversion in the template engine is a **temporary testing path** — it exists so staff can upload iPhone photos from their local drive during development. In production, photos arrive pre-processed from GCS after the customer upload flow. The real HEIC robustness and format validation work belongs in **Plan 12-x (order intake)**: validate format, resolution, and file integrity at upload time, before photos ever reach the template engine. The template engine should receive only clean, ready-to-use files.
+### Performance TO-DO (TO-DO #43)
+- Interface stalls 10-15 seconds when returning from alt-tab
+- Investigate virtual scroll or viewport-gated rendering
 
-## Plans not yet started
+### FP1 heart frame decoration
+- Still missing — nice-to-have, needs Kseniia SVG re-export
 
-### Plan 09-01 — DONE
-- RAW blocking, low-res warnings, AI caption wiring all implemented in template-engine.html
-
-### Plan 10-01 — ABORTED
-- FP selector lives on scribble.html (chips + addons flow). bloom.html is irrelevant.
-
-### Plan 10-02 — DONE
-- Caption toolbar built for all cover captions (front + spine)
-- Controls: font family, style pills, font size stepper, line spacing stepper, letter spacing stepper
-- Styles stored in `window.coverCaptionStyles[key]`; applied via direct DOM mutation (no re-render, no focus loss)
-- EB Garamond Semi-Bold (weight 600) added; NT Somic Regular + Medium available
-- Toolbar positions above front captions, to the right of spine captions
-
-### Plan future — Extend toolbar to spread captions
-- Same toolbar concept for spread slot captions (contenteditable overlays on slots where `captions: true`)
-- Typography defaults now come from scribble-data.js (CSV-driven); toolbar will read/override them per caption
+### Spread caption toolbar (Plan future)
+- Same toolbar as cover for spread slot captions (contenteditable overlays)
+- Typography defaults from scribble-data.js; toolbar reads/overrides per caption
 - Not yet started
 
-## PDF export — architecture DECIDED (was Plan 12-01 "Puppeteer", now Plan 11)
+## Order form (pages/order.html) — Plan 12
 
-**Decision (2026-05-22, /solutioning):** Server-side compositing with **Sharp + pdf-lib**, NOT browser PDF.
-Build as a **standalone Node.js tool first** (test print quality with local photo uploads), then wire to
-order path later (Plan 12). Print specs are documented in `LEARNINGS.md`.
+### Plan 12-01 — Remaining small items (TO-DOs #45, #46)
+- #45: Image quality indicator on FP photo upload (green checkmark / LOW RES badge per zone)
+- #46: Photo count simulation — run all orientation combos to verify calcPhotoTarget() accuracy
 
-**Why not Puppeteer/Playwright `page.pdf()`:** the browser PDF pipeline embeds raster images at the
-*rendered* resolution (CSS px × devicePixelRatio), not the photo's native resolution. Quality is bounded
-by the 600px preview canvas regardless of `deviceScaleFactor`. Behaviour is also undocumented and
-version-dependent — unacceptable for a production print path. Browser preview stays at SCALE=3 for staff
-review; print rendering is a completely separate pipeline.
+### Plan 12-02 — Firestore schema additions (not started)
+- `fpTexts`, `fpSelections`, `photoCount` fields in Firestore doc
 
-**Why Sharp + pdf-lib:** full pixel control, deterministic output, maps cleanly to future GCS flow (swap
-local file reads for downloads). Sharp re-encode at 95%+ JPEG is visually lossless for print. pdf-lib
-assembles pages at exact physical mm dimensions.
+### Plan 12-03 — Engine "Load order" flow (not started)
+- Staff enters order number → engine fetches Firestore doc + downloads photos from GCS signed URLs
+- Pre-populates FP text panels from fpTexts
 
-**Pipeline (per content page):**
-- Canvas 2433×2433px (206mm × 300dpi); content area 2362×2362px; bleed offset 35px (3mm × 11.811px/mm)
-- Fill canvas with page bgColor (this IS the bleed — extends 3mm beyond content on all sides)
-- Each slot: load ORIGINAL photo → Sharp object-fit:cover crop to slot dims → composite at slot position
-- Composite SVG overlay (Sharp/librsvg rasterises vector art at 2362px — our SVGs have no embedded fonts)
-- pdf-lib: assemble page PNGs into multi-page PDF at 206×206mm
+### Plan 12-04 — PDF export wired to GCS / order path (not started)
+- Production: photos download from GCS, not local dir
 
-**Cover (separate PDF):** canvas 481×272mm at 300dpi (5681×3213px); 18mm bleed wrap; back+spine(9mm)+front.
+## Wider product pipeline
 
-## Plan 11 — Standalone PDF export (BUILD FIRST, before order integration)
-- **11-01** "Export State" button in template engine → downloads `book-state.json`
-  (sequence, assignments with photo filenames, bgColors, slot coords, special photo filenames, captions)
-- **11-02** `scripts/export-pdf.js` — content pages, photos + SVG overlay, NO captions yet.
-  Args: `--photos <dir> --state book-state.json --out <dir>`. This is the **print-quality validation gate.**
-- **11-03** Caption rendering layer (custom fonts NT Somic / EB Garamond / FirstTimeWriting via SVG text
-  with embedded font data, composited over each page)
-- **11-04** Cover PDF (front photo slot, spine, back; 18mm bleed)
+### Phase 3 — Payment + automation (not started)
+- Stripe Checkout Sessions + webhooks
+- Firebase Scheduled Functions for reminder emails
+- Preview delivery via GCS signed URL
 
-## Plan 12 — Order flow integration (AFTER PDF quality validated)
-- **12-01** Order form improvements — PARTIALLY DONE (see current_state)
-- **12-02** Firestore schema additions (`fpTexts`, `fpSelections`, `photoCount` fields) — not started
-- **12-03** Engine "Load order" flow — staff enters order number → engine fetches Firestore doc + downloads photos from GCS signed URLs, pre-populates FP text panels — not started
-- **12-04** PDF export wired to GCS / order path (production: photos download from GCS, not local dir) — not started
-
-## Performance TO-DO
-- Interface stalls 10-15 seconds when returning from alt-tab
-- Investigate and fix scroll/render performance for large book layouts
-- Options: virtual scroll (only render spreads near viewport), canvas layer management, avoid re-rendering on focus
+### Phase 4 — Print + delivery (not started)
+- Print house API integration (Prodigi or Gelato — TBD)
+- Tracking webhooks, customer notifications
 
 </work_remaining>
 
@@ -250,6 +225,21 @@ assembles pages at exact physical mm dimensions.
 - New FP Birthday 02 R.svg is a 3-spread export; heart frame art (cls-4) is clipped off-screen
 - Fixed with CSS clip-path on the photo slot, not SVG masking
 
+## Order form: initAddonFields + initSpecialPhotoZones — replaced
+- Old approach: Step 1 had text fields for FP2 words; Step 2 had photo zones separate from text
+- New approach: initFPSections() combines photo + text per FP in one section, all in Step 2
+- Old functions left as dead code but no longer called — do not revive
+
+## Order form: photo count formula history
+- v1: `regularSpreads * 1.5` min / `* 3` nice — too wide, wrong denominator
+- v2: `1 + (spreads-1-FPs)*2` — closer but assumed 2 slots/spread and 0 regular slots for all FPs
+- v3 (current): `calcPhotoTarget()` — mirrors engine's buildBookSequence + real slot count from SCRIBBLE_DATA, H orientation assumed. FP3/FP4 right pages correctly counted as consuming regular slots.
+
+## FP3 orderFormMeta: null → caption field
+- Initially set null (staff writes caption from photo)
+- Reversed: left page has photo + caption overlay; customer knows the toy's name/story
+- Now has standard `textPrompt / hint / placeholder` fields
+
 </attempted_approaches>
 
 <critical_context>
@@ -268,14 +258,32 @@ window.SCRIBBLE_DATA = {
     SP0: { label: 'Spread 0', rightOnly: true, pages: { right: { H: { bgColor, svg, slots }, V: {...} } } },
     SP1: { ... },
     // FP1–FP5 follow same structure
+    FP1: { orderFormPhoto: { count, hint }, orderFormMeta: { textPrompt, hint, placeholder } },
+    FP2: { orderFormPhoto: null, orderFormMeta: { funnyWords: true, minWords, maxWords } },
+    FP3: { orderFormPhoto: { count: 1, hint }, orderFormMeta: { textPrompt, hint, placeholder } },
+    FP4: { orderFormPhoto: { count: 1, hint }, orderFormMeta: { textPrompt, hint, placeholder } },
+    FP5: { orderFormPhoto: { count: 2, hint }, orderFormMeta: { count: 2, labels: [...], placeholder } },
   }
 }
 ```
+
+## FP pool consumption (critical for photo count)
+- FP1, FP2, FP5: 0 regular slots — skip pool consumption entirely
+- FP3, FP4: right page has regular photo slots — DO consume from main pool
+- calcPhotoTarget() in order.html handles this correctly via real slot counting
+
+## FP5 data structures
+- `specialFiles['fp5-0']` and `specialFiles['fp5-1']` in order.html (2 separate File objects)
+- `fpTexts.fp5` is an array `['left caption', 'right caption']` (not a string)
+- In book-state.json: `specialPhotos.FP5` is an array `['leftPhoto.jpg', 'rightPhoto.jpg']`
+- In window.specialPhotos (engine in-memory): FP5 is also an array; other FPs are strings
 
 ## Slot structure
 ```js
 { x: 105, y: 70, w: 150, h: 100, captions: true, captionPosition: 'below (50mm from photo)', pool: 'regular' }
 // heartClip: true — special flag, expands slot to full 600×600 + CSS clip-path heart
+// pool: 'special' — FP1/FP3/FP4 special photo
+// pool: 'artwork' — FP5 art gallery
 ```
 
 ## SVG overlay behavior
@@ -288,24 +296,13 @@ window.SCRIBBLE_DATA = {
 ## Photo orientation detection
 - Use `img.naturalWidth`/`img.naturalHeight` from browser Image object only
 - Do NOT apply any EXIF swap — modern browsers already auto-rotate
-- No EXIF Orientation tag present in DTS_PARENTHOOD professional JPEGs (pre-processed)
 
-## bookAssignments structure
-```js
-window.bookAssignments = {
-  0: { left: [], right: [0] },
-  1: { left: [1], right: [2, 3] },
-  // null = unassigned (special/artwork slot or pool exhausted)
-}
-```
-
-## Cloud Function endpoint (AI captions, Plan 09-01)
+## Cloud Function endpoint (AI captions)
 ```
 POST https://europe-west1-aevia-uploads.cloudfunctions.net/generateCaption
 Body: { imageDataUrl: 'data:image/jpeg;base64,...' }
 Response: { caption: 'suggested text string' }
 ```
-Check `functions/` to confirm this exists before wiring.
 
 ## No frameworks
 - Pure HTML/CSS/JS — no React, Vue, build tools, npm on frontend
@@ -315,40 +312,37 @@ Check `functions/` to confirm this exists before wiring.
 ## Dev server
 - `npx serve . -p 8080` from project root
 - Template engine: `http://localhost:8080/pages/template-engine.html` (local only — not on Cloudflare)
+- Public snapshot: `http://localhost:8080/pages/template-engine-public.html` (also on Cloudflare)
 - Public website: `https://aevia-test.pages.dev/pages/collections`
 
 </critical_context>
 
 <current_state>
 
-## Completed and committed (through 2026-05-25)
-- **Plan 11 (all sub-plans 11-01 → 11-04)** — DONE. `scripts/export-pdf.js` with `--mode preview|print`, cover PDF (445×236mm, 18mm bleed), per-page print PDFs. Cover captions (front + spine) rendered. `coverCaptions` exported from engine.
-- `assets/Template_Scribble/scribble-data.js` — renamed from `template-data.js`; all live code updated. `orderFormMeta` added per FP (text prompt, hint, placeholder, funnyWords flag).
-- `pages/template-engine-public.html` — snapshot of template engine deployed to Cloudflare Pages at `https://aevia-test.pages.dev/pages/template-engine-public.html`. Local `template-engine.html` untouched.
-- **Plan 12-01 (partial)** — `functions/upload.js` accepts + saves `fpTexts` to Firestore. `order.html`: `getFpMeta()` drives addon fields from `SCRIBBLE_DATA.spreads[key].orderFormMeta`; async resolution check (LOW RES badge); `fpTexts` collected + sent. RAW formats stripped from all file inputs. Photo count callout box + smartphone upload hint added.
+## Completed and committed (through 2026-05-25 session 2)
 
-## In progress — NOT YET COMMITTED (working tree only)
-**Order form Step 2 restructure:**
-- `scribble-data.js`: `orderFormPhoto: { count, hint }` added to all FPs (FP5 has `count: 2`)
-- `order.html`: `addon-fields` div removed from Step 1; `special-photo-zones` renamed to `fp-sections`; `initAddonFields` removed from init; photo count callout + phone hint in Step 2 HTML
+- **Plan 11 (all sub-plans)** — DONE. PDF export with preview/print modes, cover + content pages.
+- **Plan 12-01** — COMPLETE. Order form FP refactor fully implemented and pushed:
+  - `initFPSections()` + `initSpecialDragDrop()` — photo + text per FP in Step 2
+  - FP5: 2 upload zones + 2 caption fields
+  - FP3: caption field added
+  - `calcPhotoTarget()` — accurate slot count using engine's own sequence logic
+  - Duplicate detection, thumbnail filenames, RAW stripped, copy cleaned
+- `assets/Template_Scribble/scribble-data.js` — `orderFormPhoto` and `orderFormMeta` on all FPs
+- `pages/template-engine-public.html` — Cloudflare snapshot of engine
 
-**Still needs to be written to complete this refactor:**
-- `initFPSections()` — renders one section per FP with photo zone(s) + text field co-located
-- `initSpecialDragDrop()` — wires drag-drop on newly created zones
-- Multi-slot handling for FP5 (slug keys `fp5-0`, `fp5-1` in `specialFiles`)
-- Validation + `fpTexts` collection updated for new structure
-- `handleSpecialFile()` signature unchanged, but FP5 slots need numbered variants
+## Next priorities
 
-## Known issues
-- Caption bold/italic in PDF: style pills only (NOT Ctrl+B). `spreadCaptionStyles` must be set in engine and book-state.json re-exported.
-- Any existing `book-state.json` with `FP5: "string"` format still works (legacy fallback) but shows same photo both pages.
+1. **TO-DO #45** — FP photo upload quality indicator (green checkmark / LOW RES badge per FP zone)
+2. **TO-DO #46** — Photo count simulation: all orientation combos to verify calcPhotoTarget()
+3. **Plan 12-02** — Firestore schema additions (fpTexts, fpSelections, photoCount)
+4. **Plan 12-03** — Engine "Load order" flow (fetch Firestore doc + GCS photos)
 
-## Blocking items
-- FP1 heart frame decoration still missing — nice-to-have, needs Kseniia SVG re-export
-
-## Open questions
-- Performance: alt-tab stall (10-15s) — root cause not yet investigated
-- PDF file size: currently PNG pages (large); switch to JPEG compression once print quality confirmed
+## Known issues / open questions
+- Caption bold/italic in PDF: must use style pills (NOT Ctrl+B). Book-state.json must be re-exported after changing styles.
+- FP1 heart frame decoration still missing (Kseniia SVG re-export needed)
+- Performance: alt-tab stall (10-15s) — root cause not investigated
+- Photo count assumes H orientation — TO-DO #46 will quantify the variance
 
 </current_state>
 ```
