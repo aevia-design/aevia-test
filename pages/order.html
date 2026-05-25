@@ -167,6 +167,7 @@
 
     /* ── Resolution warning badge ── */
     .low-res-badge { position:absolute;bottom:0;left:0;right:0;background:rgba(170,50,20,0.88);color:#fff;font-size:9px;text-align:center;padding:3px 2px;letter-spacing:0.06em;font-weight:600; }
+    .res-ok-badge  { position:absolute;bottom:0;left:0;right:0;background:rgba(34,110,60,0.82);color:#fff;font-size:9px;text-align:center;padding:3px 2px;letter-spacing:0.06em;font-weight:600; }
     .low-res-note { font-size:12px;color:#8b3a2e;margin-top:10px; }
   </style>
 <script src="../assets/Template_Scribble/scribble-data.js"></script>
@@ -815,9 +816,23 @@ function handleSpecialFile(slug, file) {
   inner.innerHTML = '';
 
   if (isImage(file)) {
+    const objUrl = URL.createObjectURL(file);
     const img = document.createElement('img');
-    img.src = URL.createObjectURL(file);
+    img.src = objUrl;
     inner.appendChild(img);
+
+    // Async resolution check — badge appears once image dimensions are known
+    if (/\.(jpe?g|png)$/i.test(file.name)) {
+      const checker = new Image();
+      checker.onload = () => {
+        const minDim = Math.min(checker.naturalWidth, checker.naturalHeight);
+        const badge = document.createElement('div');
+        badge.className = minDim < 1500 ? 'low-res-badge' : 'res-ok-badge';
+        badge.textContent = minDim < 1500 ? 'LOW RES' : '✓ OK';
+        inner.appendChild(badge);
+      };
+      checker.src = objUrl;
+    }
   } else {
     inner.innerHTML = `<div class="file-icon">${fileIconSvg()}<span>${fileExt(file)}</span></div>`;
   }
