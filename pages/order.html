@@ -740,12 +740,11 @@ function goToStep2() {
   }
   document.getElementById('step2-bar').innerHTML = parts.join(' ');
 
-  // Photo count guidance
-  // SP0 is right-side only (1 slot); each regular content spread has 1 slot per side (2 total)
-  const spreads = parseInt(ORDER.pages) / 2;
-  const activeFpCount = ORDER.addons.filter(a => !cancelledAddons.has(a.slug)).length;
-  const regularSpreads = Math.max(0, spreads - 1 - activeFpCount); // exclude SP0 and FPs
-  const targetPhotos = 1 + regularSpreads * 2; // SP0 right slot + 2 per regular spread
+  // Photo count — mirrors engine's buildBookSequence + slot counting
+  const activeFPs = ORDER.addons
+    .filter(a => !cancelledAddons.has(a.slug))
+    .map(a => a.slug.toUpperCase()); // e.g. ['FP1','FP3']
+  const targetPhotos = calcPhotoTarget(parseInt(ORDER.pages), activeFPs);
   window._photoCountTarget = targetPhotos;
   document.getElementById('photo-count-min').textContent  = targetPhotos;
   document.getElementById('photo-count-nice').textContent = targetPhotos;
@@ -1178,6 +1177,49 @@ function showSuccess(orderNumber, email) {
 // ─────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// calcPhotoTarget — mirrors engine's buildBookSequence + slot count
+// Assumes H orientation throughout (best estimate without seeing photos)
+// ─────────────────────────────────────────────────────────────────
+function calcPhotoTarget(pageCount, selectedFPs) {
+  const DATA = window.SCRIBBLE_DATA;
+  if (!DATA) return 0;
+
+  // Build sequence: SP0 + standard spreads (SP1–SP6 cycling) + FPs interspersed
+  const totalSpreads  = pageCount / 2;
+  const remaining     = totalSpreads - 1;
+  const standardCount = remaining - selectedFPs.length;
+  const stdIds = ['SP1','SP2','SP3','SP4','SP5','SP6'];
+  const standards = [];
+  for (let i = 0; i < standardCount; i++) standards.push(stdIds[i % stdIds.length]);
+
+  const fpCount   = selectedFPs.length;
+  const positions = selectedFPs.map((_, i) =>
+    Math.round((i + 1) * (standards.length + 1) / (fpCount + 1))
+  );
+  for (let i = fpCount - 1; i >= 0; i--) {
+    standards.splice(positions[i], 0, selectedFPs[i]);
+  }
+  const sequence = ['SP0', ...standards];
+
+  // Count regular photo slots assuming H variant (fallback to first available)
+  let regularSlots = 0;
+  sequence.forEach(spreadId => {
+    const spreadDef = DATA.spreads[spreadId];
+    if (!spreadDef) return;
+    const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
+    sides.forEach(side => {
+      const pageDef = spreadDef.pages?.[side];
+      if (!pageDef) return;
+      const variantDef = pageDef['H'] || pageDef['V'] || pageDef['default'] || pageDef[Object.keys(pageDef)[0]];
+      if (!variantDef?.slots) return;
+      regularSlots += variantDef.slots.filter(s => !s.pool || s.pool === 'regular').length;
+    });
+  });
+
+  return regularSlots;
+}
+
 function isImage(file) {
   return /\.(jpe?g|png|gif|webp|avif|heic|bmp)$/i.test(file.name) || file.type.startsWith('image/');
 }
