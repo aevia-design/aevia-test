@@ -769,7 +769,7 @@ function goToStep2() {
 // ─────────────────────────────────────────────────────────────────
 // File handling — cover
 // ─────────────────────────────────────────────────────────────────
-function handleCoverFile(file) {
+async function handleCoverFile(file) {
   if (!file) return;
   coverFile = file;
   document.getElementById('dz-cover').style.display = 'none';
@@ -788,16 +788,18 @@ function handleCoverFile(file) {
   };
 
   if (isImage(file)) {
-    const objUrl = URL.createObjectURL(file);
+    let displayBlob = file;
+    if (isHeic(file)) {
+      const converted = await convertHeic(file);
+      if (converted) displayBlob = converted;
+    }
+    const objUrl = URL.createObjectURL(displayBlob);
     const img = document.createElement('img');
     img.src = objUrl;
-    img.onerror = () => {
-      inner.innerHTML = `<div class="file-icon">${fileIconSvg()}<span>${fileExt(file)}</span></div>`;
-      inner.appendChild(removeBtn);
-    };
     inner.appendChild(img);
+    inner.appendChild(removeBtn);
 
-    if (/\.(jpe?g|png)$/i.test(file.name)) {
+    if (!isHeic(file)) {
       const checker = new Image();
       checker.onload = () => {
         const minDim = Math.min(checker.naturalWidth, checker.naturalHeight);
@@ -814,8 +816,8 @@ function handleCoverFile(file) {
         ${fileIconSvg()}
         <span>${fileExt(file)}</span>
       </div>`;
+    inner.appendChild(removeBtn);
   }
-  inner.appendChild(removeBtn);
 
   document.getElementById('cover-preview-name').textContent = file.name;
   preview.style.display = 'block';
@@ -824,7 +826,7 @@ function handleCoverFile(file) {
 // ─────────────────────────────────────────────────────────────────
 // File handling — special page photos
 // ─────────────────────────────────────────────────────────────────
-function handleSpecialFile(slug, file) {
+async function handleSpecialFile(slug, file) {
   if (!file) return;
   specialFiles[slug] = file;
   document.getElementById(`dz-special-${slug}`).style.display = 'none';
@@ -833,16 +835,30 @@ function handleSpecialFile(slug, file) {
   const inner   = document.getElementById(`special-preview-inner-${slug}`);
   inner.innerHTML = '';
 
+  const btn = document.createElement('button');
+  btn.className = 'single-preview-remove';
+  btn.innerHTML = '×';
+  btn.onclick = () => {
+    delete specialFiles[slug];
+    preview.style.display = 'none';
+    document.getElementById(`dz-special-${slug}`).style.display = '';
+  };
+
   if (isImage(file)) {
-    const objUrl = URL.createObjectURL(file);
+    let displayBlob = file;
+    if (isHeic(file)) {
+      const converted = await convertHeic(file);
+      if (converted) displayBlob = converted;
+    }
+    const objUrl = URL.createObjectURL(displayBlob);
     const img = document.createElement('img');
     img.src = objUrl;
     inner.appendChild(img);
+    inner.appendChild(btn);
 
-    // Async resolution check — badge appears once image dimensions are known
-    // Skip for FP5 art gallery: scanned artwork is intentionally low-res
+    // Resolution check — skip for FP5 art gallery (scanned artwork is intentionally low-res)
     const isFP5 = slug.startsWith('fp5');
-    if (!isFP5 && /\.(jpe?g|png)$/i.test(file.name)) {
+    if (!isFP5 && !isHeic(file)) {
       const checker = new Image();
       checker.onload = () => {
         const minDim = Math.min(checker.naturalWidth, checker.naturalHeight);
@@ -855,17 +871,8 @@ function handleSpecialFile(slug, file) {
     }
   } else {
     inner.innerHTML = `<div class="file-icon">${fileIconSvg()}<span>${fileExt(file)}</span></div>`;
+    inner.appendChild(btn);
   }
-
-  const btn = document.createElement('button');
-  btn.className = 'single-preview-remove';
-  btn.innerHTML = '×';
-  btn.onclick = () => {
-    delete specialFiles[slug];
-    preview.style.display = 'none';
-    document.getElementById(`dz-special-${slug}`).style.display = '';
-  };
-  inner.appendChild(btn);
 
   document.getElementById(`special-preview-name-${slug}`).textContent = file.name;
   preview.style.display = 'block';
@@ -883,8 +890,19 @@ function handleMainFiles(fileList) {
   });
   mainFiles = mainFiles.concat(newFiles);
   renderPhotoGrid();
-  // Async resolution check for JPEG/PNG (non-blocking)
-  newFiles.forEach(f => {
+
+  // Async post-processing per new file (non-blocking — re-renders when each finishes)
+  newFiles.forEach(async f => {
+    // HEIC: convert → JPEG for thumbnail display
+    if (isHeic(f)) {
+      const blob = await convertHeic(f);
+      if (blob) {
+        f._objUrl = URL.createObjectURL(blob);
+        renderPhotoGrid();
+      }
+      return; // skip res check — HEIC from phone is always high-res
+    }
+    // JPEG/PNG: resolution check
     if (!/\.(jpe?g|png)$/i.test(f.name)) return;
     if (!f._objUrl) f._objUrl = URL.createObjectURL(f);
     const img = new Image();
@@ -920,10 +938,6 @@ function renderPhotoGrid() {
       const img = document.createElement('img');
       img.src = file._objUrl;
       img.alt = '';
-      // HEIC can't be decoded natively in Chrome/Firefox — fall back to file icon
-      img.onerror = () => {
-        thumb.innerHTML = `<div class="file-badge">${fileIconSvg()}<span>${fileExt(file)}</span></div>`;
-      };
       thumb.appendChild(img);
     } else {
       thumb.innerHTML = `<div class="file-badge">${fileIconSvg()}<span>${fileExt(file)}</span></div>`;
@@ -1261,6 +1275,32 @@ function calcPhotoTarget(pageCount, selectedFPs) {
 
 function isImage(file) {
   return /\.(jpe?g|png|gif|webp|avif|heic|bmp)$/i.test(file.name) || file.type.startsWith('image/');
+}
+
+function isHeic(file) {
+  return /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
+}
+
+// Convert HEIC → JPEG blob via Cloud Function (same endpoint as template engine)
+// Returns a JPEG Blob on success, or null on failure.
+const HEIC_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/convertHeic';
+async function convertHeic(file) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const resp = await fetch(HEIC_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: file,
+      });
+      if (!resp.ok) throw new Error('Server error ' + resp.status);
+      const blob = await resp.blob();
+      if (blob.size < 1000) throw new Error('Empty response');
+      return blob;
+    } catch (e) {
+      if (attempt === 3) return null;
+    }
+  }
+  return null;
 }
 
 function fileExt(file) {
