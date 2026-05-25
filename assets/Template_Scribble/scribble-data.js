@@ -358,7 +358,11 @@ window.SCRIBBLE_DATA = {
     FP3: {
       type: 'functional', id: 'FP3', label: 'Favourite toy', specialLeft: true,
       orderFormPhoto: { count: 1, hint: "One photo of your child's favourite toy." },
-      orderFormMeta: null,  // no text input needed; staff writes caption from the photo
+      orderFormMeta: {
+        textPrompt: 'Favourite toy caption',
+        hint: "A short caption for the photo — the toy's name, a funny detail, or a brief note.",
+        placeholder: "e.g. Mr. Bear — Leo's inseparable companion since day one",
+      },
       pages: {
         left: {
           H: {
