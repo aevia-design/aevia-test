@@ -16,6 +16,21 @@ const sharp = require('sharp');
 const { PDFDocument, rgb } = require('pdf-lib');
 const fontkit = require('@pdf-lib/fontkit');
 
+// Strip HTML tags from caption strings (template engine saves innerHTML for inline styles).
+// Converts <br> and <div> boundaries to \n before stripping so line breaks are preserved.
+// Also normalises non-breaking spaces (U+00A0 / &nbsp;) to regular spaces so PDF fonts
+// don't render them as missing-glyph boxes.
+const stripHtml = s => {
+  if (typeof s !== 'string') return s || '';
+  return s
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<div>/gi, '\n').replace(/<\/div>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/ /g, ' ')
+    .trim();
+};
+
 // ── CLI args ──────────────────────────────────────────────────────────────────
 const args   = process.argv.slice(2);
 const getArg = (flag) => { const i = args.indexOf(flag); return i !== -1 ? args[i + 1] : null; };
@@ -113,12 +128,23 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
     // Determine photo source
     let photo = null;
     if (slot.pool === 'special') {
-      // Special photo (FP3 toy, FP4 steps, FP5 art, FP1 birthday)
-      const spKey = spreadId; // e.g. 'FP3'
-      const spName = specialPhotos[spKey];
+      // Single special photo (FP3 toy, FP4 steps, FP1 birthday) — stored as string or {name}
+      const spRaw = specialPhotos[spreadId];
+      const spName = typeof spRaw === 'string' ? spRaw : spRaw?.name;
       if (spName) photo = { name: spName };
     } else if (slot.pool === 'artwork') {
-      // Artwork slot — no photo
+      // FP5 art gallery — stored as array [leftName, rightName], or legacy plain string
+      const artArr = specialPhotos[spreadId];
+      const artIdx = side === 'left' ? 0 : 1;
+      let artName;
+      if (Array.isArray(artArr)) {
+        const entry = artArr[artIdx];
+        artName = typeof entry === 'string' ? entry : entry?.name;
+      } else {
+        // Legacy / single-photo fallback — same photo on both pages
+        artName = typeof artArr === 'string' ? artArr : artArr?.name;
+      }
+      if (artName) photo = { name: artName };
     } else {
       photo = toPhotoObj(assignedPhotos[i]) || null;
     }
@@ -191,14 +217,15 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
 const FONT_DIR   = path.resolve(__dirname, '../assets/fonts');
 const MM_TO_PT   = 72 / 25.4;
 const BLEED_PT   = BLEED_MM * MM_TO_PT;
-const CAPTION_COLOR = rgb(0.12, 0.12, 0.12);
+const CAPTION_COLOR = rgb(0.12, 0.12, 0.12); // default near-black
 
 const FONT_FILE_MAP = {
-  'NT Somic_regular':          'NTSomic-Regular.woff2',
-  'NT Somic_medium':           'NTSomic-Medium.woff2',
-  'EB Garamond_regular':       'EBGaramond-Regular.woff2',
-  'EB Garamond_italic':        'EBGaramond-Italic.woff2',
-  'EB Garamond_semibold':      'EBGaramond-SemiBold.woff2',
+  'NT Somic_regular':          'NTSomic-Regular.ttf',
+  'NT Somic_medium':           'NTSomic-Medium.ttf',
+  'NT Somic_bold':             'NTSomic-Bold.ttf',
+  'EB Garamond_regular':       'EBGaramond-VariableFont_wght.ttf',
+  'EB Garamond_italic':        'EBGaramond-Italic-VariableFont_wght.ttf',
+  'EB Garamond_semibold':      'EBGaramond-VariableFont_wght.ttf',
   'FirstTimeWriting_regular':  'FirstTimeWriting!.ttf',
 };
 
@@ -225,11 +252,26 @@ function lookupFont(fontMap, fontName, style) {
 
 // Draw captions for one page side onto `pg` (pdf-lib page object).
 // pageSizePt = the PDF page size in points (square).
-function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt) {
+// spreadId is used to determine caption color (FP spreads use plum).
+// spreadCaptionStyles carries per-slot user overrides from book-state.json.
+function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spreadId, spreadCaptionStyles) {
   const sideCaps = captions?.[si]?.[side];
   if (!sideCaps) return;
 
   const { slots, textPanel } = pageDef;
+
+  // Resolve a color to a pdf-lib rgb() value.
+  // Accepts a hex string ('#493955'), a named color ('plum' → looks up DATA.colors), or nothing.
+  function resolveColor(value) {
+    if (!value) return CAPTION_COLOR;
+    const hex = value.startsWith('#') ? value : DATA.colors[value];
+    if (!hex) return CAPTION_COLOR;
+    const h = hex.replace('#', '');
+    return rgb(parseInt(h.slice(0,2),16)/255, parseInt(h.slice(2,4),16)/255, parseInt(h.slice(4,6),16)/255);
+  }
+
+  // Per-slot style overrides from spreadCaptionStyles[si][side][slotIdx]
+  const scsOverrides = spreadCaptionStyles?.[si]?.[side] || {};
 
   // ── Slot captions ──────────────────────────────────────────────────────────
   for (let i = 0; i < (slots || []).length; i++) {
@@ -237,44 +279,99 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt) {
     const capDef = slot.caption;
     if (!capDef?.allowed) continue;
 
-    const text = sideCaps[i];
+    const text = stripHtml(sideCaps[i]);
     if (!text || !text.trim()) continue;
 
-    const font = lookupFont(fontMap, capDef.font, capDef.style);
-    if (!font) { console.warn(`  ⚠ Caption font not found: ${capDef.font} ${capDef.style}`); continue; }
+    // Merge per-slot style overrides (font, weight, italic, sizePt, lineSpacing, letterSpacing)
+    const ov       = scsOverrides[i] || {};
+    const fontName = ov.font          !== undefined ? ov.font     : capDef.font;
+    const ovStyle  = ov.weight !== undefined
+      ? (ov.weight >= 600 ? (ov.weight >= 700 ? 'bold' : 'semibold') : ov.italic ? 'italic' : 'regular')
+      : (ov.italic ? 'italic' : capDef.style || 'regular');
+    const font = lookupFont(fontMap, fontName, ovStyle);
+    if (!font) { console.warn(`  ⚠ Caption font not found: ${fontName} ${ovStyle}`); continue; }
 
-    const sizePt        = capDef.sizePt || 14;
-    const lineSpacingPt = sizePt * (capDef.lineSpacing || 1.28);
-    const charSpacing   = (capDef.letterSpacing || 0) * sizePt; // em → pt
+    const sizePt        = (ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 14;
+    const lineSpacingPt = sizePt * ((ov.lineSpacing !== undefined ? ov.lineSpacing : capDef.lineSpacing) || 1.28);
+    const charSpacing   = ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
 
-    // Top of caption block in mm from content top
-    const capTopMm = slot.y + slot.h / 2 + (capDef.offset || 0);
+    // Compute caption position based on capDef.position
+    const pos = capDef.position || 'below';
+    const lines = String(text).split('\n').filter(l => l.trim());
 
-    const lines = String(text).split('\n');
-    lines.forEach((line, li) => {
-      if (!line.trim()) return;
-      const textWidthPt = font.widthOfTextAtSize(line, sizePt)
-                        + charSpacing * Math.max(0, line.length - 1);
-      const xPt = BLEED_PT + slot.x * MM_TO_PT - textWidthPt / 2;
-      // pdf-lib y=0 is page bottom; baseline sits ~sizePt*0.75 below line top
-      const lineTopPt = pageSizePt - BLEED_PT - capTopMm * MM_TO_PT - li * lineSpacingPt;
-      const baselinePt = lineTopPt - sizePt * 0.75;
-      pg.drawText(line, { x: xPt, y: baselinePt, size: sizePt, font,
-                          color: CAPTION_COLOR, characterSpacing: charSpacing });
-    });
+    if (pos === 'upper-right') {
+      // Right-margin column, top-aligned: X right of slot, lines run downward from slot top.
+      const slotRightMm = slot.x + slot.w / 2;
+      const slotTopMm   = slot.y - slot.h / 2;
+      const xPt = BLEED_PT + slotRightMm * MM_TO_PT + 2 * MM_TO_PT;
+      lines.forEach((line, li) => {
+        const slotTopPt  = pageSizePt - BLEED_PT - slotTopMm * MM_TO_PT;
+        const baselinePt = slotTopPt - sizePt * 0.75 - li * lineSpacingPt;
+        pg.drawText(line, { x: xPt, y: baselinePt, size: sizePt, font,
+                            color: resolveColor(capDef.color), characterSpacing: charSpacing });
+      });
+    } else if (pos === 'lower-right') {
+      // Right-margin column, bottom-aligned: X right of slot, lines stack upward from slot bottom.
+      const slotRightMm  = slot.x + slot.w / 2;
+      const slotBottomMm = slot.y + slot.h / 2;
+      const xPt = BLEED_PT + slotRightMm * MM_TO_PT + 2 * MM_TO_PT;
+      lines.slice().reverse().forEach((line, li) => {
+        const slotBottomPt = pageSizePt - BLEED_PT - slotBottomMm * MM_TO_PT;
+        const baselinePt   = slotBottomPt + li * lineSpacingPt;
+        pg.drawText(line, { x: xPt, y: baselinePt, size: sizePt, font,
+                            color: resolveColor(capDef.color), characterSpacing: charSpacing });
+      });
+    } else {
+      // 'above': caption sits above the slot
+      // 'below' / default: caption sits below the slot
+      let capTopMm;
+      if (pos === 'above') {
+        // Estimate caption block height (2 lines), then place above slot top - offset
+        const capBlockMm = (sizePt / MM_TO_PT) * 2.5;
+        capTopMm = slot.y - slot.h / 2 - (capDef.offset || 0) - capBlockMm;
+      } else {
+        capTopMm = slot.y + slot.h / 2 + (capDef.offset || 0);
+      }
+      const align = capDef.align || 'center';
+      lines.forEach((line, li) => {
+        const textWidthPt = font.widthOfTextAtSize(line, sizePt)
+                          + charSpacing * Math.max(0, line.length - 1);
+        const slotCenterPt = BLEED_PT + slot.x * MM_TO_PT;
+        const xPt = align === 'left'  ? slotCenterPt - slot.w / 2 * MM_TO_PT
+                  : align === 'right' ? slotCenterPt + slot.w / 2 * MM_TO_PT - textWidthPt
+                  :                     slotCenterPt - textWidthPt / 2; // center
+        // pdf-lib y=0 is page bottom; baseline sits ~sizePt*0.75 below line top
+        const lineTopPt = pageSizePt - BLEED_PT - capTopMm * MM_TO_PT - li * lineSpacingPt;
+        const baselinePt = lineTopPt - sizePt * 0.75;
+        pg.drawText(line, { x: xPt, y: baselinePt, size: sizePt, font,
+                            color: resolveColor(capDef.color), characterSpacing: charSpacing });
+      });
+    }
   }
 
   // ── Text panel caption (FP spreads) ───────────────────────────────────────
-  const panelText = sideCaps['textPanel'];
+  const panelText = stripHtml(sideCaps['textPanel']);
   if (textPanel?.caption?.allowed && panelText && panelText.trim()) {
     const capDef = textPanel.caption;
-    const font = lookupFont(fontMap, capDef.font, capDef.style);
+    // Text panels also support per-slot style overrides stored under key 'textPanel'
+    const ov = scsOverrides['textPanel'] || {};
+    const fontName = ov.font !== undefined ? ov.font : capDef.font;
+    const ovStyle  = ov.weight !== undefined
+      ? (ov.weight >= 600 ? (ov.weight >= 700 ? 'bold' : 'semibold') : ov.italic ? 'italic' : 'regular')
+      : (ov.italic ? 'italic' : capDef.style || 'regular');
+    const font = lookupFont(fontMap, fontName, ovStyle);
     if (font) {
-      const sizePt        = capDef.sizePt || 16;
-      const lineSpacingPt = sizePt * (capDef.lineSpacing || 1.28);
-      const charSpacing   = (capDef.letterSpacing || 0) * sizePt;
-      // Text panel is centered at x=100mm, starting at y=50mm (middle of content area)
-      const centerXMm = 100, startYMm = 50;
+      const isFunnyWords = capDef.font === 'FirstTimeWriting';
+      // FunnyWords: template sizePt is in mm (canvas-scaled units), convert to PDF pt.
+      // Regular panels: sizePt is standard typographic pt.
+      const sizePt        = isFunnyWords
+        ? ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 20) * MM_TO_PT
+        : ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 16);
+      const lineSpacingPt = sizePt * ((ov.lineSpacing !== undefined ? ov.lineSpacing : capDef.lineSpacing) || 1.28);
+      const charSpacing   = ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
+      // Panel position: centered at x=100mm; top starts at 30% of content height (60mm)
+      // This matches template-engine.html: top = 200 * SCALE * 0.30 → 60mm
+      const centerXMm = 100, startYMm = 60;
       const lines = String(panelText).split('\n');
       lines.forEach((line, li) => {
         if (!line.trim()) return;
@@ -283,7 +380,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt) {
         const xPt = BLEED_PT + centerXMm * MM_TO_PT - textWidthPt / 2;
         const lineTopPt = pageSizePt - BLEED_PT - startYMm * MM_TO_PT - li * lineSpacingPt;
         pg.drawText(line, { x: xPt, y: lineTopPt - sizePt * 0.75, size: sizePt, font,
-                            color: CAPTION_COLOR, characterSpacing: charSpacing });
+                            color: resolveColor(capDef.color), characterSpacing: charSpacing });
       });
     }
   }
@@ -303,8 +400,9 @@ async function main() {
   const PAGE_SIZE_PT = FULL_MM / 25.4 * 72; // 206mm in PDF points
   const fontMap = await embedAllFonts(pdfDoc);
 
-  const specialPhotos = state.specialPhotos || {};
-  const captions = state.captions || {};
+  const specialPhotos        = state.specialPhotos        || {};
+  const captions             = state.captions             || {};
+  const spreadCaptionStyles  = state.spreadCaptionStyles  || {};
   let pageNum = 0;
 
   for (let si = 0; si < state.sequence.length; si++) {
@@ -316,9 +414,32 @@ async function main() {
     const leftArr  = asgn.left  || [];
     const rightArr = asgn.right || [];
 
-    // Pick variants based on assigned photo orientations
-    const leftVariant  = pickVariant(leftArr);
-    const rightVariant = pickVariant(rightArr);
+    // Pick variants based on assigned photo orientations.
+    // For FP spreads where one side has no regular photos but has a special photo,
+    // probe the special photo's actual dimensions to determine V vs H.
+    async function pickVariantWithSpecial(photos, spreadId, isLeft) {
+      if (photos.length > 0) return pickVariant(photos);
+      // No regular photos — check if a special/artwork photo determines the variant.
+      // specialPhotos[id] is a string for single-photo FPs (FP1/FP3/FP4),
+      // or an array for FP5 art gallery (index 0 = left, index 1 = right).
+      const spRaw = specialPhotos[spreadId];
+      let spName;
+      if (Array.isArray(spRaw)) {
+        const entry = spRaw[isLeft ? 0 : 1];
+        spName = typeof entry === 'string' ? entry : entry?.name;
+      } else {
+        spName = typeof spRaw === 'string' ? spRaw : spRaw?.name;
+      }
+      if (!spName) return 'H';
+      const spPath = photoPath(spName);
+      if (!fs.existsSync(spPath)) return 'H';
+      try {
+        const meta = await sharp(spPath).metadata();
+        return (meta.height > meta.width) ? 'V' : 'H';
+      } catch (e) { return 'H'; }
+    }
+    const leftVariant  = await pickVariantWithSpecial(leftArr, spreadId, true);
+    const rightVariant = await pickVariantWithSpecial(rightArr, spreadId, false);
 
     const pages = spreadDef.pages || {};
 
@@ -332,7 +453,7 @@ async function main() {
           const img = await pdfDoc.embedPng(buf);
           const pg  = pdfDoc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
           pg.drawImage(img, { x: 0, y: 0, width: PAGE_SIZE_PT, height: PAGE_SIZE_PT });
-          drawCaptions(pg, fontMap, leftDef, String(si), 'left', captions, PAGE_SIZE_PT);
+          drawCaptions(pg, fontMap, leftDef, String(si), 'left', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles);
           pageNum++;
           console.log(`✓ (page ${pageNum})`);
         } catch (e) {
@@ -355,7 +476,7 @@ async function main() {
         const img = await pdfDoc.embedPng(buf);
         const pg  = pdfDoc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
         pg.drawImage(img, { x: 0, y: 0, width: PAGE_SIZE_PT, height: PAGE_SIZE_PT });
-        drawCaptions(pg, fontMap, rightDef, String(si), 'right', captions, PAGE_SIZE_PT);
+        drawCaptions(pg, fontMap, rightDef, String(si), 'right', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles);
         pageNum++;
         console.log(`✓ (page ${pageNum})`);
       } catch (e) {

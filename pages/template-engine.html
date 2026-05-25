@@ -9,28 +9,28 @@
   <style>
     @font-face {
       font-family: 'NT Somic';
-      src: url('../assets/fonts/NTSomic-Regular.woff2') format('woff2');
+      src: url('../assets/fonts/NTSomic-Regular.ttf') format('truetype');
       font-weight: 400; font-style: normal; font-display: swap;
     }
     @font-face {
       font-family: 'NT Somic';
-      src: url('../assets/fonts/NTSomic-Medium.woff2') format('woff2');
+      src: url('../assets/fonts/NTSomic-Medium.ttf') format('truetype');
       font-weight: 500; font-style: normal; font-display: swap;
     }
     @font-face {
-      font-family: 'EB Garamond';
-      src: url('../assets/fonts/EBGaramond-Regular.woff2') format('woff2');
-      font-weight: 400; font-style: normal; font-display: swap;
+      font-family: 'NT Somic';
+      src: url('../assets/fonts/NTSomic-Bold.ttf') format('truetype');
+      font-weight: 700; font-style: normal; font-display: swap;
     }
     @font-face {
       font-family: 'EB Garamond';
-      src: url('../assets/fonts/EBGaramond-Italic.woff2') format('woff2');
-      font-weight: 400; font-style: italic; font-display: swap;
+      src: url('../assets/fonts/EBGaramond-VariableFont_wght.ttf') format('truetype');
+      font-weight: 400 900; font-style: normal; font-display: swap;
     }
     @font-face {
       font-family: 'EB Garamond';
-      src: url('../assets/fonts/EBGaramond-SemiBold.woff2') format('woff2');
-      font-weight: 600; font-style: normal; font-display: swap;
+      src: url('../assets/fonts/EBGaramond-Italic-VariableFont_wght.ttf') format('truetype');
+      font-weight: 400 900; font-style: italic; font-display: swap;
     }
     @font-face {
       font-family: 'FirstTimeWriting';
@@ -799,7 +799,8 @@
   window.bookAssignments    = {};   // { spreadIndex: { left:[poolIdx|null,...], right:[...] } }
   window.captionState       = {};   // { spreadIndex: { left:{1:'text'}, right:{1:'text'} } }
   window.specialPhotos      = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
-  window.coverCaptionStyles = {};   // { year: { font, weight, style, sizePt, lineSpacing, letterSpacing }, name: {...} }
+  window.coverCaptionStyles  = {};   // { year: { font, weight, style, sizePt, lineSpacing, letterSpacing }, name: {...} }
+  window.spreadCaptionStyles = {};   // { spreadIndex: { side: { slotIdx: { font, weight, italic, sizePt, lineSpacing, letterSpacing } } } }
 
   const SCALE = 3;               // px per mm
   const HEIC_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/convertHeic';
@@ -1028,11 +1029,16 @@
       }
     }
 
-    // Special photos: one filename per key (max 1 per key)
+    // Special photos: one filename per key (max 1 per key), except FP5 which stores [left, right]
     const specialPhotos = {};
     for (const [key, arr] of Object.entries(window.specialPhotos || {})) {
       const names = arr.filter(Boolean).map(p => p.name || null);
-      if (names.length) specialPhotos[key] = names[0]; // cover/FP3/FP4 have max 1
+      if (!names.length) continue;
+      if (key === 'FP5') {
+        specialPhotos[key] = names; // array: [leftPhoto, rightPhoto]
+      } else {
+        specialPhotos[key] = names[0]; // cover/FP1/FP3/FP4 have max 1
+      }
     }
 
     const state = {
@@ -1043,6 +1049,7 @@
       specialPhotos,
       captions: window.bookCaptions || {},
       coverCaptionStyles: window.coverCaptionStyles || {},
+      spreadCaptionStyles: window.spreadCaptionStyles || {},
     };
 
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
@@ -1406,15 +1413,34 @@
   ═══════════════════════════════════════════ */
 
   const COVER_FONTS = [
-    { label: 'NT Somic',    value: 'NT Somic',    styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }] },
-    { label: 'EB Garamond', value: 'EB Garamond', styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Semi-Bold', weight: 600, italic: false }] },
+    { label: 'NT Somic',          value: 'NT Somic',          styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
+    { label: 'EB Garamond',       value: 'EB Garamond',       styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Semi-Bold', weight: 600, italic: false }] },
+    { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }], funnyWordsOnly: true },
   ];
 
-  let _tbCapDef  = null;  // coverDef.captions entry currently being edited
-  let _tbCapEl   = null;  // the DOM element
+  let _tbMode       = 'cover';  // 'cover' | 'spread'
+  let _tbCapDef     = null;     // coverDef.captions entry (cover mode)
+  let _tbCapEl      = null;     // the active DOM element
+  let _tbSpreadCtx  = null;     // { spreadIndex, side, slotIdx, capDef } (spread mode)
+
+  // Returns the current style value for `prop` from whichever storage is active.
+  function getTbStyle(prop, defaultVal) {
+    if (_tbMode === 'cover' && _tbCapDef) {
+      const ov = window.coverCaptionStyles[_tbCapDef.key] || {};
+      return ov[prop] !== undefined ? ov[prop] : (_tbCapDef[prop] !== undefined ? _tbCapDef[prop] : defaultVal);
+    }
+    if (_tbMode === 'spread' && _tbSpreadCtx) {
+      const { spreadIndex, side, slotIdx, capDef } = _tbSpreadCtx;
+      const ov = window.spreadCaptionStyles?.[spreadIndex]?.[side]?.[slotIdx] || {};
+      return ov[prop] !== undefined ? ov[prop] : (capDef[prop] !== undefined ? capDef[prop] : defaultVal);
+    }
+    return defaultVal;
+  }
 
   function showCoverCaptionToolbar(capDef, capEl) {
-    _tbCapDef = capDef;
+    _tbMode      = 'cover';
+    _tbSpreadCtx = null;
+    _tbCapDef    = capDef;
     _tbCapEl  = capEl;
 
     const ov = window.coverCaptionStyles[capDef.key] || {};
@@ -1428,10 +1454,11 @@
     // Label
     document.getElementById('tb-caption-label').textContent = capDef.label;
 
+
     // Font select
     const sel = document.getElementById('tb-font');
     sel.innerHTML = '';
-    COVER_FONTS.forEach(f => {
+    COVER_FONTS.filter(f => !f.funnyWordsOnly).forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.value; opt.textContent = f.label;
       if (f.value === currentFont) opt.selected = true;
@@ -1459,9 +1486,50 @@
     tb.classList.add('visible');
   }
 
+  function showSpreadCaptionToolbar(spreadIndex, side, slotIdx, capDef, capEl) {
+    _tbMode      = 'spread';
+    _tbCapDef    = null;
+    _tbCapEl     = capEl;
+    _tbSpreadCtx = { spreadIndex, side, slotIdx, capDef };
+
+    const ov            = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
+    const currentFont   = ov.font          !== undefined ? ov.font   : capDef.font;
+    const currentWeight = ov.weight        !== undefined ? ov.weight : (capDef.style === 'bold' ? 700 : capDef.style === 'semibold' ? 600 : capDef.style === 'medium' ? 500 : 400);
+    const currentItalic = ov.italic        !== undefined ? ov.italic : capDef.style === 'italic';
+    const currentSize   = ov.sizePt        !== undefined ? ov.sizePt : capDef.sizePt;
+    const currentLine   = ov.lineSpacing   !== undefined ? ov.lineSpacing   : (capDef.lineSpacing   || 1.28);
+    const currentLS     = ov.letterSpacing !== undefined ? ov.letterSpacing : (capDef.letterSpacing || 0);
+
+    document.getElementById('tb-caption-label').textContent = 'Caption';
+
+    const isFunnyWordsPanel = capDef.font === 'FirstTimeWriting';
+    const sel = document.getElementById('tb-font');
+    sel.innerHTML = '';
+    COVER_FONTS.filter(f => !f.funnyWordsOnly || isFunnyWordsPanel).forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.value; opt.textContent = f.label;
+      if (f.value === currentFont) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    rebuildStylePills(currentFont, currentWeight, currentItalic);
+    document.getElementById('tb-size-val').textContent = currentSize + 'pt';
+    document.getElementById('tb-line-val').textContent = currentLine.toFixed(2);
+    document.getElementById('tb-ls-val').textContent   = currentLS.toFixed(2) + 'em';
+
+    const rect = capEl.getBoundingClientRect();
+    const tb   = document.getElementById('cover-caption-toolbar');
+    tb.style.top  = Math.max(8, rect.top - 58) + 'px';
+    tb.style.left = Math.max(8, rect.left) + 'px';
+    tb.classList.add('visible');
+  }
+
+
   function rebuildStylePills(fontValue, activeWeight, activeItalic) {
     const group = document.getElementById('tb-style-group');
     group.innerHTML = '';
+    // Style pills shown for both cover and spread captions.
+    // In spread mode, pills write to spreadCaptionStyles (read by PDF export).
+    // B/I execCommand buttons remain for visual-only inline markup in the engine preview.
     const fontDef = COVER_FONTS.find(f => f.value === fontValue);
     if (!fontDef) return;
     fontDef.styles.forEach(s => {
@@ -1480,76 +1548,109 @@
   }
 
   function tbUpdate(patch) {
-    if (!_tbCapDef) return;
-    const key = _tbCapDef.key;
-    if (!window.coverCaptionStyles[key]) {
-      // Initialise from CSV defaults
-      window.coverCaptionStyles[key] = {
-        font:          _tbCapDef.font,
-        weight:        400,
-        italic:        false,
-        sizePt:        _tbCapDef.sizePt,
-        lineSpacing:   1.1,
-        letterSpacing: 0,
-      };
+    if (_tbMode === 'cover') {
+      if (!_tbCapDef) return;
+      const key = _tbCapDef.key;
+      if (!window.coverCaptionStyles[key]) {
+        window.coverCaptionStyles[key] = {
+          font: _tbCapDef.font, weight: 400, italic: false,
+          sizePt: _tbCapDef.sizePt, lineSpacing: 1.1, letterSpacing: 0,
+        };
+      }
+      Object.assign(window.coverCaptionStyles[key], patch);
+      applyStyleToCapEl(key);
+    } else {
+      if (!_tbSpreadCtx || !_tbCapEl) return;
+      const { spreadIndex, side, slotIdx, capDef } = _tbSpreadCtx;
+      const si = String(spreadIndex);
+      if (!window.spreadCaptionStyles[si]) window.spreadCaptionStyles[si] = {};
+      if (!window.spreadCaptionStyles[si][side]) window.spreadCaptionStyles[si][side] = {};
+      if (!window.spreadCaptionStyles[si][side][slotIdx]) {
+        window.spreadCaptionStyles[si][side][slotIdx] = {
+          font: capDef.font,
+          weight: capDef.style === 'bold' ? 700 : capDef.style === 'semibold' ? 600 : capDef.style === 'medium' ? 500 : 400,
+          italic: capDef.style === 'italic',
+          sizePt: capDef.sizePt,
+          lineSpacing: capDef.lineSpacing || 1.28,
+          letterSpacing: capDef.letterSpacing || 0,
+        };
+      }
+      Object.assign(window.spreadCaptionStyles[si][side][slotIdx], patch);
+      applyStyleToSpreadCapEl();
     }
-    Object.assign(window.coverCaptionStyles[key], patch);
-    applyStyleToCapEl(key);
   }
 
   function applyStyleToCapEl(key) {
-    // Update the live element without full re-render (preserves focus)
     const el = document.querySelector(`.cover-caption[data-cover-caption-key="${key}"]`);
     if (!el) return;
     const capDef = window.SCRIBBLE_DATA.cover.captions.find(c => c.key === key);
     if (!capDef) return;
     const ov = window.coverCaptionStyles[key] || {};
-    el.style.fontFamily     = `'${ov.font || capDef.font}', serif`;
-    el.style.fontWeight     = ov.weight || 400;
-    el.style.fontStyle      = ov.italic ? 'italic' : 'normal';
-    el.style.fontSize       = (ov.sizePt || capDef.sizePt) + 'pt';
+    el.style.fontFamily    = `'${ov.font || capDef.font}', serif`;
+    el.style.fontWeight    = ov.weight || 400;
+    el.style.fontStyle     = ov.italic ? 'italic' : 'normal';
+    el.style.fontSize      = (ov.sizePt || capDef.sizePt) + 'pt';
     const lsMult = ov.lineSpacing !== undefined ? ov.lineSpacing : 1.1;
-    el.style.lineHeight     = ((ov.sizePt || capDef.sizePt) * lsMult).toFixed(1) + 'pt';
-    el.style.letterSpacing  = (ov.letterSpacing || 0) + 'em';
+    el.style.lineHeight    = ((ov.sizePt || capDef.sizePt) * lsMult).toFixed(1) + 'pt';
+    el.style.letterSpacing = (ov.letterSpacing || 0) + 'em';
+  }
+
+  function applyStyleToSpreadCapEl() {
+    if (!_tbCapEl || !_tbSpreadCtx) return;
+    const { spreadIndex, side, slotIdx, capDef } = _tbSpreadCtx;
+    const ov = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
+    const font          = ov.font          !== undefined ? ov.font          : capDef.font;
+    const weight        = ov.weight        !== undefined ? ov.weight        : (capDef.style === 'bold' ? 700 : capDef.style === 'semibold' ? 600 : capDef.style === 'medium' ? 500 : 400);
+    const italic        = ov.italic        !== undefined ? ov.italic        : capDef.style === 'italic';
+    const sizePt        = ov.sizePt        !== undefined ? ov.sizePt        : capDef.sizePt;
+    const lineSpacing   = ov.lineSpacing   !== undefined ? ov.lineSpacing   : (capDef.lineSpacing   || 1.28);
+    const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : (capDef.letterSpacing || 0);
+    // FunnyWords panel uses canvas-scaled px (sizePt * SCALE) for accurate print representation;
+    // all other spread captions use CSS pt directly.
+    const isFunnyWordsEl = capDef.font === 'FirstTimeWriting';
+    _tbCapEl.style.fontFamily    = `'${font}', serif`;
+    _tbCapEl.style.fontWeight    = weight;
+    _tbCapEl.style.fontStyle     = italic ? 'italic' : 'normal';
+    _tbCapEl.style.fontSize      = isFunnyWordsEl ? (sizePt * SCALE) + 'px' : sizePt + 'pt';
+    _tbCapEl.style.lineHeight    = lineSpacing;
+    _tbCapEl.style.letterSpacing = letterSpacing + 'em';
   }
 
   // Toolbar event wiring (runs once on DOMContentLoaded)
   document.addEventListener('DOMContentLoaded', () => {
     const tb = document.getElementById('cover-caption-toolbar');
 
-    // Hide toolbar when clicking outside toolbar and outside a cover caption
+    // Hide toolbar when clicking outside toolbar and outside any caption
     document.addEventListener('mousedown', e => {
-      if (!tb.contains(e.target) && !e.target.closest('.cover-caption')) {
+      if (!tb.contains(e.target) && !e.target.closest('.cover-caption') && !e.target.closest('.slot-caption')) {
         tb.classList.remove('visible');
-        _tbCapDef = null; _tbCapEl = null;
+        _tbCapDef = null; _tbCapEl = null; _tbSpreadCtx = null; _tbMode = 'cover';
       }
     });
 
     // Font select
     document.getElementById('tb-font').addEventListener('change', e => {
       const newFont = e.target.value;
-      // Reset style to first option of new font
       const fontDef = COVER_FONTS.find(f => f.value === newFont);
       const firstStyle = fontDef ? fontDef.styles[0] : { weight: 400, italic: false };
       tbUpdate({ font: newFont, weight: firstStyle.weight, italic: firstStyle.italic });
       rebuildStylePills(newFont, firstStyle.weight, firstStyle.italic);
-      document.getElementById('tb-size-val').textContent =
-        (window.coverCaptionStyles[_tbCapDef.key]?.sizePt || _tbCapDef.sizePt) + 'pt';
+      document.getElementById('tb-size-val').textContent = getTbStyle('sizePt', 14) + 'pt';
     });
 
     // Size stepper
     document.getElementById('tb-size-down').addEventListener('mousedown', e => {
       e.preventDefault();
-      const key = _tbCapDef?.key; if (!key) return;
-      const cur = window.coverCaptionStyles[key]?.sizePt || _tbCapDef.sizePt;
+      if (!_tbCapDef && !_tbSpreadCtx) return;
+      const cur = getTbStyle('sizePt', 14);
       const next = Math.max(6, cur - 1);
       tbUpdate({ sizePt: next });
       document.getElementById('tb-size-val').textContent = next + 'pt';
     });
     document.getElementById('tb-size-up').addEventListener('mousedown', e => {
       e.preventDefault();
-      const key = _tbCapDef?.key; if (!key) return;
-      const cur = window.coverCaptionStyles[key]?.sizePt || _tbCapDef.sizePt;
+      if (!_tbCapDef && !_tbSpreadCtx) return;
+      const cur = getTbStyle('sizePt', 14);
       const next = Math.min(120, cur + 1);
       tbUpdate({ sizePt: next });
       document.getElementById('tb-size-val').textContent = next + 'pt';
@@ -1558,16 +1659,16 @@
     // Line spacing stepper (step 0.05)
     document.getElementById('tb-line-down').addEventListener('mousedown', e => {
       e.preventDefault();
-      const key = _tbCapDef?.key; if (!key) return;
-      const cur = window.coverCaptionStyles[key]?.lineSpacing ?? 1.1;
+      if (!_tbCapDef && !_tbSpreadCtx) return;
+      const cur = getTbStyle('lineSpacing', 1.2);
       const next = Math.max(0.5, parseFloat((cur - 0.05).toFixed(2)));
       tbUpdate({ lineSpacing: next });
       document.getElementById('tb-line-val').textContent = next.toFixed(2);
     });
     document.getElementById('tb-line-up').addEventListener('mousedown', e => {
       e.preventDefault();
-      const key = _tbCapDef?.key; if (!key) return;
-      const cur = window.coverCaptionStyles[key]?.lineSpacing ?? 1.1;
+      if (!_tbCapDef && !_tbSpreadCtx) return;
+      const cur = getTbStyle('lineSpacing', 1.2);
       const next = Math.min(3.0, parseFloat((cur + 0.05).toFixed(2)));
       tbUpdate({ lineSpacing: next });
       document.getElementById('tb-line-val').textContent = next.toFixed(2);
@@ -1576,20 +1677,21 @@
     // Letter spacing stepper (step 0.02em)
     document.getElementById('tb-ls-down').addEventListener('mousedown', e => {
       e.preventDefault();
-      const key = _tbCapDef?.key; if (!key) return;
-      const cur = window.coverCaptionStyles[key]?.letterSpacing ?? 0;
+      if (!_tbCapDef && !_tbSpreadCtx) return;
+      const cur = getTbStyle('letterSpacing', 0);
       const next = Math.max(-0.2, parseFloat((cur - 0.02).toFixed(2)));
       tbUpdate({ letterSpacing: next });
       document.getElementById('tb-ls-val').textContent = next.toFixed(2) + 'em';
     });
     document.getElementById('tb-ls-up').addEventListener('mousedown', e => {
       e.preventDefault();
-      const key = _tbCapDef?.key; if (!key) return;
-      const cur = window.coverCaptionStyles[key]?.letterSpacing ?? 0;
+      if (!_tbCapDef && !_tbSpreadCtx) return;
+      const cur = getTbStyle('letterSpacing', 0);
       const next = Math.min(0.5, parseFloat((cur + 0.02).toFixed(2)));
       tbUpdate({ letterSpacing: next });
       document.getElementById('tb-ls-val').textContent = next.toFixed(2) + 'em';
     });
+
   });
 
   /*
@@ -1885,6 +1987,11 @@
             capLeft  = sLeft + sW + gap;
             capTop   = sTop;
             capWidth = Math.max(60, (200 * SCALE) - (sLeft + sW + gap) - 6);
+          } else if (cap.position === 'lower-right') {
+            // Horizontal text block in the right-margin, aligned to photo bottom (mirrors upper-right)
+            capLeft  = sLeft + sW + gap;
+            capTop   = sTop + sH - capH;
+            capWidth = Math.max(60, (200 * SCALE) - (sLeft + sW + gap) - 6);
           } else {
             capLeft  = sLeft + sW * 0.05;
             capTop   = sTop + sH + gap;
@@ -1899,38 +2006,46 @@
           captionEl.style.left  = capLeft  + 'px';
           captionEl.style.top   = capTop   + 'px';
           captionEl.style.width = capWidth + 'px';
-          if (cap.position === 'upper-right') captionEl.style.textAlign = 'left';
+          captionEl.style.textAlign = cap.align || 'center';
+          if (cap.position === 'lower-right') captionEl.style.zIndex = '3';
 
-          // Typography from template-data (CSV source of truth)
-          if (cap.font)                        captionEl.style.fontFamily    = `'${cap.font}', var(--sans)`;
-          if (cap.sizePt)                      captionEl.style.fontSize      = cap.sizePt + 'pt';
-          if (cap.lineSpacing)                 captionEl.style.lineHeight    = cap.lineSpacing;
-          if (cap.letterSpacing !== undefined) captionEl.style.letterSpacing = cap.letterSpacing + 'em';
-          if (cap.style === 'italic')          captionEl.style.fontStyle     = 'italic';
-          if (cap.style === 'semibold')        captionEl.style.fontWeight    = '600';
-          else if (cap.style === 'medium')     captionEl.style.fontWeight    = '500';
-          else if (cap.style === 'bold')       captionEl.style.fontWeight    = '700';
+          // Typography: CSV defaults merged with any user overrides from spreadCaptionStyles
+          const _scsOv = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
+          const _font   = _scsOv.font          !== undefined ? _scsOv.font          : cap.font;
+          const _weight = _scsOv.weight        !== undefined ? _scsOv.weight        : (cap.style === 'bold' ? 700 : cap.style === 'semibold' ? 600 : cap.style === 'medium' ? 500 : 400);
+          const _italic = _scsOv.italic        !== undefined ? _scsOv.italic        : cap.style === 'italic';
+          const _sizePt = _scsOv.sizePt        !== undefined ? _scsOv.sizePt        : cap.sizePt;
+          const _lineS  = _scsOv.lineSpacing   !== undefined ? _scsOv.lineSpacing   : (cap.lineSpacing   || 1.28);
+          const _letS   = _scsOv.letterSpacing !== undefined ? _scsOv.letterSpacing : (cap.letterSpacing || 0);
+          if (_font)   captionEl.style.fontFamily    = `'${_font}', var(--sans)`;
+          if (_sizePt) captionEl.style.fontSize      = _sizePt + 'pt';
+          captionEl.style.lineHeight    = _lineS;
+          captionEl.style.letterSpacing = _letS + 'em';
+          captionEl.style.fontWeight    = _weight;
+          captionEl.style.fontStyle     = _italic ? 'italic' : 'normal';
 
           const saved = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx];
-          if (saved) captionEl.innerText = applyTypographicRules(saved);
+          if (saved) captionEl.innerHTML = saved.includes('<') ? saved : applyTypographicRules(saved);
 
           const saveCaption = () => {
-            const raw = captionEl.innerText.trim();
+            // Save innerHTML to preserve inline bold/italic spans
+            const html = captionEl.innerHTML.trim();
             if (!window.bookCaptions) window.bookCaptions = {};
             if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
             if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
-            window.bookCaptions[spreadIndex][side][slotIdx] = raw;
-            return raw;
+            window.bookCaptions[spreadIndex][side][slotIdx] = html;
+            return html;
           };
 
           captionEl.addEventListener('focus', () => {
-            // Show raw text while editing (undo typographic substitutions)
-            const raw = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx] || '';
-            captionEl.innerText = raw;
+            const stored = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx] || '';
+            // Restore as-is (may contain inline markup)
+            captionEl.innerHTML = stored;
+            showSpreadCaptionToolbar(spreadIndex, side, slotIdx, cap, captionEl);
           });
           captionEl.addEventListener('blur', () => {
-            const raw = saveCaption();
-            captionEl.innerText = applyTypographicRules(raw);
+            const html = saveCaption();
+            captionEl.innerHTML = html;
           });
           captionEl.addEventListener('mousedown', e => e.stopPropagation());
           captionEl.addEventListener('keydown', e => {
@@ -1979,8 +2094,8 @@
               if (!window.bookCaptions) window.bookCaptions = {};
               if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
               if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
-              window.bookCaptions[spreadIndex][side][slotIdx] = caption;
-              captionEl.textContent = applyTypographicRules(caption);
+              window.bookCaptions[spreadIndex][side][slotIdx] = applyTypographicRules(caption);
+              captionEl.innerHTML = applyTypographicRules(caption);
               aiBtn.textContent = '✦ Generate';
               aiBtn.title = '';
             } catch (err) {
@@ -2021,7 +2136,7 @@
         }
         if (tpCap.lineSpacing)                 panelEl.style.lineHeight    = tpCap.lineSpacing;
         if (tpCap.letterSpacing !== undefined) panelEl.style.letterSpacing = tpCap.letterSpacing + 'em';
-        if (isFunnyWords)                      panelEl.style.whiteSpace    = 'pre-line';
+        // Line breaks handled via <br> tags (innerHTML round-trip) — pre-line not needed
 
         const formatFunnyWords = (text) => {
           if (!isFunnyWords) return text;
@@ -2029,10 +2144,24 @@
           return words.join('\n');
         };
 
-        if (saved) panelEl.textContent = isFunnyWords ? formatFunnyWords(saved) : applyTypographicRules(saved);
+        // Helpers: convert between stored plain text (newlines) and innerHTML (<br> tags)
+        const panelToPlain = () => {
+          // Normalize Chrome's <div> wrapping and <br> tags to \n, then strip remaining tags
+          return panelEl.innerHTML
+            .replace(/<div>/gi, '\n').replace(/<\/div>/gi, '')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .trim();
+        };
+        const plainToPanel = (text) => {
+          panelEl.innerHTML = text.replace(/\n/g, '<br>');
+        };
+
+        if (saved) plainToPanel(isFunnyWords ? formatFunnyWords(saved) : applyTypographicRules(saved));
 
         const savePanelCaption = () => {
-          const raw = panelEl.textContent.trim();
+          const raw = panelToPlain();
           if (!window.bookCaptions) window.bookCaptions = {};
           if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
           if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
@@ -2042,15 +2171,21 @@
 
         panelEl.addEventListener('focus', () => {
           const stored = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanel'] || '';
-          panelEl.textContent = isFunnyWords ? formatFunnyWords(stored) : stored;
+          plainToPanel(isFunnyWords ? formatFunnyWords(stored) : stored);
+          showSpreadCaptionToolbar(spreadIndex, side, 'textPanel', tpCap, panelEl);
         });
         panelEl.addEventListener('blur', () => {
           const raw = savePanelCaption();
-          panelEl.textContent = isFunnyWords ? formatFunnyWords(raw) : applyTypographicRules(raw);
+          plainToPanel(isFunnyWords ? formatFunnyWords(raw) : applyTypographicRules(raw));
         });
         panelEl.addEventListener('mousedown', e => e.stopPropagation());
         panelEl.addEventListener('keydown', e => {
-          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); panelEl.blur(); }
+          if (e.key === 'Escape') { e.preventDefault(); panelEl.blur(); return; }
+          // Insert a <br> on Enter so line breaks survive innerHTML round-trips
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            document.execCommand('insertLineBreak');
+          }
         });
 
         canvas.appendChild(panelEl);
@@ -2092,7 +2227,7 @@
             if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
             if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
             window.bookCaptions[spreadIndex][side]['textPanel'] = caption;
-            panelEl.textContent = isFunnyWords ? formatFunnyWords(caption) : applyTypographicRules(caption);
+            plainToPanel(isFunnyWords ? formatFunnyWords(caption) : applyTypographicRules(caption));
             aiPanelBtn.textContent = '✦ Generate';
             aiPanelBtn.title = '';
           } catch (err) {

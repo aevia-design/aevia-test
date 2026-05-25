@@ -74,6 +74,11 @@ function parseCaptionStyle(row) {
   if (!isNaN(ls)) result.letterSpacing = ls;
   const lsp = parseFloat(row['caption_line_spacing']);
   if (!isNaN(lsp)) result.lineSpacing = lsp;
+  // Accept either a named color (e.g. 'plum') or a hex value (e.g. '#493955')
+  const color = (row['captions_color'] || '').trim();
+  if (color && color !== 'n.a') result.color = color;
+  const align = (row['captions_alignment'] || '').trim();
+  if (align && align !== 'n.a') result.align = align;
   return result;
 }
 
@@ -369,6 +374,8 @@ function serializeCaption(c) {
   if (c.style)                      s += `, style: '${c.style}'`;
   if (c.letterSpacing !== undefined) s += `, letterSpacing: ${c.letterSpacing}`;
   if (c.lineSpacing   !== undefined) s += `, lineSpacing: ${c.lineSpacing}`;
+  if (c.color)                       s += `, color: '${c.color}'`;
+  if (c.align)                       s += `, align: '${c.align}'`;
   s += ` }`;
   return s;
 }
@@ -397,6 +404,8 @@ function serializeVariant(vKey, v) {
     if (tc.style)                      tpCap += `, style: '${tc.style}'`;
     if (tc.letterSpacing !== undefined) tpCap += `, letterSpacing: ${tc.letterSpacing}`;
     if (tc.lineSpacing   !== undefined) tpCap += `, lineSpacing: ${tc.lineSpacing}`;
+    if (tc.color)                       tpCap += `, color: '${tc.color}'`;
+    if (tc.align)                       tpCap += `, align: '${tc.align}'`;
     tpCap += ` }`;
     let tpStr = `{ caption: ${tpCap}`;
     if (tp.funnyWords) tpStr += `, funnyWords: true`;
