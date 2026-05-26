@@ -12,10 +12,16 @@
 const fs   = require('fs');
 const path = require('path');
 
-const DIR          = path.join(__dirname, 'assets/Template_Scribble');
-const CSV_PATH     = path.join(DIR, 'Scribble_sizing_full.csv');
-const COVER_CSV    = path.join(DIR, 'Scribble_Template_Sizing_Cover.csv');
-const OUT_PATH     = path.join(DIR, 'scribble-data.js');
+const DIR              = path.join(__dirname, 'assets/Template_Scribble');
+const CSV_PATH         = path.join(DIR, 'Scribble_sizing_full.csv');
+const COVER_CSV        = path.join(DIR, 'Scribble_Template_Sizing_Cover.csv');
+const OUT_PATH         = path.join(DIR, 'scribble-data.js');
+const ORDERFORM_PATH   = path.join(DIR, 'scribble-orderform.json');
+
+// ── Order form sidecar (manually maintained — not derived from CSV) ──────────
+const orderFormData = fs.existsSync(ORDERFORM_PATH)
+  ? JSON.parse(fs.readFileSync(ORDERFORM_PATH, 'utf8'))
+  : {};
 
 // ── 1. Parse CSV ───────────────────────────────────────────────────────────
 const rawLines = fs.readFileSync(CSV_PATH, 'utf8').split('\n').filter(l => l.trim());
@@ -444,6 +450,14 @@ function serializeSpread(key, sp) {
   if (sp.allArtwork)  flags += `, allArtwork: true`;
 
   let out = `\n    ${key}: {\n`;
+
+  // Inject orderForm data for functional spreads (source: scribble-orderform.json)
+  if (sp.type === 'functional' && orderFormData[key]) {
+    const od = orderFormData[key];
+    out += `      orderFormPhoto: ${JSON.stringify(od.orderFormPhoto)},\n`;
+    out += `      orderFormMeta: ${JSON.stringify(od.orderFormMeta)},\n`;
+  }
+
   out += `      type: '${sp.type}', id: '${sp.id}', label: '${sp.label}'${flags},\n`;
   out += `      pages: {\n`;
 

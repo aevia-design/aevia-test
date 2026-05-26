@@ -968,11 +968,12 @@ function renderPhotoGrid() {
     thumb.className = 'photo-thumb';
 
     if (isImage(file)) {
-      if (!file._objUrl) file._objUrl = URL.createObjectURL(file);
       const img = document.createElement('img');
-      img.src = file._objUrl;
+      if (file._objUrl) {
+        img.src = file._objUrl;
+        img.onclick = () => openLightbox(file._objUrl);
+      }
       img.alt = '';
-      img.onclick = () => openLightbox(file._objUrl);
       thumb.appendChild(img);
     } else {
       thumb.innerHTML = `<div class="file-badge">${fileIconSvg()}<span>${fileExt(file)}</span></div>`;
@@ -1216,6 +1217,8 @@ async function submitOrder() {
         photoNotes:      albumNotes,
         specialRequests: fullSpecialReq,
         fpTexts:         Object.keys(fpTexts).length ? fpTexts : null,
+        fpSelections:    activeAddons.map(a => a.slug.toUpperCase()),
+        photoCount:      mainFiles.length,
       }),
     });
 

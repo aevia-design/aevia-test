@@ -79,7 +79,7 @@ async function handler(req, res) {
   try {
     const {
       customerName, email, templateName, pageCount, files,
-      specialRequests, photoNotes, price, fpTexts,
+      specialRequests, photoNotes, price, fpTexts, fpSelections, photoCount,
     } = req.body;
 
     const missing = ['customerName', 'email', 'templateName', 'pageCount']
@@ -251,6 +251,8 @@ async function handler(req, res) {
       specialRequests: specialRequests || null,
       photoNotes: photoNotes || null,
       fpTexts: fpTexts || null,
+      fpSelections: fpSelections && fpSelections.length ? fpSelections : null,
+      photoCount: photoCount || null,
       fileCount: fileList.length,
       folderName,
       folderLink,
