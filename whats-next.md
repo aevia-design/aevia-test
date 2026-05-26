@@ -239,6 +239,12 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 ## Sequential vs parallel HEIC processing
 - Parallel HEIC conversion corrupts images due to shared WASM state — always keep sequential
 
+## orderFormPhoto/orderFormMeta — sidecar file, not CSV
+- These fields are NOT derived from the CSV — they're manually maintained in `assets/Template_Scribble/scribble-orderform.json`
+- `csv-to-template.js` reads that file and injects the data when serializing FP spreads
+- Do NOT put these fields directly in scribble-data.js expecting them to survive — every CSV run overwrites the FP entries
+- To change order form text/hints for an FP: edit `scribble-orderform.json`, then run `node csv-to-template.js`
+
 ## CSV as source of truth
 - `csv-to-template.js` is now the build script — edit CSV, run script, scribble-data.js regenerates
 - Cover CSV (`Scribble_Template_Sizing_Cover.csv`) also parsed; cover: block in scribble-data.js is generated, not hand-maintained
@@ -358,9 +364,15 @@ Response: { caption: 'suggested text string' }
 
 <current_state>
 
+## Completed and committed (through 2026-05-27)
+
+- **Plan 12-02** — DONE. `fpSelections` + `photoCount` added to order form payload and Firestore schema. Firebase function deployed.
+- **Order form bug fixes** — FP upload zones restored (orderFormPhoto/orderFormMeta were wiped by CSV script); photo grid rewritten as sequential queue with incremental DOM appends — no more alt-tab stall; `updateStep2Bar` added (was called but never defined).
+- **scribble-orderform.json** — new sidecar file; `csv-to-template.js` now reads and injects orderForm data on every run so CSV regen never wipes FP order form config again.
+
 ## Completed and committed (through 2026-05-26)
 
-- **PDF caption parity (this session)** — cover spine direction/position/colour/style, front caption colour, engine font size px-based, PDF text wrapping for all caption positions, medium-weight resolution
+- **PDF caption parity** — cover spine direction/position/colour/style, front caption colour, engine font size px-based, PDF text wrapping for all caption positions, medium-weight resolution
 
 ## Completed earlier (through 2026-05-25 session 3)
 
@@ -378,23 +390,16 @@ Response: { caption: 'suggested text string' }
 - `scripts/simulate-photo-count.js` — orientation simulation tool
 
 ## Known issues / watch-outs
-- HEIC conversion silent failure: if Cloud Function fails all 3 retries, no error shown to user; cover/FP previews may show blank
-- FP1 heart frame decoration still missing (Kseniia SVG re-export needed)
-- Template engine scroll performance (#43) — not investigated
+- HEIC conversion silent failure: if Cloud Function fails all 3 retries, no error shown to user; cover/FP previews may show blank (edge case, not yet tested)
 - Per-line caption styling (e.g. row 1 bold, row 2 italic in one caption) NOT supported — would require per-line style map in engine + PDF. Use separate caption slots instead (works on Art Gallery FP5 today).
 - Spine horizontal centering uses ascender-height heuristic; for mixed-case spine text with descenders the centering may be slightly biased. Acceptable for current uppercase-heavy use.
+- Photo count assumes H orientation — simulation (#46) confirmed this is exact for Scribble; re-check for future templates.
 
 ## Next priorities
 
-1. **Plan 12-02** — Firestore schema additions (`fpTexts`, `fpSelections`, `photoCount`)
-2. **Plan 12-03** — Engine "Load order" flow (fetch Firestore doc + GCS photos)
+1. **TO-DO #47 — Mobile responsiveness** — homepage (`home.html`) and order form (`order.html`) confirmed broken on mobile. Neither is optimised. Template engine is staff-only, skip. Priority: home first (marketing), then order form.
+2. **Plan 12-03** — Engine "Load order" flow (fetch Firestore doc + GCS photos by order number)
 3. **Plan 12-04** — PDF export wired to GCS / order path
-
-## Known issues / open questions
-- Caption bold/italic in PDF: must use style pills (NOT Ctrl+B). Book-state.json must be re-exported after changing styles.
-- FP1 heart frame decoration still missing (Kseniia SVG re-export needed)
-- Performance: alt-tab stall (10-15s) — root cause not investigated
-- Photo count assumes H orientation — TO-DO #46 will quantify the variance
 
 </current_state>
 ```
