@@ -531,7 +531,21 @@ function initSummary() {
 function cancelAddon(slug, wrapId) {
   cancelledAddons.add(slug);
   document.getElementById(wrapId).style.display = 'none';
-  updateStep2Bar(); // recalculate required photo count
+  updateStep2Bar();
+}
+
+// Recalculate and display required photo count after an addon is removed
+function updateStep2Bar() {
+  const activeFPs = ORDER.addons
+    .filter(a => !cancelledAddons.has(a.slug))
+    .map(a => a.slug.toUpperCase());
+  const targetPhotos = calcPhotoTarget(parseInt(ORDER.pages), activeFPs);
+  window._photoCountTarget = targetPhotos;
+  document.getElementById('photo-count-min').textContent  = targetPhotos;
+  document.getElementById('photo-count-nice').textContent = targetPhotos;
+  const dzMainText = document.querySelector('#dz-main .dz-text');
+  if (dzMainText) dzMainText.innerHTML = `<strong>Choose ${targetPhotos} photos</strong> or drag here`;
+  updatePhotoStatusBar(); // refresh count text with updated target
 }
 
 // Returns orderFormMeta from SCRIBBLE_DATA for a given addon slug (e.g. 'fp2' → FP2)
@@ -902,120 +916,181 @@ async function handleSpecialFile(slug, file) {
 
 // ─────────────────────────────────────────────────────────────────
 // File handling — main photos
+// Sequential processing (matches template engine): URL is always
+// set before a thumb is added to the DOM, so no blank frames and
+// no cascade of full-grid rebuilds.
 // ─────────────────────────────────────────────────────────────────
+let _fileCounter = 0;
+let _uploadQueue = [];
+let _uploadBusy  = false;
+
 function handleMainFiles(fileList) {
   const existingNames = new Set(mainFiles.map(f => f.name));
   const newFiles = Array.from(fileList).filter(f => {
-    if (existingNames.has(f.name)) return false; // skip duplicate
+    if (existingNames.has(f.name)) return false;
     existingNames.add(f.name);
     return true;
   });
-  mainFiles = mainFiles.concat(newFiles);
-  renderPhotoGrid();
+  _uploadQueue.push(...newFiles);
+  drainUploadQueue();
+}
 
-  // Async post-processing per new file (non-blocking — re-renders when each finishes)
-  newFiles.forEach(async f => {
-    // HEIC: convert → JPEG, show converting badge while in flight
-    if (isHeic(f)) {
-      f._converting = true;
-      renderPhotoGrid();
-      const blob = await convertHeic(f);
-      f._converting = false;
-      if (blob) {
-        f._objUrl = URL.createObjectURL(blob);
-        // Resolution check on the converted JPEG blob
-        const checker = new Image();
-        checker.onload = () => {
-          const minDim = Math.min(checker.naturalWidth, checker.naturalHeight);
-          if (minDim < 1500) { f._lowRes = true; }
-          renderPhotoGrid();
-        };
-        checker.src = f._objUrl;
-      } else {
-        renderPhotoGrid();
-      }
-      return;
+async function drainUploadQueue() {
+  if (_uploadBusy) return;
+  _uploadBusy = true;
+  while (_uploadQueue.length) {
+    const f = _uploadQueue.shift();
+    await processAndAddFile(f);
+  }
+  _uploadBusy = false;
+}
+
+async function processAndAddFile(f) {
+  f._id = ++_fileCounter;
+
+  if (isHeic(f)) {
+    // Show converting placeholder immediately
+    f._converting = true;
+    mainFiles.push(f);
+    appendPhotoThumb(f);
+    updatePhotoStatusBar();
+
+    const blob = await convertHeic(f);
+    f._converting = false;
+    if (blob) {
+      f._objUrl = URL.createObjectURL(blob);
+      await checkResolution(f);
     }
-    // JPEG/PNG: resolution check
-    if (!/\.(jpe?g|png)$/i.test(f.name)) return;
-    if (!f._objUrl) f._objUrl = URL.createObjectURL(f);
-    const img = new Image();
-    img.onload = () => {
-      const minDim = Math.min(img.naturalWidth, img.naturalHeight);
-      if (minDim < 1500) { f._lowRes = true; renderPhotoGrid(); }
+    refreshThumbBadge(f);
+    updatePhotoStatusBar();
+  } else {
+    // Create URL synchronously so the thumb shows the image on first paint
+    if (isImage(f)) f._objUrl = URL.createObjectURL(f);
+    mainFiles.push(f);
+    appendPhotoThumb(f);
+    updatePhotoStatusBar();
+
+    // Resolution check — updates badge only, no grid rebuild
+    if (f._objUrl && /\.(jpe?g|png)$/i.test(f.name)) {
+      await checkResolution(f);
+      if (f._lowRes) {
+        refreshThumbBadge(f);
+        updatePhotoStatusBar();
+      }
+    }
+  }
+}
+
+// Await a resolution check; sets f._lowRes if too small
+function checkResolution(f) {
+  return new Promise(resolve => {
+    const checker = new Image();
+    checker.onload = () => {
+      if (Math.min(checker.naturalWidth, checker.naturalHeight) < 1500) f._lowRes = true;
+      resolve();
     };
-    img.src = f._objUrl;
+    checker.onerror = resolve;
+    checker.src = f._objUrl;
   });
+}
+
+// Append a single thumb to the grid — never touches existing thumbs
+function appendPhotoThumb(f) {
+  const grid = document.getElementById('photo-grid');
+  const thumb = buildThumbEl(f);
+  grid.appendChild(thumb);
+}
+
+// Replace only the badge area of an existing thumb (after HEIC convert or res check)
+function refreshThumbBadge(f) {
+  const thumb = document.querySelector(`[data-file-id="${f._id}"]`);
+  if (!thumb) return;
+
+  // Update image src if we now have a URL (HEIC case)
+  const img = thumb.querySelector('img');
+  if (img && f._objUrl && !img.src) {
+    img.src = f._objUrl;
+    img.onclick = () => openLightbox(f._objUrl);
+  }
+
+  // Replace badge
+  thumb.querySelector('.converting-badge, .low-res-badge, .res-ok-badge')?.remove();
+  if (!f._converting && (f._lowRes !== undefined)) {
+    const badge = document.createElement('div');
+    badge.className = f._lowRes ? 'low-res-badge' : 'res-ok-badge';
+    badge.textContent = f._lowRes ? 'LOW RES' : '✓ OK';
+    thumb.insertBefore(badge, thumb.querySelector('.photo-thumb-remove'));
+  }
+}
+
+// Build the DOM element for one photo thumb
+function buildThumbEl(f) {
+  const idx = mainFiles.indexOf(f);
+  const thumb = document.createElement('div');
+  thumb.className = 'photo-thumb';
+  thumb.dataset.fileId = f._id;
+
+  if (isImage(f)) {
+    const img = document.createElement('img');
+    if (f._objUrl) {
+      img.src = f._objUrl;
+      img.onclick = () => openLightbox(f._objUrl);
+    }
+    img.alt = '';
+    thumb.appendChild(img);
+  } else {
+    thumb.innerHTML = `<div class="file-badge">${fileIconSvg()}<span>${fileExt(f)}</span></div>`;
+  }
+
+  if (f._converting) {
+    const badge = document.createElement('div');
+    badge.className = 'converting-badge';
+    badge.textContent = 'Converting…';
+    thumb.appendChild(badge);
+  }
+
+  const nameEl = document.createElement('div');
+  nameEl.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.45);color:#fff;font-size:9px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.02em;';
+  nameEl.textContent = f.name;
+  nameEl.title = f.name;
+  thumb.appendChild(nameEl);
+
+  const rm = document.createElement('button');
+  rm.className = 'photo-thumb-remove';
+  rm.innerHTML = '×';
+  rm.title = 'Remove';
+  rm.onclick = () => removeMainFile(idx);
+  thumb.appendChild(rm);
+
+  return thumb;
 }
 
 function removeMainFile(idx) {
-  if (mainFiles[idx] && isImage(mainFiles[idx])) {
-    URL.revokeObjectURL(mainFiles[idx]._objUrl);
-  }
+  const f = mainFiles[idx];
+  if (f && f._objUrl) URL.revokeObjectURL(f._objUrl);
   mainFiles.splice(idx, 1);
-  renderPhotoGrid();
+  // Full rebuild on remove — needed to fix all onclick indices
+  rebuildPhotoGrid();
 }
 
-function renderPhotoGrid() {
-  const grid     = document.getElementById('photo-grid');
-  const countEl  = document.getElementById('photo-count');
-  const addMore  = document.getElementById('add-more-btn');
-
+// Full rebuild — only called after remove (rare); not called during upload
+function rebuildPhotoGrid() {
+  const grid = document.getElementById('photo-grid');
   grid.innerHTML = '';
+  mainFiles.forEach(f => grid.appendChild(buildThumbEl(f)));
+  updatePhotoStatusBar();
+}
 
-  mainFiles.forEach((file, idx) => {
-    const thumb = document.createElement('div');
-    thumb.className = 'photo-thumb';
-
-    if (isImage(file)) {
-      const img = document.createElement('img');
-      if (file._objUrl) {
-        img.src = file._objUrl;
-        img.onclick = () => openLightbox(file._objUrl);
-      }
-      img.alt = '';
-      thumb.appendChild(img);
-    } else {
-      thumb.innerHTML = `<div class="file-badge">${fileIconSvg()}<span>${fileExt(file)}</span></div>`;
-    }
-
-    if (file._converting) {
-      const badge = document.createElement('div');
-      badge.className = 'converting-badge';
-      badge.textContent = 'Converting…';
-      thumb.appendChild(badge);
-    } else if (file._lowRes) {
-      const badge = document.createElement('div');
-      badge.className = 'low-res-badge';
-      badge.textContent = 'LOW RES';
-      thumb.appendChild(badge);
-    }
-
-    // Filename label
-    const nameEl = document.createElement('div');
-    nameEl.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.45);color:#fff;font-size:9px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.02em;';
-    nameEl.textContent = file.name;
-    nameEl.title = file.name;
-    thumb.appendChild(nameEl);
-
-    const rm = document.createElement('button');
-    rm.className = 'photo-thumb-remove';
-    rm.innerHTML = '×';
-    rm.title = 'Remove';
-    rm.onclick = () => removeMainFile(idx);
-    thumb.appendChild(rm);
-
-    grid.appendChild(thumb);
-  });
-
+// Update count text and show/hide elements — no grid rebuild
+function updatePhotoStatusBar() {
+  const countEl = document.getElementById('photo-count');
+  const addMore = document.getElementById('add-more-btn');
   const n = mainFiles.length;
   if (n > 0) {
     const lowResCount = mainFiles.filter(f => f._lowRes).length;
     const target = window._photoCountTarget ? ` of ${window._photoCountTarget}` : '';
     let countText = `${n}${target} photo${n !== 1 ? 's' : ''} selected`;
-    if (lowResCount > 0) {
-      countText += ` · ${lowResCount} may be too low-resolution for print (shortest side under 1500px)`;
-    }
+    if (lowResCount > 0) countText += ` · ${lowResCount} may be too low-resolution for print (shortest side under 1500px)`;
     countEl.textContent = countText;
     countEl.className = 'photo-count' + (lowResCount > 0 ? ' low-res-note' : '');
     countEl.style.display = 'block';
@@ -1027,6 +1102,9 @@ function renderPhotoGrid() {
     document.getElementById('dz-main').style.display = '';
   }
 }
+
+// Kept for any legacy call sites — maps to full rebuild
+function renderPhotoGrid() { rebuildPhotoGrid(); }
 
 // ─────────────────────────────────────────────────────────────────
 // Drag-and-drop
