@@ -299,28 +299,40 @@ function parseCoverCsv(csvPath) {
   // Captions
   const captions = [];
   if (frontRow && frontRow['captions allowed'] === 'yes') {
-    captions.push({
+    const c1color = (frontRow['Captions_1_fontColor'] || '').trim();
+    const c2color = (frontRow['Captions_2_fontColor'] || '').trim();
+    const cap1 = {
       key: 'year', xMm: parseFloat(frontRow['Captions_1_X (mm)']), yMm: parseFloat(frontRow['Captions_1_Y (mm)']),
       wMm: 180, font: frontRow['Captions_1_font'], sizePt: parsePt(frontRow['Captions_1_fontsize']),
       align: 'center', label: 'Year'
-    });
-    captions.push({
+    };
+    if (c1color) cap1.color = c1color;
+    captions.push(cap1);
+    const cap2 = {
       key: 'name', xMm: parseFloat(frontRow['Captions_2_X (mm)']), yMm: parseFloat(frontRow['Captions_2_Y (mm)']),
       wMm: 180, font: frontRow['Captions_2_font'], sizePt: parsePt(frontRow['Captions_2_fontsize']),
       align: 'center', label: 'Name'
-    });
+    };
+    if (c2color) cap2.color = c2color;
+    captions.push(cap2);
   }
   if (spineRow && spineRow['captions allowed'] === 'yes') {
-    captions.push({
+    const s1color = (spineRow['Captions_1_fontColor'] || '').trim();
+    const s2color = (spineRow['Captions_2_fontColor'] || '').trim();
+    const scap1 = {
       key: 'spineName', xMm: parseFloat(spineRow['Captions_1_X (mm)']), yMm: parseFloat(spineRow['Captions_1_Y (mm)']),
       wMm: 130, font: spineRow['Captions_1_font'], sizePt: parsePt(spineRow['Captions_1_fontsize']),
       rotate: 270, label: 'Name (spine)'
-    });
-    captions.push({
+    };
+    if (s1color) scap1.color = s1color;
+    captions.push(scap1);
+    const scap2 = {
       key: 'spineYear', xMm: parseFloat(spineRow['Captions_2_X (mm)']), yMm: parseFloat(spineRow['Captions_2_Y (mm)']),
       wMm: 70, font: spineRow['Captions_2_font'], sizePt: parsePt(spineRow['Captions_2_fontsize']),
       rotate: 270, label: 'Year (spine)'
-    });
+    };
+    if (s2color) scap2.color = s2color;
+    captions.push(scap2);
   }
 
   return { frontBg, slots, captions };
@@ -343,6 +355,7 @@ function serializeCover(c) {
   for (const cap of c.captions) {
     let line = `      { key: '${cap.key}', xMm: ${cap.xMm}, yMm: ${cap.yMm}, wMm: ${cap.wMm}, font: '${cap.font}', sizePt: ${cap.sizePt}`;
     if (cap.align)  line += `, align: '${cap.align}'`;
+    if (cap.color)  line += `, color: '${cap.color}'`;
     if (cap.rotate !== undefined) line += `, rotate: ${cap.rotate}`;
     line += `, label: '${cap.label}' },\n`;
     out += line;

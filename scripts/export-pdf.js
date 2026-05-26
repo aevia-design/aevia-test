@@ -254,6 +254,38 @@ function lookupFont(fontMap, fontName, style) {
   return fontMap[key] || fontMap[`${fontName}_regular`] || null;
 }
 
+// Word-wrap `text` so each line fits within `maxWidthPt` at the given font/size.
+// Returns an array of line strings. Hard-splits words that alone exceed maxWidthPt.
+function wrapText(font, text, sizePt, maxWidthPt, charSpacing) {
+  if (!maxWidthPt || maxWidthPt <= 0) return [text];
+  const measuredWidth = (s) =>
+    font.widthOfTextAtSize(s, sizePt) + (charSpacing || 0) * Math.max(0, s.length - 1);
+  const words = text.split(' ');
+  const lines = [];
+  let current = '';
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (measuredWidth(candidate) <= maxWidthPt) {
+      current = candidate;
+    } else {
+      if (current) lines.push(current);
+      // If the word alone is too wide, force-break it character by character
+      if (measuredWidth(word) > maxWidthPt) {
+        let chunk = '';
+        for (const ch of word) {
+          if (measuredWidth(chunk + ch) > maxWidthPt) { lines.push(chunk); chunk = ch; }
+          else chunk += ch;
+        }
+        current = chunk;
+      } else {
+        current = word;
+      }
+    }
+  }
+  if (current) lines.push(current);
+  return lines.length ? lines : [text];
+}
+
 // Draw captions for one page side onto `pg` (pdf-lib page object).
 // pageSizePt = the PDF page size in points (square).
 // spreadId is used to determine caption color (FP spreads use plum).
@@ -290,7 +322,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     const ov       = scsOverrides[i] || {};
     const fontName = ov.font          !== undefined ? ov.font     : capDef.font;
     const ovStyle  = ov.weight !== undefined
-      ? (ov.weight >= 600 ? (ov.weight >= 700 ? 'bold' : 'semibold') : ov.italic ? 'italic' : 'regular')
+      ? (ov.weight >= 700 ? 'bold' : ov.weight >= 600 ? 'semibold' : ov.weight >= 500 ? 'medium' : ov.italic ? 'italic' : 'regular')
       : (ov.italic ? 'italic' : capDef.style || 'regular');
     const font = lookupFont(fontMap, fontName, ovStyle);
     if (!font) { console.warn(`  ⚠ Caption font not found: ${fontName} ${ovStyle}`); continue; }
@@ -303,12 +335,24 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     const pos = capDef.position || 'below';
     const lines = String(text).split('\n').filter(l => l.trim());
 
+    // Right-margin content area limit: text must not exceed the page right boundary.
+    // pageSizePt is the full page dimension (206mm). Content right = pageSizePt - BLEED_PT.
+    const pageRightPt = pageSizePt - BLEED_PT;
+
+    // Gap between photo right edge and caption left edge — matches engine: cap.offset (mm)
+    const gapMm = capDef.offset || 2;
+    // Engine reserves ~6px (2mm) right padding before the content edge
+    const rightPadMm = 2;
+
     if (pos === 'upper-right') {
       // Right-margin column, top-aligned: X right of slot, lines run downward from slot top.
       const slotRightMm = slot.x + slot.w / 2;
       const slotTopMm   = slot.y - slot.h / 2;
-      const xPt = BLEED_PT + slotRightMm * MM_TO_PT + 2 * MM_TO_PT;
-      lines.forEach((line, li) => {
+      const xPt = BLEED_PT + slotRightMm * MM_TO_PT + gapMm * MM_TO_PT;
+      const maxWidthPt = pageRightPt - xPt - rightPadMm * MM_TO_PT;
+      // Word-wrap each raw line to fit within the right margin (matches engine width calc)
+      const wrappedLines = lines.flatMap(l => wrapText(font, l, sizePt, maxWidthPt, charSpacing));
+      wrappedLines.forEach((line, li) => {
         const slotTopPt  = pageSizePt - BLEED_PT - slotTopMm * MM_TO_PT;
         const baselinePt = slotTopPt - sizePt * 0.75 - li * lineSpacingPt;
         pg.drawText(line, { x: xPt, y: baselinePt, size: sizePt, font,
@@ -318,8 +362,10 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
       // Right-margin column, bottom-aligned: X right of slot, lines stack upward from slot bottom.
       const slotRightMm  = slot.x + slot.w / 2;
       const slotBottomMm = slot.y + slot.h / 2;
-      const xPt = BLEED_PT + slotRightMm * MM_TO_PT + 2 * MM_TO_PT;
-      lines.slice().reverse().forEach((line, li) => {
+      const xPt = BLEED_PT + slotRightMm * MM_TO_PT + gapMm * MM_TO_PT;
+      const maxWidthPt = pageRightPt - xPt - rightPadMm * MM_TO_PT;
+      const wrappedLines = lines.flatMap(l => wrapText(font, l, sizePt, maxWidthPt, charSpacing));
+      wrappedLines.slice().reverse().forEach((line, li) => {
         const slotBottomPt = pageSizePt - BLEED_PT - slotBottomMm * MM_TO_PT;
         const baselinePt   = slotBottomPt + li * lineSpacingPt;
         pg.drawText(line, { x: xPt, y: baselinePt, size: sizePt, font,
@@ -336,8 +382,11 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
       } else {
         capTopMm = slot.y + slot.h / 2 + (capDef.offset || 0);
       }
+      // Max width = slot width (same constraint as engine contenteditable width)
+      const maxWidthPt = slot.w * MM_TO_PT;
       const align = capDef.align || 'center';
-      lines.forEach((line, li) => {
+      const wrappedLines = lines.flatMap(l => wrapText(font, l, sizePt, maxWidthPt, charSpacing));
+      wrappedLines.forEach((line, li) => {
         const textWidthPt = font.widthOfTextAtSize(line, sizePt)
                           + charSpacing * Math.max(0, line.length - 1);
         const slotCenterPt = BLEED_PT + slot.x * MM_TO_PT;
@@ -496,60 +545,82 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
   if (!coverCaptions) return;
   const COVER_BLEED_PT = COVER_BLEED_MM * MM_TO_PT;
 
+  // Resolve a hex color string (e.g. '#493955') to a pdf-lib rgb() value.
+  function resolveCapColor(hex) {
+    if (!hex) return CAPTION_COLOR;
+    const h = hex.replace('#', '');
+    if (h.length !== 6) return CAPTION_COLOR;
+    return rgb(parseInt(h.slice(0,2),16)/255, parseInt(h.slice(2,4),16)/255, parseInt(h.slice(4,6),16)/255);
+  }
+
   for (const capDef of coverDef.captions) {
     const text = (coverCaptions[capDef.key] || '').trim();
     if (!text) continue;
 
     const ov = coverCaptionStyles?.[capDef.key] || {};
     const fontName = ov.font || capDef.font || 'NT Somic';
-    const style    = ov.weight >= 700 ? 'bold' : ov.weight >= 600 ? 'semibold' : ov.italic ? 'italic' : 'regular';
+    const style    = ov.weight >= 700 ? 'bold'
+                   : ov.weight >= 600 ? 'semibold'
+                   : ov.weight >= 500 ? 'medium'
+                   : ov.italic        ? 'italic'
+                   :                    'regular';
     const font = lookupFont(fontMap, fontName, style);
     if (!font) { console.warn(`  ⚠ Cover caption font not found: ${fontName}`); continue; }
 
     const sizePt      = ov.sizePt || capDef.sizePt || 20;
     const lineSpacing = sizePt * (ov.lineSpacing || 1.28);
     const charSpacing = ((ov.letterSpacing || 0)) * sizePt;
+    const color       = resolveCapColor(ov.color || capDef.color);
     const lines = text.split('\n').filter(l => l.trim());
 
-    // xMm is center-x in content space (from back left edge = 0)
-    // pdf-lib: y=0 bottom; page width = COVER_FULL_W_MM; page height = COVER_FULL_H_MM
-    const isRotated = !!capDef.rotate; // spine captions are rotated 90° (rotate: 270)
+    const isRotated = !!capDef.rotate; // spine captions have rotate: 270 (CSS CW degrees)
 
     if (isRotated) {
-      // Spine captions: text runs vertically. We rotate the draw call.
-      // pdf-lib rotate is counter-clockwise in radians; rotate:270 in template = 90° CCW = Math.PI/2
-      const rotRad = ((capDef.rotate || 270) % 360) * Math.PI / 180;
-      // Position the center of the caption
-      const centerXPt = COVER_BLEED_PT + capDef.xMm * MM_TO_PT;
-      const centerYPt = pageSizeHPt - COVER_BLEED_PT - capDef.yMm * MM_TO_PT;
-      // Each line is drawn at the centre; for vertical text stack lines horizontally (since rotated)
-      const totalW = lines.reduce((sum, l) => sum + font.widthOfTextAtSize(l, sizePt), 0)
-                   + (lines.length - 1) * lineSpacing;
-      let curX = centerXPt - totalW / 2;
+      // Spine captions: draw with 90° CCW rotation (pdf-lib CCW = standard math convention).
+      // CSS rotate(270deg) CW  =  90° CCW in pdf-lib.
+      // After 90° CCW rotation, a text drawn at (x, y):
+      //   - runs UPWARD  from y  to y+textWidth  (y controls vertical position along spine)
+      //   - extends LEFT from x  to x-sizePt     (x controls horizontal centering on spine)
+      //
+      // xMm = horizontal center of spine (e.g. 204.5mm from back-left content edge)
+      //   → after rotation the character body extends LEFTWARD from drawing baseline by ~cap height
+      //     (NOT full sizePt — cap height is ~0.7 × sizePt). Visual center = drawing_x − capHeight/2.
+      //   → so x = spine_center + capHeight/2 to put visual center on spine center.
+      //
+      // yMm = vertical center of caption along spine height (e.g. 140mm from top)
+      //   → in page space (y=0 at bottom): y_center = pageSizeHPt - COVER_BLEED_PT - yMm*MM_TO_PT
+      //   → text spans y_center ± totalW/2, so origin y = y_center - totalW/2
+
+      // Ascender height ≈ cap height for typical fonts; better centering than sizePt/2.
+      const ascenderPt = font.heightAtSize(sizePt, { descender: false });
+      const spineXPt   = COVER_BLEED_PT + capDef.xMm * MM_TO_PT + ascenderPt / 2;
+      const yCenterPt  = pageSizeHPt - COVER_BLEED_PT - capDef.yMm * MM_TO_PT;
+      const totalW     = lines.reduce((sum, l) => sum + font.widthOfTextAtSize(l, sizePt), 0)
+                       + (lines.length - 1) * lineSpacing;
+      let curYPt = yCenterPt - totalW / 2;
+
       for (const line of lines) {
         const lineW = font.widthOfTextAtSize(line, sizePt);
         pg.drawText(line, {
-          x: curX, y: centerYPt - sizePt * 0.3,
-          size: sizePt, font, characterSpacing: charSpacing,
-          rotate: { type: 'degrees', angle: capDef.rotate || 270 },
+          x: spineXPt, y: curYPt,
+          size: sizePt, font, color, characterSpacing: charSpacing,
+          rotate: { type: 'degrees', angle: 90 }, // 90° CCW = text reads upward
         });
-        curX += lineW + lineSpacing;
+        curYPt += lineW + lineSpacing;
       }
     } else {
       // Front cover captions: horizontal text centered at capDef.xMm
-      const totalLines = lines.length;
-      const blockH = totalLines * lineSpacing;
-      // yMm is vertical center of the caption block
+      const blockH   = lines.length * lineSpacing;
       const startYPt = pageSizeHPt - COVER_BLEED_PT - capDef.yMm * MM_TO_PT + blockH / 2 - sizePt * 0.75;
       lines.forEach((line, li) => {
-        const textW = font.widthOfTextAtSize(line, sizePt) + charSpacing * Math.max(0, line.length - 1);
+        const textW     = font.widthOfTextAtSize(line, sizePt) + charSpacing * Math.max(0, line.length - 1);
         const centerXPt = COVER_BLEED_PT + capDef.xMm * MM_TO_PT;
         const xPt = capDef.align === 'left'  ? centerXPt - capDef.wMm / 2 * MM_TO_PT
                   : capDef.align === 'right' ? centerXPt + capDef.wMm / 2 * MM_TO_PT - textW
                   :                            centerXPt - textW / 2;
         pg.drawText(line, {
           x: xPt, y: startYPt - li * lineSpacing,
-          size: sizePt, font, characterSpacing: charSpacing,
+          size: sizePt, font, color, characterSpacing: charSpacing,
         });
       });
     }

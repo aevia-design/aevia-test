@@ -148,6 +148,26 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Snapshot of template-engine.html deployed to Cloudflare Pages for demo/sharing
 - Local template-engine.html is the working version; public copy is a separate file
 
+## Session 2026-05-26 — Cover + caption PDF/engine parity
+
+### Cover captions
+- Added `Captions_1_fontColor` / `Captions_2_fontColor` columns in `Scribble_Template_Sizing_Cover.csv`
+- `csv-to-template.js` parses and emits `color` for cover captions
+- `drawCoverCaptions` now applies the colour to both rotated (spine) and non-rotated (front) captions
+- Spine rotation direction fixed: pdf-lib uses CCW (math convention), CSS uses CW. CSS `rotate(270deg)` → pdf-lib `angle: 90`
+- Spine positioning math rewritten: after 90° CCW rotation, drawText `x` controls horizontal-on-spine, `y` controls vertical-along-spine (the two were swapped)
+- Spine horizontal centering uses `font.heightAtSize(sizePt, { descender: false }) / 2` as the offset (cap-height approximation, not `sizePt / 2`)
+- Medium style (weight 500) now resolves to `_medium` font variant — was falling through to `regular`
+
+### Spread captions
+- Engine caption font size was 26% too big — browsers resolve CSS `pt` at 96dpi but the canvas is ~76dpi. Changed `sizePt + 'pt'` to `(sizePt * SCALE * 25.4 / 72) + 'px'` in both render and toolbar-update paths. Engine now wraps exactly as the PDF
+- `upper-right` / `lower-right` / `above` / `below` captions now word-wrap in the PDF (new `wrapText()` helper). Width formula matches engine: gap from photo = `capDef.offset` (mm), 2mm right padding
+- Same weight-500 → medium fix applied to spread caption style resolver
+
+### Caption font sizes increased
+- User updated `Scribble_sizing_full.csv` to 16pt across spread captions
+- Ran `node csv-to-template.js` to regenerate `scribble-data.js`
+
 ## Session 2026-05-25 (session 3) — Order form polish
 
 ### TO-DOs #45 + #46 — DONE
@@ -338,7 +358,11 @@ Response: { caption: 'suggested text string' }
 
 <current_state>
 
-## Completed and committed (through 2026-05-25 session 3)
+## Completed and committed (through 2026-05-26)
+
+- **PDF caption parity (this session)** — cover spine direction/position/colour/style, front caption colour, engine font size px-based, PDF text wrapping for all caption positions, medium-weight resolution
+
+## Completed earlier (through 2026-05-25 session 3)
 
 - **Plan 11 (all sub-plans)** — DONE.
 - **Plan 12-01** — COMPLETE. Order form FP refactor + all polish items done:
@@ -357,6 +381,8 @@ Response: { caption: 'suggested text string' }
 - HEIC conversion silent failure: if Cloud Function fails all 3 retries, no error shown to user; cover/FP previews may show blank
 - FP1 heart frame decoration still missing (Kseniia SVG re-export needed)
 - Template engine scroll performance (#43) — not investigated
+- Per-line caption styling (e.g. row 1 bold, row 2 italic in one caption) NOT supported — would require per-line style map in engine + PDF. Use separate caption slots instead (works on Art Gallery FP5 today).
+- Spine horizontal centering uses ascender-height heuristic; for mixed-case spine text with descenders the centering may be slightly biased. Acceptable for current uppercase-heavy use.
 
 ## Next priorities
 

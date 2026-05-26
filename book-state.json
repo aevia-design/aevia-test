@@ -9,19 +9,19 @@
     "FP1",
     "SP4",
     "SP5",
-    "FP2",
     "SP6",
+    "FP2",
     "SP1",
     "SP2",
-    "FP3",
     "SP3",
     "SP4",
-    "FP4",
+    "FP3",
     "SP5",
     "SP6",
     "SP1",
-    "FP5",
-    "SP2"
+    "FP4",
+    "SP2",
+    "SP3"
   ],
   "assignments": {
     "0": {
@@ -128,21 +128,21 @@
       ]
     },
     "7": {
-      "left": [],
-      "right": [
+      "left": [
         {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_021.jpg",
+          "orientation": "vertical"
+        }
+      ],
+      "right": [
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_022.jpg",
           "orientation": "vertical"
         }
       ]
     },
     "8": {
-      "left": [
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_022.jpg",
-          "orientation": "vertical"
-        }
-      ],
+      "left": [],
       "right": [
         {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_023.jpg",
@@ -187,33 +187,24 @@
       ]
     },
     "11": {
-      "left": [],
-      "right": [
+      "left": [
         {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_030.jpg",
           "orientation": "vertical"
-        }
-      ]
-    },
-    "12": {
-      "left": [
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_031.jpg",
-          "orientation": "vertical"
         },
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_032.jpg",
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_031.jpg",
           "orientation": "vertical"
         }
       ],
       "right": [
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_033.jpg",
-          "orientation": "horizontal"
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_032.jpg",
+          "orientation": "vertical"
         }
       ]
     },
-    "13": {
+    "12": {
       "left": [
         {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_034.jpg",
@@ -226,16 +217,34 @@
       ],
       "right": [
         {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_033.jpg",
+          "orientation": "horizontal"
+        }
+      ]
+    },
+    "13": {
+      "left": [],
+      "right": [
+        {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_036.jpg",
           "orientation": "vertical"
         }
       ]
     },
     "14": {
-      "left": [],
-      "right": [
+      "left": [
         {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_037.jpg",
+          "orientation": "vertical"
+        },
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_038.jpg",
+          "orientation": "vertical"
+        }
+      ],
+      "right": [
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_039.jpg",
           "orientation": "vertical"
         }
       ]
@@ -243,17 +252,13 @@
     "15": {
       "left": [
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_038.jpg",
-          "orientation": "vertical"
-        },
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_039.jpg",
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_040.jpg",
           "orientation": "vertical"
         }
       ],
       "right": [
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_040.jpg",
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_041.jpg",
           "orientation": "vertical"
         }
       ]
@@ -261,7 +266,7 @@
     "16": {
       "left": [
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_041.jpg",
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_044.jpg",
           "orientation": "vertical"
         }
       ],
@@ -269,32 +274,23 @@
         {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_042.jpg",
           "orientation": "vertical"
+        },
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_043.jpg",
+          "orientation": "vertical"
         }
       ]
     },
     "17": {
-      "left": [
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_045.jpg",
-          "orientation": "vertical"
-        }
-      ],
+      "left": [],
       "right": [
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_043.jpg",
-          "orientation": "vertical"
-        },
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_044.jpg",
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_045.jpg",
           "orientation": "vertical"
         }
       ]
     },
     "18": {
-      "left": [],
-      "right": []
-    },
-    "19": {
       "left": [
         {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_047.jpg",
@@ -311,43 +307,120 @@
           "orientation": "horizontal"
         }
       ]
+    },
+    "19": {
+      "left": [
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_049.jpg",
+          "orientation": "vertical"
+        },
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_050.jpg",
+          "orientation": "vertical"
+        }
+      ],
+      "right": [
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_070.jpg",
+          "orientation": "vertical"
+        }
+      ]
     }
   },
   "specialPhotos": {
     "cover": "Daniel-Faro╠Ç_DTS_Parenthood_001.jpg",
     "FP1": "Daniel-Faro╠Ç_DTS_Parenthood_002.jpg",
     "FP3": "Daniel-Faro╠Ç_DTS_Parenthood_003.jpg",
-    "FP4": "Daniel-Faro╠Ç_DTS_Parenthood_004.jpg",
-    "FP5": [
-      "art-1.jpg",
-      "art-2.jpg"
-    ]
+    "FP4": "Daniel-Faro╠Ç_DTS_Parenthood_004.jpg"
   },
   "captions": {
     "0": {
       "right": {
-        "0": "saysayasa"
+        "0": "<span style=\"letter-spacing: -0.338px;\">Testing if these captions work well</span>"
       }
     },
-    "18": {
+    "1": {
       "left": {
-        "0": "Hello<br>it's me"
+        "0": "<span style=\"letter-spacing: -0.338px; text-align: left;\">Testing if these captions work well</span>"
       }
+    },
+    "3": {
+      "right": {
+        "0": "<span style=\"letter-spacing: -0.338px;\">Testing if these captions work well</span>"
+      }
+    },
+    "4": {
+      "left": {
+        "textPanel": "Testing if these captions work well"
+      }
+    },
+    "5": {
+      "right": {
+        "0": "<span style=\"letter-spacing: -0.338px; text-align: left;\">Testing if these captions work well</span>"
+      }
+    },
+    "7": {
+      "left": {
+        "0": "<span style=\"letter-spacing: -0.338px; text-align: left;\">Testing if these captions work well</span>"
+      }
+    },
+    "8": {
+      "left": {
+        "textPanel": "NWOAS\nWSAS"
+      }
+    },
+    "9": {
+      "left": {
+        "0": "<span style=\"letter-spacing: -0.338px; text-align: left;\">Testing if these captions work well</span>"
+      }
+    },
+    "11": {
+      "right": {
+        "0": "<span style=\"letter-spacing: -0.338px;\">Testing if these captions work well</span>"
+      }
+    },
+    "13": {
+      "left": {
+        "0": "<span style=\"letter-spacing: -0.338px;\">Testing if these captions work well</span>"
+      }
+    },
+    "16": {
+      "left": {
+        "0": "<span style=\"letter-spacing: -0.338px; text-align: left;\">Testing if these captions work well</span>"
+      }
+    },
+    "17": {
+      "left": {
+        "0": "<span style=\"letter-spacing: -0.338px;\">Testing if these captions work well</span>"
+      }
+    },
+    "19": {
+      "right": {
+        "0": "<span style=\"letter-spacing: -0.338px;\">Testing if these captions work well</span>"
+      }
+    },
+    "cover": {
+      "year": "2026",
+      "name": "OURSWEETANN",
+      "spineYear": "2026",
+      "spineName": "ANN"
     }
   },
-  "coverCaptionStyles": {},
-  "spreadCaptionStyles": {
-    "18": {
-      "left": {
-        "0": {
-          "font": "EB Garamond",
-          "weight": 400,
-          "italic": true,
-          "sizePt": 14,
-          "lineSpacing": 1.35,
-          "letterSpacing": 0.03
-        }
-      }
+  "coverCaptions": {
+    "year": "2026",
+    "name": "OUR\nSWEET\nANN",
+    "spineName": "ANN",
+    "spineYear": "2026"
+  },
+  "coverCaptionStyles": {
+    "name": {
+      "font": "NT Somic",
+      "weight": 500,
+      "italic": false,
+      "sizePt": 28,
+      "lineSpacing": 1.1,
+      "letterSpacing": 0
     }
-  }
+  },
+  "spreadCaptionStyles": {}
 }

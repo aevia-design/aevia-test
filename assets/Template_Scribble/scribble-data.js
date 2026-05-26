@@ -15,10 +15,10 @@ window.SCRIBBLE_DATA = {
       { xMm: 309, yMm: 100, wMm: 140, hMm: 100, pool: 'cover' }
     ],
     captions: [
-      { key: 'year', xMm: 309, yMm: 25, wMm: 180, font: 'EB Garamond', sizePt: 33, align: 'center', label: 'Year' },
-      { key: 'name', xMm: 309, yMm: 175, wMm: 180, font: 'NT Somic', sizePt: 28, align: 'center', label: 'Name' },
-      { key: 'spineName', xMm: 204.5, yMm: 140, wMm: 130, font: 'EB Garamond', sizePt: 16, rotate: 270, label: 'Name (spine)' },
-      { key: 'spineYear', xMm: 205, yMm: 60, wMm: 70, font: 'NT Somic', sizePt: 16, rotate: 270, label: 'Year (spine)' },
+      { key: 'year', xMm: 309, yMm: 25, wMm: 180, font: 'EB Garamond', sizePt: 33, align: 'center', color: '#493955', label: 'Year' },
+      { key: 'name', xMm: 309, yMm: 175, wMm: 180, font: 'NT Somic', sizePt: 28, align: 'center', color: '#493955', label: 'Name' },
+      { key: 'spineName', xMm: 204.5, yMm: 140, wMm: 130, font: 'EB Garamond', sizePt: 16, color: '#493955', rotate: 270, label: 'Name (spine)' },
+      { key: 'spineYear', xMm: 205, yMm: 60, wMm: 70, font: 'NT Somic', sizePt: 16, color: '#493955', rotate: 270, label: 'Year (spine)' },
     ]
   },
 
@@ -44,14 +44,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 0/SP 06 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 70, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 50, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
+              { slot: 1, x: 105, y: 70, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 50, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 0/SP 06 V Right.svg',
             slots: [
-              { slot: 1, x: 85, y: 100, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'upper-right', offset: 5, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'left' } }
+              { slot: 1, x: 85, y: 100, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'upper-right', offset: 5, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'left' } }
             ]
           },
         },
@@ -66,14 +66,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 1/SP 01 H Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 10, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
+              { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 10, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 1/SP 01 V Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 6, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
+              { slot: 1, x: 95, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 6, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
             ]
           },
         },
@@ -164,14 +164,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 3/SP 06 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 70, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 50, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
+              { slot: 1, x: 105, y: 70, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 50, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 3/SP 06 V Right.svg',
             slots: [
-              { slot: 1, x: 85, y: 100, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'upper-right', offset: 5, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'left' } }
+              { slot: 1, x: 85, y: 100, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'upper-right', offset: 5, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'left' } }
             ]
           },
         },
@@ -204,14 +204,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#fdd16f',
             svg: 'SP Spread 4/SP 08 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 10, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
+              { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 10, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
             ]
           },
           V: {
             bgColor: '#fdd16f',
             svg: 'SP Spread 4/SP 08 V Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 6, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
+              { slot: 1, x: 105, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 6, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
             ]
           },
         },
@@ -244,14 +244,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 5/SP 10 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 130, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'above', offset: 7, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
+              { slot: 1, x: 105, y: 130, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'above', offset: 7, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 5/SP 10 V Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 110, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'above', offset: 6, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
+              { slot: 1, x: 105, y: 110, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'above', offset: 6, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
             ]
           },
         },
@@ -266,14 +266,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#ff8773',
             svg: 'SP Spread 6/SP 11 H Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 10, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
+              { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 10, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
             ]
           },
           V: {
             bgColor: '#ff8773',
             svg: 'SP Spread 6/SP 11 V Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 10, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
+              { slot: 1, x: 95, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 10, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
             ]
           },
         },
@@ -282,14 +282,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 6/SP 12 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 5, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
+              { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, position: 'below', offset: 5, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 6/SP 12 V Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 5, font: 'NT Somic', sizePt: 14, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
+              { slot: 1, x: 105, y: 90, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, position: 'below', offset: 5, font: 'NT Somic', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955', align: 'center' } }
             ]
           },
         },
@@ -298,12 +298,6 @@ window.SCRIBBLE_DATA = {
 
     FP1: {
       type: 'functional', id: 'FP1', label: 'Birthday wishes', textLeft: true,
-      orderFormPhoto: { count: 1, hint: 'One photo for this spread. It goes in a heart-shaped frame.' },
-      orderFormMeta: {
-        textPrompt: 'Birthday wishes',
-        hint: 'Short message, poem, or note for this spread. Include the date of the birthday.',
-        placeholder: 'e.g. Happy first birthday, Leo! 14 March 2024.',
-      },
       pages: {
         left: {
           default: {
@@ -327,14 +321,6 @@ window.SCRIBBLE_DATA = {
 
     FP2: {
       type: 'functional', id: 'FP2', label: 'Funny words', textLeft: true,
-      orderFormPhoto: null,  // no photo needed from customer
-      orderFormMeta: {
-        textPrompt: 'Funny words',
-        hint: "Enter 3 to 10 of your child's funniest words or phrases, one per line.",
-        funnyWords: true,
-        minWords: 3,
-        maxWords: 10,
-      },
       pages: {
         left: {
           default: {
@@ -357,12 +343,6 @@ window.SCRIBBLE_DATA = {
 
     FP3: {
       type: 'functional', id: 'FP3', label: 'Favourite toy', specialLeft: true,
-      orderFormPhoto: { count: 1, hint: "One photo of your child's favourite toy." },
-      orderFormMeta: {
-        textPrompt: 'Favourite toy caption',
-        hint: "Name, funny detail, or brief note about the toy.",
-        placeholder: "e.g. Mr. Bear, Leo's companion since day one",
-      },
       pages: {
         left: {
           H: {
@@ -401,12 +381,6 @@ window.SCRIBBLE_DATA = {
 
     FP4: {
       type: 'functional', id: 'FP4', label: 'First steps', specialLeft: true,
-      orderFormPhoto: { count: 1, hint: 'One photo of the first steps moment.' },
-      orderFormMeta: {
-        textPrompt: 'First steps caption',
-        hint: 'Date, milestone, or brief note.',
-        placeholder: 'e.g. First steps, 14 October 2024',
-      },
       pages: {
         left: {
           H: {
@@ -445,28 +419,20 @@ window.SCRIBBLE_DATA = {
 
     FP5: {
       type: 'functional', id: 'FP5', label: 'Art-Gallery', allArtwork: true,
-      orderFormPhoto: { count: 2, hint: "Two photos of your child's artwork — one per page of the gallery spread." },
-      orderFormMeta: {
-        textPrompt: 'Art gallery captions',
-        hint: 'A short caption for each artwork.',
-        count: 2,
-        labels: ['Caption — left page', 'Caption — right page'],
-        placeholder: "e.g. Blue period, age 2",
-      },
       pages: {
         left: {
           H: {
             bgColor: '#ff8773',
             svg: 'FP Spread 5/FP Art 09 H L.svg',
             slots: [
-              { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 20, font: 'EB Garamond', sizePt: 13, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955', align: 'center' } }
+              { slot: 1, x: 95, y: 100, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 20, font: 'EB Garamond', sizePt: 16, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955', align: 'center' } }
             ]
           },
           V: {
             bgColor: '#ff8773',
             svg: 'FP Spread 5/FP Art 09 V L.svg',
             slots: [
-              { slot: 1, x: 95, y: 100, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 9, font: 'EB Garamond', sizePt: 13, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955', align: 'center' } }
+              { slot: 1, x: 95, y: 100, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 9, font: 'EB Garamond', sizePt: 16, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955', align: 'center' } }
             ]
           },
         },
@@ -475,14 +441,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'FP Spread 5/FP Art 10 H R.svg',
             slots: [
-              { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 20, font: 'EB Garamond', sizePt: 13, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955', align: 'center' } }
+              { slot: 1, x: 105, y: 100, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 20, font: 'EB Garamond', sizePt: 16, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955', align: 'center' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'FP Spread 5/FP Art 12 V R.svg',
             slots: [
-              { slot: 1, x: 105, y: 100, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 9, font: 'EB Garamond', sizePt: 13, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955', align: 'center' } }
+              { slot: 1, x: 105, y: 100, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, position: 'below', offset: 9, font: 'EB Garamond', sizePt: 16, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955', align: 'center' } }
             ]
           },
         },
