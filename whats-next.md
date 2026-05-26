@@ -364,7 +364,7 @@ Response: { caption: 'suggested text string' }
 
 <current_state>
 
-## Completed and committed (through 2026-05-27)
+## Completed and committed (through 2026-05-26)
 
 - **Plan 12-02** — DONE. `fpSelections` + `photoCount` added to order form payload and Firestore schema. Firebase function deployed.
 - **Order form bug fixes** — FP upload zones restored (orderFormPhoto/orderFormMeta were wiped by CSV script); photo grid rewritten as sequential queue with incremental DOM appends — no more alt-tab stall; `updateStep2Bar` added (was called but never defined).
@@ -397,9 +397,16 @@ Response: { caption: 'suggested text string' }
 
 ## Next priorities
 
-1. **TO-DO #47 — Mobile responsiveness** — homepage (`home.html`) and order form (`order.html`) confirmed broken on mobile. Neither is optimised. Template engine is staff-only, skip. Priority: home first (marketing), then order form.
-2. **Plan 12-03** — Engine "Load order" flow (fetch Firestore doc + GCS photos by order number)
-3. **Plan 12-04** — PDF export wired to GCS / order path
+**Focus: stress-test the engine with new SVGs + caption coordinates using local photo uploads. Order-flow integration (Phase 11) is parked until engine output is trusted.**
+
+1. **TO-DO #48 — Bleed SVG migration** (urgent, waiting on Kseniia's re-exports). Implements Plan 13-01.
+2. **TO-DO #49 — Caption box coordinates + text box size in spreads CSV** (urgent, no blocker). Needs a Phase 14 plan written before starting.
+3. **TO-DO #47 — Mobile responsiveness** (homepage + order form). Can be done in parallel with 48/49 since it's a different part of the codebase.
+
+**Deferred (do NOT start yet):**
+- **Plan 11-02** — `getOrderAssets` Cloud Function. Wait until engine produces trusted PDFs.
+- **Plan 11-03** — Engine "Load order" flow. Wait for 11-02.
+- **Plan 11-04** — PDF export wired to GCS. Wait for 13 + 14 to settle.
 
 </current_state>
 ```

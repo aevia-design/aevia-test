@@ -65,29 +65,39 @@ _Local Node.js script generates print-quality PDFs from book-state.json._
 
 ---
 
-## v2.2 — Order Integration (in progress)
+## v2.2 — Order Integration (DEFERRED)
 _Goal: Staff enters an order number → engine fetches customer photos from GCS + pre-assembles book._
+
+**Deferred 2026-05-26 until v2.3 (Phases 13 + 14) is complete and engine output is trusted.** Local photo upload remains the dev loop — it's faster than going through the order flow while geometry is still in flux. No point connecting the order pipe until the engine reliably produces print-ready PDFs.
 
 ### Phase 11 — Order Connection
 | Plan | Description | Status |
 |------|-------------|--------|
 | 11-01 | Photo count calculator on scribble.html (live count, format guidance) | ✅ done |
-| 11-02 | Firestore schema + `getOrderAssets` Cloud Function | 🔄 next |
-| 11-03 | Load order UI in template engine (order number → auto-assemble book) | ⬜ todo |
+| 11-02 | Firestore schema additions (`fpSelections`, `photoCount`) + `getOrderAssets` Cloud Function | ⏸ deferred — schema done (2026-05-26); Cloud Function paused |
+| 11-03 | Load order UI in template engine (order number → auto-assemble book) | ⏸ deferred |
+| 11-04 | PDF export wired to GCS order path (GCS signed URLs in book-state.json, export-pdf.js fetches from GCS) | ⏸ deferred |
 
-_11-02 must precede 11-03._
+_When resumed, run 11-02 → 11-03 → 11-04 in order._
 
 ---
 
-## v2.3 — Bleed SVG Migration (blocked on Kseniia)
-_SVGs will be re-exported with 3mm bleed included. Engine and PDF must adapt._
+## v2.3 — Template Data Improvements (urgent — next focus)
+_Two CSV/data improvements needed before the next PDF print run._
 
-### Phase 13 — Bleed SVG Change
+### Phase 13 — Bleed SVG Migration
 | Plan | Description | Status |
 |------|-------------|--------|
-| 13-01 | Engine: offset bleed SVGs −3mm; PDF: place SVG at page origin (no BLEED_PT) | ⬜ todo (waiting for SVGs) |
+| 13-01 | Re-upload SVGs with 3mm bleed; adjust CSV coordinates; engine clips bleed, PDF places SVG at origin | ⬜ todo (waiting for Kseniia's SVGs) |
 
-_Prerequisite: Kseniia delivers re-exported SVGs with 3mm bleed._
+_Prerequisite: Kseniia delivers re-exported SVGs with 3mm bleed baked in. See TO-DO #48._
+
+### Phase 14 — Caption Coordinate CSV
+| Plan | Description | Status |
+|------|-------------|--------|
+| 14-01 | Add caption x/y/w/h columns to spreads CSV (matching cover CSV pattern); regenerate scribble-data.js; update engine + PDF to read explicit caption box dimensions | ⬜ todo |
+
+_See TO-DO #49. No blocking dependency — can be done before Phase 13._
 
 ---
 
