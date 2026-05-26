@@ -835,7 +835,7 @@
   async function urlToBase64(url, maxPx = 1200) {
     const resp = await fetch(url);
     const blob = await resp.blob();
-    // Resize to maxPx before encoding — keeps payload well under 10 MB limit
+    // Resize to maxPx before encoding for smaller base64 payload
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -917,7 +917,10 @@
         img.src = url;
       }),
       new Promise(resolve =>
-        setTimeout(() => resolve({ orientation: 'horizontal', w: 0, h: 0 }), 10000)
+        setTimeout(() => {
+          console.warn('Orientation read timed out for blob — dimensions unknown');
+          resolve({ orientation: 'horizontal', w: 0, h: 0 });
+        }, 10000)
       ),
     ]);
   }
@@ -1325,6 +1328,10 @@
     svgImg.className = 'svg-overlay';
     svgImg.src = SVG_BASE + coverDef.svg;
     svgImg.alt = '';
+    svgImg.onerror = () => {
+      console.warn('SVG overlay failed to load:', svgImg.src);
+      svgImg.style.outline = '3px solid #e05252';
+    };
     canvas.appendChild(svgImg);
 
     // Photo slot (center-based coords from CSV)
@@ -1368,8 +1375,8 @@
       const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
       const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
 
-      const fontSize = sizePt + 'pt';
-      const lineH    = (sizePt * lineSpacing).toFixed(1) + 'pt';
+      const fontSize = (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
+      const lineH    = (sizePt * lineSpacing * SCALE * 25.4 / 72).toFixed(1) + 'px';
       const lineHpx  = sizePt * (4 / 3) * lineSpacing;
 
       const cap = document.createElement('div');
@@ -1864,9 +1871,13 @@
       if (variant.svg) {
         const overlay = document.createElement('img');
         overlay.className = 'svg-overlay';
-        overlay.dataset.src = SVG_BASE + variant.svg;
+        overlay.src = SVG_BASE + variant.svg;
         overlay.alt = '';
         overlay.decoding = 'async';
+        overlay.onerror = () => {
+          console.warn('SVG overlay failed to load:', overlay.src);
+          overlay.style.outline = '3px solid #e05252';
+        };
         canvas.appendChild(overlay);
       }
 
@@ -2037,7 +2048,7 @@
           captionEl.style.fontStyle     = _italic ? 'italic' : 'normal';
 
           const saved = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx];
-          if (saved) captionEl.innerHTML = saved.includes('<') ? saved : applyTypographicRules(saved);
+          if (saved) captionEl.innerHTML = saved;
 
           const saveCaption = () => {
             // Save innerHTML to preserve inline bold/italic spans
@@ -2073,6 +2084,7 @@
           aiBtn.title = 'Generate caption with AI';
 
           // Position just above the caption field (or below if above-position)
+          // NOTE: button position is computed at render time; re-renders on window resize are not supported
           if (cap.position === 'above') {
             aiBtn.style.left = capLeft + 'px';
             aiBtn.style.top  = (capTop - 22) + 'px';
@@ -2091,6 +2103,7 @@
             const photo = window.photoPool[poolIdx];
             if (!photo?.url) return;
 
+            const textAtClick = captionEl.innerText.trim();
             aiBtn.textContent = '…';
             aiBtn.classList.add('loading');
             aiBtn.disabled = true;
@@ -2103,6 +2116,7 @@
               });
               if (!resp.ok) throw new Error((await resp.json()).error || resp.statusText);
               const { caption } = await resp.json();
+              if (captionEl.innerText.trim() !== textAtClick) return; // user edited — don't overwrite
               if (!window.bookCaptions) window.bookCaptions = {};
               if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
               if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};

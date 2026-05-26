@@ -13,10 +13,10 @@
       }
 
       .cls-3 {
-        clip-path: url(#clippath-1);
+        clip-path: url(#clippath);
       }
     </style>
-    <clipPath id="clippath-1">
+    <clipPath id="clippath">
       <rect id="_Clipping_Path_" data-name="&amp;lt;Clipping Path&amp;gt;" class="cls-1" x="-8.5" y="-8.5" width="583.94" height="583.94"/>
     </clipPath>
   </defs>

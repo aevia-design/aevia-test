@@ -389,24 +389,52 @@ Response: { caption: 'suggested text string' }
 - **TO-DOs #45 + #46** — DONE and marked in TO-DOS.md
 - `scripts/simulate-photo-count.js` — orientation simulation tool
 
+## Session 2026-05-26 (later) — Code review + Phase 13 planning
+
+### template-engine.html — 9 code review fixes (uncommitted)
+- Cover caption font size: was CSS `pt` (26% too large) → now `(sizePt * SCALE * 25.4 / 72)px`
+- AI caption guard: snapshots text before fetch; skips overwrite if user edited in flight
+- SVG onerror handlers: red outline + console.warn on load failure (cover + spread paths)
+- Caption restore: always `innerHTML = saved` — removed conditional re-apply of typographic rules
+- Orientation timeout: console.warn when 10s read times out (w=0 false low-res guard stays)
+- Special photo container: verified already clears with `innerHTML = ''` — no change needed
+- AI button note: comment added about resize limitation
+- urlToBase64 comment: corrected (was misleading "10 MB limit")
+- Unknown dims: covered by orientation timeout warn
+
+### Phase 13 plans written (uncommitted)
+- **13-01-PLAN.md** (rewritten): CSV parser full rewrite — comma delimiter, title row skip, index-based parsing for duplicate headers, emit `x/y` + `xBleed/yBleed` on slots, explicit caption box `xMm/yMm/wMm/hMm/halign/valign`
+- **13-03-PLAN.md** (new): template-engine.html — SVG bleed offset (−9px), coord-based caption rendering
+- **13-04-PLAN.md** (new): export-pdf.js — SVG at origin, `xBleed/yBleed` for slots, coord-based captions, schema v3
+- **Phase 14 merged into Phase 13** — Evgeny already added caption box columns to both CSVs
+
+### CSV + SVG files updated by Evgeny (uncommitted, not yet processed)
+- `Scribble_sizing_full.csv`: new column structure (comma delimiter, bleed coords, caption box columns)
+- `Scribble_Template_Sizing_Cover.csv`: renamed coordinate columns, both bleed variants
+- Spread SVGs: FP1/FP3/FP4 updated; FP5 art SVGs added (new files)
+- Two xlsx files deleted from assets
+
 ## Known issues / watch-outs
 - HEIC conversion silent failure: if Cloud Function fails all 3 retries, no error shown to user; cover/FP previews may show blank (edge case, not yet tested)
 - Per-line caption styling (e.g. row 1 bold, row 2 italic in one caption) NOT supported — would require per-line style map in engine + PDF. Use separate caption slots instead (works on Art Gallery FP5 today).
 - Spine horizontal centering uses ascender-height heuristic; for mixed-case spine text with descenders the centering may be slightly biased. Acceptable for current uppercase-heavy use.
 - Photo count assumes H orientation — simulation (#46) confirmed this is exact for Scribble; re-check for future templates.
+- **Spread CSV parser is currently broken** — csv-to-template.js still uses `;` delimiter and reads line 0 as headers. Do not run `node csv-to-template.js` until Plan 13-01 is implemented.
 
 ## Next priorities
 
-**Focus: stress-test the engine with new SVGs + caption coordinates using local photo uploads. Order-flow integration (Phase 11) is parked until engine output is trusted.**
+**Focus: implement Plan 13-01 (CSV parser rewrite) → then 13-03 (engine) + 13-04 (PDF) → then 13-02 (hygiene).**
 
-1. **TO-DO #48 — Bleed SVG migration** (urgent, waiting on Kseniia's re-exports). Implements Plan 13-01.
-2. **TO-DO #49 — Caption box coordinates + text box size in spreads CSV** (urgent, no blocker). Needs a Phase 14 plan written before starting.
-3. **TO-DO #47 — Mobile responsiveness** (homepage + order form). Can be done in parallel with 48/49 since it's a different part of the codebase.
+1. **Plan 13-01** — CSV parser rewrite. No blockers. See `.planning/phases/13-bleed-svgs/13-01-PLAN.md`.
+2. **Plan 13-03** — Engine rendering (SVG bleed offset + coord-based captions). After 13-01 verified.
+3. **Plan 13-04** — PDF rendering (SVG at origin + bleed coords). After 13-01 verified. Can run in parallel with 13-03.
+4. **Plan 13-02** — Code hygiene. After 13-03 + 13-04 land.
+5. **TO-DO #47 — Mobile responsiveness** — can be done anytime, different files.
 
 **Deferred (do NOT start yet):**
 - **Plan 11-02** — `getOrderAssets` Cloud Function. Wait until engine produces trusted PDFs.
 - **Plan 11-03** — Engine "Load order" flow. Wait for 11-02.
-- **Plan 11-04** — PDF export wired to GCS. Wait for 13 + 14 to settle.
+- **Plan 11-04** — PDF export wired to GCS. Wait for Phase 13 to settle.
 
 </current_state>
 ```

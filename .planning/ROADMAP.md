@@ -85,19 +85,18 @@ _When resumed, run 11-02 → 11-03 → 11-04 in order._
 ## v2.3 — Template Data Improvements (urgent — next focus)
 _Two CSV/data improvements needed before the next PDF print run._
 
-### Phase 13 — Bleed SVG Migration
+### Phase 13 — Bleed SVG + Caption Coordinate Migration
+_SVGs now include 3mm bleed (Kseniia delivered 2026-05-26). Both CSVs updated with new column structure.
+Plans 13-01 → 13-03 → 13-04 must run in order. 13-02 (hygiene) runs last._
+
 | Plan | Description | Status |
 |------|-------------|--------|
-| 13-01 | Re-upload SVGs with 3mm bleed; adjust CSV coordinates; engine clips bleed, PDF places SVG at origin | ⬜ todo (waiting for Kseniia's SVGs) |
+| 13-01 | CSV parser rewrite + scribble-data.js format update (bleed coords on slots, explicit caption box dims) | ⬜ todo — **start here** |
+| 13-03 | template-engine.html: SVG bleed offset + coordinate-based caption rendering | ⬜ todo (after 13-01) |
+| 13-04 | export-pdf.js: SVG at origin + xBleed slot coords + coordinate-based caption rendering | ⬜ todo (after 13-01) |
+| 13-02 | Engine + PDF code hygiene pass — drift guards, schema version, dead code removal | ⬜ todo (run after 13-03 + 13-04) |
 
-_Prerequisite: Kseniia delivers re-exported SVGs with 3mm bleed baked in. See TO-DO #48._
-
-### Phase 14 — Caption Coordinate CSV
-| Plan | Description | Status |
-|------|-------------|--------|
-| 14-01 | Add caption x/y/w/h columns to spreads CSV (matching cover CSV pattern); regenerate scribble-data.js; update engine + PDF to read explicit caption box dimensions | ⬜ todo |
-
-_See TO-DO #49. No blocking dependency — can be done before Phase 13._
+_Phase 14 (caption CSV) merged into Phase 13 — Evgeny already added caption box columns to the CSV._
 
 ---
 
