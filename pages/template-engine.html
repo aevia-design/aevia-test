@@ -668,6 +668,10 @@
       <button class="order-load-btn" id="order-load-btn">Load</button>
       <span class="order-status" id="order-status"></span>
     </div>
+    <div id="order-notes-card" style="display:none; margin-top:8px; background:#f5f2ed; border-radius:4px; padding:8px 12px; font-size:12px; color:#4a4540; font-style:italic; max-width:360px; line-height:1.5;">
+      <span style="font-style:normal; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:#9a928a; display:block; margin-bottom:3px;">About this album</span>
+      <span id="order-notes-text"></span>
+    </div>
   </div>
 
 </div>
@@ -3074,6 +3078,7 @@
     document.getElementById('mode-order-btn').classList.toggle('active', isOrder);
     document.getElementById('local-mode-controls').style.display = isOrder ? 'none' : 'flex';
     document.getElementById('order-mode-controls').style.display = isOrder ? '' : 'none';
+    if (!isOrder) { const nc = document.getElementById('order-notes-card'); if (nc) nc.style.display = 'none'; }
     const sp = document.getElementById('special-panel');
     if (sp) {
       if (isOrder) {
@@ -3116,6 +3121,16 @@
       status.className = 'order-status ok';
       const fps = (order.fpSelections || []).join(', ');
       status.textContent = `${order.customerName} · ${order.pageCount}p${fps ? ' · ' + fps : ''}`;
+      // Show album notes if present
+      const notesCard = document.getElementById('order-notes-card');
+      if (notesCard) {
+        if (order.photoNotes) {
+          notesCard.style.display = 'block';
+          document.getElementById('order-notes-text').textContent = order.photoNotes;
+        } else {
+          notesCard.style.display = 'none';
+        }
+      }
     } catch (err) {
       status.className = 'order-status err';
       status.textContent = err.message;

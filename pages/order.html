@@ -124,7 +124,7 @@
 
     /* Photo grid */
     .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 16px; }
-    .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 4px; overflow: hidden; background: var(--surface); }
+    .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 4px; overflow: hidden; background: var(--surface); content-visibility: auto; contain-intrinsic-size: 96px; }
     .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .photo-thumb .file-badge { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
     .photo-thumb .file-badge svg { opacity: 0.3; }
@@ -141,11 +141,15 @@
 
     .error-msg { background: #fdf0ee; border: 1px solid #ecc8c0; border-radius: 4px; padding: 12px 16px; font-size: 13px; color: #8b3a2e; margin-bottom: 20px; display: none; }
 
-    /* Progress */
-    .progress-wrap { display: none; margin-top: 20px; }
-    .progress-track { background: var(--surface); border-radius: 100px; height: 3px; overflow: hidden; margin-bottom: 8px; }
-    .progress-fill { height: 100%; background: var(--text); border-radius: 100px; transition: width 0.25s; width: 0%; }
-    .progress-text { font-size: 12px; color: var(--muted); text-align: center; }
+    /* Progress overlay */
+    .upload-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(246,244,240,0.96); backdrop-filter: blur(4px); flex-direction: column; align-items: center; justify-content: center; }
+    .upload-overlay.active { display: flex; }
+    .upload-overlay-inner { width: min(480px, 90vw); text-align: center; }
+    .upload-overlay-heading { font-family: var(--serif); font-size: 28px; font-weight: 400; letter-spacing: -0.01em; margin-bottom: 8px; color: var(--text); }
+    .upload-overlay-sub { font-size: 13px; color: var(--muted); margin-bottom: 36px; min-height: 1.5em; transition: opacity 0.4s; }
+    .upload-progress-track { background: var(--border); border-radius: 100px; height: 4px; overflow: hidden; margin-bottom: 12px; }
+    .upload-progress-fill { height: 100%; background: var(--text); border-radius: 100px; transition: width 0.3s ease; width: 0%; }
+    .upload-progress-count { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 
     /* ── Success ── */
     .success-screen { display: none; max-width: 560px; margin: 72px auto; text-align: center; padding: 0 24px; }
@@ -247,16 +251,8 @@
         </div>
 
         <div class="field">
-          <label for="album-notes">About your album</label>
-          <textarea id="album-notes" rows="4"></textarea>
-          <p class="field-note">The occasion, names, dates. Anything we should carry through the design.</p>
-        </div>
-
-        <hr class="divider" />
-
-        <div class="field">
-          <label for="special-requests">Special requests <span style="color:#c5bdb5;font-style:italic;letter-spacing:0;text-transform:none;font-size:10px;">optional</span></label>
-          <textarea id="special-requests" rows="3" placeholder="Anything else — a preferred cover style, a word or quote you'd like included, something we should know..."></textarea>
+          <label for="album-notes">Tell us about this album <span style="color:#c5bdb5;font-style:italic;letter-spacing:0;text-transform:none;font-size:10px;">optional</span></label>
+          <textarea id="album-notes" rows="4" placeholder="Your child's name, their personality, a favourite toy or game — anything you'd love us to weave through the design."></textarea>
         </div>
 
         <div class="error-msg" id="err-step1"></div>
@@ -367,10 +363,6 @@
       <button class="btn-primary" id="submit-btn" onclick="submitOrder()">Submit your order</button>
       <p class="submit-note">No payment until you approve the design.<br>Preview within 48 hours.</p>
 
-      <div class="progress-wrap" id="progress-wrap">
-        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-        <div class="progress-text" id="progress-text">Preparing upload…</div>
-      </div>
     </div>
 
   </div><!-- /step2 -->
@@ -1206,7 +1198,6 @@ async function submitOrder() {
   const customerName = document.getElementById('inp-name').value.trim();
   const email        = document.getElementById('inp-email').value.trim();
   const albumNotes   = document.getElementById('album-notes').value.trim();
-  const specialReq   = document.getElementById('special-requests').value.trim();
 
   // Collect FP texts and assemble specialRequests string
   const activeAddons = ORDER.addons.filter(a => !cancelledAddons.has(a.slug));
@@ -1239,7 +1230,6 @@ async function submitOrder() {
   const fullSpecialReq = [
     activeAddons.length ? `Add-ons selected: ${activeAddons.map(a => a.name).join(', ')}` : null,
     addonNoteLines.length ? addonNoteLines.join('\n') : null,
-    specialReq || null,
   ].filter(Boolean).join('\n\n');
 
   // Build ordered file list: cover first, then special, then main
@@ -1272,13 +1262,30 @@ async function submitOrder() {
     filesMeta.push({ name: f.name, type: mimeType(f), fileType: 'main' });
   });
 
-  // Disable submit, show progress
+  // Disable submit, show upload overlay
   btn.disabled = true;
-  const progressWrap = document.getElementById('progress-wrap');
-  const progressFill = document.getElementById('progress-fill');
-  const progressText = document.getElementById('progress-text');
-  progressWrap.style.display = 'block';
-  progressText.textContent = 'Creating your order…';
+  const overlay     = document.getElementById('upload-overlay');
+  const overlayFill = document.getElementById('upload-progress-fill');
+  const overlaySub  = document.getElementById('upload-overlay-sub');
+  const overlayCount = document.getElementById('upload-progress-count');
+
+  const humourLines = [
+    'Packing your memories carefully…',
+    'Still going… great things take a moment.',
+    'Almost there — your photos are travelling to our Viennese Lab.',
+  ];
+  let humourIdx = 0;
+  overlaySub.textContent = humourLines[0];
+  overlayFill.style.width = '0%';
+  overlayCount.textContent = '';
+  overlay.classList.add('active');
+
+  // Cycle humour lines every ~4 seconds
+  const humourTimer = setInterval(() => {
+    humourIdx = (humourIdx + 1) % humourLines.length;
+    overlaySub.style.opacity = '0';
+    setTimeout(() => { overlaySub.textContent = humourLines[humourIdx]; overlaySub.style.opacity = '1'; }, 400);
+  }, 4000);
 
   try {
     // Step 1: call Firebase function to create order + get signed URLs
@@ -1311,8 +1318,8 @@ async function submitOrder() {
     // Step 2: upload each file to its signed URL
     const total = fileObjects.length;
     for (let i = 0; i < total; i++) {
-      progressText.textContent = `Uploading photo ${i + 1} of ${total}…`;
-      progressFill.style.width = `${Math.round((i / total) * 100)}%`;
+      overlayCount.textContent = `Photo ${i + 1} of ${total}`;
+      overlayFill.style.width = `${Math.round((i / total) * 100)}%`;
 
       await fetch(uploadUrls[i].url, {
         method:  'PUT',
@@ -1321,15 +1328,18 @@ async function submitOrder() {
       });
     }
 
-    progressFill.style.width = '100%';
-    progressText.textContent = 'Done!';
+    clearInterval(humourTimer);
+    overlayFill.style.width = '100%';
+    overlaySub.textContent = 'Done!';
+    overlayCount.textContent = '';
 
     // Show success
     setTimeout(() => showSuccess(orderNumber, email), 400);
 
   } catch (err) {
+    clearInterval(humourTimer);
     btn.disabled = false;
-    progressWrap.style.display = 'none';
+    overlay.classList.remove('active');
     errEl.textContent = err.message || 'Something went wrong. Please try again or email us at xenia@aevia.at.';
     errEl.style.display = 'block';
   }
@@ -1453,6 +1463,18 @@ function closeLightbox() {
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <span class="lightbox-close" onclick="closeLightbox()">×</span>
   <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()" />
+</div>
+
+<!-- Upload progress overlay -->
+<div class="upload-overlay" id="upload-overlay">
+  <div class="upload-overlay-inner">
+    <div class="upload-overlay-heading">Uploading your photos</div>
+    <div class="upload-overlay-sub" id="upload-overlay-sub">Packing your memories carefully…</div>
+    <div class="upload-progress-track">
+      <div class="upload-progress-fill" id="upload-progress-fill"></div>
+    </div>
+    <div class="upload-progress-count" id="upload-progress-count"></div>
+  </div>
 </div>
 </body>
 </html>
