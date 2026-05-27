@@ -802,7 +802,8 @@
   window.coverCaptionStyles  = {};   // { year: { font, weight, style, sizePt, lineSpacing, letterSpacing }, name: {...} }
   window.spreadCaptionStyles = {};   // { spreadIndex: { side: { slotIdx: { font, weight, italic, sizePt, lineSpacing, letterSpacing } } } }
 
-  const SCALE = 3;               // px per mm
+  const SCALE    = 3;            // px per mm
+  const BLEED_MM = 3;            // spread bleed (mm); caption/slot CSV coords are with-bleed
   const HEIC_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/convertHeic';
   const SVG_BASE      = '../assets/Template_Scribble/Spreads/';
 
@@ -1053,6 +1054,7 @@
     });
 
     const state = {
+      schemaVersion: 3,
       template: 'scribble',
       pageCount: parseInt(document.getElementById('page-count-select').value, 10),
       sequence: seq,
@@ -1336,10 +1338,11 @@
 
     // Photo slot (center-based coords from CSV)
     const slotDef = coverDef.slots[0];
+    const COVER_BLEED_MM = 18;  // cover CSV coords include 18mm bleed on each side
     const slotW   = slotDef.wMm * SCALE;
     const slotH   = slotDef.hMm * SCALE;
-    const slotL   = slotDef.xMm * SCALE - slotW / 2;
-    const slotT   = slotDef.yMm * SCALE - slotH / 2;
+    const slotL   = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2;
+    const slotT   = (slotDef.yMm - COVER_BLEED_MM) * SCALE - slotH / 2;
 
     const slot = document.createElement('div');
     slot.className = 'photo-slot';
@@ -1359,12 +1362,12 @@
     }
     canvas.appendChild(slot);
 
-    // Captions (center-based coords)
+    // Captions — coords are with-bleed (18mm); subtract before converting to canvas px
     const savedCoverCaps = window.bookCaptions['cover'] || {};
     coverDef.captions.forEach(capDef => {
       const capW  = capDef.wMm * SCALE;
-      const capCX = capDef.xMm * SCALE;
-      const capCY = capDef.yMm * SCALE;
+      const capCX = (capDef.xMm - COVER_BLEED_MM) * SCALE;
+      const capCY = (capDef.yMm - COVER_BLEED_MM) * SCALE;
 
       // Merge CSV defaults with any user overrides
       const ov       = window.coverCaptionStyles[capDef.key] || {};
@@ -1651,14 +1654,14 @@
       const firstStyle = fontDef ? fontDef.styles[0] : { weight: 400, italic: false };
       tbUpdate({ font: newFont, weight: firstStyle.weight, italic: firstStyle.italic });
       rebuildStylePills(newFont, firstStyle.weight, firstStyle.italic);
-      document.getElementById('tb-size-val').textContent = getTbStyle('sizePt', 14) + 'pt';
+      document.getElementById('tb-size-val').textContent = getTbStyle('sizePt', 16) + 'pt';
     });
 
     // Size stepper
     document.getElementById('tb-size-down').addEventListener('mousedown', e => {
       e.preventDefault();
       if (!_tbCapDef && !_tbSpreadCtx) return;
-      const cur = getTbStyle('sizePt', 14);
+      const cur = getTbStyle('sizePt', 16);
       const next = Math.max(6, cur - 1);
       tbUpdate({ sizePt: next });
       document.getElementById('tb-size-val').textContent = next + 'pt';
@@ -1666,7 +1669,7 @@
     document.getElementById('tb-size-up').addEventListener('mousedown', e => {
       e.preventDefault();
       if (!_tbCapDef && !_tbSpreadCtx) return;
-      const cur = getTbStyle('sizePt', 14);
+      const cur = getTbStyle('sizePt', 16);
       const next = Math.min(120, cur + 1);
       tbUpdate({ sizePt: next });
       document.getElementById('tb-size-val').textContent = next + 'pt';
@@ -1874,6 +1877,8 @@
         overlay.src = SVG_BASE + variant.svg;
         overlay.alt = '';
         overlay.decoding = 'async';
+        // SVGs are currently content-area only (200×200mm). When Kseniia re-exports with 3mm bleed,
+        // size to 618×618 and offset by -9px. For now CSS handles sizing (width:100%;height:100%).
         overlay.onerror = () => {
           console.warn('SVG overlay failed to load:', overlay.src);
           overlay.style.outline = '3px solid #e05252';
@@ -1898,8 +1903,9 @@
 
         const slotEl = document.createElement('div');
         slotEl.className = 'photo-slot';
-        if (slotDef.heartClip) {
-          // Full-canvas slot — SVG overlay PNG provides yellow masking around heart
+        if (slotDef.heartClip || slotDef.fullBleed) {
+          // Full-canvas slot: heartClip uses SVG masking; fullBleed fills the whole page.
+          // Both sit at 0,0 and cover the full 200mm content canvas (bleed not shown in engine).
           slotEl.style.left   = '0px';
           slotEl.style.top    = '0px';
           slotEl.style.width  = (200 * SCALE) + 'px';
@@ -1982,41 +1988,12 @@
         // Caption overlay (sibling on canvas, outside slot so overflow:hidden doesn't clip it)
         if (slotDef.caption?.allowed) {
           const cap = slotDef.caption;
-
-          // Slot geometry (mm → px)
-          const sLeft = (slotDef.x - slotDef.w / 2) * SCALE;
-          const sTop  = (slotDef.y - slotDef.h / 2) * SCALE;
-          const sW    = slotDef.w * SCALE;
-          const sH    = slotDef.h * SCALE;
-          const gap   = (cap.offset || 0) * SCALE;
-          const capLineH = 26; // approx px height for one line at 14pt
-          const capH     = capLineH * 2;
-
-          // ── Position ──
-          let capLeft, capTop, capWidth;
-          if (cap.position === 'below') {
-            capLeft  = sLeft + sW * 0.05;
-            capTop   = sTop + sH + gap;
-            capWidth = sW * 0.90;
-          } else if (cap.position === 'above') {
-            capLeft  = sLeft + sW * 0.05;
-            capTop   = sTop - gap - capH;
-            capWidth = sW * 0.90;
-          } else if (cap.position === 'upper-right') {
-            // Horizontal text block in the right-margin corner, aligned to photo top
-            capLeft  = sLeft + sW + gap;
-            capTop   = sTop;
-            capWidth = Math.max(60, (200 * SCALE) - (sLeft + sW + gap) - 6);
-          } else if (cap.position === 'lower-right') {
-            // Horizontal text block in the right-margin, aligned to photo bottom (mirrors upper-right)
-            capLeft  = sLeft + sW + gap;
-            capTop   = sTop + sH - capH;
-            capWidth = Math.max(60, (200 * SCALE) - (sLeft + sW + gap) - 6);
-          } else {
-            capLeft  = sLeft + sW * 0.05;
-            capTop   = sTop + sH + gap;
-            capWidth = sW * 0.90;
-          }
+          // xMm/yMm are CENTER coords (with-bleed mm). Convert to canvas px top-left:
+          // subtract BLEED_MM to get content-area mm, multiply by SCALE to get px, subtract half-dimension.
+          const capWidth  = cap.wMm * SCALE;
+          const capHeight = cap.hMm * SCALE;
+          const capLeft   = (cap.xMm - BLEED_MM) * SCALE - capWidth  / 2;
+          const capTop    = (cap.yMm - BLEED_MM) * SCALE - capHeight / 2;
 
           // ── Caption editable element ──
           const captionEl = document.createElement('div');
@@ -2024,10 +2001,22 @@
           captionEl.contentEditable = 'true';
           captionEl.spellcheck = false;
           captionEl.style.left  = capLeft  + 'px';
-          captionEl.style.top   = capTop   + 'px';
           captionEl.style.width = capWidth + 'px';
-          captionEl.style.textAlign = cap.align || 'center';
-          if (cap.position === 'lower-right') captionEl.style.zIndex = '3';
+          captionEl.style.textAlign = cap.halign || 'center';
+
+          if (cap.valign === 'bottom') {
+            // Bottom-anchored: pin to the bottom edge of the box, grow upward as text is added.
+            const CANVAS_PX = 200 * SCALE;
+            const capBottomEdge = (cap.yMm - BLEED_MM) * SCALE + capHeight / 2;
+            captionEl.style.bottom    = (CANVAS_PX - capBottomEdge) + 'px';
+            captionEl.style.maxHeight = capHeight + 'px';
+          } else {
+            captionEl.style.top    = capTop    + 'px';
+            captionEl.style.height = capHeight + 'px';
+            if (cap.valign === 'center') {
+              captionEl.style.paddingTop = (capHeight / 2 - capHeight * 0.15) + 'px';
+            }
+          }
 
           // Typography: CSV defaults merged with any user overrides from spreadCaptionStyles
           const _scsOv = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
@@ -2083,18 +2072,14 @@
           aiBtn.textContent = '✦ Generate';
           aiBtn.title = 'Generate caption with AI';
 
-          // Position just above the caption field (or below if above-position)
+          // Position just above the caption field
           // NOTE: button position is computed at render time; re-renders on window resize are not supported
-          if (cap.position === 'above') {
-            aiBtn.style.left = capLeft + 'px';
-            aiBtn.style.top  = (capTop - 22) + 'px';
-          } else if (cap.position === 'upper-right') {
-            aiBtn.style.left = capLeft + 'px';
-            aiBtn.style.top  = (capTop + capH + 4) + 'px';
-          } else {
-            aiBtn.style.left = capLeft + 'px';
-            aiBtn.style.top  = (capTop - 22) + 'px';
-          }
+          aiBtn.style.left = capLeft + 'px';
+          // For bottom-anchored captions, position button above the top edge of the box
+          const _aiBtnTop = cap.valign === 'bottom'
+            ? (cap.yMm - BLEED_MM) * SCALE - capHeight / 2 - 24
+            : capTop - 24;
+          aiBtn.style.top = _aiBtnTop + 'px';
 
           aiBtn.addEventListener('click', async () => {
             const asgn = window.bookAssignments?.[spreadIndex];
@@ -2147,14 +2132,44 @@
         panelEl.className = 'slot-caption fp-text-panel';
         panelEl.contentEditable = 'true';
         panelEl.spellcheck = false;
-        // Centred block covering middle 60% of the canvas
-        panelEl.style.left      = (200 * SCALE * 0.20) + 'px';
-        panelEl.style.top       = (200 * SCALE * 0.30) + 'px';
-        panelEl.style.width     = (200 * SCALE * 0.60) + 'px';
-        panelEl.style.textAlign = 'center';
+
+        // xMm/yMm are CENTER coords (with-bleed mm). Convert to canvas px top-left.
+        const tpCap = variant.textPanel.caption;
+        const panelWidth  = tpCap.wMm * SCALE;
+        const panelHeight = tpCap.hMm * SCALE;
+        const panelLeft   = (tpCap.xMm - BLEED_MM) * SCALE - panelWidth  / 2;
+        const panelTop    = (tpCap.yMm - BLEED_MM) * SCALE - panelHeight / 2;
+
+        panelEl.style.left      = panelLeft   + 'px';
+        panelEl.style.width     = panelWidth  + 'px';
+        panelEl.style.textAlign = tpCap.halign || 'center';
+
+        if (isFunnyWords) {
+          // Funny words: no fixed height — let the box grow as words are added.
+          // Anchor to the vertical center so it expands equally up and down.
+          const panelCenterY = (tpCap.yMm - BLEED_MM) * SCALE;
+          panelEl.style.top       = panelCenterY + 'px';
+          panelEl.style.transform = 'translateY(-50%)';
+          panelEl.style.maxHeight = panelHeight + 'px';
+          panelEl.style.overflow  = 'hidden';
+        } else if (tpCap.valign === 'bottom') {
+          // Bottom-anchored: pin to the bottom edge of the box, grow upward.
+          // CSS bottom = canvas height - bottom edge of box.
+          const CANVAS_PX = 200 * SCALE;
+          const panelBottomEdge = (tpCap.yMm - BLEED_MM) * SCALE + panelHeight / 2;
+          panelEl.style.bottom   = (CANVAS_PX - panelBottomEdge) + 'px';
+          panelEl.style.maxHeight = panelHeight + 'px';
+          // No fixed height — box grows upward as text is added.
+        } else {
+          // top-anchored or center-anchored: fixed box, padding-top for center valign
+          panelEl.style.top    = panelTop    + 'px';
+          panelEl.style.height = panelHeight + 'px';
+          if (tpCap.valign === 'center') {
+            panelEl.style.paddingTop = (panelHeight / 2 - panelHeight * 0.15) + 'px';
+          }
+        }
 
         // Typography from template-data (CSV source of truth)
-        const tpCap = variant.textPanel.caption;
         if (tpCap.font)                        panelEl.style.fontFamily    = `'${tpCap.font}', var(--sans)`;
         if (tpCap.sizePt) {
           // funnyWords panel is scaled to the canvas (px); regular text panels use pt
@@ -2221,8 +2236,8 @@
         aiPanelBtn.className = 'caption-ai-btn';
         aiPanelBtn.textContent = '✦ Generate';
         aiPanelBtn.title = 'Generate text with AI';
-        aiPanelBtn.style.left = (200 * SCALE * 0.20) + 'px';
-        aiPanelBtn.style.top  = (200 * SCALE * 0.30 + 200 * SCALE * 0.40 + 4) + 'px';
+        aiPanelBtn.style.left = panelLeft + 'px';
+        aiPanelBtn.style.top  = (panelTop + panelHeight + 4) + 'px';
 
         aiPanelBtn.addEventListener('click', async () => {
           // Use first assigned photo from this spread (either side) for context

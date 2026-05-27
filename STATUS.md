@@ -1,61 +1,39 @@
 # Session Status
-_Last updated: 2026-04-06 16:30 (local time)_
-_Context at save: ~66.5k / 200k tokens_
+_Last updated: 2026-05-28_
 
 ## Status
-- **Done:**
-  - Installed taches-cc-resources tools: `/whats-next`, `/check-todos`, `/add-to-todos`, `/debug`, all 12 `/consider:*` frameworks, `create-plans`, `create-hooks`, `create-subagents` skills
-  - Created `context/customer-journey-v1.md` — full annotated customer flow (steps 1–16) with architecture decisions, tech stack table, open questions
-  - Updated `CLAUDE.md` — expanded from "manual concierge" to full automation vision with pipeline summary and 4 MVP phases
-  - Created `TO-DOS.md` — backlog started; first entry: customer email sequence + portal + auth
-  - Dashboard v2: full 10-status vocabulary, event log (statusHistory array in Firestore), order age display, updated stats bar and filters
-  - Fixed CORS: added `*.pages.dev` to allowed origins in `functions/upload.js`, redeployed function
-  - Added `firestore.rules`: allow reads + status/statusHistory updates from browser; block create/delete
-  - Added `firestore.rules` to `firebase.json` so rules deploy via CLI
-  - Fixed double euro sign: removed `€` from URL param in all 7 product pages (vows, wonder, horizon, wander, sprout, radiance, terrain); dashboard strips `€` defensively
-  - All changes pushed to git and live at `https://aevia-test.pages.dev`
+- **SVG bleed fix — DONE** (implemented and tested). Spread and cover SVGs now rendered with
+  expanded viewBox so Kseniia's bleed artwork is visible in PDFs. Cover compositing simplified:
+  canvas bg = front colour, SVG provides back+spine.
+- **Blank QR page — DONE.** Appended after all content pages in both preview + print modes.
+- **Full-bleed photo support — DONE.** `full_bleed: yes` in CSV → `fullBleed: true` flag on slot
+  → PDF places photo at 206×206mm origin; engine shows at 600×600px origin.
+- **Text panel word wrap — DONE.** FP text panels now wrap within their box (was rendering
+  as single overflowing line).
+- **All changes UNCOMMITTED** — 5 modified tracked files + new fonts + session log.
 
-- **In progress:** Nothing — all items complete and verified working.
+## Immediate next steps
+1. **Commit everything** — all uncommitted changes from sessions 2026-05-26 through 2026-05-28.
+   Files: `pages/template-engine.html`, `scripts/export-pdf.js`, `csv-to-template.js`,
+   `assets/Template_Scribble/scribble-data.js`, `assets/Template_Scribble/Scribble_sizing_full.csv`,
+   `assets/Template_Scribble/Scribble_Template_Sizing_Cover.csv`, FP Spread 5 SVGs renamed,
+   `assets/fonts/` (EB Garamond static TTFs).
+2. **Plan 13-02** — Code hygiene pass. After commit.
+3. **TO-DO #47** — Mobile responsiveness (different files, unblocked any time).
 
-## Key decisions made
-- **Status vocabulary (10 steps):** `new → designing → needs_info → review_sent → approved → paid → sent_to_print → printing → in_delivery → delivered`. `needs_info` is a flag, not a sequence step — can be set at any stage.
-- **Event log pattern:** Each status change writes a `{status, timestamp}` object to a `statusHistory` array in Firestore. This powers future analytics (time per stage, total turnaround).
-- **Template format (pending confirmation):** Recommended HTML/CSS → PDF via Puppeteer over Adobe InDesign — free, fully automatable, stays in Node.js stack.
-- **Firestore rules:** Browser can read all orders + update only `status` and `statusHistory` fields. All other writes go through the Cloud Function (service account bypasses rules).
-- **Customer portal:** In TO-DOS. Will use Firebase Auth (magic link preferred for one-time customers) + read-only Firestore order view.
+## Open watch-outs
+- Cover `sections.back/spine/front.xMm` are content-relative (used by code that DOES add
+  `COVER_BLEED_PX`). Cover photo slot and captions `xMm/yMm` are absolute (already include
+  18mm bleed). Don't unify without auditing all five sites.
+- EB Garamond rendering uses per-character drawText (LIGATURE_FONTS set). Adding a new
+  ligature-heavy font means it joins this set; the spine rotated-text path must be
+  re-verified for that font.
+- Font pipeline requires static TTF/OTF. No woff2, no variable fonts.
+- `full_bleed` legacy detection (`bgColor contains 'full bleed'`) still in csv-to-template.js
+  — clean up in Plan 13-02.
 
-## Open questions
-- Template format final decision: HTML/CSS (recommended) vs Adobe InDesign?
-- Print house: local Vienna print house vs API-capable (Prodigi, Gelato)?
-- Customer revision flow: email-based vs web form?
-- Preview delivery: PDF attachment vs GCS signed URL vs dedicated preview page?
-- Stripe: Payment Links (manual) or Checkout Sessions (automated)?
-- Dashboard password (`keanuredcat`) is in plain HTML — acceptable for now, but note it's in git history.
-
-## Next steps
-1. Test dashboard status changes + verify `statusHistory` writing to Firestore correctly
-2. Test euro sign fix on product pages (Cloudflare deploy ~1 min from last push)
-3. **Next MVP phase (Phase 2):** Template engine — pick one template (e.g. Bloom), build HTML/CSS version, write Node.js script to fetch photos from GCS + sort by EXIF + fill template
-4. Caption tool (internal) — after template engine
-5. Stripe Payment Link integration (manual trigger per order)
-
-## Files changed this session
-| File | Change |
-|------|--------|
-| `context/customer-journey-v1.md` | Created — full annotated customer journey v1 |
-| `CLAUDE.md` | Modified — expanded vision, pipeline, MVP phases |
-| `TO-DOS.md` | Created — backlog with customer email/portal todos |
-| `pages/dashboard.html` | Modified — v2: full status flow, event log, order age, stats |
-| `functions/upload.js` | Modified — added `*.pages.dev` to CORS origins |
-| `firestore.rules` | Created — allow reads + status updates, block create/delete |
-| `firebase.json` | Modified — added firestore rules reference |
-| `pages/vows.html` | Modified — removed `€` from price URL param |
-| `pages/wonder.html` | Modified — removed `€` from price URL param |
-| `pages/horizon.html` | Modified — removed `€` from price URL param |
-| `pages/wander.html` | Modified — removed `€` from price URL param |
-| `pages/sprout.html` | Modified — removed `€` from price URL param |
-| `pages/radiance.html` | Modified — removed `€` from price URL param |
-| `pages/terrain.html` | Modified — removed `€` from price URL param |
-
-## Context for next session
-Aevia is a Vienna-based premium photo book service (plain HTML/CSS/JS, Firebase backend, hosted on Cloudflare Pages at `aevia-test.pages.dev`). This session expanded the project vision from manual concierge to semi-automated pipeline, documented it in `context/customer-journey-v1.md`, and completed Dashboard v2 with a full 10-step order status flow and Firestore event logging per status change. The next milestone is Phase 2: building the template engine — HTML/CSS templates filled with customer photos (sorted by EXIF date) and rendered to PDF via Puppeteer. The taches-cc-resources tools are installed globally (`/consider:*`, `/whats-next`, etc.) and should be used going forward.
+## Key files
+- Plans: `.planning/phases/13-bleed-svgs/13-01-PLAN.md` through `13-04-PLAN.md`
+- Session logs: `sessions/2026-05-28.md`, `sessions/2026-05-27.md`, `sessions/2026-05-26-p2.md`
+- Full context: `whats-next.md`
+- Architecture insights: `LEARNINGS.md`

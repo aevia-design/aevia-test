@@ -55,6 +55,12 @@ fs.mkdirSync(outDir, { recursive: true });
 // ── Load state + template data ────────────────────────────────────────────────
 const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
 
+// Check schema version (Plan 13-04)
+if (!state.schemaVersion || state.schemaVersion < 3) {
+  console.warn('⚠  book-state.json is schema v' + (state.schemaVersion || 1) +
+    '. Re-export from the template engine to get correct bleed coordinates and caption boxes.');
+}
+
 // template-data.js assigns to window.SCRIBBLE_DATA
 global.window = {};
 require(path.resolve(__dirname, '../assets/Template_Scribble/scribble-data.js'));
@@ -69,10 +75,9 @@ const FULL_MM    = CONTENT_MM + BLEED_MM * 2;            // 206mm
 const FULL_PX    = Math.round(FULL_MM * MM_TO_PX);       // 2433px
 const CONTENT_PX = Math.round(CONTENT_MM * MM_TO_PX);   // 2362px
 const BLEED_PX   = Math.round(BLEED_MM * MM_TO_PX);     // 35px
-// slot.x/y are CENTER coords in mm; slot.w/h are dimensions in mm
-// (same as template engine: left = (x - w/2) * SCALE, top = (y - h/2) * SCALE)
-const slotLeft = (s) => Math.round((s.x - s.w / 2) * MM_TO_PX + BLEED_PX);
-const slotTop  = (s) => Math.round((s.y - s.h / 2) * MM_TO_PX + BLEED_PX);
+// slot.xBleed/yBleed are CENTER coords (with bleed). Subtract half-dimension to get top-left corner.
+const slotLeft = (s) => Math.round((s.xBleed - s.w / 2) * MM_TO_PX);
+const slotTop  = (s) => Math.round((s.yBleed - s.h / 2) * MM_TO_PX);
 const slotW    = (s) => Math.round(s.w * MM_TO_PX);
 const slotH    = (s) => Math.round(s.h * MM_TO_PX);
 
@@ -83,6 +88,25 @@ function hexToSharpColor(hex) {
   const h = hex.replace('#', '');
   return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16), alpha: 1 };
 }
+
+// Expand an SVG's viewBox by `bleedUnits` on every side so bleed artwork outside the
+// original content area becomes visible when sharp renders it.
+// E.g. "0 0 566.93 566.93" + 8.5 → "-8.5 -8.5 583.93 583.93"
+function expandSvgViewBox(svgStr, bleedUnits) {
+  return svgStr.replace(/viewBox="([^"]+)"/i, (_, vb) => {
+    const [x, y, w, h] = vb.trim().split(/[\s,]+/).map(Number);
+    const nx = (x - bleedUnits).toFixed(4);
+    const ny = (y - bleedUnits).toFixed(4);
+    const nw = (w + bleedUnits * 2).toFixed(4);
+    const nh = (h + bleedUnits * 2).toFixed(4);
+    return `viewBox="${nx} ${ny} ${nw} ${nh}"`;
+  });
+}
+
+// SVG user units per mm at 72 dpi (SVG default).
+// Spread SVG: 200mm content → 566.93 user units; 3mm bleed → 8.504 units.
+const SPREAD_SVG_BLEED_UNITS = BLEED_MM * 72 / 25.4;  // ~8.504
+// COVER_SVG_BLEED_UNITS is defined near the cover constants below (depends on COVER_BLEED_MM).
 
 function photoPath(name) {
   return path.join(photosDir, name);
@@ -162,7 +186,15 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
     }
 
     try {
-      if (slot.heartClip) {
+      if (slot.fullBleed) {
+        // Full-bleed photo fills the entire 206×206mm canvas including bleed.
+        // Sized to FULL_PX × FULL_PX and placed at (0,0) — no crop gap at any edge.
+        const photoBuffer = await sharp(pPath)
+          .resize(FULL_PX, FULL_PX, { fit: 'cover', position: 'centre' })
+          .png()
+          .toBuffer();
+        composites.push({ input: photoBuffer, left: 0, top: 0 });
+      } else if (slot.heartClip) {
         // Heart slot covers full content area; clip-path is in 600px canvas space → scale to CONTENT_PX
         const scale = CONTENT_PX / 600;
         const heartPath = 'M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z';
@@ -194,16 +226,20 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
   }
 
   // ── SVG overlay ─────────────────────────────────────────────────────────────
-  // SVG viewBox covers the 200mm content area — resize to CONTENT_PX and offset by BLEED_PX
+  // Expand the SVG viewBox by 3mm (SPREAD_SVG_BLEED_UNITS) each side so the bleed
+  // artwork Kseniia drew past the content edge becomes visible. Render to FULL_PX
+  // (bleed-inclusive canvas) at origin so SVG pixels map 1:1 to the canvas.
   if (svg) {
     const svgPath = path.join(ASSET_BASE, svg);
     if (fs.existsSync(svgPath)) {
       try {
-        const svgBuffer = await sharp(fs.readFileSync(svgPath))
-          .resize(CONTENT_PX, CONTENT_PX, { fit: 'fill' })
+        const svgStr     = fs.readFileSync(svgPath, 'utf8');
+        const svgExpanded = expandSvgViewBox(svgStr, SPREAD_SVG_BLEED_UNITS);
+        const svgBuffer  = await sharp(Buffer.from(svgExpanded))
+          .resize(FULL_PX, FULL_PX, { fit: 'fill' })
           .png()
           .toBuffer();
-        composites.push({ input: svgBuffer, left: BLEED_PX, top: BLEED_PX });
+        composites.push({ input: svgBuffer, left: 0, top: 0 });
       } catch (e) {
         console.warn(`  ⚠ SVG overlay failed (${path.basename(svg)}): ${e.message}`);
       }
@@ -227,9 +263,9 @@ const FONT_FILE_MAP = {
   'NT Somic_regular':          'NTSomic-Regular.ttf',
   'NT Somic_medium':           'NTSomic-Medium.ttf',
   'NT Somic_bold':             'NTSomic-Bold.ttf',
-  'EB Garamond_regular':       'EBGaramond-VariableFont_wght.ttf',
-  'EB Garamond_italic':        'EBGaramond-Italic-VariableFont_wght.ttf',
-  'EB Garamond_semibold':      'EBGaramond-VariableFont_wght.ttf',
+  'EB Garamond_regular':       'EBGaramond-Regular.ttf',
+  'EB Garamond_italic':        'EBGaramond-Italic.ttf',
+  'EB Garamond_semibold':      'EBGaramond-SemiBold.ttf',
   'FirstTimeWriting_regular':  'FirstTimeWriting!.ttf',
 };
 
@@ -249,8 +285,38 @@ async function embedAllFonts(pdfDoc) {
   return map;
 }
 
+// Fonts that form OpenType ligatures (fi, fl, ff…). @pdf-lib/fontkit stores wrong advance widths
+// for ligature glyphs in the PDF W array, causing visible gaps mid-word. The bulletproof workaround
+// is to draw each character as its own drawText call — fontkit can't form a ligature across separate
+// calls (no shaping context). Tradeoff: loses pair kerning, but barely perceptible at body sizes.
+const LIGATURE_FONTS = new Set(['EB Garamond']);
+
+// Measure a string's rendered width by summing per-character widths (no ligature shaping).
+function measureNoLig(font, text, sizePt, charSpacing) {
+  let w = 0;
+  for (const ch of text) w += font.widthOfTextAtSize(ch, sizePt);
+  return w + charSpacing * Math.max(0, [...text].length - 1);
+}
+
+// Draw text character-by-character. Each character is shaped in isolation, so no ligature can form.
+// `rotate` is optional and applied to every glyph (spine captions).
+function drawTextNoLig(pg, text, opts) {
+  const { x, y, size, font, color, characterSpacing = 0, rotate } = opts;
+  let cursor = x;
+  for (const ch of text) {
+    if (ch === ' ') {
+      cursor += font.widthOfTextAtSize(' ', size) + characterSpacing;
+      continue;
+    }
+    pg.drawText(ch, { x: cursor, y, size, font, color, ...(rotate ? { rotate } : {}) });
+    cursor += font.widthOfTextAtSize(ch, size) + characterSpacing;
+  }
+}
+
 function lookupFont(fontMap, fontName, style) {
-  const key = `${fontName}_${(style || 'regular').toLowerCase()}`;
+  // Normalise: lowercase + strip hyphens so 'Semi-Bold' → 'semibold' matches the font map key.
+  const normStyle = (style || 'regular').toLowerCase().replace(/-/g, '');
+  const key = `${fontName}_${normStyle}`;
   return fontMap[key] || fontMap[`${fontName}_regular`] || null;
 }
 
@@ -327,79 +393,54 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     const font = lookupFont(fontMap, fontName, ovStyle);
     if (!font) { console.warn(`  ⚠ Caption font not found: ${fontName} ${ovStyle}`); continue; }
 
-    const sizePt        = (ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 14;
+    const sizePt        = (ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 16;
     const lineSpacingPt = sizePt * ((ov.lineSpacing !== undefined ? ov.lineSpacing : capDef.lineSpacing) || 1.28);
-    const charSpacing   = ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
+    const charSpacing   = LIGATURE_FONTS.has(fontName) ? 0
+      : ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
 
-    // Compute caption position based on capDef.position
-    const pos = capDef.position || 'below';
     const lines = String(text).split('\n').filter(l => l.trim());
 
-    // Right-margin content area limit: text must not exceed the page right boundary.
-    // pageSizePt is the full page dimension (206mm). Content right = pageSizePt - BLEED_PT.
-    const pageRightPt = pageSizePt - BLEED_PT;
+    // xMm/yMm are CENTER coords (with-bleed mm). Convert to pdf-lib box origin (bottom-left of box).
+    const boxWidthPt  = capDef.wMm * MM_TO_PT;
+    const boxHeightPt = capDef.hMm * MM_TO_PT;
+    // Top-left X: center minus half-width
+    const textXPt = (capDef.xMm - capDef.wMm / 2) * MM_TO_PT;
+    // pdf-lib y=0 is bottom. Box bottom = pageSizePt - (center_y + hMm/2) * MM_TO_PT
+    const textYPt = pageSizePt - (capDef.yMm + capDef.hMm / 2) * MM_TO_PT;
 
-    // Gap between photo right edge and caption left edge — matches engine: cap.offset (mm)
-    const gapMm = capDef.offset || 2;
-    // Engine reserves ~6px (2mm) right padding before the content edge
-    const rightPadMm = 2;
+    // Word-wrap text to fit box width
+    const wrappedLines = lines.flatMap(l => wrapText(font, l, sizePt, boxWidthPt, charSpacing));
 
-    if (pos === 'upper-right') {
-      // Right-margin column, top-aligned: X right of slot, lines run downward from slot top.
-      const slotRightMm = slot.x + slot.w / 2;
-      const slotTopMm   = slot.y - slot.h / 2;
-      const xPt = BLEED_PT + slotRightMm * MM_TO_PT + gapMm * MM_TO_PT;
-      const maxWidthPt = pageRightPt - xPt - rightPadMm * MM_TO_PT;
-      // Word-wrap each raw line to fit within the right margin (matches engine width calc)
-      const wrappedLines = lines.flatMap(l => wrapText(font, l, sizePt, maxWidthPt, charSpacing));
-      wrappedLines.forEach((line, li) => {
-        const slotTopPt  = pageSizePt - BLEED_PT - slotTopMm * MM_TO_PT;
-        const baselinePt = slotTopPt - sizePt * 0.75 - li * lineSpacingPt;
-        pg.drawText(line, { x: xPt, y: baselinePt, size: sizePt, font,
-                            color: resolveColor(capDef.color), characterSpacing: charSpacing });
-      });
-    } else if (pos === 'lower-right') {
-      // Right-margin column, bottom-aligned: X right of slot, lines stack upward from slot bottom.
-      const slotRightMm  = slot.x + slot.w / 2;
-      const slotBottomMm = slot.y + slot.h / 2;
-      const xPt = BLEED_PT + slotRightMm * MM_TO_PT + gapMm * MM_TO_PT;
-      const maxWidthPt = pageRightPt - xPt - rightPadMm * MM_TO_PT;
-      const wrappedLines = lines.flatMap(l => wrapText(font, l, sizePt, maxWidthPt, charSpacing));
-      wrappedLines.slice().reverse().forEach((line, li) => {
-        const slotBottomPt = pageSizePt - BLEED_PT - slotBottomMm * MM_TO_PT;
-        const baselinePt   = slotBottomPt + li * lineSpacingPt;
-        pg.drawText(line, { x: xPt, y: baselinePt, size: sizePt, font,
-                            color: resolveColor(capDef.color), characterSpacing: charSpacing });
-      });
-    } else {
-      // 'above': caption sits above the slot
-      // 'below' / default: caption sits below the slot
-      let capTopMm;
-      if (pos === 'above') {
-        // Estimate caption block height (2 lines), then place above slot top - offset
-        const capBlockMm = (sizePt / MM_TO_PT) * 2.5;
-        capTopMm = slot.y - slot.h / 2 - (capDef.offset || 0) - capBlockMm;
-      } else {
-        capTopMm = slot.y + slot.h / 2 + (capDef.offset || 0);
-      }
-      // Max width = slot width (same constraint as engine contenteditable width)
-      const maxWidthPt = slot.w * MM_TO_PT;
-      const align = capDef.align || 'center';
-      const wrappedLines = lines.flatMap(l => wrapText(font, l, sizePt, maxWidthPt, charSpacing));
-      wrappedLines.forEach((line, li) => {
-        const textWidthPt = font.widthOfTextAtSize(line, sizePt)
-                          + charSpacing * Math.max(0, line.length - 1);
-        const slotCenterPt = BLEED_PT + slot.x * MM_TO_PT;
-        const xPt = align === 'left'  ? slotCenterPt - slot.w / 2 * MM_TO_PT
-                  : align === 'right' ? slotCenterPt + slot.w / 2 * MM_TO_PT - textWidthPt
-                  :                     slotCenterPt - textWidthPt / 2; // center
-        // pdf-lib y=0 is page bottom; baseline sits ~sizePt*0.75 below line top
-        const lineTopPt = pageSizePt - BLEED_PT - capTopMm * MM_TO_PT - li * lineSpacingPt;
-        const baselinePt = lineTopPt - sizePt * 0.75;
-        pg.drawText(line, { x: xPt, y: baselinePt, size: sizePt, font,
-                            color: resolveColor(capDef.color), characterSpacing: charSpacing });
-      });
+    // Horizontal alignment
+    const halign = capDef.halign || 'left';
+    // Vertical alignment: measure total text height then offset within box
+    const totalTextHeight = wrappedLines.length > 0
+      ? (wrappedLines.length * lineSpacingPt - (lineSpacingPt - sizePt))
+      : 0;
+    let yOffsetPt = 0;
+    if (capDef.valign === 'center') {
+      yOffsetPt = (boxHeightPt - totalTextHeight) / 2;
+    } else if (capDef.valign === 'bottom') {
+      yOffsetPt = boxHeightPt - totalTextHeight;
     }
+    // else 'top' — yOffsetPt stays 0
+
+    const isLig = LIGATURE_FONTS.has(fontName);
+    wrappedLines.forEach((line, li) => {
+      const textWidthPt = isLig
+        ? measureNoLig(font, line, sizePt, charSpacing)
+        : font.widthOfTextAtSize(line, sizePt) + charSpacing * Math.max(0, line.length - 1);
+      const xPt = halign === 'left'  ? textXPt
+                : halign === 'right' ? textXPt + boxWidthPt - textWidthPt
+                :                      textXPt + (boxWidthPt - textWidthPt) / 2; // center
+      // Y position: start from top of box, advance by line height
+      const lineTopPt = textYPt + boxHeightPt - yOffsetPt - li * lineSpacingPt;
+      const baselinePt = lineTopPt - sizePt * 0.75;
+      const drawOpts = { x: xPt, y: baselinePt, size: sizePt, font,
+                         color: resolveColor(capDef.color), characterSpacing: charSpacing };
+      if (isLig) drawTextNoLig(pg, line, drawOpts);
+      else       pg.drawText(line, drawOpts);
+    });
   }
 
   // ── Text panel caption (FP spreads) ───────────────────────────────────────
@@ -421,19 +462,42 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
         ? ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 20) * MM_TO_PT
         : ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 16);
       const lineSpacingPt = sizePt * ((ov.lineSpacing !== undefined ? ov.lineSpacing : capDef.lineSpacing) || 1.28);
-      const charSpacing   = ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
-      // Panel position: centered at x=100mm; top starts at 30% of content height (60mm)
-      // This matches template-engine.html: top = 200 * SCALE * 0.30 → 60mm
-      const centerXMm = 100, startYMm = 60;
+      const charSpacing   = LIGATURE_FONTS.has(fontName) ? 0
+      : ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
+      // xMm/yMm are CENTER coords (with-bleed mm). Convert to pdf-lib box origin (bottom-left).
+      const boxWidthPt  = capDef.wMm * MM_TO_PT;
+      const boxHeightPt = capDef.hMm * MM_TO_PT;
+      const textXPt = (capDef.xMm - capDef.wMm / 2) * MM_TO_PT;
+      const textYPt = pageSizePt - (capDef.yMm + capDef.hMm / 2) * MM_TO_PT;
       const lines = String(panelText).split('\n');
-      lines.forEach((line, li) => {
+      // Apply word-wrap so long lines flow within the caption box (same as slot captions).
+      // FunnyWords panels: each "word" is already one line — wrapText still works correctly.
+      const wrappedLines = lines.flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : []);
+      // Measure total text height for valign
+      const totalTextHeight = wrappedLines.length > 0
+        ? (wrappedLines.length * lineSpacingPt - (lineSpacingPt - sizePt))
+        : 0;
+      let yOffsetPt = 0;
+      if (capDef.valign === 'center') {
+        yOffsetPt = (boxHeightPt - totalTextHeight) / 2;
+      } else if (capDef.valign === 'bottom') {
+        yOffsetPt = boxHeightPt - totalTextHeight;
+      }
+      const isLigPanel = LIGATURE_FONTS.has(fontName);
+      wrappedLines.forEach((line, li) => {
         if (!line.trim()) return;
-        const textWidthPt = font.widthOfTextAtSize(line, sizePt)
-                          + charSpacing * Math.max(0, line.length - 1);
-        const xPt = BLEED_PT + centerXMm * MM_TO_PT - textWidthPt / 2;
-        const lineTopPt = pageSizePt - BLEED_PT - startYMm * MM_TO_PT - li * lineSpacingPt;
-        pg.drawText(line, { x: xPt, y: lineTopPt - sizePt * 0.75, size: sizePt, font,
-                            color: resolveColor(capDef.color), characterSpacing: charSpacing });
+        const textWidthPt = isLigPanel
+          ? measureNoLig(font, line, sizePt, charSpacing)
+          : font.widthOfTextAtSize(line, sizePt) + charSpacing * Math.max(0, line.length - 1);
+        const halign = capDef.halign || 'center';
+        const xPt = halign === 'left'  ? textXPt
+                  : halign === 'right' ? textXPt + boxWidthPt - textWidthPt
+                  :                      textXPt + (boxWidthPt - textWidthPt) / 2; // center
+        const lineTopPt = textYPt + boxHeightPt - yOffsetPt - li * lineSpacingPt;
+        const drawOpts = { x: xPt, y: lineTopPt - sizePt * 0.75, size: sizePt, font,
+                           color: resolveColor(capDef.color), characterSpacing: charSpacing };
+        if (isLigPanel) drawTextNoLig(pg, line, drawOpts);
+        else            pg.drawText(line, drawOpts);
       });
     }
   }
@@ -450,6 +514,8 @@ const COVER_FULL_H_MM   = COVER_CONTENT_H + COVER_BLEED_MM * 2;   // 236mm
 const COVER_FULL_W_PX   = Math.round(COVER_FULL_W_MM * MM_TO_PX); // 5256px
 const COVER_FULL_H_PX   = Math.round(COVER_FULL_H_MM * MM_TO_PX); // 2787px
 const COVER_BLEED_PX    = Math.round(COVER_BLEED_MM * MM_TO_PX);  // 213px
+// Cover SVG: 409mm wide → 1159.37 user units; 18mm bleed → 51.024 user units.
+const COVER_SVG_BLEED_UNITS = COVER_BLEED_MM * 72 / 25.4;  // ~51.024
 
 // Render the full cover spread as a PNG buffer.
 // coverDef = DATA.cover; coverPhoto = filename string; coverCaptions = { year, name, spineName, spineYear }
@@ -458,49 +524,34 @@ async function renderCoverImage(coverDef, coverPhotoName, photosDir) {
   // Cover SVG lives in the same Spreads/ folder as content SVGs (ASSET_BASE already points there)
   const COVER_ASSET_BASE = ASSET_BASE;
 
-  // Build the background: three coloured horizontal sections + bleed fill.
-  // Strategy: fill entire canvas with back bgColor (leftmost section), then overlay
-  // spine and front sections at their correct x positions, then add bleed extensions.
-  const backColor  = hexToSharpColor(sections.back.bgColor);
-  const spineColor = hexToSharpColor(sections.spine.bgColor);
+  // Cover compositing strategy:
+  //   The cover SVG already contains the back section background and spine background,
+  //   both extended into the bleed area. We expand the SVG's viewBox by COVER_SVG_BLEED_UNITS
+  //   on each side and render it at origin so the SVG provides back + spine + their bleed.
+  //   The front section has NO background in the SVG (no Front_BG_Color element), so we
+  //   use the front colour as the canvas background — it fills the entire canvas including
+  //   the front area and the top/bottom/right bleed of the front section.
+  //   Composite order: canvas bg (front colour) → photo → SVG (draws back+spine on top).
   const frontColor = hexToSharpColor(sections.front.bgColor);
 
-  // Start with solid back color covering the whole canvas (this fills left bleed area too)
+  // Canvas background = front colour (covers front area + all its bleed margins).
   let canvas = sharp({
     create: { width: COVER_FULL_W_PX, height: COVER_FULL_H_PX, channels: 4,
-               background: { r: backColor.r, g: backColor.g, b: backColor.b, alpha: 1 } }
+               background: { r: frontColor.r, g: frontColor.g, b: frontColor.b, alpha: 1 } }
   }).png();
 
   const composites = [];
 
-  // Spine section rectangle
-  const spineXPx = COVER_BLEED_PX + Math.round(sections.spine.xMm * MM_TO_PX);
-  const spineWPx = Math.round(sections.spine.wMm * MM_TO_PX);
-  const spineRect = await sharp({
-    create: { width: spineWPx, height: COVER_FULL_H_PX, channels: 4,
-               background: { r: spineColor.r, g: spineColor.g, b: spineColor.b, alpha: 1 } }
-  }).png().toBuffer();
-  composites.push({ input: spineRect, left: spineXPx, top: 0 });
-
-  // Front section rectangle (extends to right bleed edge)
-  const frontXPx = COVER_BLEED_PX + Math.round(sections.front.xMm * MM_TO_PX);
-  const frontWPx = COVER_FULL_W_PX - frontXPx;
-  const frontRect = await sharp({
-    create: { width: frontWPx, height: COVER_FULL_H_PX, channels: 4,
-               background: { r: frontColor.r, g: frontColor.g, b: frontColor.b, alpha: 1 } }
-  }).png().toBuffer();
-  composites.push({ input: frontRect, left: frontXPx, top: 0 });
-
-  // ── Front photo slot ──────────────────────────────────────────────────────
+  // ── Front photo slot (BEFORE SVG so decorations can overlay) ──────────────
   if (coverPhotoName) {
     const pPath = path.join(photosDir, coverPhotoName);
     if (fs.existsSync(pPath)) {
       const slot = slots[0]; // single cover photo slot
-      // slot coords are center-based in mm, measured from back left edge (x=0)
+      // slot.xMm/yMm are CENTER coords already including the 18mm bleed — do NOT add COVER_BLEED_PX.
       const sw = Math.round(slot.wMm * MM_TO_PX);
       const sh = Math.round(slot.hMm * MM_TO_PX);
-      const sx = COVER_BLEED_PX + Math.round((slot.xMm - slot.wMm / 2) * MM_TO_PX);
-      const sy = COVER_BLEED_PX + Math.round((slot.yMm - slot.hMm / 2) * MM_TO_PX);
+      const sx = Math.round((slot.xMm - slot.wMm / 2) * MM_TO_PX);
+      const sy = Math.round((slot.yMm - slot.hMm / 2) * MM_TO_PX);
       try {
         const photoBuffer = await sharp(pPath)
           .resize(sw, sh, { fit: 'cover', position: 'centre' })
@@ -514,18 +565,20 @@ async function renderCoverImage(coverDef, coverPhotoName, photosDir) {
     }
   }
 
-  // ── SVG overlay ─────────────────────────────────────────────────────────
+  // ── SVG overlay (back + spine, with bleed) ───────────────────────────────
+  // Expand the SVG viewBox by 18mm (COVER_SVG_BLEED_UNITS) each side so the back BG
+  // and spine BG colour rects Kseniia drew into the bleed area are visible. Render to
+  // the full bleed-inclusive canvas size at origin.
   if (svg) {
     const svgPath = path.join(COVER_ASSET_BASE, svg);
     if (fs.existsSync(svgPath)) {
       try {
-        // SVG covers the 409×200mm content area; place it at bleed offset
-        const svgW = Math.round(COVER_CONTENT_W * MM_TO_PX);
-        const svgH = Math.round(COVER_CONTENT_H * MM_TO_PX);
-        const svgBuffer = await sharp(fs.readFileSync(svgPath))
-          .resize(svgW, svgH, { fit: 'fill' })
+        const svgStr      = fs.readFileSync(svgPath, 'utf8');
+        const svgExpanded = expandSvgViewBox(svgStr, COVER_SVG_BLEED_UNITS);
+        const svgBuffer   = await sharp(Buffer.from(svgExpanded))
+          .resize(COVER_FULL_W_PX, COVER_FULL_H_PX, { fit: 'fill' })
           .png().toBuffer();
-        composites.push({ input: svgBuffer, left: COVER_BLEED_PX, top: COVER_BLEED_PX });
+        composites.push({ input: svgBuffer, left: 0, top: 0 });
       } catch (e) {
         console.warn(`  ⚠ Cover SVG overlay failed: ${e.message}`);
       }
@@ -569,7 +622,7 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
 
     const sizePt      = ov.sizePt || capDef.sizePt || 20;
     const lineSpacing = sizePt * (ov.lineSpacing || 1.28);
-    const charSpacing = ((ov.letterSpacing || 0)) * sizePt;
+    const charSpacing = LIGATURE_FONTS.has(fontName) ? 0 : ((ov.letterSpacing || 0)) * sizePt;
     const color       = resolveCapColor(ov.color || capDef.color);
     const lines = text.split('\n').filter(l => l.trim());
 
@@ -582,46 +635,70 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
       //   - runs UPWARD  from y  to y+textWidth  (y controls vertical position along spine)
       //   - extends LEFT from x  to x-sizePt     (x controls horizontal centering on spine)
       //
-      // xMm = horizontal center of spine (e.g. 204.5mm from back-left content edge)
+      // xMm = horizontal center of spine, measured from left bleed edge (absolute, 18mm bleed included)
       //   → after rotation the character body extends LEFTWARD from drawing baseline by ~cap height
       //     (NOT full sizePt — cap height is ~0.7 × sizePt). Visual center = drawing_x − capHeight/2.
-      //   → so x = spine_center + capHeight/2 to put visual center on spine center.
+      //   → so x = xMm*MM_TO_PT + capHeight/2 to put visual center on spine center.
       //
-      // yMm = vertical center of caption along spine height (e.g. 140mm from top)
-      //   → in page space (y=0 at bottom): y_center = pageSizeHPt - COVER_BLEED_PT - yMm*MM_TO_PT
+      // yMm = vertical center of caption along spine height, from TOP of page (absolute, bleed included)
+      //   → in page space (y=0 at bottom): y_center = pageSizeHPt - yMm*MM_TO_PT
       //   → text spans y_center ± totalW/2, so origin y = y_center - totalW/2
 
       // Ascender height ≈ cap height for typical fonts; better centering than sizePt/2.
+      // capDef.xMm/yMm are absolute coords (include 18mm bleed) — do NOT add/subtract COVER_BLEED_PT.
+      const isLigCover = LIGATURE_FONTS.has(fontName);
+      const measure = (l) => isLigCover
+        ? measureNoLig(font, l, sizePt, charSpacing)
+        : font.widthOfTextAtSize(l, sizePt);
+
       const ascenderPt = font.heightAtSize(sizePt, { descender: false });
-      const spineXPt   = COVER_BLEED_PT + capDef.xMm * MM_TO_PT + ascenderPt / 2;
-      const yCenterPt  = pageSizeHPt - COVER_BLEED_PT - capDef.yMm * MM_TO_PT;
-      const totalW     = lines.reduce((sum, l) => sum + font.widthOfTextAtSize(l, sizePt), 0)
+      const spineXPt   = capDef.xMm * MM_TO_PT + ascenderPt / 2;
+      const yCenterPt  = pageSizeHPt - capDef.yMm * MM_TO_PT;
+      const totalW     = lines.reduce((sum, l) => sum + measure(l), 0)
                        + (lines.length - 1) * lineSpacing;
       let curYPt = yCenterPt - totalW / 2;
+      const rotateOpt = { type: 'degrees', angle: 90 }; // 90° CCW = text reads upward
 
       for (const line of lines) {
-        const lineW = font.widthOfTextAtSize(line, sizePt);
-        pg.drawText(line, {
-          x: spineXPt, y: curYPt,
-          size: sizePt, font, color, characterSpacing: charSpacing,
-          rotate: { type: 'degrees', angle: 90 }, // 90° CCW = text reads upward
-        });
-        curYPt += lineW + lineSpacing;
+        if (isLigCover) {
+          // Per-character draw: each char rotates around its own (x, y); advancing y moves up the spine.
+          for (const ch of line) {
+            const chW = font.widthOfTextAtSize(ch, sizePt);
+            if (ch !== ' ') {
+              pg.drawText(ch, { x: spineXPt, y: curYPt, size: sizePt, font, color, rotate: rotateOpt });
+            }
+            curYPt += chW + charSpacing;
+          }
+          curYPt += lineSpacing - charSpacing; // remove the trailing inter-char gap, add line gap
+        } else {
+          pg.drawText(line, {
+            x: spineXPt, y: curYPt,
+            size: sizePt, font, color, characterSpacing: charSpacing,
+            rotate: rotateOpt,
+          });
+          curYPt += measure(line) + lineSpacing;
+        }
       }
     } else {
       // Front cover captions: horizontal text centered at capDef.xMm
+      // capDef.xMm/yMm are absolute coords (include 18mm bleed) — do NOT add/subtract COVER_BLEED_PT.
+      const isLigFront = LIGATURE_FONTS.has(fontName);
       const blockH   = lines.length * lineSpacing;
-      const startYPt = pageSizeHPt - COVER_BLEED_PT - capDef.yMm * MM_TO_PT + blockH / 2 - sizePt * 0.75;
+      const startYPt = pageSizeHPt - capDef.yMm * MM_TO_PT + blockH / 2 - sizePt * 0.75;
       lines.forEach((line, li) => {
-        const textW     = font.widthOfTextAtSize(line, sizePt) + charSpacing * Math.max(0, line.length - 1);
-        const centerXPt = COVER_BLEED_PT + capDef.xMm * MM_TO_PT;
+        const textW = isLigFront
+          ? measureNoLig(font, line, sizePt, charSpacing)
+          : font.widthOfTextAtSize(line, sizePt) + charSpacing * Math.max(0, line.length - 1);
+        const centerXPt = capDef.xMm * MM_TO_PT;
         const xPt = capDef.align === 'left'  ? centerXPt - capDef.wMm / 2 * MM_TO_PT
                   : capDef.align === 'right' ? centerXPt + capDef.wMm / 2 * MM_TO_PT - textW
                   :                            centerXPt - textW / 2;
-        pg.drawText(line, {
+        const drawOpts = {
           x: xPt, y: startYPt - li * lineSpacing,
           size: sizePt, font, color, characterSpacing: charSpacing,
-        });
+        };
+        if (isLigFront) drawTextNoLig(pg, line, drawOpts);
+        else            pg.drawText(line, drawOpts);
       });
     }
   }
@@ -799,14 +876,28 @@ async function main() {
     }
   }
 
+  // ── Terminal blank page (required by print house for QR code placement) ─────
+  // Appended after all content pages for every book size (40 or 80 pages).
+  pageNum++;
+  if (isPrint) {
+    const doc = await PDFDocument.create();
+    doc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
+    const blankLabel = `page-${String(pageNum).padStart(3, '0')}.pdf`;
+    fs.writeFileSync(path.join(printDir, blankLabel), await doc.save());
+    console.log(`  ✓ ${blankLabel} (blank — QR code page for print house)`);
+  } else {
+    previewDoc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
+    console.log(`  ✓ blank QR page added (page ${pageNum})`);
+  }
+
   if (!isPrint) {
     const pdfBytes = await previewDoc.save();
     const outPath  = path.join(outDir, 'preview.pdf');
     fs.writeFileSync(outPath, pdfBytes);
-    console.log(`\n✅ Done — cover + ${pageNum} pages → ${outPath}`);
+    console.log(`\n✅ Done — cover + ${pageNum} pages (incl. blank QR page) → ${outPath}`);
     console.log(`   File size: ${(pdfBytes.length / 1024 / 1024).toFixed(1)} MB\n`);
   } else {
-    console.log(`\n✅ Done — cover + ${pageNum} pages → ${printDir}/`);
+    console.log(`\n✅ Done — cover + ${pageNum} pages (incl. blank QR page) → ${printDir}/`);
   }
 }
 

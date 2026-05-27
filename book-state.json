@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 3,
   "template": "scribble",
   "pageCount": 40,
   "sequence": [
@@ -9,19 +10,19 @@
     "FP1",
     "SP4",
     "SP5",
-    "SP6",
     "FP2",
+    "SP6",
     "SP1",
     "SP2",
+    "FP3",
     "SP3",
     "SP4",
-    "FP3",
+    "FP4",
     "SP5",
     "SP6",
     "SP1",
-    "FP4",
-    "SP2",
-    "SP3"
+    "FP5",
+    "SP2"
   ],
   "assignments": {
     "0": {
@@ -128,21 +129,21 @@
       ]
     },
     "7": {
-      "left": [
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_021.jpg",
-          "orientation": "vertical"
-        }
-      ],
+      "left": [],
       "right": [
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_022.jpg",
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_021.jpg",
           "orientation": "vertical"
         }
       ]
     },
     "8": {
-      "left": [],
+      "left": [
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_022.jpg",
+          "orientation": "vertical"
+        }
+      ],
       "right": [
         {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_023.jpg",
@@ -187,24 +188,33 @@
       ]
     },
     "11": {
-      "left": [
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_030.jpg",
-          "orientation": "vertical"
-        },
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_031.jpg",
-          "orientation": "vertical"
-        }
-      ],
+      "left": [],
       "right": [
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_032.jpg",
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_030.jpg",
           "orientation": "vertical"
         }
       ]
     },
     "12": {
+      "left": [
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_031.jpg",
+          "orientation": "vertical"
+        },
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_032.jpg",
+          "orientation": "vertical"
+        }
+      ],
+      "right": [
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_033.jpg",
+          "orientation": "horizontal"
+        }
+      ]
+    },
+    "13": {
       "left": [
         {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_034.jpg",
@@ -217,34 +227,16 @@
       ],
       "right": [
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_033.jpg",
-          "orientation": "horizontal"
-        }
-      ]
-    },
-    "13": {
-      "left": [],
-      "right": [
-        {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_036.jpg",
           "orientation": "vertical"
         }
       ]
     },
     "14": {
-      "left": [
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_037.jpg",
-          "orientation": "vertical"
-        },
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_038.jpg",
-          "orientation": "vertical"
-        }
-      ],
+      "left": [],
       "right": [
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_039.jpg",
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_037.jpg",
           "orientation": "vertical"
         }
       ]
@@ -252,13 +244,17 @@
     "15": {
       "left": [
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_040.jpg",
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_038.jpg",
+          "orientation": "vertical"
+        },
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_039.jpg",
           "orientation": "vertical"
         }
       ],
       "right": [
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_041.jpg",
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_040.jpg",
           "orientation": "vertical"
         }
       ]
@@ -266,7 +262,7 @@
     "16": {
       "left": [
         {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_044.jpg",
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_041.jpg",
           "orientation": "vertical"
         }
       ],
@@ -274,23 +270,32 @@
         {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_042.jpg",
           "orientation": "vertical"
-        },
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_043.jpg",
-          "orientation": "vertical"
         }
       ]
     },
     "17": {
-      "left": [],
-      "right": [
+      "left": [
         {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_045.jpg",
+          "orientation": "vertical"
+        }
+      ],
+      "right": [
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_043.jpg",
+          "orientation": "vertical"
+        },
+        {
+          "name": "Daniel-Faro╠Ç_DTS_Parenthood_044.jpg",
           "orientation": "vertical"
         }
       ]
     },
     "18": {
+      "left": [],
+      "right": []
+    },
+    "19": {
       "left": [
         {
           "name": "Daniel-Faro╠Ç_DTS_Parenthood_047.jpg",
@@ -307,103 +312,108 @@
           "orientation": "horizontal"
         }
       ]
-    },
-    "19": {
-      "left": [
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_049.jpg",
-          "orientation": "vertical"
-        },
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_050.jpg",
-          "orientation": "vertical"
-        }
-      ],
-      "right": [
-        {
-          "name": "Daniel-Faro╠Ç_DTS_Parenthood_070.jpg",
-          "orientation": "vertical"
-        }
-      ]
     }
   },
   "specialPhotos": {
     "cover": "Daniel-Faro╠Ç_DTS_Parenthood_001.jpg",
     "FP1": "Daniel-Faro╠Ç_DTS_Parenthood_002.jpg",
-    "FP3": "Daniel-Faro╠Ç_DTS_Parenthood_003.jpg",
-    "FP4": "Daniel-Faro╠Ç_DTS_Parenthood_004.jpg"
+    "FP3": "Daniel-Faro╠Ç_DTS_Parenthood_006.jpg",
+    "FP4": "Daniel-Faro╠Ç_DTS_Parenthood_064.jpg",
+    "FP5": [
+      "art-1.jpg",
+      "art-2.jpg"
+    ]
   },
   "captions": {
     "0": {
       "right": {
-        "0": "<span style=\"letter-spacing: -0.338px;\">Testing if these captions work well</span>"
+        "0": "Testing if these captions work well"
       }
     },
     "1": {
       "left": {
-        "0": "<span style=\"letter-spacing: -0.338px; text-align: left;\">Testing if these captions work well</span>"
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
       }
     },
     "3": {
       "right": {
-        "0": "<span style=\"letter-spacing: -0.338px;\">Testing if these captions work well</span>"
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px;\">Testing if these captions work well with this template</span>"
       }
     },
     "4": {
       "left": {
-        "textPanel": "Testing if these captions work well"
+        "textPanel": "Testing if these captions work well with this template"
       }
     },
     "5": {
       "right": {
-        "0": "<span style=\"letter-spacing: -0.338px; text-align: left;\">Testing if these captions work well</span>"
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
+      }
+    },
+    "6": {
+      "right": {
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
       }
     },
     "7": {
       "left": {
-        "0": "<span style=\"letter-spacing: -0.338px; text-align: left;\">Testing if these captions work well</span>"
+        "textPanel": "OLE\nOLE\nOLE"
       }
     },
     "8": {
+      "right": {
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
+      },
       "left": {
-        "textPanel": "NWOAS\nWSAS"
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
       }
     },
     "9": {
       "left": {
-        "0": "<span style=\"letter-spacing: -0.338px; text-align: left;\">Testing if these captions work well</span>"
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
       }
     },
     "11": {
-      "right": {
-        "0": "<span style=\"letter-spacing: -0.338px;\">Testing if these captions work well</span>"
+      "left": {
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
       }
     },
-    "13": {
+    "12": {
+      "right": {
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
+      }
+    },
+    "14": {
+      "right": {
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
+      },
       "left": {
-        "0": "<span style=\"letter-spacing: -0.338px;\">Testing if these captions work well</span>"
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px;\">Testing if these captions work well with this template</span>"
+      }
+    },
+    "15": {
+      "right": {
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
       }
     },
     "16": {
-      "left": {
-        "0": "<span style=\"letter-spacing: -0.338px; text-align: left;\">Testing if these captions work well</span>"
-      }
-    },
-    "17": {
-      "left": {
-        "0": "<span style=\"letter-spacing: -0.338px;\">Testing if these captions work well</span>"
-      }
-    },
-    "19": {
       "right": {
-        "0": "<span style=\"letter-spacing: -0.338px;\">Testing if these captions work well</span>"
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
+      }
+    },
+    "18": {
+      "left": {
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
+      },
+      "right": {
+        "0": "<span style=\"font-family: &quot;NT Somic&quot;, serif; font-size: 15.9px; letter-spacing: -0.318px; text-align: left;\">Testing if these captions work well with this template</span>"
       }
     },
     "cover": {
       "year": "2026",
-      "name": "OURSWEETANN",
       "spineYear": "2026",
-      "spineName": "ANN"
+      "spineName": "ANN",
+      "name": "OURSWEETANN"
     }
   },
   "coverCaptions": {
@@ -420,7 +430,48 @@
       "sizePt": 28,
       "lineSpacing": 1.1,
       "letterSpacing": 0
+    },
+    "spineName": {
+      "font": "NT Somic",
+      "weight": 500,
+      "italic": false,
+      "sizePt": 16,
+      "lineSpacing": 1.1,
+      "letterSpacing": 0
+    },
+    "spineYear": {
+      "font": "EB Garamond",
+      "weight": 600,
+      "italic": false,
+      "sizePt": 16,
+      "lineSpacing": 1.1,
+      "letterSpacing": 0
     }
   },
-  "spreadCaptionStyles": {}
+  "spreadCaptionStyles": {
+    "0": {
+      "right": {
+        "0": {
+          "font": "NT Somic",
+          "weight": 500,
+          "italic": false,
+          "sizePt": 15,
+          "lineSpacing": 1.28,
+          "letterSpacing": -0.02
+        }
+      }
+    },
+    "7": {
+      "left": {
+        "textPanel": {
+          "font": "FirstTimeWriting",
+          "weight": 400,
+          "italic": false,
+          "sizePt": 16,
+          "lineSpacing": 1.2,
+          "letterSpacing": 0
+        }
+      }
+    }
+  }
 }

@@ -414,27 +414,92 @@ Response: { caption: 'suggested text string' }
 - Spread SVGs: FP1/FP3/FP4 updated; FP5 art SVGs added (new files)
 - Two xlsx files deleted from assets
 
+## Session 2026-05-26 — Phase 13 implemented, NOT fully tested
+
+### Plans 13-01, 13-03, 13-04 — implemented (uncommitted)
+- **13-01** ✅ — CSV parser rewritten: new column names, slots emit `xBleed`/`yBleed`, captions emit `xMm/yMm/wMm/hMm/halign/valign`, no `position`/`offset`. `scribble-data.js` regenerated with 16pt font sizes.
+- **13-03** ⚠️ — Engine coord-based captions implemented. Multiple bugs found + fixed during testing (see below). Text-align fix applied but NOT visually verified.
+- **13-04** ⚠️ — PDF coord-based captions implemented. NOT tested end-to-end.
+
+### Bugs found and fixed this session
+1. **SVG bleed offset reverted** — Spread SVGs still have viewBox 200×200mm (no bleed). Developer agent added 618px/−9px offset prematurely. Reverted. Re-enable when Kseniia re-exports with 3mm bleed in viewBox.
+2. **Caption coords are CENTER-based** — `xMm`/`yMm` in CSV are center of the box, not top-left. Fixed in engine (`- capWidth/2`, `- capHeight/2`) and PDF (`xMm - wMm/2`, `yMm + hMm/2` for pdf-lib).
+3. **Cover bleed = 18mm** — Cover canvas is content-only; cover CSV coords include 18mm bleed. Added `COVER_BLEED_MM = 18` to engine. Both cover photo slot and cover captions now subtract 18mm.
+4. **Duplicate `const BLEED_MM`** — Caused JS parse error → entire engine JS broken (no uploads, no counter). Fixed by hoisting to module-level constant.
+5. **`display:flex` on `contenteditable` broke text-align** — Replaced with `padding-top` approach for valign.
+6. **16pt font defaults** — CSV re-synced; `getTbStyle('sizePt', 14)` → 16 in 3 engine places; `|| 14` → `|| 16` in PDF.
+
 ## Known issues / watch-outs
-- HEIC conversion silent failure: if Cloud Function fails all 3 retries, no error shown to user; cover/FP previews may show blank (edge case, not yet tested)
-- Per-line caption styling (e.g. row 1 bold, row 2 italic in one caption) NOT supported — would require per-line style map in engine + PDF. Use separate caption slots instead (works on Art Gallery FP5 today).
-- Spine horizontal centering uses ascender-height heuristic; for mixed-case spine text with descenders the centering may be slightly biased. Acceptable for current uppercase-heavy use.
-- Photo count assumes H orientation — simulation (#46) confirmed this is exact for Scribble; re-check for future templates.
-- **Spread CSV parser is currently broken** — csv-to-template.js still uses `;` delimiter and reads line 0 as headers. Do not run `node csv-to-template.js` until Plan 13-01 is implemented.
+- HEIC conversion silent failure: if Cloud Function fails all 3 retries, no error shown to user.
+- Per-line caption styling NOT supported — use separate caption slots.
+- Spine horizontal centering uses ascender-height heuristic; slightly biased for mixed-case with descenders.
+- Photo count assumes H orientation — confirmed exact for Scribble via simulation (#46).
+- `full_bleed` legacy detection in csv-to-template.js (`bgColor contains 'full bleed'`) — clean up in Plan 13-02.
 
 ## Next priorities
 
-**Focus: implement Plan 13-01 (CSV parser rewrite) → then 13-03 (engine) + 13-04 (PDF) → then 13-02 (hygiene).**
+**Phase 13 DONE. Ready to commit.**
 
-1. **Plan 13-01** — CSV parser rewrite. No blockers. See `.planning/phases/13-bleed-svgs/13-01-PLAN.md`.
-2. **Plan 13-03** — Engine rendering (SVG bleed offset + coord-based captions). After 13-01 verified.
-3. **Plan 13-04** — PDF rendering (SVG at origin + bleed coords). After 13-01 verified. Can run in parallel with 13-03.
-4. **Plan 13-02** — Code hygiene. After 13-03 + 13-04 land.
-5. **TO-DO #47 — Mobile responsiveness** — can be done anytime, different files.
+1. **Commit all uncommitted changes** (sessions 2026-05-26 → 2026-05-28).
+2. **Plan 13-02** — Code hygiene. After commit.
+3. **TO-DO #47** — Mobile responsiveness (different files, unblocked).
 
 **Deferred (do NOT start yet):**
 - **Plan 11-02** — `getOrderAssets` Cloud Function. Wait until engine produces trusted PDFs.
 - **Plan 11-03** — Engine "Load order" flow. Wait for 11-02.
-- **Plan 11-04** — PDF export wired to GCS. Wait for Phase 13 to settle.
+- **Plan 11-04** — PDF export wired to GCS. Wait for Phase 13 fully committed.
+
+## Session 2026-05-27 summary (fixes since 2026-05-26-p2)
+
+### Engine
+- FP2 funny words text panel grows from centre (was: clipped downward)
+- valign:bottom captions + text panels grow upward via CSS `bottom` anchor (was: padding
+  hack only worked for single line)
+- AI button repositioned for bottom-anchored captions
+
+### PDF (`scripts/export-pdf.js`)
+- Spread slot `xBleed/yBleed` correctly treated as CENTRE coords (subtract `w/2`,`h/2`)
+- Cover photo + captions no longer double-add COVER_BLEED (xMm/yMm already absolute)
+- EB Garamond family: switched to static TTF files (woff2 + variable TTF didn't work
+  with @pdf-lib/fontkit)
+- EB Garamond ligature gap bug: workaround by drawing each character as its own drawText
+  (no shaping context = no GSUB ligature formation). New helpers `LIGATURE_FONTS`,
+  `measureNoLig`, `drawTextNoLig`. Spine rotated path also character-by-character.
+
+### CSV pipeline (`csv-to-template.js`)
+- `caption_style` values normalised on parse (lowercase + strip hyphens). `Semi-Bold` →
+  `semibold` etc. `lookupFont` in PDF also normalises as safety net.
+
+### Data
+- FP4 right H/V `captions_color` filled in (`#493955`)
+- `scribble-data.js` regenerated
+
+## Session 2026-05-28 — SVG bleed + PDF polish
+
+### SVG bleed fix — DONE (export-pdf.js)
+- New helper `expandSvgViewBox(svgStr, bleedUnits)` — regex-expands viewBox by bleed amount.
+- Spreads: viewBox expanded by `SPREAD_SVG_BLEED_UNITS` (~8.504 units = 3mm), rendered at
+  `FULL_PX × FULL_PX` at origin. Bleed artwork in spread SVGs now visible in PDF.
+- Cover: viewBox expanded by `COVER_SVG_BLEED_UNITS` (~51.024 units = 18mm), rendered at
+  `COVER_FULL_W_PX × COVER_FULL_H_PX` at origin. SVG provides back + spine + bleed.
+- Cover compositing simplified: canvas bg = front colour → photo → SVG at (0,0).
+  Removed spineRect and frontRect composites. Front colour as bg handles right/top/bottom
+  bleed of front section (SVG has no Front_BG_Color).
+
+### Blank QR page — DONE (export-pdf.js)
+- Terminal blank white page added after all content pages in both preview and print modes.
+- Print mode: `page-XXX.pdf` with blank page. Preview mode: blank page in combined PDF.
+
+### Full-bleed photo support — DONE
+- `full_bleed` column in `Scribble_sizing_full.csv`. `csv-to-template.js` reads it →
+  emits `fullBleed: true` on slot. Currently one slot: FP2 right page.
+- PDF: full-bleed slot → resize to `FULL_PX × FULL_PX`, place at `(0,0)`.
+- Engine: full-bleed slot → same as `heartClip`, fills 600×600px at `(0,0)`.
+- `scribble-data.js` regenerated.
+
+### Text panel word wrap — DONE (export-pdf.js)
+- FP text panels were rendering as single overflowing line (no word wrap).
+- Fix: `wrapText()` now applied to text panel lines (same as slot captions). One-line change.
 
 </current_state>
 ```

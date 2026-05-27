@@ -74,7 +74,9 @@ function parseCaptionStyle(row) {
   const result = { font };
   const sizePt = parseInt((row['caption_size_pt'] || '').replace('pt', ''), 10);
   if (sizePt) result.sizePt = sizePt;
-  const style = (row['caption_style'] || '').trim();
+  // Normalize style to lowercase no-hyphen so engine + PDF lookups always match.
+  // e.g. 'Semi-Bold' → 'semibold', 'Medium' → 'medium', 'Regular' → 'regular'
+  const style = (row['caption_style'] || '').trim().toLowerCase().replace(/-/g, '');
   if (style && style !== 'n.a') result.style = style;
   const ls = parseFloat(row['caption_letter_spacing']);
   if (!isNaN(ls)) result.letterSpacing = ls;
@@ -83,29 +85,20 @@ function parseCaptionStyle(row) {
   // Accept either a named color (e.g. 'plum') or a hex value (e.g. '#493955')
   const color = (row['captions_color'] || '').trim();
   if (color && color !== 'n.a') result.color = color;
-  const align = (row['captions_alignment'] || '').trim();
-  if (align && align !== 'n.a') result.align = align;
   return result;
 }
 
-function parseCaption(allowedStr, posRaw, row) {
+function parseCaption(allowedStr, row) {
   if (allowedStr !== 'yes') return { allowed: false };
-  const trimmed = (posRaw || '').trim();
-  let cap;
-  if (!trimmed || trimmed === 'center') {
-    cap = { allowed: true, position: 'center' };
-  } else {
-    // "below (50mm from photo)", "upper right (5mm from photo)", etc.
-    const m = trimmed.match(/^([\w\s]+?)\s*\((\d+)mm/i);
-    if (!m) {
-      cap = { allowed: true, position: trimmed.toLowerCase().replace(/\s+/g, '-') };
-    } else {
-      const pos    = m[1].trim().toLowerCase().replace(/\s+/g, '-');
-      const offset = parseInt(m[2], 10);
-      cap = { allowed: true, position: pos, offset };
-    }
-  }
-  if (row) Object.assign(cap, parseCaptionStyle(row));
+  const cap = { allowed: true };
+  // Coordinate-based caption box (with-bleed mm coords)
+  cap.xMm    = parseFloat(row['captions_Xmm_with bleed']);
+  cap.yMm    = parseFloat(row['captions_Ymm_with bleed']);
+  cap.wMm    = parseFloat(row['captions_Width_mm']);
+  cap.hMm    = parseFloat(row['captions_Height_mm']);
+  cap.halign = (row['captions_Halignment'] || 'left').trim().toLowerCase();
+  cap.valign = (row['captions_Valignment'] || 'top').trim().toLowerCase();
+  Object.assign(cap, parseCaptionStyle(row));
   return cap;
 }
 
@@ -119,22 +112,25 @@ function orientToVariantKey(orientStr) {
 
 // ── 4. Build a slot object from one CSV row ────────────────────────────────
 function buildSlot(row, slotNumber, isFunctional) {
-  const x = parseInt(row['X (mm) - without bleed'], 10);
-  const y = parseInt(row['Y (mm) - without bleed'], 10);
-  const w = parseInt(row['Width (mm)'],             10);
-  const h = parseInt(row['Height (mm)'],            10);
+  const x      = parseFloat(row['photo_Xmm_without bleed']);
+  const y      = parseFloat(row['photo_Ymm_without bleed']);
+  const xBleed = parseFloat(row['photo_Xmm_with bleed']);
+  const yBleed = parseFloat(row['photo_Ymm_with bleed']);
+  const w      = parseFloat(row['photo_Width_mm']);
+  const h      = parseFloat(row['photo_Height_mm']);
   const ratio   = normaliseRatio(row['Aspect ratio']);
-  const caption = parseCaption(row['captions allowed'], row['captions_position'], row);
+  const caption = parseCaption(row['captions allowed'], row);
 
-  const slot = { slot: slotNumber, x, y, w, h };
+  const slot = { slot: slotNumber, x, y, xBleed, yBleed, w, h };
   if (ratio) slot.ratio = ratio;
 
   // heartClip: FP1 right heart-shaped slot — detected by its unique 33:35 ratio
   if (ratio === '33:35') slot.heartClip = true;
 
-  // fullBleed: indicated by bgColor field containing 'full bleed'
-  const bgRaw = row['bgColor'] || '';
-  if (bgRaw.toLowerCase().includes('full bleed')) {
+  // fullBleed: explicit column 'full_bleed' = 'yes'. Legacy: also detect 'full bleed' in bgColor.
+  const fullBleedCol = (row['full_bleed'] || '').toLowerCase().trim();
+  const bgRaw        = row['bgColor'] || '';
+  if (fullBleedCol === 'yes' || bgRaw.toLowerCase().includes('full bleed')) {
     slot.fullBleed = true;
     slot.pool = 'regular';
   } else if (isFunctional) {
@@ -225,7 +221,7 @@ function buildFunctionalSpread(spreadNum, rows) {
     const tr     = textRows[0];
     const svgKey = `${id}.left.default`;
     const textPanel = {
-      caption: { allowed: true, position: 'center', ...parseCaptionStyle(tr) },
+      caption: parseCaption('yes', tr),
       ...(tr['Syb-type'] === 'Funny words' ? { funnyWords: true } : {})
     };
     pages.left = {
@@ -290,14 +286,19 @@ function parseCoverCsv(csvPath) {
   // Parse font size string like "33pt" → number
   function parsePt(s) { return parseInt((s || '0').replace('pt', ''), 10); }
 
-  // Front photo slot
+  // Parse direction field → rotate value
+  function parseDirection(dir) {
+    return (dir || '').includes('270') ? 270 : null;
+  }
+
+  // Front photo slot (with-bleed coords)
   const slots = [];
   if (frontRow) {
     slots.push({
-      xMm:  parseFloat(frontRow['Photo_X (mm)']),
-      yMm:  parseFloat(frontRow['Photo_Y (mm)']),
-      wMm:  parseFloat(frontRow['Photo_Width (mm)']),
-      hMm:  parseFloat(frontRow['Photo_Height (mm)']),
+      xMm:  parseFloat(frontRow['photo_Xmm_with bleed']),
+      yMm:  parseFloat(frontRow['photo_Ymm_with bleed']),
+      wMm:  parseFloat(frontRow['photo_Width_mm']),
+      hMm:  parseFloat(frontRow['photo_Height_mm']),
       pool: 'cover'
     });
   }
@@ -305,38 +306,54 @@ function parseCoverCsv(csvPath) {
   // Captions
   const captions = [];
   if (frontRow && frontRow['captions allowed'] === 'yes') {
-    const c1color = (frontRow['Captions_1_fontColor'] || '').trim();
-    const c2color = (frontRow['Captions_2_fontColor'] || '').trim();
+    const c1color = (frontRow['captions_1_fontcolor'] || frontRow['Captions_1_fontColor'] || '').trim();
+    const c2color = (frontRow['captions_2_fontcolor'] || frontRow['Captions_2_fontColor'] || '').trim();
     const cap1 = {
-      key: 'year', xMm: parseFloat(frontRow['Captions_1_X (mm)']), yMm: parseFloat(frontRow['Captions_1_Y (mm)']),
+      key: 'year',
+      xMm: parseFloat(frontRow['captions1_Xmm_with bleed']),
+      yMm: parseFloat(frontRow['captions1_Ymm_with bleed']),
       wMm: 180, font: frontRow['Captions_1_font'], sizePt: parsePt(frontRow['Captions_1_fontsize']),
       align: 'center', label: 'Year'
     };
+    const rot1 = parseDirection(frontRow['Captions_1_direction']);
+    if (rot1 !== null) cap1.rotate = rot1;
     if (c1color) cap1.color = c1color;
     captions.push(cap1);
     const cap2 = {
-      key: 'name', xMm: parseFloat(frontRow['Captions_2_X (mm)']), yMm: parseFloat(frontRow['Captions_2_Y (mm)']),
+      key: 'name',
+      xMm: parseFloat(frontRow['captions2_Xmm_with bleed']),
+      yMm: parseFloat(frontRow['captions2_Ymm_with bleed']),
       wMm: 180, font: frontRow['Captions_2_font'], sizePt: parsePt(frontRow['Captions_2_fontsize']),
       align: 'center', label: 'Name'
     };
+    const rot2 = parseDirection(frontRow['Captions_2_direction']);
+    if (rot2 !== null) cap2.rotate = rot2;
     if (c2color) cap2.color = c2color;
     captions.push(cap2);
   }
   if (spineRow && spineRow['captions allowed'] === 'yes') {
-    const s1color = (spineRow['Captions_1_fontColor'] || '').trim();
-    const s2color = (spineRow['Captions_2_fontColor'] || '').trim();
+    const s1color = (spineRow['captions_1_fontcolor'] || spineRow['Captions_1_fontColor'] || '').trim();
+    const s2color = (spineRow['captions_2_fontcolor'] || spineRow['Captions_2_fontColor'] || '').trim();
     const scap1 = {
-      key: 'spineName', xMm: parseFloat(spineRow['Captions_1_X (mm)']), yMm: parseFloat(spineRow['Captions_1_Y (mm)']),
+      key: 'spineName',
+      xMm: parseFloat(spineRow['captions1_Xmm_with bleed']),
+      yMm: parseFloat(spineRow['captions1_Ymm_with bleed']),
       wMm: 130, font: spineRow['Captions_1_font'], sizePt: parsePt(spineRow['Captions_1_fontsize']),
-      rotate: 270, label: 'Name (spine)'
+      label: 'Name (spine)'
     };
+    const srot1 = parseDirection(spineRow['Captions_1_direction']);
+    if (srot1 !== null) scap1.rotate = srot1;
     if (s1color) scap1.color = s1color;
     captions.push(scap1);
     const scap2 = {
-      key: 'spineYear', xMm: parseFloat(spineRow['Captions_2_X (mm)']), yMm: parseFloat(spineRow['Captions_2_Y (mm)']),
+      key: 'spineYear',
+      xMm: parseFloat(spineRow['captions2_Xmm_with bleed']),
+      yMm: parseFloat(spineRow['captions2_Ymm_with bleed']),
       wMm: 70, font: spineRow['Captions_2_font'], sizePt: parsePt(spineRow['Captions_2_fontsize']),
-      rotate: 270, label: 'Year (spine)'
+      label: 'Year (spine)'
     };
+    const srot2 = parseDirection(spineRow['Captions_2_direction']);
+    if (srot2 !== null) scap2.rotate = srot2;
     if (s2color) scap2.color = s2color;
     captions.push(scap2);
   }
@@ -386,21 +403,25 @@ for (const n of Object.keys(functionalBySpread).sort((a, b) => +a - +b)) {
 // ── 10. Serialize ──────────────────────────────────────────────────────────
 function serializeCaption(c) {
   if (!c.allowed) return `{ allowed: false }`;
-  let s = `{ allowed: true, position: '${c.position}'`;
-  if (c.offset       !== undefined) s += `, offset: ${c.offset}`;
+  let s = `{ allowed: true`;
+  if (c.xMm          !== undefined) s += `, xMm: ${c.xMm}`;
+  if (c.yMm          !== undefined) s += `, yMm: ${c.yMm}`;
+  if (c.wMm          !== undefined) s += `, wMm: ${c.wMm}`;
+  if (c.hMm          !== undefined) s += `, hMm: ${c.hMm}`;
+  if (c.halign)                     s += `, halign: '${c.halign}'`;
+  if (c.valign)                     s += `, valign: '${c.valign}'`;
   if (c.font)                       s += `, font: '${c.font}'`;
   if (c.sizePt       !== undefined) s += `, sizePt: ${c.sizePt}`;
   if (c.style)                      s += `, style: '${c.style}'`;
   if (c.letterSpacing !== undefined) s += `, letterSpacing: ${c.letterSpacing}`;
   if (c.lineSpacing   !== undefined) s += `, lineSpacing: ${c.lineSpacing}`;
   if (c.color)                       s += `, color: '${c.color}'`;
-  if (c.align)                       s += `, align: '${c.align}'`;
   s += ` }`;
   return s;
 }
 
 function serializeSlot(s) {
-  const parts = [`slot: ${s.slot}`, `x: ${s.x}`, `y: ${s.y}`, `w: ${s.w}`, `h: ${s.h}`];
+  const parts = [`slot: ${s.slot}`, `x: ${s.x}`, `y: ${s.y}`, `xBleed: ${s.xBleed}`, `yBleed: ${s.yBleed}`, `w: ${s.w}`, `h: ${s.h}`];
   if (s.ratio)     parts.push(`ratio: '${s.ratio}'`);
   if (s.heartClip) parts.push(`heartClip: true`);
   if (s.fullBleed) parts.push(`fullBleed: true`);
@@ -417,15 +438,7 @@ function serializeVariant(vKey, v) {
   if (v.textPanel) {
     const tp = v.textPanel;
     const tc = tp.caption;
-    let tpCap = `{ allowed: ${tc.allowed}, position: '${tc.position}'`;
-    if (tc.font)                       tpCap += `, font: '${tc.font}'`;
-    if (tc.sizePt       !== undefined) tpCap += `, sizePt: ${tc.sizePt}`;
-    if (tc.style)                      tpCap += `, style: '${tc.style}'`;
-    if (tc.letterSpacing !== undefined) tpCap += `, letterSpacing: ${tc.letterSpacing}`;
-    if (tc.lineSpacing   !== undefined) tpCap += `, lineSpacing: ${tc.lineSpacing}`;
-    if (tc.color)                       tpCap += `, color: '${tc.color}'`;
-    if (tc.align)                       tpCap += `, align: '${tc.align}'`;
-    tpCap += ` }`;
+    const tpCap = serializeCaption(tc);
     let tpStr = `{ caption: ${tpCap}`;
     if (tp.funnyWords) tpStr += `, funnyWords: true`;
     tpStr += ` }`;
