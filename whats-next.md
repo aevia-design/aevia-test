@@ -364,142 +364,43 @@ Response: { caption: 'suggested text string' }
 
 <current_state>
 
-## Completed and committed (through 2026-05-26)
+## All committed and pushed (through 2026-05-27)
 
-- **Plan 12-02** — DONE. `fpSelections` + `photoCount` added to order form payload and Firestore schema. Firebase function deployed.
-- **Order form bug fixes** — FP upload zones restored (orderFormPhoto/orderFormMeta were wiped by CSV script); photo grid rewritten as sequential queue with incremental DOM appends — no more alt-tab stall; `updateStep2Bar` added (was called but never defined).
-- **scribble-orderform.json** — new sidecar file; `csv-to-template.js` now reads and injects orderForm data on every run so CSV regen never wipes FP order form config again.
+**Phase 13 complete (bleed coords, PDF polish):**
+- CSV parser rewritten: comma delimiter, index-based parsing, `xBleed/yBleed` on slots, caption box `xMm/yMm/wMm/hMm/halign/valign`, `full_bleed` column
+- Engine: coord-based captions, cover bleed offset, valign:bottom grows upward, FP2 grows from centre, full-bleed slot support
+- PDF: SVG viewBox expanded by bleed before rasterising, coord-based captions + word wrap, EB Garamond static TTFs + per-character drawText (ligature workaround), blank QR page, text panel word wrap, cover compositing simplified
+- `scribble-data.js` regenerated; EB Garamond TTF family added to `assets/fonts/`
 
-## Completed and committed (through 2026-05-26)
+**Plan 13-02 complete (code hygiene):**
+- `resolveColor()` at module level (was duplicated)
+- `stripHtml()` warns on unrecognised HTML tags
+- `ov.weight` type guard in both caption renderers
+- `resolveVariant()` console.warns on fallback to wrong variant
+- `0.75` cap-height ratio commented at all drawText baseline sites
+- Legacy `full_bleed` bgColor string detection removed from `csv-to-template.js`
 
-- **PDF caption parity** — cover spine direction/position/colour/style, front caption colour, engine font size px-based, PDF text wrapping for all caption positions, medium-weight resolution
-
-## Completed earlier (through 2026-05-25 session 3)
-
-- **Plan 11 (all sub-plans)** — DONE.
-- **Plan 12-01** — COMPLETE. Order form FP refactor + all polish items done:
-  - `initFPSections()` + `initSpecialDragDrop()` — photo + text per FP in Step 2
-  - `calcPhotoTarget()` — exact slot count (verified by simulation)
-  - HEIC conversion: `convertHeic()` uses same Cloud Function as engine; all upload zones converted
-  - Quality badges: ✓ OK / LOW RES on cover, FP zones (except FP5), main pool; HEIC gets checked post-conversion
-  - "Converting…" indicator while HEIC conversion is in flight
-  - Lightbox: click any photo to preview full-screen
-  - `cancelAddon()` now recalculates photo count
-  - Copy cleaned; "Send more if you have them" removed
-- **TO-DOs #45 + #46** — DONE and marked in TO-DOS.md
-- `scripts/simulate-photo-count.js` — orientation simulation tool
-
-## Session 2026-05-26 (later) — Code review + Phase 13 planning
-
-### template-engine.html — 9 code review fixes (uncommitted)
-- Cover caption font size: was CSS `pt` (26% too large) → now `(sizePt * SCALE * 25.4 / 72)px`
-- AI caption guard: snapshots text before fetch; skips overwrite if user edited in flight
-- SVG onerror handlers: red outline + console.warn on load failure (cover + spread paths)
-- Caption restore: always `innerHTML = saved` — removed conditional re-apply of typographic rules
-- Orientation timeout: console.warn when 10s read times out (w=0 false low-res guard stays)
-- Special photo container: verified already clears with `innerHTML = ''` — no change needed
-- AI button note: comment added about resize limitation
-- urlToBase64 comment: corrected (was misleading "10 MB limit")
-- Unknown dims: covered by orientation timeout warn
-
-### Phase 13 plans written (uncommitted)
-- **13-01-PLAN.md** (rewritten): CSV parser full rewrite — comma delimiter, title row skip, index-based parsing for duplicate headers, emit `x/y` + `xBleed/yBleed` on slots, explicit caption box `xMm/yMm/wMm/hMm/halign/valign`
-- **13-03-PLAN.md** (new): template-engine.html — SVG bleed offset (−9px), coord-based caption rendering
-- **13-04-PLAN.md** (new): export-pdf.js — SVG at origin, `xBleed/yBleed` for slots, coord-based captions, schema v3
-- **Phase 14 merged into Phase 13** — Evgeny already added caption box columns to both CSVs
-
-### CSV + SVG files updated by Evgeny (uncommitted, not yet processed)
-- `Scribble_sizing_full.csv`: new column structure (comma delimiter, bleed coords, caption box columns)
-- `Scribble_Template_Sizing_Cover.csv`: renamed coordinate columns, both bleed variants
-- Spread SVGs: FP1/FP3/FP4 updated; FP5 art SVGs added (new files)
-- Two xlsx files deleted from assets
-
-## Session 2026-05-26 — Phase 13 implemented, NOT fully tested
-
-### Plans 13-01, 13-03, 13-04 — implemented (uncommitted)
-- **13-01** ✅ — CSV parser rewritten: new column names, slots emit `xBleed`/`yBleed`, captions emit `xMm/yMm/wMm/hMm/halign/valign`, no `position`/`offset`. `scribble-data.js` regenerated with 16pt font sizes.
-- **13-03** ⚠️ — Engine coord-based captions implemented. Multiple bugs found + fixed during testing (see below). Text-align fix applied but NOT visually verified.
-- **13-04** ⚠️ — PDF coord-based captions implemented. NOT tested end-to-end.
-
-### Bugs found and fixed this session
-1. **SVG bleed offset reverted** — Spread SVGs still have viewBox 200×200mm (no bleed). Developer agent added 618px/−9px offset prematurely. Reverted. Re-enable when Kseniia re-exports with 3mm bleed in viewBox.
-2. **Caption coords are CENTER-based** — `xMm`/`yMm` in CSV are center of the box, not top-left. Fixed in engine (`- capWidth/2`, `- capHeight/2`) and PDF (`xMm - wMm/2`, `yMm + hMm/2` for pdf-lib).
-3. **Cover bleed = 18mm** — Cover canvas is content-only; cover CSV coords include 18mm bleed. Added `COVER_BLEED_MM = 18` to engine. Both cover photo slot and cover captions now subtract 18mm.
-4. **Duplicate `const BLEED_MM`** — Caused JS parse error → entire engine JS broken (no uploads, no counter). Fixed by hoisting to module-level constant.
-5. **`display:flex` on `contenteditable` broke text-align** — Replaced with `padding-top` approach for valign.
-6. **16pt font defaults** — CSV re-synced; `getTbStyle('sizePt', 14)` → 16 in 3 engine places; `|| 14` → `|| 16` in PDF.
-
-## Known issues / watch-outs
-- HEIC conversion silent failure: if Cloud Function fails all 3 retries, no error shown to user.
-- Per-line caption styling NOT supported — use separate caption slots.
-- Spine horizontal centering uses ascender-height heuristic; slightly biased for mixed-case with descenders.
-- Photo count assumes H orientation — confirmed exact for Scribble via simulation (#46).
-- `full_bleed` legacy detection in csv-to-template.js (`bgColor contains 'full bleed'`) — clean up in Plan 13-02.
+**Product north star confirmed (ideation session):**
+- Journey steps 1–11 agreed. TO-DO #51 (page-flip viewer, StPageFlip) and TO-DO #52 (customer-facing limited engine with `?mode=customer&token=`) added.
+- TO-DO #52 decision deferred; context documented in TO-DOS.md.
 
 ## Next priorities
 
-**Phase 13 DONE. Ready to commit.**
-
-1. **Commit all uncommitted changes** (sessions 2026-05-26 → 2026-05-28).
-2. **Plan 13-02** — Code hygiene. After commit.
-3. **TO-DO #47** — Mobile responsiveness (different files, unblocked).
+1. **Plan 12-03** — Engine "Load order" flow. Staff enters order number → engine fetches Firestore doc + downloads photos from GCS signed URLs + pre-populates FP text panels. This is the key integration between order intake and the engine.
+2. **TO-DO #47** — Mobile responsiveness (home.html + order.html). Unblocked, different files.
+3. **TO-DO #51** — Page-flip preview viewer (StPageFlip + individual page PNGs). ~2 days, high visual impact.
 
 **Deferred (do NOT start yet):**
-- **Plan 11-02** — `getOrderAssets` Cloud Function. Wait until engine produces trusted PDFs.
-- **Plan 11-03** — Engine "Load order" flow. Wait for 11-02.
-- **Plan 11-04** — PDF export wired to GCS. Wait for Phase 13 fully committed.
+- **Plan 12-04** — PDF export wired to GCS. Wait for Plan 12-03.
+- **TO-DO #52** — Customer-facing engine. Decision deferred.
+- **TO-DO #48** — Bleed SVGs re-export. Wait for Kseniia.
 
-## Session 2026-05-27 summary (fixes since 2026-05-26-p2)
-
-### Engine
-- FP2 funny words text panel grows from centre (was: clipped downward)
-- valign:bottom captions + text panels grow upward via CSS `bottom` anchor (was: padding
-  hack only worked for single line)
-- AI button repositioned for bottom-anchored captions
-
-### PDF (`scripts/export-pdf.js`)
-- Spread slot `xBleed/yBleed` correctly treated as CENTRE coords (subtract `w/2`,`h/2`)
-- Cover photo + captions no longer double-add COVER_BLEED (xMm/yMm already absolute)
-- EB Garamond family: switched to static TTF files (woff2 + variable TTF didn't work
-  with @pdf-lib/fontkit)
-- EB Garamond ligature gap bug: workaround by drawing each character as its own drawText
-  (no shaping context = no GSUB ligature formation). New helpers `LIGATURE_FONTS`,
-  `measureNoLig`, `drawTextNoLig`. Spine rotated path also character-by-character.
-
-### CSV pipeline (`csv-to-template.js`)
-- `caption_style` values normalised on parse (lowercase + strip hyphens). `Semi-Bold` →
-  `semibold` etc. `lookupFont` in PDF also normalises as safety net.
-
-### Data
-- FP4 right H/V `captions_color` filled in (`#493955`)
-- `scribble-data.js` regenerated
-
-## Session 2026-05-28 — SVG bleed + PDF polish
-
-### SVG bleed fix — DONE (export-pdf.js)
-- New helper `expandSvgViewBox(svgStr, bleedUnits)` — regex-expands viewBox by bleed amount.
-- Spreads: viewBox expanded by `SPREAD_SVG_BLEED_UNITS` (~8.504 units = 3mm), rendered at
-  `FULL_PX × FULL_PX` at origin. Bleed artwork in spread SVGs now visible in PDF.
-- Cover: viewBox expanded by `COVER_SVG_BLEED_UNITS` (~51.024 units = 18mm), rendered at
-  `COVER_FULL_W_PX × COVER_FULL_H_PX` at origin. SVG provides back + spine + bleed.
-- Cover compositing simplified: canvas bg = front colour → photo → SVG at (0,0).
-  Removed spineRect and frontRect composites. Front colour as bg handles right/top/bottom
-  bleed of front section (SVG has no Front_BG_Color).
-
-### Blank QR page — DONE (export-pdf.js)
-- Terminal blank white page added after all content pages in both preview and print modes.
-- Print mode: `page-XXX.pdf` with blank page. Preview mode: blank page in combined PDF.
-
-### Full-bleed photo support — DONE
-- `full_bleed` column in `Scribble_sizing_full.csv`. `csv-to-template.js` reads it →
-  emits `fullBleed: true` on slot. Currently one slot: FP2 right page.
-- PDF: full-bleed slot → resize to `FULL_PX × FULL_PX`, place at `(0,0)`.
-- Engine: full-bleed slot → same as `heartClip`, fills 600×600px at `(0,0)`.
-- `scribble-data.js` regenerated.
-
-### Text panel word wrap — DONE (export-pdf.js)
-- FP text panels were rendering as single overflowing line (no word wrap).
-- Fix: `wrapText()` now applied to text panel lines (same as slot captions). One-line change.
+## Known issues / watch-outs
+- HEIC conversion silent failure: if Cloud Function fails all 3 retries, no error shown to user.
+- Cover `sections.back/spine/front.xMm` are content-relative (add `COVER_BLEED_PX`). Cover photo slot and captions `xMm/yMm` are absolute (bleed already included). Do not unify without auditing all five call sites.
+- EB Garamond uses per-character `drawText` (LIGATURE_FONTS). Adding a new ligature-heavy font requires same treatment + re-verify spine rotated-text path.
+- Font pipeline: static TTF/OTF only. No woff2, no variable fonts.
+- Per-line caption styling not supported — use separate caption slots.
 
 </current_state>
 ```
