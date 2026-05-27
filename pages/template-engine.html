@@ -147,6 +147,18 @@
       font-size: 11px; color: var(--muted); white-space: nowrap; line-height: 1.4;
     }
     .config-photo-hint.hint-ok   { color: #5a9a5a; }
+    /* ── ORDER LOAD PANEL ── */
+    .mode-toggle { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+    .mode-toggle-btn { padding: 6px 14px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: var(--white); color: var(--muted); border: none; cursor: pointer; transition: background 0.15s, color 0.15s; }
+    .mode-toggle-btn.active { background: var(--text); color: var(--white); }
+    .order-load-panel { display: flex; align-items: center; gap: 8px; }
+    .order-load-input { width: 110px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 3px; font-size: 12px; font-family: var(--sans); color: var(--text); text-transform: uppercase; letter-spacing: 0.05em; outline: none; }
+    .order-load-input:focus { border-color: var(--text); }
+    .order-load-btn { padding: 7px 16px; background: var(--text); color: var(--white); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 3px; border: none; cursor: pointer; flex-shrink: 0; }
+    .order-load-btn:disabled { opacity: 0.5; cursor: default; }
+    .order-status { font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .order-status.ok  { color: #2d8a4e; }
+    .order-status.err { color: #c0392b; }
     .config-photo-hint.hint-warn { color: #c07000; }
     .config-photo-hint.hint-over { color: #b03030; }
 
@@ -633,9 +645,30 @@
   </div>
 
   <input type="file" id="photo-file-input" accept=".jpg,.jpeg,.heic,.heif" multiple hidden />
-  <button class="config-export-btn" id="export-state-btn">Export State</button>
-  <button class="config-upload-btn" id="upload-btn">+ Add Photos</button>
-  <div class="config-photo-hint" id="config-photo-hint"></div>
+
+  <div style="flex:1"></div>
+
+  <!-- Mode toggle -->
+  <div class="mode-toggle">
+    <button class="mode-toggle-btn active" id="mode-local-btn">Local</button>
+    <button class="mode-toggle-btn" id="mode-order-btn">Order</button>
+  </div>
+
+  <!-- Local mode controls -->
+  <div id="local-mode-controls" style="display:flex;align-items:center;gap:8px;">
+    <button class="config-export-btn" id="export-state-btn">Export State</button>
+    <button class="config-upload-btn" id="upload-btn">+ Add Photos</button>
+    <div class="config-photo-hint" id="config-photo-hint"></div>
+  </div>
+
+  <!-- Order mode controls -->
+  <div id="order-mode-controls" style="display:none;">
+    <div class="order-load-panel">
+      <input class="order-load-input" id="order-number-input" type="text" placeholder="AEV-001" maxlength="10" />
+      <button class="order-load-btn" id="order-load-btn">Load</button>
+      <span class="order-status" id="order-status"></span>
+    </div>
+  </div>
 
 </div>
 
@@ -3027,6 +3060,201 @@
       console.log('SP1 right H slots:', d.spreads.SP1.pages.right.H.slots.length, '(expect 2)');
     }
   })();
+
+  /* ═══════════════════════════════════════════
+     PLAN 12-03 — ORDER LOAD FLOW
+  ═══════════════════════════════════════════ */
+
+  const GET_ORDER_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getOrder';
+  const STAFF_KEY = '865865';
+
+  function setEngineMode(mode) {
+    const isOrder = mode === 'order';
+    document.getElementById('mode-local-btn').classList.toggle('active', !isOrder);
+    document.getElementById('mode-order-btn').classList.toggle('active', isOrder);
+    document.getElementById('local-mode-controls').style.display = isOrder ? 'none' : 'flex';
+    document.getElementById('order-mode-controls').style.display = isOrder ? '' : 'none';
+    const sp = document.getElementById('special-panel');
+    if (sp) {
+      if (isOrder) {
+        sp.style.display = 'none';
+      } else {
+        updateSpecialPanel(); // restores correct per-FP visibility in local mode
+      }
+    }
+  }
+
+  document.getElementById('mode-local-btn').addEventListener('click', () => setEngineMode('local'));
+  document.getElementById('mode-order-btn').addEventListener('click', () => setEngineMode('order'));
+  document.getElementById('order-number-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('order-load-btn').click();
+  });
+
+  document.getElementById('order-load-btn').addEventListener('click', async () => {
+    const input  = document.getElementById('order-number-input');
+    const btn    = document.getElementById('order-load-btn');
+    const status = document.getElementById('order-status');
+    const raw    = input.value.trim().toUpperCase();
+    if (!raw) return;
+
+    btn.disabled = true;
+    status.className = 'order-status';
+    status.textContent = 'Loading…';
+
+    try {
+      const res = await fetch(GET_ORDER_ENDPOINT, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Staff-Key': STAFF_KEY },
+        body:    JSON.stringify({ orderNumber: raw }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${res.status}`);
+      }
+      const order = await res.json();
+      await loadOrderIntoEngine(order);
+      status.className = 'order-status ok';
+      const fps = (order.fpSelections || []).join(', ');
+      status.textContent = `${order.customerName} · ${order.pageCount}p${fps ? ' · ' + fps : ''}`;
+    } catch (err) {
+      status.className = 'order-status err';
+      status.textContent = err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  async function loadOrderIntoEngine(order) {
+    // 1. Reset engine state
+    window.photoPool        = [];
+    window.bookAssignments  = {};
+    window.bookCaptions     = {};
+    window.captionState     = {};
+    window.specialPhotos    = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
+
+    // 2. Set page count
+    const pcSelect = document.getElementById('page-count-select');
+    if (order.pageCount) pcSelect.value = String(order.pageCount);
+
+    // 3. Set FP checkboxes (without triggering renderBook yet)
+    document.querySelectorAll('input[name="fp"]').forEach(cb => {
+      cb.checked = (order.fpSelections || []).includes(cb.value);
+    });
+    updateSpecialPanel();
+
+    // 4. Helper: fetch a signed URL → File object
+    async function urlToFile(url, filename) {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Could not download ${filename}`);
+      const blob = await resp.blob();
+      return new File([blob], filename, { type: blob.type || 'image/jpeg' });
+    }
+
+    const urls   = order.signedUrls  || {};
+    const names  = order.storedNames || {};
+
+    // Helper: extract filename from a GCS storedName path, preserving extension
+    // e.g. "Scribble_Emma_2026/photos/photo_001.heic" → "photo_001.heic"
+    function storedBasename(storedName) {
+      return storedName ? storedName.split('/').pop() : null;
+    }
+
+    // 5. Load cover and special FP photos into window.specialPhotos
+    if (urls.cover) {
+      const filename = storedBasename(names.cover) || 'cover.jpg';
+      dbLog(`Downloading cover (${filename})…`, 'info');
+      const f = await urlToFile(urls.cover, filename);
+      const result = await processOneFile(f);
+      if (result) {
+        window.specialPhotos.cover.push(result);
+        renderSpecialThumbs('cover');
+      }
+    }
+    for (const [slug, slugUrls] of Object.entries(urls.special || {})) {
+      const fpKey      = slug.toUpperCase(); // fp1 → FP1
+      const slugNames  = (names.special || {})[slug] || [];
+      const arr        = Array.isArray(slugUrls) ? slugUrls : [slugUrls];
+      for (let i = 0; i < arr.length; i++) {
+        const u = arr[i];
+        if (!u) continue;
+        const filename = storedBasename(slugNames[i]) || `${slug}.jpg`;
+        dbLog(`Downloading ${fpKey} (${filename})…`, 'info');
+        const f = await urlToFile(u, filename);
+        const result = await processOneFile(f);
+        if (result && window.specialPhotos[fpKey] !== undefined) {
+          window.specialPhotos[fpKey].push(result);
+          renderSpecialThumbs(fpKey);
+        }
+      }
+    }
+    rerenderCover();
+    renderSpecialSidebar();
+
+    // 6. Load pool photos, sort by date, render book
+    const poolUrls   = (urls.pool   || []).filter(Boolean);
+    const poolNames  = (names.pool  || []);
+
+    if (poolUrls.length) {
+      dbLog(`Downloading ${poolUrls.length} pool photos…`, 'info');
+      document.getElementById('book-canvas').innerHTML =
+        '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">⏳</div><h3>Loading order…</h3></div>';
+
+      const newPhotos = [];
+      for (let i = 0; i < poolUrls.length; i++) {
+        const filename = storedBasename(poolNames[i]) || `photo_${String(i+1).padStart(3,'0')}.jpg`;
+        const f = await urlToFile(poolUrls[i], filename);
+        const result = await processOneFile(f);
+        if (result) newPhotos.push(result);
+      }
+      newPhotos.sort((a, b) => {
+        if (a.date && b.date) return new Date(a.date) - new Date(b.date);
+        if (a.date && !b.date) return -1;
+        if (!a.date && b.date) return 1;
+        const na = filenameNumber(a.name), nb = filenameNumber(b.name);
+        if (na !== null && nb !== null) return na - nb;
+        return 0;
+      });
+      window.photoPool = newPhotos;
+    }
+
+    renderPhotoSidebar();
+
+    if (!window.photoPool.length) {
+      // Order loaded but no photos in manifest — pre-12-03 order or upload issue
+      document.getElementById('book-canvas').innerHTML =
+        '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">📋</div>' +
+        '<h3>Order loaded — no photos</h3>' +
+        '<p>This order has no photo manifest (submitted before the current system). Upload photos manually using Local mode, or switch to Local and add them via + Add Photos.</p></div>';
+    } else {
+      renderBook();  // NOTE: renderBook() resets window.bookCaptions = {}
+    }
+
+    // 7. After renderBook, populate FP text panels into DOM + bookCaptions
+    const fpTexts = order.fpTexts || {};
+    const seq     = window._bookSequence || [];
+    Object.entries(fpTexts).forEach(([slug, value]) => {
+      const fpKey = slug.toUpperCase(); // 'fp1' → 'FP1'
+      const spreadIndex = seq.indexOf(fpKey);
+      if (spreadIndex === -1) return;
+
+      const text = Array.isArray(value) ? value.join('\n') : (value || '');
+      if (!text) return;
+
+      // Find the rendered text panel in the DOM
+      const row   = document.querySelector(`.spread-row[data-spread-index="${spreadIndex}"]`);
+      const panel = row && row.querySelector('.fp-text-panel');
+      if (panel) {
+        panel.textContent = text;
+        // Persist to bookCaptions so export + re-renders pick it up
+        if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+        if (!window.bookCaptions[spreadIndex].left) window.bookCaptions[spreadIndex].left = {};
+        window.bookCaptions[spreadIndex].left['textPanel'] = text;
+      }
+    });
+
+    updatePhotoHint();
+    dbLog('Order loaded.', 'info');
+  }
 </script>
 
 </body>

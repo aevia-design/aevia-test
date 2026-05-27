@@ -126,6 +126,23 @@ async function handler(req, res) {
     });
 
     const uploadUrls  = await limitedConcurrent(tasks, 10);
+
+    // Build photoManifest: records which GCS path belongs to which category
+    const photoManifest = { cover: null, special: {}, pool: [] };
+    uploadUrls.forEach(u => {
+      const fileInfo = fileList[u.slot - 1];
+      if (!fileInfo) return;
+      if (fileInfo.fileType === 'cover') {
+        photoManifest.cover = u.storedName;
+      } else if (fileInfo.fileType === 'special') {
+        const slug = fileInfo.addonSlug;
+        if (!photoManifest.special[slug]) photoManifest.special[slug] = [];
+        photoManifest.special[slug].push(u.storedName);
+      } else {
+        photoManifest.pool.push(u.storedName);
+      }
+    });
+
     const orderNumber = await getNextOrderNumber();
     const token = crypto.randomBytes(32).toString('hex');
     const orderPageUrl = `https://aevia-test.pages.dev/pages/my-order.html?token=${token}`;
@@ -255,6 +272,7 @@ async function handler(req, res) {
       photoCount: photoCount || null,
       fileCount: fileList.length,
       folderName,
+      photoManifest,
       folderLink,
       status: 'new',
       token,

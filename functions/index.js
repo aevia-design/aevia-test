@@ -67,6 +67,70 @@ exports.generateCaption = functions
     }
   });
 
+// ── Get order (staff tool — returns Firestore doc + signed read URLs) ────────
+exports.getOrder = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 60, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (req.headers['x-staff-key'] !== process.env.STAFF_KEY) {
+      return res.status(401).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+
+    try {
+      const db  = admin.firestore();
+      const doc = await db.collection('orders').doc(orderNumber).get();
+      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+
+      const order    = doc.data();
+      const manifest = order.photoManifest || { cover: null, special: {}, pool: [] };
+
+      const { Storage } = require('@google-cloud/storage');
+      const storage  = new Storage({ keyFilename: './serviceAccountKey.json' });
+      const bucket   = storage.bucket('aevia-uploads.firebasestorage.app');
+      const expires  = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      async function signedReadUrl(storedName) {
+        if (!storedName) return null;
+        const [url] = await bucket.file(storedName).getSignedUrl({ action: 'read', version: 'v4', expires });
+        return url;
+      }
+
+      const signedUrls = { cover: null, special: {}, pool: [] };
+      signedUrls.cover = await signedReadUrl(manifest.cover);
+      for (const [slug, paths] of Object.entries(manifest.special || {})) {
+        signedUrls.special[slug] = await Promise.all((Array.isArray(paths) ? paths : [paths]).map(p => signedReadUrl(p)));
+      }
+      signedUrls.pool = await Promise.all((manifest.pool || []).map(p => signedReadUrl(p)));
+
+      return res.status(200).json({
+        orderNumber:     order.orderNumber,
+        customerName:    order.customerName,
+        pageCount:       order.pageCount,
+        fpSelections:    order.fpSelections || [],
+        fpTexts:         order.fpTexts || {},
+        photoNotes:      order.photoNotes || null,
+        signedUrls,
+        storedNames: {
+          cover:   manifest.cover   || null,
+          special: manifest.special || {},
+          pool:    manifest.pool    || [],
+        },
+      });
+    } catch (err) {
+      console.error('getOrder error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
 // ── HEIC → JPEG converter ────────────────────────────────────────────────────
 exports.convertHeic = functions
   .region('europe-west1')
