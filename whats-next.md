@@ -86,6 +86,21 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Root cause: previous session added an EXIF Orientation swap (tags 5-8 → flip dims). This is wrong because modern browsers (Chrome, Firefox, Safari) auto-rotate images based on EXIF — `img.naturalWidth/naturalHeight` already returns correct visual dimensions.
 - Fix: removed the swap entirely. Orientation is now determined purely from `img.naturalWidth > img.naturalHeight`, which is always the correct visual orientation regardless of EXIF tag presence.
 
+## Session 2026-05-27 (continued) — Plan 12-03: Load Order into Engine
+
+### Plan 12-03 complete
+- `functions/upload.js`: builds `photoManifest` on order creation (`{ cover, special: {slug: [path]}, pool: [paths] }`), saves to Firestore
+- `functions/index.js`: new `getOrder` Cloud Function — auth via `X-Staff-Key: 865865`, reads Firestore, returns order metadata + 1h signed read URLs + `storedNames`
+- `functions/.env`: `STAFF_KEY=865865` added; `EMAIL_USER/EMAIL_PASS/EMAIL_NOTIFY` also added (email was never configured before — now working)
+- `pages/template-engine.html`: Local/Order toggle pill in config bar. Order mode hides `+ Add Photos` + special panel; shows order number input + Load button. `loadOrderIntoEngine()` sets page count, FP checkboxes, downloads photos (HEIC filenames preserved from `storedNames`), pre-fills FP text panels post-render via DOM query + `bookCaptions`. Silent failure message if no `photoManifest` (pre-12-03 orders).
+- `cors.json`: added `GET` to allowed methods (was only PUT/OPTIONS) — required for browser to download GCS signed read URLs
+- All deployed + tested end-to-end. First order load working.
+
+### Watch-outs
+- `photoManifest` only saved on orders submitted after this deploy. Pre-existing orders show "no photo manifest" message in Order mode — staff must use Local mode for those.
+- FP text panels are populated AFTER `renderBook()` (which resets `bookCaptions`). Text is written to DOM element + `bookCaptions[spreadIndex].left['textPanel']`. Only `left` side wired (all FP text panels live on left pages — correct for Scribble template).
+- GCS CORS now allows GET from `*` — needed for signed URL downloads in browser.
+
 ## Session 2026-05-21 (later) — Caption toolbar + font + CSV sync
 
 ### EB Garamond Semi-Bold font added
@@ -386,12 +401,12 @@ Response: { caption: 'suggested text string' }
 
 ## Next priorities
 
-1. **Plan 12-03** — Engine "Load order" flow. Staff enters order number → engine fetches Firestore doc + downloads photos from GCS signed URLs + pre-populates FP text panels. This is the key integration between order intake and the engine.
-2. **TO-DO #47** — Mobile responsiveness (home.html + order.html). Unblocked, different files.
-3. **TO-DO #51** — Page-flip preview viewer (StPageFlip + individual page PNGs). ~2 days, high visual impact.
+1. **Plan 12-03 polish** — user has feedback from first touch. Address in next session before moving on.
+2. **Plan 12-04** — PDF export wired to GCS (now unblocked by 12-03).
+3. **TO-DO #47** — Mobile responsiveness (home.html + order.html).
+4. **TO-DO #51** — Page-flip preview viewer (StPageFlip + individual page PNGs). ~2 days, high visual impact.
 
 **Deferred (do NOT start yet):**
-- **Plan 12-04** — PDF export wired to GCS. Wait for Plan 12-03.
 - **TO-DO #52** — Customer-facing engine. Decision deferred.
 - **TO-DO #48** — Bleed SVGs re-export. Wait for Kseniia.
 
@@ -401,6 +416,7 @@ Response: { caption: 'suggested text string' }
 - EB Garamond uses per-character `drawText` (LIGATURE_FONTS). Adding a new ligature-heavy font requires same treatment + re-verify spine rotated-text path.
 - Font pipeline: static TTF/OTF only. No woff2, no variable fonts.
 - Per-line caption styling not supported — use separate caption slots.
+- `photoManifest` only on orders submitted after 2026-05-27 deploy. Older orders → Local mode only.
 
 </current_state>
 ```

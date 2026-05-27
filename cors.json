@@ -1,7 +1,7 @@
 [
   {
     "origin": ["*"],
-    "method": ["PUT", "OPTIONS"],
+    "method": ["GET", "PUT", "OPTIONS"],
     "responseHeader": ["Content-Type", "Content-Length", "Authorization"],
     "maxAgeSeconds": 3600
   }
