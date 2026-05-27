@@ -22,13 +22,22 @@ const fontkit = require('@pdf-lib/fontkit');
 // don't render them as missing-glyph boxes.
 const stripHtml = s => {
   if (typeof s !== 'string') return s || '';
-  return s
+  const stripped = s
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<div>/gi, '\n').replace(/<\/div>/gi, '')
+    .replace(/<b>/gi, '').replace(/<\/b>/gi, '')
+    .replace(/<i>/gi, '').replace(/<\/i>/gi, '')
     .replace(/<[^>]*>/g, '')
     .replace(/&nbsp;/g, ' ')
     .replace(/ /g, ' ')
     .trim();
+  // Warn if unrecognised tags remain (e.g. <span style="...">) so new tag types
+  // are caught at export time rather than silently discarding formatting.
+  const naive = s.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/ /g, ' ').trim();
+  if (stripped !== naive) {
+    console.warn('stripHtml: unhandled HTML tags detected — check caption formatting:', s.slice(0, 120));
+  }
+  return stripped;
 };
 
 // ── CLI args ──────────────────────────────────────────────────────────────────
@@ -67,6 +76,8 @@ require(path.resolve(__dirname, '../assets/Template_Scribble/scribble-data.js'))
 const DATA = global.window.SCRIBBLE_DATA;
 
 // ── Print constants ───────────────────────────────────────────────────────────
+// SCALE=3 px/mm lives in pages/template-engine.html only. DPI=300 is the print target.
+// If either changes, update both files and re-verify caption sizing math: sizePt * SCALE * 25.4 / 72.
 const DPI        = 300;
 const MM_TO_PX   = DPI / 25.4;                          // 11.811 px/mm
 const CONTENT_MM = DATA.pageSize;                        // 200mm
@@ -84,6 +95,19 @@ const slotH    = (s) => Math.round(s.h * MM_TO_PX);
 const ASSET_BASE = path.resolve(__dirname, '../assets/Template_Scribble/Spreads');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+// Resolve a colour value to a pdf-lib rgb() colour.
+// Accepts a hex string ('#493955'), a named colour key that looks up DATA.colors, or nothing.
+// Used for both spread captions and cover captions — single source of truth.
+function resolveColor(value) {
+  if (!value) return CAPTION_COLOR;
+  const hex = value.startsWith('#') ? value : DATA.colors?.[value];
+  if (!hex) return CAPTION_COLOR;
+  const h = hex.replace('#', '');
+  if (h.length !== 6) return CAPTION_COLOR;
+  return rgb(parseInt(h.slice(0,2),16)/255, parseInt(h.slice(2,4),16)/255, parseInt(h.slice(4,6),16)/255);
+}
+
 function hexToSharpColor(hex) {
   const h = hex.replace('#', '');
   return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16), alpha: 1 };
@@ -161,7 +185,9 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
       const spName = typeof spRaw === 'string' ? spRaw : spRaw?.name;
       if (spName) photo = { name: spName };
     } else if (slot.pool === 'artwork') {
-      // FP5 art gallery — stored as array [leftName, rightName], or legacy plain string
+      // FP5 art gallery: specialPhotos.FP5 must be array [leftName, rightName].
+      // Legacy string fallback below handles old book-state.json from before 2026-05.
+      // Re-export from the engine to upgrade to current schema.
       const artArr = specialPhotos[spreadId];
       const artIdx = side === 'left' ? 0 : 1;
       let artName;
@@ -362,16 +388,6 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
 
   const { slots, textPanel } = pageDef;
 
-  // Resolve a color to a pdf-lib rgb() value.
-  // Accepts a hex string ('#493955'), a named color ('plum' → looks up DATA.colors), or nothing.
-  function resolveColor(value) {
-    if (!value) return CAPTION_COLOR;
-    const hex = value.startsWith('#') ? value : DATA.colors[value];
-    if (!hex) return CAPTION_COLOR;
-    const h = hex.replace('#', '');
-    return rgb(parseInt(h.slice(0,2),16)/255, parseInt(h.slice(2,4),16)/255, parseInt(h.slice(4,6),16)/255);
-  }
-
   // Per-slot style overrides from spreadCaptionStyles[si][side][slotIdx]
   const scsOverrides = spreadCaptionStyles?.[si]?.[side] || {};
 
@@ -384,8 +400,15 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     const text = stripHtml(sideCaps[i]);
     if (!text || !text.trim()) continue;
 
-    // Merge per-slot style overrides (font, weight, italic, sizePt, lineSpacing, letterSpacing)
+    // Merge per-slot style overrides (font, weight, italic, sizePt, lineSpacing, letterSpacing).
+    // Override schema: { font?, weight (number: 400/500/600/700), italic (bool),
+    //   sizePt?, letterSpacing?, lineSpacing?, color? }
+    // weight MUST be numeric — string style names ('bold', 'medium') are NOT supported
+    // and will silently fall through to 'regular'. Engine always writes weight as a number.
     const ov       = scsOverrides[i] || {};
+    if (ov.weight !== undefined && typeof ov.weight !== 'number') {
+      console.warn('caption override schema mismatch (weight should be numeric):', ov);
+    }
     const fontName = ov.font          !== undefined ? ov.font     : capDef.font;
     const ovStyle  = ov.weight !== undefined
       ? (ov.weight >= 700 ? 'bold' : ov.weight >= 600 ? 'semibold' : ov.weight >= 500 ? 'medium' : ov.italic ? 'italic' : 'regular')
@@ -433,7 +456,9 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
       const xPt = halign === 'left'  ? textXPt
                 : halign === 'right' ? textXPt + boxWidthPt - textWidthPt
                 :                      textXPt + (boxWidthPt - textWidthPt) / 2; // center
-      // Y position: start from top of box, advance by line height
+      // Y position: start from top of box, advance by line height.
+      // 0.75 ≈ cap-height ratio for typical serif fonts (NT Somic, EB Garamond).
+      // Converts font sizePt to the vertical distance from line-top to text baseline.
       const lineTopPt = textYPt + boxHeightPt - yOffsetPt - li * lineSpacingPt;
       const baselinePt = lineTopPt - sizePt * 0.75;
       const drawOpts = { x: xPt, y: baselinePt, size: sizePt, font,
@@ -598,19 +623,14 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
   if (!coverCaptions) return;
   const COVER_BLEED_PT = COVER_BLEED_MM * MM_TO_PT;
 
-  // Resolve a hex color string (e.g. '#493955') to a pdf-lib rgb() value.
-  function resolveCapColor(hex) {
-    if (!hex) return CAPTION_COLOR;
-    const h = hex.replace('#', '');
-    if (h.length !== 6) return CAPTION_COLOR;
-    return rgb(parseInt(h.slice(0,2),16)/255, parseInt(h.slice(2,4),16)/255, parseInt(h.slice(4,6),16)/255);
-  }
-
   for (const capDef of coverDef.captions) {
     const text = (coverCaptions[capDef.key] || '').trim();
     if (!text) continue;
 
     const ov = coverCaptionStyles?.[capDef.key] || {};
+    if (ov.weight !== undefined && typeof ov.weight !== 'number') {
+      console.warn('cover caption override schema mismatch (weight should be numeric):', ov);
+    }
     const fontName = ov.font || capDef.font || 'NT Somic';
     const style    = ov.weight >= 700 ? 'bold'
                    : ov.weight >= 600 ? 'semibold'
@@ -623,7 +643,7 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
     const sizePt      = ov.sizePt || capDef.sizePt || 20;
     const lineSpacing = sizePt * (ov.lineSpacing || 1.28);
     const charSpacing = LIGATURE_FONTS.has(fontName) ? 0 : ((ov.letterSpacing || 0)) * sizePt;
-    const color       = resolveCapColor(ov.color || capDef.color);
+    const color       = resolveColor(ov.color || capDef.color);
     const lines = text.split('\n').filter(l => l.trim());
 
     const isRotated = !!capDef.rotate; // spine captions have rotate: 270 (CSS CW degrees)
@@ -684,6 +704,7 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
       // capDef.xMm/yMm are absolute coords (include 18mm bleed) — do NOT add/subtract COVER_BLEED_PT.
       const isLigFront = LIGATURE_FONTS.has(fontName);
       const blockH   = lines.length * lineSpacing;
+      // 0.75 ≈ cap-height ratio — converts sizePt to distance from line-top to baseline.
       const startYPt = pageSizeHPt - capDef.yMm * MM_TO_PT + blockH / 2 - sizePt * 0.75;
       lines.forEach((line, li) => {
         const textW = isLigFront

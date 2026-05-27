@@ -2337,7 +2337,10 @@
       const preferred = orient === 'vertical' ? 'V' : 'H';
       if (pageDef[preferred]) return preferred;
       if (pageDef['default']) return 'default';
-      return Object.keys(pageDef)[0];
+      const fallback = Object.keys(pageDef)[0];
+      console.warn('resolveVariant: requested', preferred, 'not found — falling back to:', fallback,
+        '(check scribble-data.js for typo in variant key)');
+      return fallback;
     }
 
     // Helper: regular slot count for the best-matching variant on a page

@@ -127,10 +127,10 @@ function buildSlot(row, slotNumber, isFunctional) {
   // heartClip: FP1 right heart-shaped slot — detected by its unique 33:35 ratio
   if (ratio === '33:35') slot.heartClip = true;
 
-  // fullBleed: explicit column 'full_bleed' = 'yes'. Legacy: also detect 'full bleed' in bgColor.
+  // fullBleed: 'full_bleed' column = 'yes' in the CSV.
   const fullBleedCol = (row['full_bleed'] || '').toLowerCase().trim();
   const bgRaw        = row['bgColor'] || '';
-  if (fullBleedCol === 'yes' || bgRaw.toLowerCase().includes('full bleed')) {
+  if (fullBleedCol === 'yes') {
     slot.fullBleed = true;
     slot.pool = 'regular';
   } else if (isFunctional) {
@@ -247,7 +247,7 @@ function buildFunctionalSpread(spreadNum, rows) {
     if (!pages[side][vKey]) {
       const svgKey = `${id}.${side}.${vKey}`;
       const bgRaw  = row['bgColor'] || '';
-      const bg     = bgRaw.toLowerCase().includes('full bleed') ? null : bgRaw;
+      const bg     = bgRaw || null; // empty bgColor → no bgColor key emitted
       pages[side][vKey] = {
         ...(bg ? { bgColor: bg } : {}),
         svg:   existingSvgs[svgKey] || `TODO: ${svgKey}`,
