@@ -159,6 +159,45 @@
     .order-status { font-size: 11px; color: var(--muted); white-space: nowrap; }
     .order-status.ok  { color: #2d8a4e; }
     .order-status.err { color: #c0392b; }
+
+    /* Order info panel (below config bar, scrolls with content) */
+    .order-info-panel {
+      display: none;
+      background: #f7f4ef;
+      border: 1px solid #e5dfd6;
+      border-radius: 6px;
+      padding: 16px 20px;
+      margin-bottom: 28px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+    .order-info-panel.visible { display: block; }
+    .order-info-name {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      margin-bottom: 10px;
+    }
+    .order-info-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 5px;
+      align-items: baseline;
+    }
+    .order-info-label {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      min-width: 110px;
+    }
+    .order-info-value {
+      color: var(--text);
+      font-style: italic;
+    }
     .config-photo-hint.hint-warn { color: #c07000; }
     .config-photo-hint.hint-over { color: #b03030; }
 
@@ -668,10 +707,6 @@
       <button class="order-load-btn" id="order-load-btn">Load</button>
       <span class="order-status" id="order-status"></span>
     </div>
-    <div id="order-notes-card" style="display:none; margin-top:8px; background:#f5f2ed; border-radius:4px; padding:8px 12px; font-size:12px; color:#4a4540; font-style:italic; max-width:360px; line-height:1.5;">
-      <span style="font-style:normal; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:#9a928a; display:block; margin-bottom:3px;">About this album</span>
-      <span id="order-notes-text"></span>
-    </div>
   </div>
 
 </div>
@@ -734,6 +769,13 @@
 <!-- ── MAIN CONTENT ── -->
 <div class="page-body" id="page-body">
   <div class="book-canvas-wrap">
+
+    <!-- Order info panel — visible after loading an order -->
+    <div class="order-info-panel" id="order-info-panel">
+      <div class="order-info-name" id="oip-name"></div>
+      <div id="oip-rows"></div>
+    </div>
+
     <div id="book-canvas">
       <div class="canvas-placeholder">
         <div class="canvas-placeholder-icon">&#128218;</div>
@@ -3078,7 +3120,7 @@
     document.getElementById('mode-order-btn').classList.toggle('active', isOrder);
     document.getElementById('local-mode-controls').style.display = isOrder ? 'none' : 'flex';
     document.getElementById('order-mode-controls').style.display = isOrder ? '' : 'none';
-    if (!isOrder) { const nc = document.getElementById('order-notes-card'); if (nc) nc.style.display = 'none'; }
+    if (!isOrder) { const p = document.getElementById('order-info-panel'); if (p) p.classList.remove('visible'); }
     const sp = document.getElementById('special-panel');
     if (sp) {
       if (isOrder) {
@@ -3121,16 +3163,7 @@
       status.className = 'order-status ok';
       const fps = (order.fpSelections || []).join(', ');
       status.textContent = `${order.customerName} · ${order.pageCount}p${fps ? ' · ' + fps : ''}`;
-      // Show album notes if present
-      const notesCard = document.getElementById('order-notes-card');
-      if (notesCard) {
-        if (order.photoNotes) {
-          notesCard.style.display = 'block';
-          document.getElementById('order-notes-text').textContent = order.photoNotes;
-        } else {
-          notesCard.style.display = 'none';
-        }
-      }
+      showOrderInfoPanel(order);
     } catch (err) {
       status.className = 'order-status err';
       status.textContent = err.message;
@@ -3138,6 +3171,37 @@
       btn.disabled = false;
     }
   });
+
+  function showOrderInfoPanel(order) {
+    const panel = document.getElementById('order-info-panel');
+    if (!panel) return;
+
+    document.getElementById('oip-name').textContent = order.customerName || '';
+
+    const rows = document.getElementById('oip-rows');
+    rows.innerHTML = '';
+
+    function addRow(label, value) {
+      if (!value) return;
+      const div = document.createElement('div');
+      div.className = 'order-info-row';
+      div.innerHTML = `<span class="order-info-label">${label}</span><span class="order-info-value">${value}</span>`;
+      rows.appendChild(div);
+    }
+
+    if (order.photoNotes) addRow('About the album', order.photoNotes);
+
+    // FP-specific texts
+    const fpTexts  = order.fpTexts  || {};
+    const fpLabels = { FP1: 'Birthday wishes', FP2: 'Funny words', FP3: 'Favourite toy', FP4: 'First steps', FP5: 'Art gallery captions' };
+    Object.entries(fpTexts).forEach(([key, val]) => {
+      const label = fpLabels[key.toUpperCase()] || key;
+      const display = Array.isArray(val) ? val.join(', ') : val;
+      addRow(label, display);
+    });
+
+    panel.classList.add('visible');
+  }
 
   async function loadOrderIntoEngine(order) {
     // 1. Reset engine state

@@ -256,6 +256,31 @@ async function handler(req, res) {
       `,
     });
 
+    // Save order-details.txt to GCS so staff can read it in the bucket browser
+    const detailLines = [
+      `Order:     ${orderNumber}`,
+      `Customer:  ${customerName}`,
+      `Email:     ${email}`,
+      `Template:  ${templateName}`,
+      `Pages:     ${pageCount}`,
+      `Photos:    ${fileList.length}`,
+      `Submitted: ${new Date().toISOString()}`,
+    ];
+    if (photoNotes)      detailLines.push(``, `About this album:`, photoNotes);
+    if (specialRequests) detailLines.push(``, `Special requests:`, specialRequests);
+    if (fpSelections && fpSelections.length) {
+      detailLines.push(``, `Add-ons: ${fpSelections.join(', ')}`);
+    }
+    if (fpTexts && Object.keys(fpTexts).length) {
+      detailLines.push(``, `Add-on notes:`);
+      Object.entries(fpTexts).forEach(([key, val]) => {
+        const display = Array.isArray(val) ? val.join(', ') : val;
+        detailLines.push(`  ${key}: ${display}`);
+      });
+    }
+    await bucket.file(`${folderName}/order-details.txt`)
+      .save(detailLines.join('\n'), { contentType: 'text/plain; charset=utf-8' });
+
     // Save order to Firestore
     const db = admin.firestore();
     await db.collection('orders').doc(orderNumber).set({
