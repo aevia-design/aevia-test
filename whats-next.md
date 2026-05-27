@@ -86,6 +86,23 @@ The work follows a phased plan stored in `.planning/` with plans numbered 06-01 
 - Root cause: previous session added an EXIF Orientation swap (tags 5-8 → flip dims). This is wrong because modern browsers (Chrome, Firefox, Safari) auto-rotate images based on EXIF — `img.naturalWidth/naturalHeight` already returns correct visual dimensions.
 - Fix: removed the swap entirely. Orientation is now determined purely from `img.naturalWidth > img.naturalHeight`, which is always the correct visual orientation regardless of EXIF tag presence.
 
+## Session 2026-05-27 (evening) — Order form UX + GCS text + engine info panel
+
+### Order form UX — NOT YET TESTED
+- "Special requests" field deleted from `pages/order.html`
+- "Tell us about this album" — new label + placeholder focused on child name/personality (no dates — those come from FP selections)
+- `content-visibility: auto; contain-intrinsic-size: 96px` on `.photo-thumb` — Chrome skips offscreen renders; fixes scroll stalling on large grids
+- Full-screen upload overlay replaces 3px inline progress bar: frosted glass backdrop, serif heading, 4px bar, photo counter, 3 humour lines cycling every 4s with fade
+
+### GCS text file + engine info panel — NOT YET TESTED
+- `functions/upload.js`: writes `order-details.txt` to `{folderName}/order-details.txt` on every new order — human-readable summary of name, email, notes, FP texts, timestamp. Staff can read it by browsing GCS without opening Firestore.
+- `pages/template-engine.html`: after loading an order, `showOrderInfoPanel()` renders a styled card above spread 0 — customer name in serif, album notes + FP texts as labelled rows. Hides when switching to Local mode.
+- Old `order-notes-card` (inline in config bar) removed; replaced by the richer below-bar panel.
+
+### Watch-outs
+- `order-details.txt` only exists for orders submitted after the 2026-05-27 evening deploy.
+- Engine info panel only shows data that `getOrder` returns — `photoNotes`, `fpTexts`, `customerName`. All three are in the Firestore doc.
+
 ## Session 2026-05-27 (continued) — Plan 12-03: Load Order into Engine
 
 ### Plan 12-03 complete
@@ -401,8 +418,8 @@ Response: { caption: 'suggested text string' }
 
 ## Next priorities
 
-1. **Plan 12-03 polish** — user has feedback from first touch. Address in next session before moving on.
-2. **Plan 12-04** — PDF export wired to GCS (now unblocked by 12-03).
+1. **⚠️ TEST last two commits** — order form UX + GCS text file + engine info panel. Not yet tested. URL: https://aevia-test.pages.dev/pages/order.html
+2. **Plan 12-04** — PDF export wired to GCS (unblocked by 12-03).
 3. **TO-DO #47** — Mobile responsiveness (home.html + order.html).
 4. **TO-DO #51** — Page-flip preview viewer (StPageFlip + individual page PNGs). ~2 days, high visual impact.
 
@@ -417,6 +434,7 @@ Response: { caption: 'suggested text string' }
 - Font pipeline: static TTF/OTF only. No woff2, no variable fonts.
 - Per-line caption styling not supported — use separate caption slots.
 - `photoManifest` only on orders submitted after 2026-05-27 deploy. Older orders → Local mode only.
+- `order-details.txt` only exists in GCS for orders submitted after the 2026-05-27 evening deploy.
 
 </current_state>
 ```
