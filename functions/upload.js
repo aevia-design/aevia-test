@@ -301,6 +301,7 @@ async function handler(req, res) {
       folderLink,
       status: 'new',
       token,
+      previewToken: null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 

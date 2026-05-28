@@ -67,7 +67,7 @@ exports.generateCaption = functions
     }
   });
 
-// ── Get order (staff tool — returns Firestore doc + signed read URLs) ────────
+// ── Get order (staff tool + customer preview — returns Firestore doc + signed read URLs) ────────
 exports.getOrder = functions
   .region('europe-west1')
   .runWith({ timeoutSeconds: 60, memory: '256MB' })
@@ -78,17 +78,36 @@ exports.getOrder = functions
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    if (req.headers['x-staff-key'] !== process.env.STAFF_KEY) {
-      return res.status(401).json({ error: 'Unauthorised' });
+    const hasStaffAuth = req.headers['x-staff-key'] === process.env.STAFF_KEY;
+    const { orderNumber, token } = req.body;
+
+    // Auth: require either staff key or customer token
+    if (!hasStaffAuth && !token) {
+      return res.status(403).json({ error: 'Unauthorised' });
     }
 
-    const { orderNumber } = req.body;
-    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
-
     try {
-      const db  = admin.firestore();
-      const doc = await db.collection('orders').doc(orderNumber).get();
-      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+      const db = admin.firestore();
+      let doc;
+
+      if (hasStaffAuth) {
+        // Staff path: fetch by orderNumber
+        if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+        doc = await db.collection('orders').doc(orderNumber).get();
+        if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+      } else {
+        // Customer path: fetch by previewToken
+        const snapshot = await db.collection('orders')
+          .where('previewToken', '==', token)
+          .limit(1)
+          .get();
+
+        if (snapshot.empty) {
+          return res.status(403).json({ error: 'Invalid or expired token' });
+        }
+
+        doc = snapshot.docs[0];
+      }
 
       const order    = doc.data();
       const manifest = order.photoManifest || { cover: null, special: {}, pool: [] };
