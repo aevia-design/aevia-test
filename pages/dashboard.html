@@ -139,6 +139,28 @@
 
     .notes-text { font-size: 12px; color: var(--muted); max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+    /* ── Preview link controls ── */
+    .preview-link-row {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px;
+    }
+    .preview-link-btn {
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 5px 10px; border: 1px solid var(--border); border-radius: 4px;
+      color: var(--text); background: var(--white); cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .preview-link-btn:hover { border-color: var(--text); }
+    .preview-link-btn.revoke:hover { background: #ffe4e6; }
+    .preview-url {
+      font-size: 11px; padding: 4px 8px; background: var(--surface); border-radius: 3px;
+      color: var(--accent); word-break: break-all; flex: 1; min-width: 200px;
+    }
+    .preview-url-copy {
+      font-size: 10px; color: var(--muted); cursor: pointer; padding: 2px 6px;
+      transition: color 0.15s;
+    }
+    .preview-url-copy:hover { color: var(--text); }
+
     /* ── Empty / Loading ── */
     .state-msg { text-align: center; padding: 80px 24px; color: var(--muted); font-family: var(--serif); font-style: italic; font-size: 17px; }
   </style>
@@ -358,6 +380,10 @@
 
       const allStatuses = ['new','designing','needs_info','review_sent','approved','paid','sent_to_print','printing','in_delivery','delivered'];
 
+      const previewUrl = o.previewToken
+        ? `https://aevia-test.pages.dev/pages/customer-preview.html?token=${esc(o.previewToken)}`
+        : null;
+
       return `<tr>
         <td>
           <div class="order-num">${esc(o.orderNumber)}</div>
@@ -372,7 +398,17 @@
         <td>${esc(String(o.pageCount ?? '—'))}</td>
         <td>${o.fileCount ?? '—'}</td>
         <td>${esc(price)}</td>
-        <td><div class="notes-text" title="${esc(notes)}">${esc(notes)}</div></td>
+        <td>
+          <div class="notes-text" title="${esc(notes)}">${esc(notes)}</div>
+          <div class="preview-link-row">
+            ${previewUrl
+              ? `<div class="preview-url">${esc(previewUrl)}</div>
+                 <span class="preview-url-copy" onclick="copyToClipboard('${esc(previewUrl).replace(/'/g, "\\'")}')">copy</span>
+                 <button class="preview-link-btn revoke" onclick="revokePreviewLink('${esc(o.orderNumber)}')">Revoke</button>`
+              : `<button class="preview-link-btn" onclick="generatePreviewLink('${esc(o.orderNumber)}')">Generate preview link</button>`
+            }
+          </div>
+        </td>
         <td class="status-cell">
           <select class="status-select" onchange="updateStatus('${esc(o.orderNumber)}', this.value)">
             ${allStatuses.map(s =>
@@ -389,6 +425,52 @@
       </tr>`;
     }).join('');
   }
+
+  // ── Generate preview link ────────────────────────────────────────────────
+  window.generatePreviewLink = async function(orderNumber) {
+    try {
+      const token = crypto.randomUUID();
+      await updateDoc(doc(db, 'orders', orderNumber), {
+        previewToken: token
+      });
+      // Update local state
+      const order = allOrders.find(o => o.orderNumber === orderNumber);
+      if (order) {
+        order.previewToken = token;
+      }
+      renderTable();
+    } catch (err) {
+      alert('Could not generate preview link: ' + err.message);
+    }
+  };
+
+  // ── Revoke preview link ───────────────────────────────────────────────────
+  window.revokePreviewLink = async function(orderNumber) {
+    try {
+      await updateDoc(doc(db, 'orders', orderNumber), {
+        previewToken: null
+      });
+      // Update local state
+      const order = allOrders.find(o => o.orderNumber === orderNumber);
+      if (order) {
+        order.previewToken = null;
+      }
+      renderTable();
+    } catch (err) {
+      alert('Could not revoke preview link: ' + err.message);
+    }
+  };
+
+  // ── Copy to clipboard helper ──────────────────────────────────────────────
+  window.copyToClipboard = async function(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      // Brief visual feedback
+      alert('Copied to clipboard!');
+    } catch (err) {
+      alert('Could not copy: ' + err.message);
+    }
+  };
 
   // ── Update status + log event ─────────────────────────────────────────────
   window.updateStatus = async function(orderNumber, newStatus) {
