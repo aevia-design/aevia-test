@@ -1,5 +1,5 @@
 # Customer Journey — Version 1
-_Last updated: 2026-05-21_
+_Last updated: 2026-05-28_
 
 This file tracks the full intended product flow. Update it as decisions are made and features are built.
 
@@ -9,115 +9,134 @@ This file tracks the full intended product flow. Update it as decisions are made
 
 ### 1. Customer opens website
 **Status:** Built  
-Pages: home, collections, product pages (multiple templates live)
+Pages: home, collections, product pages (Scribble template live at `pages/scribble.html`).
 
 ---
 
-### 2. Customer finds template, selects options
-**Status:** Built (basic)  
-Customer picks template + page count on product page.  
-Optional functional pages (e.g. birthday wishes, funny words, art gallery) selectable — photo count updates live.  
-**Not yet built:** FP selector + live photo count on bloom.html (Plan 10-01)
+### 2. Customer selects template, addons, page count
+**Status:** Built for Scribble  
+Customer picks template on the product page, selects functional page addons (birthday wishes, funny words, art gallery, etc.), selects 40 or 80 pages. Photo count updates live based on selections.
+
+**Not yet built:** Same flow for any second template (Scribble is the only digitised one).
 
 ---
 
-### 3–5. Customer uploads photos + submits order → GCS
+### 3. Customer fills order form + uploads content
 **Status:** Built  
 - Order form at `pages/order.html`
-- Firebase Cloud Function `createUploadSession` creates order number (AEV-XXX), uploads photos to GCS, saves order to Firestore, sends confirmation email to customer + internal notification to xenia@aevia.at
+- Step 1: contact details (name, email, album notes — child name, personality, etc.)
+- Step 2: per-FP upload zones and text fields (birthday wishes, funny words, etc.) + main photo pool upload
+- Quality badge shown per photo (OK / LOW RES); HEIC auto-converted to JPEG in browser
+- Full-screen frosted-glass upload overlay with progress bar + humour lines while uploading
 
 ---
 
-### 6. Template auto-population
+### 4. Order created → GCS + Firestore + emails
+**Status:** Built  
+Firebase Cloud Function `createUploadSession`:
+- Creates order number (AEV-XXX)
+- Uploads photos to GCS; writes `order-details.txt` (human-readable summary) and `photoManifest` to GCS/Firestore
+- Saves order to Firestore (customer name, email, template, page count, FP selections, FP texts, album notes)
+- Sends confirmation email to customer + internal notification to xenia@aevia.at
+- Order appears in Aevia staff dashboard (`pages/dashboard.html`)
 
-**Decision made:** Templates are built in HTML/CSS. Staff uses a browser-based tool (`pages/template-engine.html`) to assemble the book. A Node.js/Puppeteer script will later render the final PDF.
+---
 
-**How the staff tool works (built for Scribble template):**
-- Staff opens `template-engine.html`, uploads the customer's photos
-- Photos are sorted by EXIF date and auto-placed into spread slots
+### 5. Staff opens template engine, loads order
+**Status:** Built  
+Staff opens `pages/template-engine.html` (local only — not on Cloudflare), enters order number, clicks Load.
+
+- `getOrder` Cloud Function fetches Firestore doc + generates 1h signed GCS read URLs
+- Photos download automatically (pool + cover + FP specials), sorted by EXIF date
+- FP checkboxes pre-ticked, page count set, FP text panels pre-filled (birthday wishes, funny words, etc.)
+- Order info panel shows customer name + album notes + FP texts above the spread view
+
+**HEIC:** Converted in browser (sequential — parallel corrupts shared WASM state). Covers both uploaded HEIC and any new local files added by staff.
+
+---
+
+### 6. Staff reviews layout, adjusts, adds captions
+**Status:** Built  
+- Photos auto-placed into spread slots (EXIF date order)
 - Staff drags photos between slots, reorders spreads, swaps spread types
-- Special functional pages (FP1–FP5) have dedicated upload zones
-- Captions are edited inline; AI suggestion button available per slot
-
-**Template data architecture:**
-- Each template has its own `<name>-data.js` (e.g. `scribble-data.js`) defining spread types, slot coordinates, SVG overlays, background colors, caption positions, and special flags. Pipeline code reads from this file; new templates add a new data file without changing the pipeline.
-- Source of truth is a CSV (`Scribble_sizing_full.csv`); regenerate with `node csv-to-template.js`
-- Template engine reads generic flags from the data file — it is template-agnostic
-
-**EXIF sorting:** Browser reads `DateTimeOriginal` from JPEG EXIF via a JS library. HEIC files are converted first via libheif WASM (sequentially — parallel conversion corrupts images due to shared WASM state).
-
-**Status:** Built and working for Scribble template. Remaining work on the tool: resolution warnings, RAW file blocking (Plan 09-01). Other templates not yet digitised.
+- Caption overlays editable inline; AI caption button generates suggestion per slot
+  - AI uses tone-of-voice rules from `functions/caption/caption-voice.md`
+  - Receives last 8 captions as context to avoid repetition
+  - Customer's FP texts (birthday wishes, funny words) are already pre-filled — staff does not re-enter
+- Resolution warnings: not yet built (Plan 09-01)
 
 ---
 
-### 7. Captions
+### 7. PDF generation
+**Status:** Built  
+`scripts/export-pdf.js` (Node.js, run locally by staff):
+- Two modes: `--mode preview` (lower resolution) and `--mode print` (full resolution, ~18 DPI equivalent at 6× scale)
+- Exports cover PDF (445×236mm with 18mm bleed) + per-page PDFs
+- SVG artwork rendered with bleed-expanded viewBox so decorative elements reach the bleed edge
+- EB Garamond captions with per-character rendering (ligature workaround for pdf-lib)
+- Blank QR page appended (required by print house)
+- Staff exports `book-state.json` from engine, passes it to the script
 
-**Status:** Built (in template engine)
-
-Flow:
-1. Staff checks if customer left photo-specific comments in the order — if so, these seed the captions
-2. For each captionable slot, staff can click an AI button to generate a caption suggestion
-3. AI uses tone-of-voice rules from `functions/caption/caption-voice.md` and receives the last 8 captions as context to avoid repetition
-4. Staff edits or regenerates; captions saved in `window.bookCaptions` in the browser session
-5. Captions persist into the PDF when Puppeteer rendering is built (Phase 2)
-
-**Caption voice rules (key):** No "A/An" opener, no trailing period, no trailing comma. Warm, personal, child-focused for Scribble template.
-
----
-
-### 8. PDF generation
-**Status:** Not yet started
-
-Two PDFs per order:
-- **Preview PDF** — lower resolution, watermarked, for customer approval
-- **Print PDF** — full resolution (300 DPI equivalent), no watermark, for print house
-
-**Tool:** Puppeteer (Node.js) — renders the filled HTML template to PDF.
-
-**Critical:** Must use `deviceScaleFactor: 6+` and `@page` dimensions in mm (206mm × 206mm). Do NOT use `window.print()` — browser PDF renderer ignores deviceScaleFactor and produces too-low DPI output.
+**Not yet built:** Auto-save PDF to GCS; download link returned to staff.
 
 ---
 
-### 9. Sending preview to customer
-**Status:** Not yet started
-
-**Plan:** Customer gets a link to a hosted preview on a dedicated page on the Aevia site (preferred over email attachment). GCS signed URL delivers the PDF; page is branded and shows order details.
+### 8. Staff sends preview to customer
+**Status:** Not yet built  
+**Plan:** Staff uploads preview PDF to GCS, generates a signed URL, sends it to customer via a branded preview page on the Aevia site (preferred over raw PDF link in email).
 
 ---
 
-### 10. Customer response
-**Status:** Not yet started
+### 9. Customer reviews the book
+**Status:** Not yet built  
+Two planned options (both on the roadmap, neither started):
+
+**9a. Page-flip viewer (TO-DO #51)**  
+StPageFlip JS library, individual page PNGs exported from the script, embedded in a branded preview page. Customer gets a realistic book-flipping experience. Estimated ~2 days work, high visual impact.
+
+**9b. Limited customer engine (TO-DO #52 — decision deferred)**  
+Same codebase as staff engine, accessed via `?mode=customer&token=ORDER_TOKEN`. Features disabled: spread reorder/swap, AI caption button, export. Features kept: thumbnail drag-and-drop, manual caption edit, FP text panel. "Submit changes" saves updated captions + assignments + FP texts to Firestore. Eliminates email back-and-forth for minor adjustments. Decision deferred — assess after 9a is shipped.
+
+---
+
+### 10. Customer approves + payment
+**Status:** Not yet built  
+**Current plan (MVP):** Post-payment approval — customer approves the design first, staff then requests payment manually (Stripe Payment Link). Later: move to pre-payment Checkout Session.
 
 Three cases:
 
-**a. Customer approves and pays**
-- Stripe Checkout Session link in the preview email
-- On payment: Stripe webhook → Cloud Function updates order status to `paid` → Aevia notified
+**a. Customer approves**  
+Staff marks order `approved` in dashboard. Payment link sent manually (Stripe) or triggered automatically.
 
-**b. Customer requests changes (one revision)**
-- Customer submits feedback via the preview page
-- Staff adjusts in `template-engine.html` and re-exports
+**b. Customer requests changes (one revision)**  
+Customer submits feedback via preview page → staff adjusts in template engine and re-exports.
 
-**c. No response**
-- Firebase Scheduled Function sends reminder email after X days
+**c. No response**  
+Firebase Scheduled Function sends reminder email after X days. Not yet built.
 
----
-
-### 11–12. Order sent to print house
-**Status:** Not started. Needs print house decision.
-
-If print house has API (Prodigi, Gelato, or local Vienna partner):
-- On `paid` status: Cloud Function calls print API with order specs + print PDF URL
-- Print house pulls the PDF, queues printing
+On payment received: Stripe webhook → Cloud Function updates order status to `paid` → Aevia notified.
 
 ---
 
-### 13–16. Printing, shipping, tracking, delivery
-**Status:** Not started
+### 11. PDF exported, saved to GCS, staff QA
+**Status:** Not yet built  
+After payment, staff runs `export-pdf.js --mode print`, PDF saved to GCS. GCS signed URL returned to staff for final QA check. Staff reviews PDF, clicks "Approved for print" in dashboard (or equivalent).
 
-- Print house handles shipping, generates tracking numbers
-- Webhook from print provider fires when shipped → Cloud Function → customer email with tracking link
-- Aevia dashboard auto-updates to `in_delivery` → `delivered`
+---
+
+### 12. Order sent to print house
+**Status:** Not started. Needs print house decision.  
+On staff approval: Cloud Function calls print house API with order specs + print PDF GCS URL. Print house pulls the PDF, queues printing.
+
+**Open decision:** Local Vienna partner vs. API-capable (Prodigi, Gelato)?
+
+---
+
+### 13–15. Printing, shipping, tracking, delivery
+**Status:** Not started  
+- Print house handles shipping, generates tracking number
+- Webhook fires when shipped → Cloud Function → customer email with tracking link
+- Dashboard auto-updates: `sent_to_print` → `printing` → `in_delivery` → `delivered`
 
 ---
 
@@ -142,13 +161,14 @@ delivered     → confirmed delivered
 
 | Tool | Purpose | Status |
 |------|---------|--------|
-| Firebase Cloud Functions (Node.js) | Order creation, emails, caption AI | Live |
-| Firestore | Order storage | Live |
-| GCS | Photo storage, PDF delivery | Live |
+| Firebase Cloud Functions (Node.js) | Order creation, emails, caption AI, getOrder | Live |
+| Firestore | Order storage + photoManifest | Live |
+| GCS | Photo storage, order-details.txt, PDF delivery | Live |
 | Claude API (vision) | Caption suggestions | Live (via generateCaption function) |
-| `libheif` WASM | HEIC → JPEG conversion in browser | Live (in template engine) |
+| `libheif` WASM | HEIC → JPEG conversion in browser | Live (template engine + order form) |
 | Replicate API + Kevin Lucbert LoRA | Interior motif generation | Live (motif-engine/) |
-| `puppeteer` | HTML → PDF generation | Not yet built |
+| `pdf-lib` + `sharp` | PDF generation (export-pdf.js) | Built, runs locally |
+| StPageFlip | Page-flip preview viewer | Planned (TO-DO #51) |
 | `stripe` | Payment processing | Not yet built |
 | Firebase Scheduled Functions | Reminder emails | Not yet built |
 | Print house API (TBD) | Send order to print | Not yet built |
@@ -158,6 +178,6 @@ delivered     → confirmed delivered
 ## Open decisions
 
 1. **Print house** — local Vienna partner vs. API-capable (Prodigi, Gelato)?
-2. **Preview delivery** — dedicated preview page vs. GCS signed URL in email?
-3. **Customer revision flow** — web form vs. email?
-4. **Stripe** — Payment Links (manual) or Checkout Sessions (automated)?
+2. **Preview delivery** — branded preview page with StPageFlip (TO-DO #51) vs. also adding limited customer engine (TO-DO #52, deferred)?
+3. **Payment timing** — post-approval manual link now; pre-payment Checkout Session later?
+4. **PDF-to-GCS** — auto-save on export or manual staff upload?

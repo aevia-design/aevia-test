@@ -32,7 +32,11 @@ aevia-test/
 ├── motif-engine/           — AI motif generation tool (Kevin Lucbert style, Replicate API)
 ├── scripts/                — one-off utility scripts
 ├── sessions/               — Claude session decision logs (YYYY-MM-DD.md)
+├── docs/decisions/         — Architecture Decision Records (ADRs)
 ├── csv-to-template.js      — regenerates scribble-data.js from CSV
+├── PRD.md                  — product requirements (MoSCoW, acceptance criteria)
+├── ARCHITECTURE.md         — system architecture, codemap, invariants, data flow
+├── STATUS.md               — current build state and immediate next steps
 ├── firebase.json           — Firebase project config
 ├── .firebaserc             — Firebase project ID: aevia-uploads
 └── cors.json               — GCS bucket CORS config

@@ -418,14 +418,21 @@ Response: { caption: 'suggested text string' }
 
 ## Next priorities
 
-1. **⚠️ TEST last two commits** — order form UX + GCS text file + engine info panel. Not yet tested. URL: https://aevia-test.pages.dev/pages/order.html
-2. **Plan 12-04** — PDF export wired to GCS (unblocked by 12-03).
-3. **TO-DO #47** — Mobile responsiveness (home.html + order.html).
-4. **TO-DO #51** — Page-flip preview viewer (StPageFlip + individual page PNGs). ~2 days, high visual impact.
+1. **⚠️ TEST 2026-05-27 commits** — order form UX + GCS text file + engine info panel. Not yet tested. URL: https://aevia-test.pages.dev/pages/order.html
+2. **Cloudflare Access setup** (ADR-0001) — ~20 min in Cloudflare Zero Trust dashboard. Unblocks Xenia's remote access to staff engine. No code changes required.
+3. **Plan 12-04** — PDF export wired to GCS (unblocked by 12-03).
+4. **Customer preview build** — `pages/customer-preview.html` + `getOrder` customer token path (UUID in Firestore, ADR-0002). Unblocked now.
+5. **TO-DO #51** — Page-flip preview viewer (StPageFlip + individual page PNGs). ~2 days, high visual impact.
 
 **Deferred (do NOT start yet):**
-- **TO-DO #52** — Customer-facing engine. Decision deferred.
+- **TO-DO #52** — Customer engine UX skin. Scope TBD — may need distinct visual design, not just feature flags.
 - **TO-DO #48** — Bleed SVGs re-export. Wait for Kseniia.
+
+## Shaping artefacts (created 2026-05-28)
+- `PRD.md` — full product requirements, MoSCoW-prioritised
+- `ARCHITECTURE.md` — system architecture, codemap, invariants, data flow
+- `docs/decisions/0001` — staff engine auth: Cloudflare Access ✅
+- `docs/decisions/0002` — customer preview token: UUID in Firestore ✅
 
 ## Known issues / watch-outs
 - HEIC conversion silent failure: if Cloud Function fails all 3 retries, no error shown to user.
