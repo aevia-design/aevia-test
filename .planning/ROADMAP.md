@@ -1,4 +1,9 @@
-# Aevia — Template Engine Roadmap
+# Aevia — Template Engine Roadmap (ARCHIVED)
+
+> **Superseded.** This file covered template engine development through Phase 13.
+> All phases here are complete. Active roadmap is at `/ROADMAP.md`.
+
+
 
 ---
 
@@ -91,10 +96,10 @@ Plans 13-01 → 13-03 → 13-04 must run in order. 13-02 (hygiene) runs last._
 
 | Plan | Description | Status |
 |------|-------------|--------|
-| 13-01 | CSV parser rewrite + scribble-data.js format update (bleed coords on slots, explicit caption box dims) | ⬜ todo — **start here** |
-| 13-03 | template-engine.html: SVG bleed offset + coordinate-based caption rendering | ⬜ todo (after 13-01) |
-| 13-04 | export-pdf.js: SVG at origin + xBleed slot coords + coordinate-based caption rendering | ⬜ todo (after 13-01) |
-| 13-02 | Engine + PDF code hygiene pass — drift guards, schema version, dead code removal | ⬜ todo (run after 13-03 + 13-04) |
+| 13-01 | CSV parser rewrite + scribble-data.js format update (bleed coords on slots, explicit caption box dims) | ✅ done |
+| 13-03 | template-engine.html: SVG bleed offset + coordinate-based caption rendering | ✅ done |
+| 13-04 | export-pdf.js: SVG at origin + xBleed slot coords + coordinate-based caption rendering | ✅ done |
+| 13-02 | Engine + PDF code hygiene pass — drift guards, schema version, dead code removal | ✅ done |
 
 _Phase 14 (caption CSV) merged into Phase 13 — Evgeny already added caption box columns to the CSV._
 

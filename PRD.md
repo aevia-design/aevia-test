@@ -85,6 +85,9 @@ The MVP is successful when, across 20–30 test orders:
 - As a customer, I want to make small adjustments to the preview (reorder photos via thumbnail, edit captions manually) before approving, so that I can correct anything without going back and forth with Aevia.
   - Acceptance: Customer can drag photos between slots via thumbnail strip and edit caption text directly. Spread reorder, AI caption button, and export are disabled. Changes are saved to Firestore when customer clicks "Submit changes."
 
+- *(Could Have)* As a customer, I want to replace a specific photo slot with a new upload (a better shot I didn't include originally), so that I don't have to contact staff for a single photo swap.
+  - Acceptance: Customer can click a slot and choose "Upload new photo" as an alternative to picking from existing uploads. New photo is written to GCS and the manifest updated. Strictly 1-for-1 per slot — no adding net-new photos to the pool. Not required for MVP.
+
 - As a customer, I want to see a clear message if I open the preview on a mobile device, so that I understand I need to use a desktop to interact with my book.
   - Acceptance: On mobile/tablet screen widths, the interactive interface is replaced with a friendly message directing the customer to open the link on a laptop or desktop. No broken or partial UI is shown.
 

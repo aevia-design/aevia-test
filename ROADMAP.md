@@ -46,6 +46,20 @@ _Goal: Staff can send a customer a link; customer can view, make minor edits, an
 
 **Description:** Extend `getOrder` Cloud Function to accept `?token=` query param (UUID) as an alternative to `X-Staff-Key` header. Validate token against `previewToken` field in the order's Firestore doc. Return same payload as staff path. Add `previewToken` field to Firestore order schema on `createUploadSession`.
 
+**Acceptance criteria:**
+- `getOrder` called with a valid `?token=` param returns HTTP 200 with the full order payload (signedUrls, fpTexts, pageCount, etc.) — same shape as the staff path
+- `getOrder` called with an invalid, expired, or absent token returns HTTP 403 `{ error: '...' }` — never 401, never 500
+- `createUploadSession` writes a Firestore order doc that includes `previewToken: null` (field present, value null) so chunk-002 can write to it without schema surprise
+- The response payload on the customer path does not include `previewToken` or any staff-only credential field
+
+**Pattern references:**
+- No existing customer token pattern — this chunk establishes it. The staff auth block at `functions/index.js:81–83` (X-Staff-Key check) is the pattern being extended — customer path branches from that same point
+- Firestore order doc creation lives in `functions/upload.js` — add `previewToken: null` to the doc written there
+
+**Contextual notes:**
+- See ARCHITECTURE.md > Firebase backend > `getOrder` for the function's current responsibilities
+- Constrained by ADR-0002: token lookup uses a Firestore query (`where previewToken == token`), not HMAC — do not use crypto verification
+
 ---
 
 ### chunk-002: Dashboard — generate preview link
@@ -58,6 +72,21 @@ _Goal: Staff can send a customer a link; customer can view, make minor edits, an
 **Files:** `pages/dashboard.html`, `functions/index.js`
 
 **Description:** Add a "Generate preview link" action to the dashboard per order. Clicking it: generates a UUID, writes it to Firestore as `previewToken`, constructs the preview URL (`/pages/customer-preview.html?token=UUID`), and copies it to clipboard or shows it for staff to send. Also adds a "Revoke link" action that clears `previewToken`.
+
+**Acceptance criteria:**
+- Clicking "Generate preview link" writes a `crypto.randomUUID()` to Firestore as `previewToken` and displays the full URL (`/pages/customer-preview.html?token=<UUID>`) for staff to copy — or copies it to clipboard automatically
+- Clicking "Revoke link" clears `previewToken` in Firestore; the link shown in the dashboard disappears
+- If an order already has a `previewToken`, generating a new one overwrites the old value (implicitly revoking the previous link) — no duplicate tokens possible
+- The constructed URL uses exactly `?token=` as the query param name (must match chunk-001's `getOrder` implementation)
+
+**Pattern references:**
+- Follow the existing order action button pattern in `pages/dashboard.html` (load order, status update buttons already present)
+- Firestore write: follow the direct Firestore SDK write pattern already used in the dashboard (staff is Cloudflare Access authenticated — no additional Cloud Function needed for the write)
+
+**Contextual notes:**
+- See ARCHITECTURE.md > Data Flow > Step 4 (Customer Preview) — this action initiates that flow
+- Constrained by ADR-0002: token generated client-side via `crypto.randomUUID()`; written directly to Firestore
+- Integrates with chunk-001 — the `?token=` param name in the constructed URL must match exactly what `getOrder` reads on the customer path
 
 ---
 
@@ -72,6 +101,25 @@ _Goal: Staff can send a customer a link; customer can view, make minor edits, an
 
 **Description:** New page implementing the customer-facing limited version of the engine. Loads order via `?token=` (calls `getOrder` customer path). Shows all spreads read-only. Enables: thumbnail drag-drop between slots, inline caption text editing, FP text panel editing. Disables: spread reorder/type-swap, AI caption button, export, Local mode. Shows mobile gate message (friendly desktop redirect) on narrow viewports. Saves edits to Firestore on "Submit changes."
 
+**Acceptance criteria:**
+- Opening `customer-preview.html?token=VALID` renders all spreads with photos and captions — visually identical to the staff engine for the same order
+- On viewport width < 900px the engine is entirely replaced by the mobile gate message (order reference visible, no partial UI, no JavaScript errors)
+- Photo drag-drop between slots works; "Submit changes" persists updated slot assignments to Firestore
+- Inline caption editing works for all spread captions and FP text panels; edited values are included in the "Submit changes" payload
+- None of the following are present in the DOM or reachable: Export PDF button, AI caption button, spread reorder/type-swap controls, template/size selectors, Local/Order mode toggle
+- Approve button is present in the nav bar but shows a "coming soon" or disabled state (wired up by chunk-004)
+
+**Pattern references:**
+- Start from `pages/template-engine.html` as the base — strip staff-only controls per `.interface-design/system.md > What's removed vs staff engine`
+- Order load via token: follow the `getOrder` call pattern in `pages/template-engine.html` (Order mode fetch), substituting `?token=` for `X-Staff-Key`
+- Apply all design tokens and layout patterns from `.interface-design/system.md`
+
+**Contextual notes:**
+- See ARCHITECTURE.md > Key Patterns > Three-mode engine (customer preview column)
+- See `.interface-design/system.md` for full UX spec: Edit/Preview toggle, nav structure, photo swap interaction, mobile gate copy, states table
+- Integrates with chunk-001 — confirm `?token=` param name matches `getOrder` customer path before writing the fetch call
+- Integrates with chunk-004 — Approve button must be present in the nav from the start; chunk-004 wires its action
+
 ---
 
 ### chunk-004: Approve flow
@@ -84,6 +132,21 @@ _Goal: Staff can send a customer a link; customer can view, make minor edits, an
 **Files:** `pages/customer-preview.html`, `functions/index.js`
 
 **Description:** "Approve" button on customer-preview.html calls a new `approveOrder` Cloud Function. Function updates Firestore status → `approved`, sends notification email to staff, and returns a Stripe Payment Link URL. Customer preview page immediately shows the payment link — no manual staff step required between approval and payment.
+
+**Acceptance criteria:**
+- Clicking "Approve" shows a confirmation step with the warning copy from `.interface-design/system.md > Approve flow` before any write occurs; customer can cancel at this point
+- On confirmation, Firestore `status` field is updated to `'approved'` and a notification email is sent to Aevia staff
+- The customer preview page immediately displays the Stripe Payment Link URL — no page reload required, no staff action needed
+- If `approveOrder` fails, the customer sees a clear inline error message and the Approve button is re-enabled for retry — no silent failure, no stuck state
+
+**Pattern references:**
+- `approveOrder` Cloud Function: follow the handler structure at `functions/index.js:71–132` (getOrder) — CORS headers, method guard, try/catch, consistent error response shape `{ error: '...' }`
+- Staff notification email: follow the nodemailer pattern in `functions/upload.js` (staff notification already sent on order creation)
+
+**Contextual notes:**
+- See ARCHITECTURE.md > Data Flow > Steps 4–5 (Customer Preview → Payment)
+- Stripe Payment Link: at MVP this is a static pre-configured URL (not dynamically created per order). Build `approveOrder` to return the URL from a config value or Firestore field — do not block on Stripe account creation. The URL can be a placeholder until chunk-005 is complete.
+- Integrates with chunk-003 — the Approve button placeholder in the nav is wired here
 
 ---
 

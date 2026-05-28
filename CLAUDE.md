@@ -24,7 +24,8 @@ Read these in order before doing anything:
 - Architecture + codemap: `ARCHITECTURE.md`
 - Implementation roadmap: `ROADMAP.md`
 - Build status + next steps: `STATUS.md`
-- Design principles: `context/design-principles.md`
+- Design principles: `context/design-principles.md` (website + staff engine)
+- Customer engine design spec: `.interface-design/system.md`
 - Style guide: `context/style-guide.md`
 - Customer journey: `context/customer-journey-v1.md`
 - Session logs: `sessions/`
