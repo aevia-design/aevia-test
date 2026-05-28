@@ -3358,6 +3358,13 @@
       }
     });
 
+    // 8. Pre-fill cover captions from customer order form input
+    if (order.coverCaptions && Object.keys(order.coverCaptions).length) {
+      if (!window.bookCaptions['cover']) window.bookCaptions['cover'] = {};
+      Object.assign(window.bookCaptions['cover'], order.coverCaptions);
+      rerenderCover(); // rebuilds cover row + input panel with saved values
+    }
+
     updatePhotoHint();
     dbLog('Order loaded.', 'info');
   }

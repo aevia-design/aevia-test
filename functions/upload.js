@@ -79,7 +79,7 @@ async function handler(req, res) {
   try {
     const {
       customerName, email, templateName, pageCount, files,
-      specialRequests, photoNotes, price, fpTexts, fpSelections, photoCount,
+      specialRequests, photoNotes, price, fpTexts, fpSelections, photoCount, coverCaptions,
     } = req.body;
 
     const missing = ['customerName', 'email', 'templateName', 'pageCount']
@@ -302,6 +302,7 @@ async function handler(req, res) {
       status: 'new',
       token,
       previewToken: null,
+      coverCaptions: coverCaptions || null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 

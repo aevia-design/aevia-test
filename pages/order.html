@@ -255,6 +255,30 @@
           <textarea id="album-notes" rows="4" placeholder="Your child's name, their personality, a favourite toy or game — anything you'd love us to weave through the design."></textarea>
         </div>
 
+        <div class="field">
+          <label>Cover text <span style="color:#c5bdb5;font-style:italic;letter-spacing:0;text-transform:none;font-size:10px;">optional — appears on your book cover</span></label>
+          <div class="field-row" style="margin-bottom:10px;">
+            <div class="field" style="margin:0;">
+              <label for="cover-front-year" style="font-size:11px;color:var(--muted);">Front — year</label>
+              <input type="text" id="cover-front-year" placeholder="2026" maxlength="20" />
+            </div>
+            <div class="field" style="margin:0;">
+              <label for="cover-front-name" style="font-size:11px;color:var(--muted);">Front — album name</label>
+              <input type="text" id="cover-front-name" placeholder="Our sweet Ann" maxlength="60" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field" style="margin:0;">
+              <label for="cover-spine-name" style="font-size:11px;color:var(--muted);">Spine — name (one word)</label>
+              <input type="text" id="cover-spine-name" placeholder="Ann" maxlength="20" />
+            </div>
+            <div class="field" style="margin:0;">
+              <label for="cover-spine-year" style="font-size:11px;color:var(--muted);">Spine — year (one word)</label>
+              <input type="text" id="cover-spine-year" placeholder="2026" maxlength="10" />
+            </div>
+          </div>
+        </div>
+
         <div class="error-msg" id="err-step1"></div>
 
         <button class="btn-primary" onclick="goToStep2()">Continue to photos &rarr;</button>
@@ -1220,6 +1244,16 @@ async function submitOrder() {
   const email        = document.getElementById('inp-email').value.trim();
   const albumNotes   = document.getElementById('album-notes').value.trim();
 
+  // Cover captions — only include keys the customer actually filled in
+  const coverCaptionsRaw = {
+    year:      document.getElementById('cover-front-year').value.trim(),
+    name:      document.getElementById('cover-front-name').value.trim(),
+    spineName: document.getElementById('cover-spine-name').value.trim(),
+    spineYear: document.getElementById('cover-spine-year').value.trim(),
+  };
+  const coverCaptions = Object.fromEntries(Object.entries(coverCaptionsRaw).filter(([, v]) => v));
+  const hasCoverCaptions = Object.keys(coverCaptions).length > 0;
+
   // Collect FP texts and assemble specialRequests string
   const activeAddons = ORDER.addons.filter(a => !cancelledAddons.has(a.slug));
   const fpTexts = {};
@@ -1323,6 +1357,7 @@ async function submitOrder() {
         photoNotes:      albumNotes,
         specialRequests: fullSpecialReq,
         fpTexts:         Object.keys(fpTexts).length ? fpTexts : null,
+        coverCaptions:   hasCoverCaptions ? coverCaptions : null,
         fpSelections:    activeAddons.map(a => a.slug.toUpperCase()),
         photoCount:      mainFiles.length,
       }),

@@ -137,6 +137,7 @@ exports.getOrder = functions
         fpSelections:    order.fpSelections || [],
         fpTexts:         order.fpTexts || {},
         photoNotes:      order.photoNotes || null,
+        coverCaptions:   order.coverCaptions || null,
         signedUrls,
         storedNames: {
           cover:   manifest.cover   || null,
