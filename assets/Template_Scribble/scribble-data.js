@@ -323,7 +323,7 @@ window.SCRIBBLE_DATA = {
 
     FP2: {
       orderFormPhoto: null,
-      orderFormMeta: {"funnyWords":true,"minWords":3,"maxWords":10},
+      orderFormMeta: {"funnyWords":true,"minWords":3,"maxWords":5},
       type: 'functional', id: 'FP2', label: 'Funny words', textLeft: true,
       pages: {
         left: {

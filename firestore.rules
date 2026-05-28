@@ -7,8 +7,8 @@ service cloud.firestore {
       allow read: if true;
       // Customer order page: allow approve (status → approved) only when token matches
       allow update: if (
-        // Dashboard: may update status + statusHistory only
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'statusHistory'])
+        // Dashboard: may update status, statusHistory, or previewToken
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'statusHistory', 'previewToken'])
       ) || (
         // Customer approval: token must match, and only status + statusHistory change
         request.resource.data.token == resource.data.token &&

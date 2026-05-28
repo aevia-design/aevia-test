@@ -1,52 +1,52 @@
 # Session Status
-_Last updated: 2026-05-28 (session 5)_
+_Last updated: 2026-05-28 (session 6)_
 
 ## Status
-chunks 001–003 built, committed, and deployed. Awaiting live test results before continuing to chunk-004.
+Session 6 fixes applied (not yet committed). Live testing of order form and customer preview flow still pending — order form changes need a new test order to verify. Firestore rules fix deployed; preview link generation should now work.
 
-### Completed this session (2026-05-28 session 5)
-
-- **chunk-001** — `getOrder` customer token path. Staff path unchanged; customer path queries Firestore by `previewToken`. `createUploadSession` writes `previewToken: null` on all new orders. 10 new Jest tests (44 total). Also: upload parallelised to 5 concurrent in `order.html` (~5× faster for large batches).
-
-- **chunk-002** — Dashboard "Generate preview link" button. Writes `crypto.randomUUID()` to Firestore as `previewToken`, displays full `customer-preview.html?token=<UUID>` URL with copy link. Revoke clears to null.
-
-- **chunk-003** — `customer-preview.html` (new page, 1528 lines). Token-authenticated order load, Edit/Preview toggle, drag-drop photo swap, inline caption editing, FP text panels. Staff controls stripped. Mobile gate < 900px. Approve button present, disabled. `saveOrderState` Cloud Function added to `functions/index.js`.
+### Completed this session (2026-05-28 session 6)
 
 - **Order form UX fixes** (`pages/order.html`):
-  - Status bar shows "Add X more" / "Remove X photos" when count mismatches target
-  - Upload overlay: "don't close this tab" warning
-  - Time remaining estimate during upload (bytes/sec based)
-  - `showSuccess` now hides both step1 and step2 — success screen no longer buried
+  - Kids placeholder: "Leo's first year" → "Ann's first year"
+  - Cover text fields moved from Step 1 → Step 2 (below cover photo dropzone)
+  - "Add X more photos" message now only shown after loading queue is idle
+  - Upload overlay enlarged: heading 38px, subtitle 17px, bar 6px, count 14px
 
-- **Cover text fields** (end-to-end):
-  - `order.html`: 4 optional fields (front year, front album name, spine name, spine year)
-  - `functions/upload.js`: saves `coverCaptions` to Firestore
-  - `functions/index.js`: `getOrder` returns `coverCaptions`
-  - `template-engine.html`: on order load, populates cover canvas + input panel from `order.coverCaptions`
-  - `template-engine.html`: cover text input panel below canvas (staff can edit freely)
+- **Funny words limit** (`assets/Template_Scribble/scribble-data.js`): maxWords 10 → 5 for FP2
 
-- **AI captions** — user fixed the `.env` file (missing newline between OPENAI_API_KEY and STAFF_KEY corrupted both values). Redeployed.
+- **Staff engine order info panel** (`pages/template-engine.html`):
+  - Redesigned as "Customer's order data" section with grid layout
+  - Cover captions (year, name, spine name, spine year) now shown in panel
+  - Cover text input panel below cover canvas removed (edit via canvas overlay instead)
+  - "↗ Open dashboard to generate preview link" button added, with token status note
 
-- **Deployed** — all changes pushed and live on Cloudflare Pages + Firebase Functions.
+- **GCS photo loading parallelized** (`pages/template-engine.html`):
+  - Pool photos: all URLs fetched via `Promise.all`, then processed sequentially
+  - Special/cover photos: same parallel-fetch pattern
+  - Progress counter: "Downloading X / N" → "Processing X / N"
 
-### Still untested (needs live verification next session)
-- chunk-001: token → `getOrder` → real order payload from Firestore/GCS
-- chunk-002: generate/revoke link on live dashboard
-- chunk-003: customer-preview.html full flow (load, drag-drop, submit changes, mobile gate)
+- **Firestore rules** (`firestore.rules`): `previewToken` added to dashboard write allowlist. **Deployed.**
+
+- **TO-DOS.md**: Item #44 — prune dashboard status bar (High priority)
+
+### Still untested (needs live verification)
+- chunks 001–003 full flow (token → load → drag-drop → submit)
 - Cover captions: order form → Firestore → engine pre-fill
-- Upload speed improvement (parallel uploads)
+- Order form changes from sessions 5 & 6 (need a new test order)
 - AI captions fix (new API key)
-- Order form success screen (showSuccess fix)
+- Upload speed improvement (parallel uploads in order.html)
+- GCS parallel loading (needs live order test)
 
 ## Immediate next steps
-1. **Test live** — place a test order with cover captions, generate preview link, open customer preview, verify full flow
-2. **Log bugs** — collect issues from live testing before starting chunk-004
-3. **chunk-004** — Approve flow. Customer clicks Approve → `approveOrder` Cloud Function → status `approved` → staff email + Stripe Payment Link URL returned.
-4. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
+1. **Commit session 6 changes** — all 5 modified files
+2. **Place a test order** — verify full flow: cover captions, photo count messaging, upload overlay, cover text in Step 2
+3. **Test staff engine** — load test order, verify order data panel, GCS load speed, preview link generation
+4. **chunk-004** — Approve flow: `approveOrder` Cloud Function → status `approved` → staff email + Stripe Payment Link URL returned
+5. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
+6. **TO-DO #44** — Prune dashboard status bar
 
 ## Deferred
-- **Playwright browser tests** — deferred until after chunk-003 is stable in production
-- **chunk-004** — Approve flow. After live testing of chunk-003.
+- **Playwright browser tests** — deferred until chunk-003 is stable in production
 - **chunk-005** — Stripe payment. Blocked: Stripe account not yet set up.
 - **chunks 010–017** — Template digitisation. Wait for CSV + SVG files from Kseniia.
 
@@ -58,9 +58,13 @@ chunks 001–003 built, committed, and deployed. Awaiting live test results befo
 ## Open watch-outs
 - `order-details.txt` in GCS only on orders submitted after 2026-05-27 deploy.
 - `photoManifest` only on orders after Plan 12-03 deploy. Pre-existing orders → Local mode only.
-- `coverCaptions` only on orders submitted after today's deploy — older orders will show empty cover fields.
+- `coverCaptions` only on orders submitted after 2026-05-28 deploy — older orders show empty cover fields.
 - `customer-preview.html` is a 1528-line agent-generated page — expect integration bugs on first live test.
 - `saveOrderState` writes to `customerBookAssignments`, `customerCaptions`, `customerCaptionStyles` fields — staff engine reads its own fields, not these. Customer edits visible in Firestore but not auto-applied in staff engine yet.
+- Cover text fields now in Step 2 DOM only — if Step 2 is ever skipped programmatically, cover caption fields would be unreachable at submit time.
+- Cover text canvas overlays are now the only editing UI for cover captions in the staff engine (input panel removed). Staff clicks overlay text on canvas to edit; styling toolbar appears on focus.
+- Firestore `hasOnly([...])` allowlist currently: `status`, `statusHistory`, `previewToken`. Any new field written from dashboard browser client must be added here and rules redeployed.
+- Processing pool photos remains sequential (`processOneFile`) — HEIC WASM has shared state. Do not parallelise.
 - Cover `sections.back/spine/front.xMm` are content-relative; cover photo slot and captions `xMm/yMm` are absolute (bleed included). Don't unify without auditing all five call sites.
 - EB Garamond uses per-character `drawText` (LIGATURE_FONTS). New ligature-heavy fonts need same treatment.
 - Font pipeline: static TTF/OTF only. No woff2, no variable fonts.

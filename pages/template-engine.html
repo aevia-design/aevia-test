@@ -164,40 +164,55 @@
     /* Order info panel (below config bar, scrolls with content) */
     .order-info-panel {
       display: none;
-      background: #f7f4ef;
+      background: #faf8f5;
       border: 1px solid #e5dfd6;
-      border-radius: 6px;
-      padding: 16px 20px;
+      border-radius: 8px;
+      padding: 20px 24px;
       margin-bottom: 28px;
-      font-size: 12px;
-      line-height: 1.6;
       color: var(--text);
     }
     .order-info-panel.visible { display: block; }
+    .order-info-panel-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5dfd6;
+    }
+    .order-info-section-label {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
     .order-info-name {
       font-family: var(--serif);
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 400;
       letter-spacing: -0.01em;
-      margin-bottom: 10px;
+    }
+    .order-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px 24px;
     }
     .order-info-row {
       display: flex;
-      gap: 8px;
-      margin-bottom: 5px;
-      align-items: baseline;
+      flex-direction: column;
+      gap: 2px;
     }
     .order-info-label {
       font-size: 10px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
-      white-space: nowrap;
-      min-width: 110px;
     }
     .order-info-value {
+      font-size: 13px;
       color: var(--text);
       font-style: italic;
+      line-height: 1.4;
     }
     .config-photo-hint.hint-warn { color: #c07000; }
     .config-photo-hint.hint-over { color: #b03030; }
@@ -778,8 +793,18 @@
 
     <!-- Order info panel — visible after loading an order -->
     <div class="order-info-panel" id="order-info-panel">
-      <div class="order-info-name" id="oip-name"></div>
-      <div id="oip-rows"></div>
+      <div class="order-info-panel-header">
+        <span class="order-info-section-label">Customer's order data</span>
+        <span class="order-info-name" id="oip-name"></span>
+      </div>
+      <div class="order-info-grid" id="oip-rows"></div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e5dfd6;display:flex;align-items:center;gap:16px;">
+        <a id="oip-dashboard-link" href="dashboard.html" target="_blank"
+           style="font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:var(--text);text-decoration:none;border:1px solid var(--border);border-radius:4px;padding:7px 14px;background:#fff;">
+          ↗ Open dashboard to generate preview link
+        </a>
+        <span id="oip-preview-status" style="font-size:12px;color:var(--muted);"></span>
+      </div>
     </div>
 
     <div id="book-canvas">
@@ -1478,44 +1503,6 @@
 
     pagesWrap.appendChild(canvas);
     row.appendChild(pagesWrap);
-
-    // Labeled text inputs — easier to edit than clicking tiny canvas overlays
-    const panel = document.createElement('div');
-    panel.className = 'cover-text-panel';
-    const currentYear = new Date().getFullYear().toString();
-    coverDef.captions.forEach(capDef => {
-      const defaultVal = (capDef.key === 'year' || capDef.key === 'spineYear') ? currentYear : '';
-      const saved = (window.bookCaptions['cover'] || {})[capDef.key] || '';
-
-      const wrap = document.createElement('div');
-      wrap.className = 'cover-text-field';
-      const lbl = document.createElement('label');
-      lbl.textContent = capDef.label;
-      const inp = document.createElement('input');
-      inp.type = 'text';
-      inp.value = saved || defaultVal;
-      inp.placeholder = defaultVal;
-
-      // Sync input → canvas contenteditable + bookCaptions
-      inp.addEventListener('input', () => {
-        const text = inp.value;
-        if (!window.bookCaptions['cover']) window.bookCaptions['cover'] = {};
-        window.bookCaptions['cover'][capDef.key] = text;
-        const cap = canvas.querySelector(`.cover-caption[data-cover-caption-key="${capDef.key}"]`);
-        if (cap) cap.textContent = text;
-      });
-
-      // Sync canvas → input on focus (in case user edited canvas directly)
-      inp.addEventListener('focus', () => {
-        const cap = canvas.querySelector(`.cover-caption[data-cover-caption-key="${capDef.key}"]`);
-        if (cap && cap.textContent !== inp.value) inp.value = cap.textContent;
-      });
-
-      wrap.appendChild(lbl);
-      wrap.appendChild(inp);
-      panel.appendChild(wrap);
-    });
-    row.appendChild(panel);
 
     return row;
   }
@@ -3218,6 +3205,13 @@
 
     if (order.photoNotes) addRow('About the album', order.photoNotes);
 
+    // Cover captions
+    const coverCaptions = order.coverCaptions || {};
+    const coverLabels = { year: 'Cover — year', name: 'Cover — album name', spineName: 'Spine — name', spineYear: 'Spine — year' };
+    Object.entries(coverLabels).forEach(([key, label]) => {
+      if (coverCaptions[key]) addRow(label, coverCaptions[key]);
+    });
+
     // FP-specific texts
     const fpTexts  = order.fpTexts  || {};
     const fpLabels = { FP1: 'Birthday wishes', FP2: 'Funny words', FP3: 'Favourite toy', FP4: 'First steps', FP5: 'Art gallery captions' };
@@ -3226,6 +3220,11 @@
       const display = Array.isArray(val) ? val.join(', ') : val;
       addRow(label, display);
     });
+
+    const statusEl = document.getElementById('oip-preview-status');
+    if (statusEl) {
+      statusEl.textContent = order.previewToken ? 'Preview link already generated' : 'No preview link yet';
+    }
 
     panel.classList.add('visible');
   }
@@ -3266,28 +3265,32 @@
     }
 
     // 5. Load cover and special FP photos into window.specialPhotos
+    // Fetch all special photos in parallel, then process sequentially (HEIC WASM not thread-safe)
+    const specialFetchTasks = [];
     if (urls.cover) {
       const filename = storedBasename(names.cover) || 'cover.jpg';
-      dbLog(`Downloading cover (${filename})…`, 'info');
-      const f = await urlToFile(urls.cover, filename);
-      const result = await processOneFile(f);
-      if (result) {
-        window.specialPhotos.cover.push(result);
-        renderSpecialThumbs('cover');
-      }
+      specialFetchTasks.push({ type: 'cover', slug: 'cover', url: urls.cover, filename });
     }
     for (const [slug, slugUrls] of Object.entries(urls.special || {})) {
-      const fpKey      = slug.toUpperCase(); // fp1 → FP1
-      const slugNames  = (names.special || {})[slug] || [];
-      const arr        = Array.isArray(slugUrls) ? slugUrls : [slugUrls];
-      for (let i = 0; i < arr.length; i++) {
-        const u = arr[i];
-        if (!u) continue;
-        const filename = storedBasename(slugNames[i]) || `${slug}.jpg`;
-        dbLog(`Downloading ${fpKey} (${filename})…`, 'info');
-        const f = await urlToFile(u, filename);
-        const result = await processOneFile(f);
-        if (result && window.specialPhotos[fpKey] !== undefined) {
+      const slugNames = (names.special || {})[slug] || [];
+      const arr = Array.isArray(slugUrls) ? slugUrls : [slugUrls];
+      arr.forEach((u, i) => {
+        if (!u) return;
+        specialFetchTasks.push({ type: 'special', slug, url: u, filename: storedBasename(slugNames[i]) || `${slug}.jpg` });
+      });
+    }
+    dbLog(`Fetching ${specialFetchTasks.length} special photo(s) in parallel…`, 'info');
+    const specialFiles = await Promise.all(specialFetchTasks.map(t => urlToFile(t.url, t.filename)));
+    for (let i = 0; i < specialFetchTasks.length; i++) {
+      const t = specialFetchTasks[i];
+      const result = await processOneFile(specialFiles[i]);
+      if (!result) continue;
+      if (t.type === 'cover') {
+        window.specialPhotos.cover.push(result);
+        renderSpecialThumbs('cover');
+      } else {
+        const fpKey = t.slug.toUpperCase();
+        if (window.specialPhotos[fpKey] !== undefined) {
           window.specialPhotos[fpKey].push(result);
           renderSpecialThumbs(fpKey);
         }
@@ -3296,20 +3299,33 @@
     rerenderCover();
     renderSpecialSidebar();
 
-    // 6. Load pool photos, sort by date, render book
+    // 6. Load pool photos: fetch all in parallel, process sequentially, sort by date, render book
     const poolUrls   = (urls.pool   || []).filter(Boolean);
     const poolNames  = (names.pool  || []);
 
     if (poolUrls.length) {
-      dbLog(`Downloading ${poolUrls.length} pool photos…`, 'info');
+      dbLog(`Fetching ${poolUrls.length} pool photos in parallel…`, 'info');
       document.getElementById('book-canvas').innerHTML =
-        '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">⏳</div><h3>Loading order…</h3></div>';
+        '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">⏳</div>' +
+        `<h3>Loading order…</h3><p id="load-progress">Downloading 0 / ${poolUrls.length}</p></div>`;
 
+      // Fetch all pool files in parallel (network-bound, no shared state)
+      const poolFilenames = poolUrls.map((_, i) => storedBasename(poolNames[i]) || `photo_${String(i+1).padStart(3,'0')}.jpg`);
+      let fetched = 0;
+      const poolFiles = await Promise.all(poolUrls.map(async (u, i) => {
+        const f = await urlToFile(u, poolFilenames[i]);
+        fetched++;
+        const prog = document.getElementById('load-progress');
+        if (prog) prog.textContent = `Downloading ${fetched} / ${poolUrls.length}`;
+        return f;
+      }));
+
+      // Process sequentially (HEIC WASM has shared state)
       const newPhotos = [];
-      for (let i = 0; i < poolUrls.length; i++) {
-        const filename = storedBasename(poolNames[i]) || `photo_${String(i+1).padStart(3,'0')}.jpg`;
-        const f = await urlToFile(poolUrls[i], filename);
-        const result = await processOneFile(f);
+      for (let i = 0; i < poolFiles.length; i++) {
+        const prog = document.getElementById('load-progress');
+        if (prog) prog.textContent = `Processing ${i + 1} / ${poolFiles.length}`;
+        const result = await processOneFile(poolFiles[i]);
         if (result) newPhotos.push(result);
       }
       newPhotos.sort((a, b) => {
