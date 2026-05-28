@@ -1098,6 +1098,11 @@ function updatePhotoStatusBar() {
     const lowResCount = mainFiles.filter(f => f._lowRes).length;
     const target = window._photoCountTarget ? ` of ${window._photoCountTarget}` : '';
     let countText = `${n}${target} photo${n !== 1 ? 's' : ''} selected`;
+    if (window._photoCountTarget) {
+      const diff = window._photoCountTarget - n;
+      if (diff > 0) countText += ` · Add ${diff} more photo${diff !== 1 ? 's' : ''}`;
+      else if (diff < 0) countText += ` · Remove ${Math.abs(diff)} photo${Math.abs(diff) !== 1 ? 's' : ''}`;
+    }
     if (lowResCount > 0) countText += ` · ${lowResCount} may be too low-resolution for print (shortest side under 1500px)`;
     countEl.textContent = countText;
     countEl.className = 'photo-count' + (lowResCount > 0 ? ' low-res-note' : '');
@@ -1336,6 +1341,8 @@ async function submitOrder() {
     const totalBytes = fileObjects.reduce((sum, f) => sum + (f.size || 0), 0);
     let uploadedCount = 0;
     let uploadedBytes = 0;
+    const uploadStartTime = Date.now();
+    const timeEl = document.getElementById('upload-time-remaining');
 
     function fmtBytes(b) {
       if (b >= 1e9) return (b / 1e9).toFixed(2) + ' GB';
@@ -1343,10 +1350,26 @@ async function submitOrder() {
       return Math.round(b / 1e3) + ' KB';
     }
 
+    function fmtTime(seconds) {
+      if (seconds < 60) return `${Math.ceil(seconds)} sec`;
+      const m = Math.ceil(seconds / 60);
+      return `${m} min`;
+    }
+
     function updateProgress() {
       const sizeLabel = totalBytes > 0 ? ` · ${fmtBytes(uploadedBytes)} / ${fmtBytes(totalBytes)}` : '';
       overlayCount.textContent = `${uploadedCount} of ${total} photos${sizeLabel}`;
       overlayFill.style.width = `${Math.round((uploadedCount / total) * 100)}%`;
+
+      // Time estimate: based on bytes/sec so far
+      if (uploadedBytes > 0 && uploadedBytes < totalBytes) {
+        const elapsed = (Date.now() - uploadStartTime) / 1000;
+        const rate = uploadedBytes / elapsed;
+        const remaining = (totalBytes - uploadedBytes) / rate;
+        timeEl.textContent = `About ${fmtTime(remaining)} remaining`;
+      } else {
+        timeEl.textContent = '';
+      }
     }
 
     updateProgress();
@@ -1390,6 +1413,7 @@ async function submitOrder() {
 }
 
 function showSuccess(orderNumber, email) {
+  document.getElementById('step1').style.display = 'none';
   document.getElementById('step2').style.display = 'none';
   document.getElementById('stepper-2').classList.add('done');
 
@@ -1518,6 +1542,8 @@ function closeLightbox() {
       <div class="upload-progress-fill" id="upload-progress-fill"></div>
     </div>
     <div class="upload-progress-count" id="upload-progress-count"></div>
+    <div id="upload-time-remaining" style="font-size:12px;color:var(--muted);margin-top:8px;min-height:1.2em;"></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:16px;">Please don't close this tab while your photos upload.</div>
   </div>
 </div>
 </body>

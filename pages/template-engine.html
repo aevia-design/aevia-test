@@ -501,6 +501,11 @@
       min-width: 520px;
     }
     #cover-caption-toolbar.visible { display: flex; }
+    .cover-text-panel { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 14px; padding: 14px 16px; background: #faf9f7; border: 1px solid #e8e4de; border-radius: 6px; font-family: system-ui, sans-serif; }
+    .cover-text-field { display: flex; flex-direction: column; gap: 4px; min-width: 180px; }
+    .cover-text-field label { font-size: 11px; color: #8a7f74; letter-spacing: 0.04em; text-transform: uppercase; }
+    .cover-text-field input { font-size: 13px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; background: #fff; color: #1a1a1a; }
+    .cover-text-field input:focus { outline: none; border-color: #b0a99a; }
     .tb-group { display: flex; align-items: center; gap: 5px; }
     .tb-sep { width: 1px; height: 20px; background: #e0e0e0; }
     .tb-label { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -1473,6 +1478,45 @@
 
     pagesWrap.appendChild(canvas);
     row.appendChild(pagesWrap);
+
+    // Labeled text inputs — easier to edit than clicking tiny canvas overlays
+    const panel = document.createElement('div');
+    panel.className = 'cover-text-panel';
+    const currentYear = new Date().getFullYear().toString();
+    coverDef.captions.forEach(capDef => {
+      const defaultVal = (capDef.key === 'year' || capDef.key === 'spineYear') ? currentYear : '';
+      const saved = (window.bookCaptions['cover'] || {})[capDef.key] || '';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'cover-text-field';
+      const lbl = document.createElement('label');
+      lbl.textContent = capDef.label;
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = saved || defaultVal;
+      inp.placeholder = defaultVal;
+
+      // Sync input → canvas contenteditable + bookCaptions
+      inp.addEventListener('input', () => {
+        const text = inp.value;
+        if (!window.bookCaptions['cover']) window.bookCaptions['cover'] = {};
+        window.bookCaptions['cover'][capDef.key] = text;
+        const cap = canvas.querySelector(`.cover-caption[data-cover-caption-key="${capDef.key}"]`);
+        if (cap) cap.textContent = text;
+      });
+
+      // Sync canvas → input on focus (in case user edited canvas directly)
+      inp.addEventListener('focus', () => {
+        const cap = canvas.querySelector(`.cover-caption[data-cover-caption-key="${capDef.key}"]`);
+        if (cap && cap.textContent !== inp.value) inp.value = cap.textContent;
+      });
+
+      wrap.appendChild(lbl);
+      wrap.appendChild(inp);
+      panel.appendChild(wrap);
+    });
+    row.appendChild(panel);
+
     return row;
   }
 
