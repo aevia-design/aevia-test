@@ -28,6 +28,9 @@ All foundation, template engine, and order intake work is complete. See `session
 | Staff dashboard (`dashboard.html`) | ✅ done |
 | Plan 12-03: load order into engine (GCS download, FP pre-fill) | ✅ done |
 | Bleed coords, caption coord system (Phase 13) | ✅ done |
+| chunk-001: `getOrder` customer token path + `saveOrderState` | ✅ done |
+| chunk-002: Dashboard generate/revoke preview link | ✅ done |
+| chunk-003: `customer-preview.html` — limited customer engine | ✅ done (needs live test) |
 
 ---
 
@@ -39,7 +42,7 @@ _Goal: Staff can send a customer a link; customer can view, make minor edits, an
 
 **Type:** feature
 **Component:** Firebase backend
-**Status:** pending
+**Status:** done
 **Size:** S
 **Depends on:** —
 **Files:** `functions/index.js`, `functions/upload.js`
@@ -66,7 +69,7 @@ _Goal: Staff can send a customer a link; customer can view, make minor edits, an
 
 **Type:** feature
 **Component:** Staff dashboard
-**Status:** pending
+**Status:** done
 **Size:** S
 **Depends on:** chunk-001
 **Files:** `pages/dashboard.html`, `functions/index.js`
@@ -94,7 +97,7 @@ _Goal: Staff can send a customer a link; customer can view, make minor edits, an
 
 **Type:** feature
 **Component:** Customer preview engine
-**Status:** pending
+**Status:** done — needs live test
 **Size:** L
 **Depends on:** chunk-001, chunk-002
 **Files:** `pages/customer-preview.html`
