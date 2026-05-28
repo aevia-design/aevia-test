@@ -30,6 +30,7 @@ Read these in order before doing anything:
 - Customer journey: `context/customer-journey-v1.md`
 - Session logs: `sessions/`
 - ADRs: `docs/decisions/`
+- Unit tests: `tests/` (run with `npm test` from project root)
 
 ---
 

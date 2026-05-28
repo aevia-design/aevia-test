@@ -348,6 +348,7 @@
       </div>
 
       <div class="photo-grid" id="photo-grid"></div>
+      <div id="photo-queue-status" style="display:none;font-size:12px;color:var(--muted);margin-top:10px;letter-spacing:0.03em;"></div>
       <div class="photo-count" id="photo-count" style="display:none;"></div>
 
       <label class="add-more-btn" id="add-more-btn" style="display:none;">
@@ -927,14 +928,29 @@ function handleMainFiles(fileList) {
   drainUploadQueue();
 }
 
+function updateQueueStatus() {
+  const el = document.getElementById('photo-queue-status');
+  if (!el) return;
+  const remaining = _uploadQueue.length + (_uploadBusy ? 1 : 0);
+  if (remaining > 0) {
+    el.textContent = `Loading ${remaining} more photo${remaining !== 1 ? 's' : ''}…`;
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 async function drainUploadQueue() {
   if (_uploadBusy) return;
   _uploadBusy = true;
+  updateQueueStatus();
   while (_uploadQueue.length) {
     const f = _uploadQueue.shift();
     await processAndAddFile(f);
+    updateQueueStatus();
   }
   _uploadBusy = false;
+  updateQueueStatus();
 }
 
 async function processAndAddFile(f) {
@@ -1317,8 +1333,20 @@ async function submitOrder() {
 
     // Step 2: upload each file to its signed URL
     const total = fileObjects.length;
+    const totalBytes = fileObjects.reduce((sum, f) => sum + (f.size || 0), 0);
+    let uploadedBytes = 0;
+
+    function fmtBytes(b) {
+      if (b >= 1e9) return (b / 1e9).toFixed(2) + ' GB';
+      if (b >= 1e6) return Math.round(b / 1e6) + ' MB';
+      return Math.round(b / 1e3) + ' KB';
+    }
+
     for (let i = 0; i < total; i++) {
-      overlayCount.textContent = `Photo ${i + 1} of ${total}`;
+      const sizeLabel = totalBytes > 0
+        ? ` · ${fmtBytes(uploadedBytes)} / ${fmtBytes(totalBytes)}`
+        : '';
+      overlayCount.textContent = `Photo ${i + 1} of ${total}${sizeLabel}`;
       overlayFill.style.width = `${Math.round((i / total) * 100)}%`;
 
       await fetch(uploadUrls[i].url, {
@@ -1326,6 +1354,7 @@ async function submitOrder() {
         body:    fileObjects[i],
         headers: { 'Content-Type': uploadUrls[i].contentType },
       });
+      uploadedBytes += fileObjects[i].size || 0;
     }
 
     clearInterval(humourTimer);
@@ -1333,8 +1362,11 @@ async function submitOrder() {
     overlaySub.textContent = 'Done!';
     overlayCount.textContent = '';
 
-    // Show success
-    setTimeout(() => showSuccess(orderNumber, email), 400);
+    // Show success — remove overlay first so it doesn't cover the success screen
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      showSuccess(orderNumber, email);
+    }, 800);
 
   } catch (err) {
     clearInterval(humourTimer);

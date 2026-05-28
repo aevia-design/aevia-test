@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aevia — Template Engine (Staff)</title>
   <script src="../assets/Template_Scribble/scribble-data.js"></script>
+  <script src="../assets/js/photo-utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <style>
     @font-face {
@@ -962,10 +963,7 @@
      PHOTO PROCESSING  (EXIF + HEIC + orientation)
   ═══════════════════════════════════════════ */
 
-  function isRaw(file) {
-    const ext = file.name.split('.').pop().toLowerCase();
-    return ['dng','raw','cr2','nef','arw'].includes(ext);
-  }
+  // isRaw / filenameNumber / comparePhotos / markDuplicates live in assets/js/photo-utils.js
 
   async function isHeicFile(file) {
     if (file.type === 'image/heic' || file.type === 'image/heif') return true;
@@ -1003,11 +1001,6 @@
         }, 10000)
       ),
     ]);
-  }
-
-  function filenameNumber(name) {
-    const match = name.replace(/\.[^.]+$/, '').match(/(\d+)\D*$/);
-    return match ? parseInt(match[1], 10) : null;
   }
 
   async function processOneFile(file) {
@@ -1166,33 +1159,23 @@
     dbLog('═══ Processing ' + files.length + ' new file(s) ═══', 'info');
 
     // Sequential processing — HEIC WASM has shared state, parallel corrupts it
-    const newPhotos = [];
+    const rawPhotos = [];
     const failedFiles = [];
-    const existingNames = new Set(window.photoPool.filter(p => !p.duplicate).map(p => p.name));
     for (const file of files) {
       const result = await processOneFile(file);
       if (!result) { failedFiles.push(file.name); continue; }
-      if (existingNames.has(file.name)) {
-        result.duplicate = true;
-        dbLog('  ⚠ Duplicate detected: ' + file.name + ' — will be flagged in sidebar', 'warn');
-      } else {
-        existingNames.add(file.name); // prevent double-adding the same file in one batch
-      }
-      newPhotos.push(result);
+      rawPhotos.push(result);
     }
 
+    // Mark duplicates then merge + sort
+    const deduped = markDuplicates(window.photoPool, rawPhotos);
+    deduped.filter(p => p.duplicate).forEach(p =>
+      dbLog('  ⚠ Duplicate detected: ' + p.name + ' — will be flagged in sidebar', 'warn')
+    );
+
     // Merge new photos into existing pool and re-sort everything by EXIF date → filename → original order
-    const merged = [...window.photoPool, ...newPhotos];
-    merged.sort((a, b) => {
-      if (a.date && b.date) return new Date(a.date) - new Date(b.date);
-      if (a.date && !b.date) return -1;
-      if (!a.date && b.date) return 1;
-      const na = filenameNumber(a.name), nb = filenameNumber(b.name);
-      if (na !== null && nb !== null) return na - nb;
-      if (na !== null) return -1;
-      if (nb !== null) return 1;
-      return 0;
-    });
+    const merged = [...window.photoPool, ...deduped];
+    merged.sort(comparePhotos);
 
     const hasAllExif = merged.every(p => p.date);
     const sortMethod = hasAllExif ? 'EXIF date' : merged.some(p => filenameNumber(p.name) !== null) ? 'filename number' : 'upload order';
