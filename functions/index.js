@@ -150,6 +150,44 @@ exports.getOrder = functions
     }
   });
 
+// ── Save order state (customer preview edits) ────────────────────────────────
+// Accepts { token, bookAssignments, captions, spreadCaptionStyles } from customer-preview.html
+exports.saveOrderState = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const { token, bookAssignments, captions, spreadCaptionStyles } = req.body;
+    if (!token) return res.status(403).json({ error: 'Token required' });
+
+    try {
+      const db = admin.firestore();
+      const snapshot = await db.collection('orders')
+        .where('previewToken', '==', token)
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) return res.status(403).json({ error: 'Invalid or expired token' });
+
+      await snapshot.docs[0].ref.update({
+        customerBookAssignments: bookAssignments || null,
+        customerCaptions:        captions        || null,
+        customerCaptionStyles:   spreadCaptionStyles || null,
+        customerUpdatedAt:       admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('saveOrderState error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
 // ── HEIC → JPEG converter ────────────────────────────────────────────────────
 exports.convertHeic = functions
   .region('europe-west1')

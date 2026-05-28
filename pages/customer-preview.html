@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aevia — Your Book Preview</title>
+  <script src="../assets/Template_Scribble/scribble-data.js"></script>
+  <script src="../assets/js/photo-utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+  <style>
+    @font-face {
+      font-family: 'NT Somic';
+      src: url('../assets/fonts/NTSomic-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'NT Somic';
+      src: url('../assets/fonts/NTSomic-Medium.ttf') format('truetype');
+      font-weight: 500; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'NT Somic';
+      src: url('../assets/fonts/NTSomic-Bold.ttf') format('truetype');
+      font-weight: 700; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'EB Garamond';
+      src: url('../assets/fonts/EBGaramond-VariableFont_wght.ttf') format('truetype');
+      font-weight: 400 900; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'EB Garamond';
+      src: url('../assets/fonts/EBGaramond-Italic-VariableFont_wght.ttf') format('truetype');
+      font-weight: 400 900; font-style: italic; font-display: swap;
+    }
+    @font-face {
+      font-family: 'FirstTimeWriting';
+      src: url('../assets/fonts/FirstTimeWriting!.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    :root {
+      --bg:        #fafaf8;
+      --surface:   #f3efe9;
+      --border:    #e4dfd8;
+      --text:      #1a1a1a;
+      --muted:     #7d7570;
+      --accent-dk: #a8895f;
+      --white:     #ffffff;
+      --serif:     Georgia, 'Times New Roman', serif;
+      --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      --config-h:  0px;
+      --special-h: 0px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    img { display: block; max-width: 100%; }
+    button { cursor: pointer; border: none; background: none; font: inherit; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ── NAV ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 56px;
+      background: rgba(250,250,248,0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo img { height: 28px; width: auto; display: block; }
+    .nav-logo-text { font-family: var(--serif); font-size: 18px; letter-spacing: -0.01em; }
+    .nav-center { display: flex; align-items: center; gap: 32px; }
+    .mode-toggle { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+    .mode-toggle-btn { padding: 6px 14px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: var(--white); color: var(--muted); border: none; cursor: pointer; transition: background 0.15s, color 0.15s; }
+    .mode-toggle-btn.active { background: var(--text); color: var(--white); }
+    .nav-approve-btn {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      border: none; border-radius: 3px;
+      padding: 8px 20px;
+      background: var(--text); color: var(--white);
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .nav-approve-btn:hover:not(:disabled) { background: #2a2a2a; }
+    .nav-approve-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .nav-approve-btn[data-state="coming-soon"]:disabled {
+      position: relative;
+    }
+
+    /* ── PHOTO SIDEBAR ── */
+    .photo-sidebar {
+      position: fixed;
+      top: 69px;
+      left: 0; bottom: 0;
+      width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto; overflow-x: hidden;
+      z-index: 80;
+      padding: 16px 12px 40px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .photo-sidebar::-webkit-scrollbar { width: 4px; }
+    .photo-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .photo-sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .photo-sidebar.hidden { display: none; }
+    .sidebar-total {
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 14px; padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-section-header {
+      font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin: 14px 0 8px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .sidebar-section-header .sidebar-count {
+      background: var(--border); color: var(--text);
+      border-radius: 100px; padding: 1px 7px; font-size: 10px;
+    }
+    .sidebar-section-header.unplaced .sidebar-count {
+      background: var(--accent-dk); color: #fff;
+    }
+    .sidebar-thumbs { display: flex; flex-direction: column; gap: 8px; }
+    .photo-thumb {
+      border-radius: 5px; overflow: hidden;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      position: relative;
+      cursor: grab;
+    }
+    .photo-thumb.unassigned { border-color: var(--accent-dk); }
+    .photo-thumb.assigned   { border-color: var(--border); opacity: 0.55; }
+    .photo-thumb.dragging   { opacity: 0.3; cursor: grabbing; }
+    .photo-sidebar.sidebar-drag-over { background: #e8f4e8; border-right-color: #6aaa6a; outline: 2px dashed #6aaa6a; outline-offset: -4px; }
+    .photo-thumb[data-orient="H"] { width: 100%; height: 118px; }
+    .photo-thumb[data-orient="V"] { width: 62%; height: 148px; margin: 0 auto; display: block; }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .photo-thumb .warn-badge {
+      position: absolute; bottom: 3px; right: 3px;
+      background: #f4ca6f; color: #493955;
+      font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: 700;
+    }
+    .photo-thumb .dup-badge {
+      position: absolute; top: 3px; right: 3px;
+      background: #d04040; color: #fff;
+      font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: 700;
+    }
+    .photo-thumb .thumb-name {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.45); color: #fff;
+      font-size: 9px; padding: 3px 5px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ── MAIN CONTENT AREA ── */
+    .page-body {
+      padding-top: calc(69px + 32px);
+      padding-left: 260px;
+      min-height: 100vh;
+    }
+    .page-body.preview-mode {
+      padding-left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── BOOK CANVAS ── */
+    .book-canvas-wrap {
+      max-width: 1400px; margin: 0 auto;
+      padding: 0 40px 80px;
+    }
+    .book-canvas-wrap.preview-mode {
+      max-width: 1000px;
+      padding: 40px;
+    }
+    #book-canvas {
+      min-height: 400px;
+    }
+    .canvas-placeholder {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 400px;
+      border: 2px dashed var(--border); border-radius: 8px;
+      color: var(--muted); text-align: center;
+      padding: 60px 40px;
+    }
+    .canvas-placeholder-icon {
+      font-size: 48px; margin-bottom: 20px; opacity: 0.4;
+    }
+    .canvas-placeholder h3 {
+      font-family: var(--serif); font-size: 22px; font-weight: 400;
+      color: var(--text); margin-bottom: 10px;
+    }
+    .canvas-placeholder p {
+      font-size: 14px; color: var(--muted); max-width: 380px; line-height: 1.6;
+    }
+
+    /* ── SPREAD ROW ── */
+    .spread-row {
+      margin-bottom: 48px;
+    }
+    .spread-row.preview-hidden {
+      display: none;
+    }
+    .spread-row-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 10px;
+    }
+    .spread-index-badge {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      flex-shrink: 0;
+    }
+    .spread-title {
+      font-size: 12px; color: var(--text); font-weight: 500;
+    }
+    .spread-type-tag {
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); border: 1px solid var(--border);
+      border-radius: 100px; padding: 2px 8px;
+    }
+    .spread-type-tag.fp { color: #8060a8; border-color: #c8aae0; background: #f5f0fc; }
+    .spread-pages {
+      display: flex; gap: 4px;
+    }
+    @media (max-width: 1399px) {
+      .spread-pages { flex-direction: column; gap: 2px; }
+    }
+    .page-canvas {
+      position: relative;
+      width: 600px; height: 600px;
+      background: #FDF1E5;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .page-canvas .svg-overlay {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .photo-slot {
+      position: absolute;
+      overflow: hidden;
+      background: #e8dfd0;
+      z-index: 1;
+    }
+    .photo-slot img.slot-photo {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: smooth;
+    }
+    .photo-slot .slot-placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: #a8a094; text-align: center; padding: 8px;
+      line-height: 1.4;
+    }
+    .photo-slot[draggable="true"] { cursor: grab; }
+    .photo-slot.dragging { opacity: 0.35; }
+    .photo-slot.drag-over { outline: 2px solid var(--accent-dk); outline-offset: -2px; z-index: 3; }
+
+    /* ── CAPTIONS ── */
+    .slot-caption {
+      position: absolute;
+      z-index: 3;
+      font-family: 'NT Somic', var(--sans);
+      font-size: 14pt;
+      line-height: 18pt;
+      letter-spacing: -0.02em;
+      color: #493955;
+      text-align: center;
+      outline: none;
+      border: none;
+      background: transparent;
+      cursor: text;
+      padding: 2px 4px;
+      border-radius: 2px;
+      transition: background 0.12s;
+      word-break: normal;
+      overflow-wrap: break-word;
+      white-space: normal;
+    }
+    .slot-caption:empty::before {
+      content: 'Add caption…';
+      font-size: 10pt;
+      color: #c0b8ae;
+      pointer-events: none;
+    }
+    .fp-text-panel {
+      font-size: 16pt;
+      line-height: 22pt;
+      z-index: 3;
+    }
+    .fp-text-panel:empty::before {
+      content: 'Click to add text…';
+      font-size: 11pt;
+    }
+    .slot-caption:focus {
+      background: rgba(255,255,255,0.75);
+      outline: 1px dashed #c0b8ae;
+      outline-offset: 2px;
+    }
+
+    /* ── CAPTION TOOLBAR ── */
+    #caption-toolbar {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+      padding: 6px 10px;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      font-family: system-ui, sans-serif;
+      font-size: 12px;
+      color: #333;
+      min-width: 520px;
+    }
+    #caption-toolbar.visible { display: flex; }
+    .tb-group { display: flex; align-items: center; gap: 5px; }
+    .tb-sep { width: 1px; height: 20px; background: #e0e0e0; }
+    .tb-label { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.06em; }
+    .tb-select {
+      font-family: system-ui, sans-serif;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 3px 6px;
+      background: #fafafa;
+      cursor: pointer;
+    }
+    .tb-pill {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 100px;
+      border: 1px solid #ddd;
+      background: #fafafa;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .tb-pill.active { background: #333; color: #fff; border-color: #333; }
+    .tb-stepper { display: flex; align-items: center; gap: 3px; }
+    .tb-stepper button {
+      width: 22px; height: 22px;
+      border: 1px solid #ddd; border-radius: 4px;
+      background: #fafafa; cursor: pointer;
+      font-size: 14px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tb-stepper button:hover { background: #eee; }
+    .tb-stepper span { min-width: 32px; text-align: center; font-variant-numeric: tabular-nums; }
+
+    /* ── PREVIEW MODE CONTROLS ── */
+    .preview-controls {
+      display: none;
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 20px 32px;
+      background: rgba(255,255,255,0.95);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    }
+    .preview-controls.visible { display: flex; }
+    .preview-arrow {
+      background: var(--text);
+      color: var(--white);
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .preview-arrow:hover { background: #2a2a2a; }
+    .preview-arrow:disabled,
+    .preview-arrow[aria-disabled="true"] {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .preview-dots {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .preview-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .preview-dot.active {
+      background: var(--text);
+    }
+    .preview-dot:hover {
+      background: var(--muted);
+    }
+
+    /* ── MOBILE GATE ── */
+    .mobile-gate {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg);
+      z-index: 200;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      text-align: center;
+    }
+    .mobile-gate.visible {
+      display: flex;
+    }
+    .mobile-gate-logo {
+      margin-bottom: 40px;
+    }
+    .mobile-gate-logo img {
+      height: 32px;
+      width: auto;
+    }
+    .mobile-gate-heading {
+      font-family: var(--serif);
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+    .mobile-gate-text {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 380px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+    .mobile-gate-ref {
+      font-size: 12px;
+      color: var(--text);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── SUBMIT & CONTROLS ── */
+    .submit-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      padding: 16px 40px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      z-index: 85;
+    }
+    .submit-bar.hidden { display: none; }
+    .submit-btn {
+      background: var(--text);
+      color: var(--white);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 9px 24px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .submit-btn:hover { background: #2a2a2a; }
+    .cancel-btn {
+      background: transparent;
+      color: var(--text);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 9px 24px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .cancel-btn:hover { border-color: var(--text); color: var(--text); }
+
+    /* ── LOADING STATE ── */
+    .loading-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #333;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 64px 56px 48px;
+      margin-top: 80px;
+    }
+    .footer-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.6fr 1fr 1fr 1fr;
+      gap: 48px;
+    }
+    .foot-logo {
+      font-family: var(--serif);
+      font-size: 20px;
+      margin-bottom: 14px;
+    }
+    .foot-brand p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 220px;
+    }
+    .foot-col h5 {
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .foot-col a {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      transition: color 0.15s;
+    }
+    .foot-col a:hover {
+      color: var(--text);
+    }
+    .foot-base {
+      max-width: 1160px;
+      margin: 40px auto 0;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 900px) {
+      .photo-sidebar,
+      .book-canvas-wrap,
+      .submit-bar,
+      .preview-controls,
+      .footer {
+        display: none;
+      }
+      .mobile-gate {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="home.html" class="nav-logo">
+    <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+    <span class="nav-logo-text" style="display:none;">aevia</span>
+  </a>
+  <div class="nav-center">
+    <div class="mode-toggle">
+      <button class="mode-toggle-btn active" id="mode-edit-btn">Edit</button>
+      <button class="mode-toggle-btn" id="mode-preview-btn">Preview</button>
+    </div>
+  </div>
+  <button class="nav-approve-btn" id="approve-btn" disabled data-state="coming-soon">
+    Approve
+  </button>
+</nav>
+
+<!-- ── PHOTO SIDEBAR ── -->
+<div class="photo-sidebar" id="photo-sidebar">
+  <div class="sidebar-total" id="sidebar-total">0 photos</div>
+  <div class="sidebar-section-header unplaced">
+    Unplaced <span class="sidebar-count" id="sidebar-unplaced-count">0</span>
+  </div>
+  <div class="sidebar-thumbs" id="sidebar-unplaced"></div>
+  <div class="sidebar-section-header">
+    Placed <span class="sidebar-count" id="sidebar-placed-count">0</span>
+  </div>
+  <div class="sidebar-thumbs" id="sidebar-placed"></div>
+</div>
+
+<!-- ── MAIN CONTENT ── -->
+<div class="page-body" id="page-body">
+  <div class="book-canvas-wrap">
+    <div id="book-canvas">
+      <div class="canvas-placeholder">
+        <div class="canvas-placeholder-icon">⏳</div>
+        <h3>Loading your book preview…</h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PREVIEW MODE CONTROLS ── -->
+<div class="preview-controls" id="preview-controls">
+  <button class="preview-arrow" id="preview-prev" aria-label="Previous spread">←</button>
+  <div class="preview-dots" id="preview-dots"></div>
+  <button class="preview-arrow" id="preview-next" aria-label="Next spread">→</button>
+</div>
+
+<!-- ── SUBMIT BAR ── -->
+<div class="submit-bar" id="submit-bar">
+  <button class="cancel-btn" id="cancel-btn">Cancel</button>
+  <button class="submit-btn" id="submit-btn">Submit Changes</button>
+</div>
+
+<!-- ── MOBILE GATE ── -->
+<div class="mobile-gate" id="mobile-gate">
+  <div class="mobile-gate-logo">
+    <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia"
+         onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<span style=\\'font-family:Georgia,serif;font-size:20px;\\'>aevia</span>');" />
+  </div>
+  <h2 class="mobile-gate-heading">Your book preview is ready.</h2>
+  <p class="mobile-gate-text">
+    For the best experience reviewing and approving your book,<br/>
+    please open this link on a laptop or desktop.
+  </p>
+  <div class="mobile-gate-ref" id="mobile-gate-ref"></div>
+</div>
+
+<!-- ── CAPTION TOOLBAR ── -->
+<div id="caption-toolbar">
+  <span class="tb-label" id="tb-caption-label">Caption</span>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <span class="tb-label">Font</span>
+    <select class="tb-select" id="tb-font"></select>
+  </div>
+  <div class="tb-group" id="tb-style-group"></div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <span class="tb-label">Size</span>
+    <div class="tb-stepper">
+      <button id="tb-size-down">−</button>
+      <span id="tb-size-val"></span>
+      <button id="tb-size-up">+</button>
+    </div>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <span class="tb-label">Line spacing</span>
+    <div class="tb-stepper">
+      <button id="tb-line-down">−</button>
+      <span id="tb-line-val"></span>
+      <button id="tb-line-up">+</button>
+    </div>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <span class="tb-label">Letter spacing</span>
+    <div class="tb-stepper">
+      <button id="tb-ls-down">−</button>
+      <span id="tb-ls-val"></span>
+      <button id="tb-ls-up">+</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer class="footer" id="footer">
+  <div class="footer-inner">
+    <div class="foot-brand">
+      <div class="foot-logo">
+        <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia" style="height:28px; width:auto;"
+             onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<span style=\\'font-family:Georgia,serif;font-size:20px;\\'>aevia</span>');" />
+      </div>
+      <p>A premium photo book studio in Vienna. We design and print; you keep forever.</p>
+    </div>
+    <div class="foot-col">
+      <h5>Products</h5>
+      <a href="collections.html">All templates</a>
+      <a href="collections.html#love">Love</a>
+      <a href="collections.html#kids">Kids</a>
+      <a href="collections.html#adventures">Adventures</a>
+    </div>
+    <div class="foot-col">
+      <h5>Company</h5>
+      <a href="about.html">Our story</a>
+      <a href="home.html#how">How it works</a>
+      <a href="#">Quality promise</a>
+    </div>
+    <div class="foot-col">
+      <h5>Support</h5>
+      <a href="help.html">FAQ</a>
+      <a href="#">Instagram</a>
+      <a href="help.html#contact">Contact</a>
+    </div>
+  </div>
+  <div class="foot-base">
+    <span>© 2026 Aevia. All rights reserved.</span>
+    <span>Terms of service</span>
+  </div>
+</footer>
+
+<script>
+  /* ═══════════════════════════════════════════
+     GLOBAL STATE
+  ═══════════════════════════════════════════ */
+  window.photoPool          = [];
+  window.bookAssignments    = {};
+  window.bookCaptions       = {};
+  window.spreadCaptionStyles = {};
+  window.orderData          = null;
+  window.previewSpreadIndex = 0;
+
+  const SCALE    = 3;
+  const BLEED_MM = 3;
+  const SVG_BASE = '../assets/Template_Scribble/Spreads/';
+  const GET_ORDER_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getOrder';
+
+  const CAPTION_FONTS = [
+    { label: 'NT Somic',          value: 'NT Somic',          styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
+    { label: 'EB Garamond',       value: 'EB Garamond',       styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Semi-Bold', weight: 600, italic: false }] },
+    { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }] },
+  ];
+
+  let _tbMode       = 'spread';
+  let _tbCapEl      = null;
+  let _tbSpreadCtx  = null;
+
+  /* ═══════════════════════════════════════════
+     MAIN INITIALIZATION
+  ═══════════════════════════════════════════ */
+
+  async function init() {
+    // Check viewport width for mobile gate
+    if (window.innerWidth < 900) {
+      const mobileGate = document.getElementById('mobile-gate');
+      mobileGate.classList.add('visible');
+      const ref = window.orderData?.orderNumber || window.orderData?.orderRef || 'Order preview';
+      document.getElementById('mobile-gate-ref').textContent = 'Your order reference: ' + ref;
+      return;
+    }
+
+    // Fetch order via token
+    const token = new URLSearchParams(location.search).get('token');
+    if (!token) {
+      document.getElementById('book-canvas').innerHTML =
+        '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">⚠</div><h3>No preview link</h3><p>This page requires a valid preview token.</p></div>';
+      return;
+    }
+
+    try {
+      const resp = await fetch(GET_ORDER_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      window.orderData = await resp.json();
+
+      // Load photos from signed URLs
+      await loadPhotos();
+      renderBook();
+    } catch (err) {
+      console.error('Failed to load order:', err);
+      document.getElementById('book-canvas').innerHTML =
+        '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">⚠</div><h3>Could not load preview</h3><p>' + err.message + '</p></div>';
+    }
+  }
+
+  async function loadPhotos() {
+    if (!window.orderData?.signedUrls) {
+      console.warn('No signed URLs in order data');
+      return;
+    }
+
+    // Load from signed URLs (order data provides them)
+    const photos = [];
+    for (const [filename, signedUrl] of Object.entries(window.orderData.signedUrls || {})) {
+      try {
+        const resp = await fetch(signedUrl);
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const { orientation, w, h } = await getOrientationFromBlob(blob);
+        const lowRes = w > 0 && Math.min(w, h) < 1500;
+        photos.push({
+          file: null,
+          url,
+          date: null,
+          name: filename,
+          w, h,
+          orientation,
+          lowRes,
+        });
+      } catch (err) {
+        console.error('Failed to load photo:', filename, err);
+      }
+    }
+    window.photoPool = photos;
+  }
+
+  function getOrientationFromBlob(blob) {
+    return new Promise(resolve => {
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        const w = img.naturalWidth, h = img.naturalHeight;
+        const orientation = h > w ? 'vertical' : 'horizontal';
+        URL.revokeObjectURL(url);
+        resolve({ orientation, w, h });
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve({ orientation: 'horizontal', w: 0, h: 0 });
+      };
+      img.src = url;
+    });
+  }
+
+  function renderBook() {
+    const canvas = document.getElementById('book-canvas');
+    canvas.innerHTML = '';
+
+    const seq = window.orderData?.bookSequence || Object.keys(window.SCRIBBLE_DATA.spreads).filter(k => !k.startsWith('FP')).slice(0, 3);
+
+    seq.forEach((spreadId, idx) => {
+      const asgn = window.bookAssignments[idx] || { left: [], right: [] };
+      const row = renderSpread(spreadId, asgn, idx);
+      if (row) canvas.appendChild(row);
+    });
+
+    renderPhotoSidebar();
+    setupPreviewMode();
+  }
+
+  function renderPhotoSidebar() {
+    const placed = new Set();
+    Object.values(window.bookAssignments).forEach(asgn => {
+      [...(asgn.left || []), ...(asgn.right || [])].forEach(idx => {
+        if (idx !== null && idx !== undefined) placed.add(idx);
+      });
+    });
+
+    window._sidebarThumbs = {};
+    window.photoPool.forEach((photo, i) => {
+      window._sidebarThumbs[i] = makeSidebarThumb(photo, i);
+    });
+
+    const unplacedEl = document.getElementById('sidebar-unplaced');
+    const placedEl = document.getElementById('sidebar-placed');
+    unplacedEl.innerHTML = '';
+    placedEl.innerHTML = '';
+
+    let unplacedCount = 0, placedCount = 0;
+    window.photoPool.forEach((photo, i) => {
+      const thumb = window._sidebarThumbs[i];
+      if (!thumb) return;
+      if (placed.has(i)) {
+        thumb.classList.add('assigned');
+        thumb.classList.remove('unassigned');
+        placedEl.appendChild(thumb);
+        placedCount++;
+      } else {
+        thumb.classList.add('unassigned');
+        thumb.classList.remove('assigned');
+        unplacedEl.appendChild(thumb);
+        unplacedCount++;
+      }
+    });
+
+    document.getElementById('sidebar-total').textContent = window.photoPool.length + ' photo' + (window.photoPool.length !== 1 ? 's' : '');
+    document.getElementById('sidebar-unplaced-count').textContent = unplacedCount;
+    document.getElementById('sidebar-placed-count').textContent = placedCount;
+
+    // Wire sidebar drop target
+    const sidebar = document.getElementById('photo-sidebar');
+    if (!sidebar._dropWired) {
+      sidebar._dropWired = true;
+      sidebar.addEventListener('dragover', e => {
+        if (window._dragType === 'slot') { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; sidebar.classList.add('sidebar-drag-over'); }
+      });
+      sidebar.addEventListener('dragleave', e => {
+        if (!sidebar.contains(e.relatedTarget)) sidebar.classList.remove('sidebar-drag-over');
+      });
+      sidebar.addEventListener('drop', e => {
+        sidebar.classList.remove('sidebar-drag-over');
+        let data;
+        try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+        if (data.type !== 'slot') return;
+        e.preventDefault();
+        const asgn = window.bookAssignments[data.spreadIndex];
+        if (!asgn || !asgn[data.side]) return;
+        asgn[data.side][data.slotIdx] = null;
+        rerenderSpread(data.spreadIndex);
+        renderPhotoSidebar();
+      });
+    }
+  }
+
+  function makeSidebarThumb(photo, i) {
+    const orient = photo.orientation === 'vertical' ? 'V' : 'H';
+    const thumb = document.createElement('div');
+    thumb.className = 'photo-thumb unassigned';
+    thumb.dataset.index = i;
+    thumb.dataset.orient = orient;
+    thumb.title = photo.name;
+    thumb.draggable = true;
+    thumb.addEventListener('dragstart', e => {
+      window._dragType = 'strip';
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'strip', poolIdx: i }));
+      thumb.classList.add('dragging');
+    });
+    thumb.addEventListener('dragend', () => { window._dragType = null; thumb.classList.remove('dragging'); });
+
+    const img = document.createElement('img');
+    img.src = photo.url;
+    img.alt = photo.name;
+    img.draggable = false;
+    thumb.appendChild(img);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'thumb-name';
+    nameEl.textContent = photo.name.replace(/\.[^.]+$/, '');
+    thumb.appendChild(nameEl);
+
+    if (photo.lowRes) {
+      const badge = document.createElement('div');
+      badge.className = 'warn-badge';
+      badge.textContent = '⚠ Low res';
+      thumb.appendChild(badge);
+    }
+
+    return thumb;
+  }
+
+  function renderSpread(spreadId, photoSlice, spreadIndex) {
+    const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+    if (!spreadDef) return null;
+
+    const row = document.createElement('div');
+    row.className = 'spread-row';
+    row.dataset.spreadId = spreadId;
+    row.dataset.spreadIndex = spreadIndex;
+
+    const header = document.createElement('div');
+    header.className = 'spread-row-header';
+    const badge = document.createElement('div');
+    badge.className = 'spread-index-badge';
+    badge.textContent = spreadIndex + 1;
+    header.appendChild(badge);
+    const title = document.createElement('div');
+    title.className = 'spread-title';
+    title.textContent = spreadDef.label;
+    header.appendChild(title);
+    const typeTag = document.createElement('div');
+    typeTag.className = 'spread-type-tag' + (spreadId.startsWith('FP') ? ' fp' : '');
+    typeTag.textContent = spreadId.startsWith('FP') ? 'Functional' : 'Standard';
+    header.appendChild(typeTag);
+    row.appendChild(header);
+
+    const pagesWrap = document.createElement('div');
+    pagesWrap.className = 'spread-pages';
+    row.appendChild(pagesWrap);
+
+    const sides = ['left', 'right'];
+    sides.forEach(side => {
+      const pageDef = spreadDef.pages?.[side];
+      if (!pageDef) return;
+
+      const sideSlice = photoSlice[side] || [];
+      let dominantOrientation = 'horizontal';
+      for (const idx of sideSlice) {
+        if (idx !== null && window.photoPool[idx]) {
+          dominantOrientation = window.photoPool[idx].orientation || 'horizontal';
+          break;
+        }
+      }
+
+      const orientToKey = { horizontal: 'H', vertical: 'V', square: 'S' };
+      let variantKey = orientToKey[dominantOrientation] || 'H';
+      if (!pageDef[variantKey]) {
+        variantKey = pageDef['default'] ? 'default' : Object.keys(pageDef)[0];
+      }
+      const variant = pageDef[variantKey];
+      if (!variant) return;
+
+      const canvas = document.createElement('div');
+      canvas.className = 'page-canvas';
+      canvas.dataset.side = side;
+      canvas.dataset.variant = variantKey;
+      if (variant.bgColor) canvas.style.background = variant.bgColor;
+
+      if (variant.svg) {
+        const overlay = document.createElement('img');
+        overlay.className = 'svg-overlay';
+        overlay.src = SVG_BASE + variant.svg;
+        overlay.alt = '';
+        overlay.decoding = 'async';
+        canvas.appendChild(overlay);
+      }
+
+      variant.slots.forEach((slotDef, slotIdx) => {
+        const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
+        const photo = poolIdx !== null ? window.photoPool[poolIdx] : null;
+
+        const slotEl = document.createElement('div');
+        slotEl.className = 'photo-slot';
+        slotEl.style.left = ((slotDef.x - slotDef.w / 2) * SCALE) + 'px';
+        slotEl.style.top = ((slotDef.y - slotDef.h / 2) * SCALE) + 'px';
+        slotEl.style.width = (slotDef.w * SCALE) + 'px';
+        slotEl.style.height = (slotDef.h * SCALE) + 'px';
+
+        if (photo) {
+          const img = document.createElement('img');
+          img.className = 'slot-photo';
+          img.src = photo.url;
+          img.alt = photo.name;
+          slotEl.appendChild(img);
+          slotEl.draggable = true;
+          slotEl.addEventListener('dragstart', e => {
+            e.stopPropagation();
+            window._dragType = 'slot';
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', JSON.stringify({
+              type: 'slot', spreadIndex, side, slotIdx
+            }));
+            slotEl.classList.add('dragging');
+          });
+          slotEl.addEventListener('dragend', () => { window._dragType = null; slotEl.classList.remove('dragging'); });
+        } else {
+          const ph = document.createElement('div');
+          ph.className = 'slot-placeholder';
+          ph.textContent = 'Drop photo here';
+          slotEl.appendChild(ph);
+        }
+
+        slotEl.addEventListener('dragover', e => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          slotEl.classList.add('drag-over');
+        });
+        slotEl.addEventListener('dragleave', () => slotEl.classList.remove('drag-over'));
+        slotEl.addEventListener('drop', e => {
+          e.preventDefault();
+          slotEl.classList.remove('drag-over');
+          handleSlotDrop(e, spreadIndex, side, slotIdx);
+        });
+
+        canvas.appendChild(slotEl);
+
+        // Caption
+        if (slotDef.caption?.allowed) {
+          const cap = slotDef.caption;
+          const capWidth = cap.wMm * SCALE;
+          const capHeight = cap.hMm * SCALE;
+          const capLeft = (cap.xMm - BLEED_MM) * SCALE - capWidth / 2;
+          const capTop = (cap.yMm - BLEED_MM) * SCALE - capHeight / 2;
+
+          const captionEl = document.createElement('div');
+          captionEl.className = 'slot-caption';
+          captionEl.contentEditable = 'true';
+          captionEl.spellcheck = false;
+          captionEl.style.left = capLeft + 'px';
+          captionEl.style.width = capWidth + 'px';
+          captionEl.style.top = capTop + 'px';
+          captionEl.style.textAlign = cap.halign || 'center';
+
+          const _scsOv = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
+          const _font = _scsOv.font || cap.font;
+          const _weight = _scsOv.weight || (cap.style === 'bold' ? 700 : cap.style === 'semibold' ? 600 : cap.style === 'medium' ? 500 : 400);
+          const _italic = _scsOv.italic !== undefined ? _scsOv.italic : (cap.style === 'italic');
+          const _sizePt = _scsOv.sizePt || cap.sizePt;
+          const _lineS = _scsOv.lineSpacing || (cap.lineSpacing || 1.28);
+          const _letS = _scsOv.letterSpacing || (cap.letterSpacing || 0);
+
+          if (_font) captionEl.style.fontFamily = `'${_font}', var(--sans)`;
+          if (_sizePt) captionEl.style.fontSize = (_sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
+          captionEl.style.lineHeight = _lineS;
+          captionEl.style.letterSpacing = _letS + 'em';
+          captionEl.style.fontWeight = _weight;
+          captionEl.style.fontStyle = _italic ? 'italic' : 'normal';
+
+          const saved = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx];
+          if (saved) captionEl.innerHTML = saved;
+
+          const saveCaption = () => {
+            const html = captionEl.innerHTML.trim();
+            if (!window.bookCaptions) window.bookCaptions = {};
+            if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+            if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+            window.bookCaptions[spreadIndex][side][slotIdx] = html;
+            return html;
+          };
+
+          captionEl.addEventListener('focus', () => {
+            const stored = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx] || '';
+            captionEl.innerHTML = stored;
+            showCaptionToolbar(spreadIndex, side, slotIdx, cap, captionEl);
+          });
+          captionEl.addEventListener('blur', () => {
+            const html = saveCaption();
+            captionEl.innerHTML = html;
+          });
+          captionEl.addEventListener('mousedown', e => e.stopPropagation());
+          captionEl.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); captionEl.blur(); }
+          });
+
+          canvas.appendChild(captionEl);
+        }
+      });
+
+      // Text panel for FPs
+      if (variant.textPanel?.caption?.allowed) {
+        const tpCap = variant.textPanel.caption;
+        const panelWidth = tpCap.wMm * SCALE;
+        const panelHeight = tpCap.hMm * SCALE;
+        const panelLeft = (tpCap.xMm - BLEED_MM) * SCALE - panelWidth / 2;
+        const panelTop = (tpCap.yMm - BLEED_MM) * SCALE - panelHeight / 2;
+
+        const panelEl = document.createElement('div');
+        panelEl.className = 'slot-caption fp-text-panel';
+        panelEl.contentEditable = 'true';
+        panelEl.spellcheck = false;
+        panelEl.style.left = panelLeft + 'px';
+        panelEl.style.width = panelWidth + 'px';
+        panelEl.style.top = panelTop + 'px';
+        panelEl.style.textAlign = tpCap.halign || 'center';
+
+        if (tpCap.font) panelEl.style.fontFamily = `'${tpCap.font}', var(--sans)`;
+        if (tpCap.sizePt) panelEl.style.fontSize = (tpCap.sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
+        if (tpCap.lineSpacing) panelEl.style.lineHeight = tpCap.lineSpacing;
+        if (tpCap.letterSpacing !== undefined) panelEl.style.letterSpacing = tpCap.letterSpacing + 'em';
+
+        const saved = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanel'] || '';
+        if (saved) panelEl.innerHTML = saved.replace(/\n/g, '<br>');
+
+        const savePanelCaption = () => {
+          const raw = panelEl.innerHTML.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim();
+          if (!window.bookCaptions) window.bookCaptions = {};
+          if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+          if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+          window.bookCaptions[spreadIndex][side]['textPanel'] = raw;
+          return raw;
+        };
+
+        panelEl.addEventListener('focus', () => {
+          const stored = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanel'] || '';
+          panelEl.innerHTML = stored.replace(/\n/g, '<br>');
+          showCaptionToolbar(spreadIndex, side, 'textPanel', tpCap, panelEl);
+        });
+        panelEl.addEventListener('blur', () => {
+          const raw = savePanelCaption();
+          panelEl.innerHTML = raw.replace(/\n/g, '<br>');
+        });
+        panelEl.addEventListener('mousedown', e => e.stopPropagation());
+        panelEl.addEventListener('keydown', e => {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); panelEl.blur(); }
+        });
+
+        canvas.appendChild(panelEl);
+      }
+
+      pagesWrap.appendChild(canvas);
+    });
+
+    return row;
+  }
+
+  function handleSlotDrop(e, spreadIndex, side, slotIdx) {
+    let data;
+    try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+
+    if (data.type === 'strip') {
+      // From sidebar: assign photo to slot
+      if (!window.bookAssignments[spreadIndex]) window.bookAssignments[spreadIndex] = { left: [], right: [] };
+      window.bookAssignments[spreadIndex][side][slotIdx] = data.poolIdx;
+      rerenderSpread(spreadIndex);
+      renderPhotoSidebar();
+    } else if (data.type === 'slot') {
+      // Swap between slots
+      const srcAsgn = window.bookAssignments[data.spreadIndex]?.[data.side];
+      const tgtAsgn = window.bookAssignments[spreadIndex]?.[side];
+      if (srcAsgn && tgtAsgn) {
+        const tmp = srcAsgn[data.slotIdx];
+        srcAsgn[data.slotIdx] = tgtAsgn[slotIdx];
+        tgtAsgn[slotIdx] = tmp;
+        rerenderSpread(data.spreadIndex);
+        rerenderSpread(spreadIndex);
+        renderPhotoSidebar();
+      }
+    }
+  }
+
+  function rerenderSpread(spreadIndex) {
+    const existing = document.querySelector(`.spread-row[data-spread-index="${spreadIndex}"]`);
+    if (!existing) return;
+    const spreadId = existing.dataset.spreadId;
+    const asgn = window.bookAssignments[spreadIndex] || { left: [], right: [] };
+    const newRow = renderSpread(spreadId, asgn, spreadIndex);
+    if (newRow) existing.replaceWith(newRow);
+  }
+
+  function showCaptionToolbar(spreadIndex, side, slotIdx, capDef, capEl) {
+    _tbMode = 'spread';
+    _tbCapEl = capEl;
+    _tbSpreadCtx = { spreadIndex, side, slotIdx, capDef };
+
+    const ov = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
+    const currentFont = ov.font || capDef.font;
+    const currentWeight = ov.weight || (capDef.style === 'bold' ? 700 : capDef.style === 'semibold' ? 600 : capDef.style === 'medium' ? 500 : 400);
+    const currentItalic = ov.italic !== undefined ? ov.italic : (capDef.style === 'italic');
+    const currentSize = ov.sizePt || capDef.sizePt;
+    const currentLine = ov.lineSpacing || (capDef.lineSpacing || 1.28);
+    const currentLS = ov.letterSpacing || (capDef.letterSpacing || 0);
+
+    document.getElementById('tb-caption-label').textContent = 'Caption';
+
+    const sel = document.getElementById('tb-font');
+    sel.innerHTML = '';
+    CAPTION_FONTS.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.value;
+      opt.textContent = f.label;
+      if (f.value === currentFont) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    rebuildStylePills(currentFont, currentWeight, currentItalic);
+    document.getElementById('tb-size-val').textContent = currentSize + 'pt';
+    document.getElementById('tb-line-val').textContent = currentLine.toFixed(2);
+    document.getElementById('tb-ls-val').textContent = currentLS.toFixed(2) + 'em';
+
+    const rect = capEl.getBoundingClientRect();
+    const tb = document.getElementById('caption-toolbar');
+    tb.style.top = Math.max(8, rect.top - 58) + 'px';
+    tb.style.left = Math.max(8, rect.left) + 'px';
+    tb.classList.add('visible');
+  }
+
+  function rebuildStylePills(fontValue, activeWeight, activeItalic) {
+    const group = document.getElementById('tb-style-group');
+    group.innerHTML = '';
+    const fontDef = CAPTION_FONTS.find(f => f.value === fontValue);
+    if (!fontDef) return;
+    fontDef.styles.forEach(s => {
+      const pill = document.createElement('button');
+      pill.className = 'tb-pill';
+      pill.textContent = s.label;
+      if (s.weight === activeWeight && s.italic === activeItalic) pill.classList.add('active');
+      pill.addEventListener('mousedown', e => {
+        e.preventDefault();
+        tbUpdate({ weight: s.weight, italic: s.italic });
+        group.querySelectorAll('.tb-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+      });
+      group.appendChild(pill);
+    });
+  }
+
+  function tbUpdate(patch) {
+    if (!_tbSpreadCtx || !_tbCapEl) return;
+    const { spreadIndex, side, slotIdx, capDef } = _tbSpreadCtx;
+    const si = String(spreadIndex);
+    if (!window.spreadCaptionStyles[si]) window.spreadCaptionStyles[si] = {};
+    if (!window.spreadCaptionStyles[si][side]) window.spreadCaptionStyles[si][side] = {};
+    if (!window.spreadCaptionStyles[si][side][slotIdx]) {
+      window.spreadCaptionStyles[si][side][slotIdx] = {
+        font: capDef.font,
+        weight: capDef.style === 'bold' ? 700 : capDef.style === 'semibold' ? 600 : capDef.style === 'medium' ? 500 : 400,
+        italic: capDef.style === 'italic',
+        sizePt: capDef.sizePt,
+        lineSpacing: capDef.lineSpacing || 1.28,
+        letterSpacing: capDef.letterSpacing || 0,
+      };
+    }
+    Object.assign(window.spreadCaptionStyles[si][side][slotIdx], patch);
+    applyStyleToSpreadCapEl();
+  }
+
+  function applyStyleToSpreadCapEl() {
+    if (!_tbCapEl || !_tbSpreadCtx) return;
+    const { spreadIndex, side, slotIdx, capDef } = _tbSpreadCtx;
+    const ov = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
+    const font = ov.font || capDef.font;
+    const weight = ov.weight || (capDef.style === 'bold' ? 700 : capDef.style === 'semibold' ? 600 : capDef.style === 'medium' ? 500 : 400);
+    const italic = ov.italic !== undefined ? ov.italic : (capDef.style === 'italic');
+    const sizePt = ov.sizePt || capDef.sizePt;
+    const lineSpacing = ov.lineSpacing || (capDef.lineSpacing || 1.28);
+    const letterSpacing = ov.letterSpacing || (capDef.letterSpacing || 0);
+
+    _tbCapEl.style.fontFamily = `'${font}', serif`;
+    _tbCapEl.style.fontWeight = weight;
+    _tbCapEl.style.fontStyle = italic ? 'italic' : 'normal';
+    _tbCapEl.style.fontSize = (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
+    _tbCapEl.style.lineHeight = lineSpacing;
+    _tbCapEl.style.letterSpacing = letterSpacing + 'em';
+  }
+
+  function setupPreviewMode() {
+    const seq = window.orderData?.bookSequence || Object.keys(window.SCRIBBLE_DATA.spreads).filter(k => !k.startsWith('FP')).slice(0, 3);
+    const dotsContainer = document.getElementById('preview-dots');
+    dotsContainer.innerHTML = '';
+    seq.forEach((_, idx) => {
+      const dot = document.createElement('div');
+      dot.className = 'preview-dot' + (idx === 0 ? ' active' : '');
+      dot.addEventListener('click', () => goToPreviewSpread(idx));
+      dotsContainer.appendChild(dot);
+    });
+
+    document.getElementById('preview-prev').addEventListener('click', () => {
+      window.previewSpreadIndex = Math.max(0, window.previewSpreadIndex - 1);
+      updatePreviewMode();
+    });
+    document.getElementById('preview-next').addEventListener('click', () => {
+      window.previewSpreadIndex = Math.min(seq.length - 1, window.previewSpreadIndex + 1);
+      updatePreviewMode();
+    });
+  }
+
+  function goToPreviewSpread(idx) {
+    window.previewSpreadIndex = idx;
+    updatePreviewMode();
+  }
+
+  function updatePreviewMode() {
+    const seq = window.orderData?.bookSequence || Object.keys(window.SCRIBBLE_DATA.spreads).filter(k => !k.startsWith('FP')).slice(0, 3);
+    document.querySelectorAll('.spread-row').forEach((row, idx) => {
+      row.classList.toggle('preview-hidden', idx !== window.previewSpreadIndex);
+    });
+
+    const prevBtn = document.getElementById('preview-prev');
+    const nextBtn = document.getElementById('preview-next');
+    prevBtn.disabled = window.previewSpreadIndex === 0;
+    nextBtn.disabled = window.previewSpreadIndex === seq.length - 1;
+
+    document.querySelectorAll('.preview-dot').forEach((dot, idx) => {
+      dot.classList.toggle('active', idx === window.previewSpreadIndex);
+    });
+  }
+
+  // ── Mode toggle ──
+  document.getElementById('mode-edit-btn').addEventListener('click', () => {
+    document.getElementById('mode-edit-btn').classList.add('active');
+    document.getElementById('mode-preview-btn').classList.remove('active');
+    document.getElementById('page-body').classList.remove('preview-mode');
+    document.getElementById('book-canvas-wrap')?.classList.remove('preview-mode');
+    document.getElementById('photo-sidebar').classList.remove('hidden');
+    document.getElementById('preview-controls').classList.remove('visible');
+    document.getElementById('submit-bar').classList.remove('hidden');
+  });
+
+  document.getElementById('mode-preview-btn').addEventListener('click', () => {
+    document.getElementById('mode-preview-btn').classList.add('active');
+    document.getElementById('mode-edit-btn').classList.remove('active');
+    document.getElementById('page-body').classList.add('preview-mode');
+    document.querySelectorAll('.book-canvas-wrap').forEach(el => el.classList.add('preview-mode'));
+    document.getElementById('photo-sidebar').classList.add('hidden');
+    document.getElementById('preview-controls').classList.add('visible');
+    document.getElementById('submit-bar').classList.add('hidden');
+    updatePreviewMode();
+  });
+
+  // ── Submit & Cancel ──
+  document.getElementById('submit-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span>';
+
+    try {
+      // Build save payload matching staff engine format
+      const assignments = {};
+      for (const [si, sides] of Object.entries(window.bookAssignments || {})) {
+        assignments[si] = {};
+        for (const side of ['left', 'right']) {
+          if (!sides[side]) continue;
+          assignments[si][side] = sides[side].map(idx => idx !== null ? idx : null);
+        }
+      }
+
+      const payload = {
+        orderNumber: window.orderData?.orderNumber,
+        fpSelections: window.orderData?.fpSelections || [],
+        bookAssignments: assignments,
+        captions: window.bookCaptions || {},
+        spreadCaptionStyles: window.spreadCaptionStyles || {},
+      };
+
+      // POST to Firestore (via Cloud Function or direct update)
+      // For MVP, store in Firestore under order doc using admin SDK endpoint
+      const updateResp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/saveOrderState', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: new URLSearchParams(location.search).get('token'),
+          ...payload,
+        }),
+      });
+
+      if (!updateResp.ok) throw new Error('Save failed');
+      alert('Changes saved! Staff will review your updates.');
+      btn.disabled = false;
+      btn.innerHTML = 'Submit Changes';
+    } catch (err) {
+      alert('Error saving changes: ' + err.message);
+      btn.disabled = false;
+      btn.innerHTML = 'Submit Changes';
+    }
+  });
+
+  document.getElementById('cancel-btn').addEventListener('click', () => {
+    if (confirm('Discard changes and return?')) {
+      window.history.back();
+    }
+  });
+
+  // ── Toolbar event wiring ──
+  document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('mousedown', e => {
+      const tb = document.getElementById('caption-toolbar');
+      if (!tb.contains(e.target) && !e.target.closest('.slot-caption')) {
+        tb.classList.remove('visible');
+        _tbCapEl = null;
+        _tbSpreadCtx = null;
+      }
+    });
+
+    document.getElementById('tb-font').addEventListener('change', e => {
+      const newFont = e.target.value;
+      const fontDef = CAPTION_FONTS.find(f => f.value === newFont);
+      const firstStyle = fontDef ? fontDef.styles[0] : { weight: 400, italic: false };
+      tbUpdate({ font: newFont, weight: firstStyle.weight, italic: firstStyle.italic });
+      rebuildStylePills(newFont, firstStyle.weight, firstStyle.italic);
+    });
+
+    ['size', 'line', 'ls'].forEach(type => {
+      const getVal = () => {
+        if (!_tbSpreadCtx) return 0;
+        const { spreadIndex, side, slotIdx, capDef } = _tbSpreadCtx;
+        const ov = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
+        if (type === 'size') return ov.sizePt || capDef.sizePt || 16;
+        if (type === 'line') return ov.lineSpacing || capDef.lineSpacing || 1.28;
+        if (type === 'ls') return ov.letterSpacing || capDef.letterSpacing || 0;
+      };
+
+      document.getElementById(`tb-${type}-down`).addEventListener('mousedown', e => {
+        e.preventDefault();
+        if (!_tbSpreadCtx) return;
+        const cur = getVal();
+        let next;
+        if (type === 'size') next = Math.max(6, cur - 1);
+        else if (type === 'line') next = Math.max(0.5, parseFloat((cur - 0.05).toFixed(2)));
+        else if (type === 'ls') next = Math.max(-0.2, parseFloat((cur - 0.02).toFixed(2)));
+        tbUpdate(type === 'size' ? { sizePt: next } : type === 'line' ? { lineSpacing: next } : { letterSpacing: next });
+        document.getElementById(`tb-${type}-val`).textContent = (type === 'size' ? next + 'pt' : next.toFixed(2) + (type === 'ls' ? 'em' : ''));
+      });
+
+      document.getElementById(`tb-${type}-up`).addEventListener('mousedown', e => {
+        e.preventDefault();
+        if (!_tbSpreadCtx) return;
+        const cur = getVal();
+        let next;
+        if (type === 'size') next = Math.min(120, cur + 1);
+        else if (type === 'line') next = Math.min(3.0, parseFloat((cur + 0.05).toFixed(2)));
+        else if (type === 'ls') next = Math.min(0.5, parseFloat((cur + 0.02).toFixed(2)));
+        tbUpdate(type === 'size' ? { sizePt: next } : type === 'line' ? { lineSpacing: next } : { letterSpacing: next });
+        document.getElementById(`tb-${type}-val`).textContent = (type === 'size' ? next + 'pt' : next.toFixed(2) + (type === 'ls' ? 'em' : ''));
+      });
+    });
+  });
+
+  // Initialize on DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', init);
+
+  // Handle window resize for mobile gate
+  window.addEventListener('resize', () => {
+    if (window.innerWidth < 900) {
+      document.getElementById('mobile-gate').classList.add('visible');
+      document.getElementById('page-body').style.display = 'none';
+      document.getElementById('photo-sidebar').style.display = 'none';
+      document.getElementById('preview-controls').style.display = 'none';
+      document.getElementById('submit-bar').style.display = 'none';
+      document.getElementById('footer').style.display = 'none';
+    } else {
+      document.getElementById('mobile-gate').classList.remove('visible');
+      document.getElementById('page-body').style.display = '';
+      document.getElementById('photo-sidebar').style.display = '';
+      document.getElementById('footer').style.display = '';
+    }
+  });
+</script>
+
+</body>
+</html>
