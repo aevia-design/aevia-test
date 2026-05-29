@@ -739,6 +739,7 @@
      GLOBAL STATE
   ═══════════════════════════════════════════ */
   window.photoPool          = [];
+  window.specialPhotos      = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
   window.bookAssignments    = {};
   window.bookCaptions       = {};
   window.spreadCaptionStyles = {};
@@ -818,41 +819,44 @@
     const storedNames = window.orderData?.storedNames;
     if (!signedUrls) { console.warn('No signed URLs in order data'); return; }
 
-    const photos = [];
-
-    async function addPhoto(url, name) {
-      if (!url) return;
+    async function fetchPhoto(url, name) {
+      if (!url) return null;
       try {
         const resp = await fetch(url);
         const blob = await resp.blob();
         const objUrl = URL.createObjectURL(blob);
         const { orientation, w, h } = await getOrientationFromBlob(blob);
-        photos.push({ file: null, url: objUrl, date: null, name, w, h, orientation,
-          lowRes: w > 0 && Math.min(w, h) < 1500 });
+        return { file: null, url: objUrl, date: null, name, w, h, orientation,
+          lowRes: w > 0 && Math.min(w, h) < 1500 };
       } catch (err) {
         console.error('Failed to load photo:', name, err);
+        return null;
       }
     }
 
-    // Cover
-    await addPhoto(signedUrls.cover, storedNames?.cover || 'cover');
+    // Cover → specialPhotos.cover (mirrors staff engine structure)
+    const coverPhoto = await fetchPhoto(signedUrls.cover, storedNames?.cover || 'cover');
+    if (coverPhoto) window.specialPhotos.cover = [coverPhoto];
 
-    // Special (FP) photos: { fp3: [url], fp5: [url1, url2] }
+    // Special (FP) photos → specialPhotos[FPX] (mirrors staff engine structure)
     for (const [slug, urls] of Object.entries(signedUrls.special || {})) {
+      const fpKey   = slug.toUpperCase();
       const nameArr = storedNames?.special?.[slug] || [];
       const urlArr  = Array.isArray(urls) ? urls : [urls];
-      for (let i = 0; i < urlArr.length; i++) {
-        await addPhoto(urlArr[i], (Array.isArray(nameArr) ? nameArr[i] : nameArr) || `${slug}-${i}`);
+      const photos  = await Promise.all(urlArr.map((url, i) =>
+        fetchPhoto(url, (Array.isArray(nameArr) ? nameArr[i] : nameArr) || `${slug}-${i}`)
+      ));
+      if (window.specialPhotos[fpKey] !== undefined) {
+        window.specialPhotos[fpKey] = photos.filter(Boolean);
       }
     }
 
-    // Pool photos
-    const poolNames = storedNames?.pool || [];
-    await Promise.all((signedUrls.pool || []).map((url, i) =>
-      addPhoto(url, poolNames[i] || `pool-${i}`)
+    // Pool photos → photoPool only (indices match staffBookAssignments)
+    const poolNames  = storedNames?.pool || [];
+    const poolPhotos = await Promise.all((signedUrls.pool || []).map((url, i) =>
+      fetchPhoto(url, poolNames[i] || `pool-${i}`)
     ));
-
-    window.photoPool = photos;
+    window.photoPool = poolPhotos.filter(Boolean);
   }
 
   function getOrientationFromBlob(blob) {
@@ -1133,10 +1137,24 @@
 
       const sideSlice = photoSlice[side] || [];
       let dominantOrientation = 'horizontal';
-      for (const idx of sideSlice) {
-        if (idx !== null && window.photoPool[idx]) {
-          dominantOrientation = window.photoPool[idx].orientation || 'horizontal';
-          break;
+      if (spreadDef.allArtwork) {
+        // FP5: each page picks variant from its own artwork orientation
+        const artIdx = side === 'left' ? 0 : 1;
+        const art = (window.specialPhotos[spreadId] || [])[artIdx];
+        if (art) dominantOrientation = art.orientation || 'horizontal';
+      } else {
+        let found = false;
+        for (const idx of sideSlice) {
+          if (idx !== null && window.photoPool[idx]) {
+            dominantOrientation = window.photoPool[idx].orientation || 'horizontal';
+            found = true;
+            break;
+          }
+        }
+        // Special-slot sides (FP3/FP4 left page): drive variant from special photo
+        if (!found) {
+          const special = (window.specialPhotos[spreadId] || [])[0];
+          if (special) dominantOrientation = special.orientation || 'horizontal';
         }
       }
 
@@ -1164,8 +1182,17 @@
       }
 
       variant.slots.forEach((slotDef, slotIdx) => {
-        const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
-        const photo = poolIdx !== null ? window.photoPool[poolIdx] : null;
+        let photo = null;
+        let isSpecialSlot = false;
+        if (slotDef.pool === 'special' || slotDef.pool === 'artwork') {
+          isSpecialSlot = true;
+          const spArr = window.specialPhotos[spreadId] || [];
+          photo = spArr[slotIdx] || null;
+        } else {
+          const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
+          photo = poolIdx !== null ? window.photoPool[poolIdx] : null;
+        }
+        const poolIdx = isSpecialSlot ? null : (sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null);
 
         const slotEl = document.createElement('div');
         slotEl.className = 'photo-slot';
