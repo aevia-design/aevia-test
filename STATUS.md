@@ -1,10 +1,18 @@
 # Session Status
-_Last updated: 2026-05-29 (session 8)_
+_Last updated: 2026-05-29 (session 9)_
 
 ## Status
-Session 8 focused on making the **customer preview render identically to the staff engine** across the whole book (cover, standard, functional pages) while letting the customer edit photo sequence + captions in our styling. Six commits deployed to Cloudflare + Firebase. **None of session 8's changes are live-tested yet** — user will verify later, then report one outstanding "critical issue".
+Session 9 fixed customer-engine editing rules and the save/approve UX. Frontend pushed to Cloudflare (commit `f6eaa1a`). **Backend `getOrder` change is committed but NOT deployed** — `firebase deploy --only functions` still required for save/resume to work. **None of session 9's changes are live-tested** — user will verify next run.
 
-**Meta-task bar (user, explicit):** customer-rendered book must look EXACTLY like staff (fonts, styling, captions, photo positions, spreads, cover). Customer can change photo sequence AND captions, always using our styling/layout.
+**Meta-task bar (user, explicit):** customer-rendered book must look EXACTLY like staff (fonts, styling, captions, photo positions, spreads, cover). Customer can change photo sequence AND captions, always using our styling/layout. Customer must follow the same orientation rules as staff (no H+V mixing on multi-photo pages).
+
+### Completed this session (2026-05-29, session 9)
+- **Customer orientation guard (item 1):** ported `wouldMixPage` + `showToast` into customer `handleSlotDrop`. H↔V mixing on multi-photo pages is now blocked with a red toast (was silently flipping both photos). Single-photo pages stay flexible. Strip drops now de-dupe poolIdx.
+- **Staff orientation block visible (item 0):** the existing silent `wouldMixPage` guards now also fire a red toast.
+- **Double-click to unplace (item 2):** double-click a placed photo → back to unplaced sidebar, both engines (customer guarded to pool photos only). Customer instruction text updated.
+- **Sticky instruction bar (item 3):** customer edit-hint is now `position:fixed` below the nav — always visible.
+- **Two-button UX (item 4):** bottom bar = `Save changes` (works) + `Approve & pay` (disabled, coming-soon). Removed nav "Save & Approve", Cancel, dead CSS.
+- **Save/resume — Option A (item 6):** `getOrder` returns `customer*` fields; customer-preview load precedence = customer > staff > defaults. Reopening a link restores the customer's saved book.
 
 ### Completed this session (2026-05-29, session 8)
 - **Order confirmation wording** (`pages/order.html`): reworded Design/Approval/Print steps; removed "print in Vienna".
@@ -46,8 +54,10 @@ Session 8 focused on making the **customer preview render identically to the sta
   - Added `assignPhotosToSpreads()` (adapted from staff engine) for auto-assignment when no saved state
 
 ## Immediate next steps
-1. **Live-test session 8 changes** — staff: load order → Save book state (REQUIRED after this deploy for `staffBookSequence` + caption styles) → open customer preview → verify cover renders + scales at zoom, sequence/photos/spreads match, captions match (font/size/position), funny-words size, cover caption editing.
-2. **Resolve user's outstanding "critical issue"** — to be reported.
+1. **Deploy backend** — `firebase deploy --only functions` (REQUIRED for save/resume; until then `getOrder` omits `customer*` and reopen falls back to the staff version).
+2. **Live-test session 9** — customer: drag H into a V multi-photo page → expect block + toast; double-click a placed photo → returns to sidebar; scroll → instruction bar stays visible; edit → Save changes → reopen link → edits restored; two-button bar reads correctly. Staff: try a mixing drop → expect toast.
+3. **Live-test session 8 changes** — staff: load order → Save book state → open customer preview → verify cover renders + scales at zoom, sequence/photos/spreads match, captions match, funny-words size, cover caption editing.
+4. **Resolve user's outstanding "critical issue"** — to be reported.
 3. **chunk-004** — `approveOrder` Cloud Function → status `approved` → staff email + Stripe Payment Link URL. NOTE: wire "Save & Approve" = run the Submit-Changes save payload, THEN approve. Also decide how customer edits (`customer*` Firestore fields) reconcile back into the staff view.
 4. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
 5. **TO-DO #44** — Prune dashboard status bar
@@ -82,6 +92,10 @@ Session 8 focused on making the **customer preview render identically to the sta
 - **(S8)** Customer & staff are parallel copies of the same render logic — change one, mirror the other. Any divergence = staff didn't save something OR customer recomputes differently. Fix by saving + replaying, not by re-deriving. See `feedback_engine_parity` memory.
 - **(S8)** Text panels: regular use raw `pt` (96dpi); funnyWords uses `sizePt*SCALE px`. Asymmetry is intentional and matches staff — do not normalise.
 - **(S8)** Cover caption text stored as innerHTML (multi-line). Cover toolbar styling writes `coverCaptionStyles[key]` via `_tbMode==='cover'`.
+- **(S9)** Save/resume needs functions deployed — frontend reads `customer*` from `getOrder` but that field set is only returned after `firebase deploy --only functions`. Frontend is backwards-compatible (customer* just null until deployed).
+- **(S9)** `wouldMixPage` now lives in BOTH engines (parallel copies) — keep in sync. `showToast` is a self-contained helper duplicated in both files (no shared CSS).
+- **(S9)** Customer load precedence is customer > staff > defaults. If staff re-saves after a customer edit, the customer's saved version still wins on the customer's next open — reconciliation into the staff view is still chunk-004 (open question #2).
+- **(S9)** `Approve & pay` button is intentionally disabled (`data-state="coming-soon"`) until the approve/payment flow (chunk-004/005) exists.
 
 ## Key files
 - Session log: `sessions/2026-05-29.md`
