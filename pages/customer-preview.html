@@ -254,6 +254,12 @@
       width: 1227px;
       height: 600px;
     }
+    /* Cover is a fixed 1227px-wide wraparound; scale it to fit the viewport so it
+       never overflows/clips at narrow widths or browser zoom (set via fitCover()). */
+    .cover-scale-wrap {
+      width: 100%;
+      overflow: hidden;
+    }
     .photo-slot {
       position: absolute;
       overflow: hidden;
@@ -1005,6 +1011,16 @@
     return ['SP0', ...standards];
   }
 
+  // Mirror of the staff engine's typographic rules (non-breaking spaces + widow prevention)
+  function applyTypographicRules(text) {
+    if (!text) return text;
+    const NBSP = ' ';
+    const preps = /\b(a|an|the|in|on|at|by|of|to|for|with|from|up|as|into|under|over|about|and|but|or) /gi;
+    text = text.replace(preps, (_, p) => p + NBSP);
+    text = text.replace(/ (\S+)$/, NBSP + '$1');
+    return text;
+  }
+
   // Read-only port of the staff engine's renderCover (no editing/toolbar).
   function renderCover() {
     const coverDef = window.SCRIBBLE_DATA.cover;
@@ -1110,9 +1126,25 @@
       canvas.appendChild(cap);
     });
 
-    pagesWrap.appendChild(canvas);
+    const scaleWrap = document.createElement('div');
+    scaleWrap.className = 'cover-scale-wrap';
+    scaleWrap.appendChild(canvas);
+    pagesWrap.appendChild(scaleWrap);
     row.appendChild(pagesWrap);
     return row;
+  }
+
+  // Scale the fixed-width cover down to fit the available canvas width.
+  function fitCover() {
+    const wrap = document.querySelector('.cover-scale-wrap');
+    if (!wrap) return;
+    const canvas = wrap.querySelector('.cover-canvas');
+    if (!canvas) return;
+    const avail = document.getElementById('book-canvas').clientWidth || wrap.clientWidth;
+    const scale = Math.min(1, avail / 1227);
+    canvas.style.transformOrigin = 'top left';
+    canvas.style.transform = `scale(${scale})`;
+    wrap.style.height = (600 * scale) + 'px';
   }
 
   function renderBook() {
@@ -1134,6 +1166,7 @@
 
     renderPhotoSidebar();
     setupPreviewMode();
+    fitCover();
   }
 
   function renderPhotoSidebar() {
@@ -1463,33 +1496,64 @@
         }
       });
 
-      // Text panel for FPs
+      // Text panel for FPs — mirrors staff engine (funnyWords + valign + pt/px sizing)
       if (variant.textPanel?.caption?.allowed) {
+        const isFunnyWords = !!variant.textPanel.funnyWords;
         const tpCap = variant.textPanel.caption;
-        const panelWidth = tpCap.wMm * SCALE;
+        const panelWidth  = tpCap.wMm * SCALE;
         const panelHeight = tpCap.hMm * SCALE;
-        const panelLeft = (tpCap.xMm - BLEED_MM) * SCALE - panelWidth / 2;
-        const panelTop = (tpCap.yMm - BLEED_MM) * SCALE - panelHeight / 2;
+        const panelLeft   = (tpCap.xMm - BLEED_MM) * SCALE - panelWidth  / 2;
+        const panelTop    = (tpCap.yMm - BLEED_MM) * SCALE - panelHeight / 2;
 
         const panelEl = document.createElement('div');
         panelEl.className = 'slot-caption fp-text-panel';
         panelEl.contentEditable = 'true';
         panelEl.spellcheck = false;
-        panelEl.style.left = panelLeft + 'px';
-        panelEl.style.width = panelWidth + 'px';
-        panelEl.style.top = panelTop + 'px';
+        panelEl.style.left      = panelLeft   + 'px';
+        panelEl.style.width     = panelWidth  + 'px';
         panelEl.style.textAlign = tpCap.halign || 'center';
 
-        if (tpCap.font) panelEl.style.fontFamily = `'${tpCap.font}', var(--sans)`;
-        if (tpCap.sizePt) panelEl.style.fontSize = (tpCap.sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
-        if (tpCap.lineSpacing) panelEl.style.lineHeight = tpCap.lineSpacing;
+        if (isFunnyWords) {
+          const panelCenterY = (tpCap.yMm - BLEED_MM) * SCALE;
+          panelEl.style.top       = panelCenterY + 'px';
+          panelEl.style.transform = 'translateY(-50%)';
+          panelEl.style.maxHeight = panelHeight + 'px';
+          panelEl.style.overflow  = 'hidden';
+        } else if (tpCap.valign === 'bottom') {
+          const CANVAS_PX = 200 * SCALE;
+          const panelBottomEdge = (tpCap.yMm - BLEED_MM) * SCALE + panelHeight / 2;
+          panelEl.style.bottom    = (CANVAS_PX - panelBottomEdge) + 'px';
+          panelEl.style.maxHeight = panelHeight + 'px';
+        } else {
+          panelEl.style.top    = panelTop    + 'px';
+          panelEl.style.height = panelHeight + 'px';
+          if (tpCap.valign === 'center') {
+            panelEl.style.paddingTop = (panelHeight / 2 - panelHeight * 0.15) + 'px';
+          }
+        }
+
+        if (tpCap.font)                        panelEl.style.fontFamily    = `'${tpCap.font}', var(--sans)`;
+        if (tpCap.sizePt)                      panelEl.style.fontSize      = isFunnyWords ? (tpCap.sizePt * SCALE) + 'px' : tpCap.sizePt + 'pt';
+        if (tpCap.lineSpacing)                 panelEl.style.lineHeight    = tpCap.lineSpacing;
         if (tpCap.letterSpacing !== undefined) panelEl.style.letterSpacing = tpCap.letterSpacing + 'em';
 
+        const formatFunnyWords = (text) => {
+          if (!isFunnyWords) return text;
+          return text.trim().split(/\s+/).filter(Boolean).slice(0, 10).join('\n');
+        };
+        const panelToPlain = () => panelEl.innerHTML
+          .replace(/<div>/gi, '\n').replace(/<\/div>/gi, '')
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .trim();
+        const plainToPanel = (text) => { panelEl.innerHTML = text.replace(/\n/g, '<br>'); };
+
         const saved = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanel'] || '';
-        if (saved) panelEl.innerHTML = saved.replace(/\n/g, '<br>');
+        if (saved) plainToPanel(isFunnyWords ? formatFunnyWords(saved) : applyTypographicRules(saved));
 
         const savePanelCaption = () => {
-          const raw = panelEl.innerHTML.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim();
+          const raw = panelToPlain();
           if (!window.bookCaptions) window.bookCaptions = {};
           if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
           if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
@@ -1499,16 +1563,17 @@
 
         panelEl.addEventListener('focus', () => {
           const stored = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanel'] || '';
-          panelEl.innerHTML = stored.replace(/\n/g, '<br>');
+          plainToPanel(isFunnyWords ? formatFunnyWords(stored) : stored);
           showCaptionToolbar(spreadIndex, side, 'textPanel', tpCap, panelEl);
         });
         panelEl.addEventListener('blur', () => {
           const raw = savePanelCaption();
-          panelEl.innerHTML = raw.replace(/\n/g, '<br>');
+          plainToPanel(isFunnyWords ? formatFunnyWords(raw) : applyTypographicRules(raw));
         });
         panelEl.addEventListener('mousedown', e => e.stopPropagation());
         panelEl.addEventListener('keydown', e => {
-          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); panelEl.blur(); }
+          if (e.key === 'Escape') { e.preventDefault(); panelEl.blur(); return; }
+          if (e.key === 'Enter') { e.preventDefault(); document.execCommand('insertLineBreak'); }
         });
 
         canvas.appendChild(panelEl);
@@ -1841,6 +1906,7 @@
       document.getElementById('photo-sidebar').style.display = '';
       document.getElementById('footer').style.display = '';
     }
+    fitCover();
   });
 </script>
 
