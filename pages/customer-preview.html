@@ -176,8 +176,13 @@
     .edit-hint strong { color: var(--text); font-weight: 600; }
     .page-body.preview-mode .edit-hint { display: none; }
     .book-canvas-wrap.preview-mode {
-      max-width: 1000px;
+      max-width: 1290px;
       padding: 40px;
+    }
+    /* Centre the spread's pages within the preview canvas (two-page spreads are ~1204px) */
+    .page-body.preview-mode .spread-pages {
+      justify-content: center;
+      align-items: center;
     }
     #book-canvas {
       min-height: 400px;
@@ -719,6 +724,15 @@
       <button id="tb-ls-up">+</button>
     </div>
   </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <span class="tb-label">Align</span>
+    <div class="tb-group" id="tb-align-group">
+      <button class="tb-pill" data-align="left" title="Align left">L</button>
+      <button class="tb-pill" data-align="center" title="Align center">C</button>
+      <button class="tb-pill" data-align="right" title="Align right">R</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── FOOTER ── -->
@@ -1045,6 +1059,7 @@
     const sizePt   = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
     const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
     const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
+    const align     = ov.align !== undefined ? ov.align : (capDef.align || 'center');
 
     const capW  = capDef.wMm * SCALE;
     const capCX = (capDef.xMm - COVER_BLEED_MM) * SCALE;
@@ -1055,9 +1070,9 @@
 
     if (capDef.rotate) {
       const top = capCY - lineHpx / 2;
-      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:center;z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
+      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
     } else {
-      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${capDef.align || 'center'};z-index:3;transform:translateY(-50%);`;
+      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};z-index:3;transform:translateY(-50%);`;
     }
   }
 
@@ -1491,7 +1506,8 @@
           captionEl.spellcheck = false;
           captionEl.style.left = capLeft + 'px';
           captionEl.style.width = capWidth + 'px';
-          captionEl.style.textAlign = cap.halign || 'center';
+          const _alignOv = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx]?.align;
+          captionEl.style.textAlign = _alignOv !== undefined ? _alignOv : (cap.halign || 'center');
 
           // Vertical alignment must mirror the staff engine exactly.
           if (cap.valign === 'bottom') {
@@ -1567,7 +1583,8 @@
         panelEl.spellcheck = false;
         panelEl.style.left      = panelLeft   + 'px';
         panelEl.style.width     = panelWidth  + 'px';
-        panelEl.style.textAlign = tpCap.halign || 'center';
+        const _tpAlignOv = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.['textPanel']?.align;
+        panelEl.style.textAlign = _tpAlignOv !== undefined ? _tpAlignOv : (tpCap.halign || 'center');
 
         if (isFunnyWords) {
           const panelCenterY = (tpCap.yMm - BLEED_MM) * SCALE;
@@ -1661,7 +1678,7 @@
     t.style.cssText = 'background:' + (kind === 'warn' ? '#b4453a' : '#2a2a2a') + ';color:#fff;font-size:13px;line-height:1.4;padding:10px 18px;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.18);max-width:440px;text-align:center;opacity:0;transition:opacity .2s;';
     host.appendChild(t);
     requestAnimationFrame(() => { t.style.opacity = '1'; });
-    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 250); }, 3200);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 250); }, 6000);
   }
 
   // Returns true if placing incomingPoolIdx into (spreadIndex, side, slotIdx) would mix orientations
@@ -1768,6 +1785,7 @@
     document.getElementById('tb-size-val').textContent = currentSize + 'pt';
     document.getElementById('tb-line-val').textContent = currentLine.toFixed(2);
     document.getElementById('tb-ls-val').textContent = currentLS.toFixed(2) + 'em';
+    setActiveAlignPill(ov.align !== undefined ? ov.align : (capDef.halign || 'center'));
 
     const rect = capEl.getBoundingClientRect();
     const tb = document.getElementById('caption-toolbar');
@@ -1805,6 +1823,7 @@
     document.getElementById('tb-size-val').textContent = currentSize + 'pt';
     document.getElementById('tb-line-val').textContent = currentLine.toFixed(2);
     document.getElementById('tb-ls-val').textContent = currentLS.toFixed(2) + 'em';
+    setActiveAlignPill(ov.align !== undefined ? ov.align : (capDef.align || 'center'));
 
     const rect = capEl.getBoundingClientRect();
     const tb = document.getElementById('caption-toolbar');
@@ -1879,6 +1898,13 @@
     _tbCapEl.style.fontSize = _isFunnyWordsEl ? (sizePt * SCALE) + 'px' : (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
     _tbCapEl.style.lineHeight = lineSpacing;
     _tbCapEl.style.letterSpacing = letterSpacing + 'em';
+    _tbCapEl.style.textAlign = ov.align !== undefined ? ov.align : (capDef.halign || 'center');
+  }
+
+  function setActiveAlignPill(align) {
+    document.querySelectorAll('#tb-align-group .tb-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.align === align);
+    });
   }
 
   function setupPreviewMode() {
@@ -1933,6 +1959,8 @@
     document.getElementById('photo-sidebar').classList.remove('hidden');
     document.getElementById('preview-controls').classList.remove('visible');
     document.getElementById('submit-bar').classList.remove('hidden');
+    // Preview mode hides all rows but the current spread — restore them all on return to edit.
+    document.querySelectorAll('.spread-row').forEach(row => row.classList.remove('preview-hidden'));
     requestAnimationFrame(fitCover);
   });
 
@@ -2056,6 +2084,16 @@
         else if (type === 'ls') next = Math.min(0.5, parseFloat((cur + 0.02).toFixed(2)));
         tbUpdate(type === 'size' ? { sizePt: next } : type === 'line' ? { lineSpacing: next } : { letterSpacing: next });
         document.getElementById(`tb-${type}-val`).textContent = (type === 'size' ? next + 'pt' : next.toFixed(2) + (type === 'ls' ? 'em' : ''));
+      });
+    });
+
+    // Alignment pills
+    document.querySelectorAll('#tb-align-group .tb-pill').forEach(pill => {
+      pill.addEventListener('mousedown', e => {
+        e.preventDefault();
+        if (!_tbSpreadCtx && !_tbCoverCtx) return;
+        tbUpdate({ align: pill.dataset.align });
+        setActiveAlignPill(pill.dataset.align);
       });
     });
   });

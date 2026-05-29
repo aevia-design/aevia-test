@@ -904,6 +904,15 @@
       <button id="tb-ls-up">+</button>
     </div>
   </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <span class="tb-label">Align</span>
+    <div class="tb-group" id="tb-align-group">
+      <button class="tb-pill" data-align="left" title="Align left">L</button>
+      <button class="tb-pill" data-align="center" title="Align center">C</button>
+      <button class="tb-pill" data-align="right" title="Align right">R</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1474,6 +1483,7 @@
       const sizePt   = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
       const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
       const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
+      const align     = ov.align !== undefined ? ov.align : (capDef.align || 'center');
 
       const fontSize = (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
       const lineH    = (sizePt * lineSpacing * SCALE * 25.4 / 72).toFixed(1) + 'px';
@@ -1488,9 +1498,9 @@
       let posCSS;
       if (capDef.rotate) {
         const top = capCY - lineHpx / 2;
-        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:center;z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
+        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
       } else {
-        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${capDef.align || 'center'};z-index:3;transform:translateY(-50%);`;
+        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};z-index:3;transform:translateY(-50%);`;
       }
       cap.style.cssText = posCSS;
 
@@ -1590,6 +1600,7 @@
     document.getElementById('tb-size-val').textContent = currentSize + 'pt';
     document.getElementById('tb-line-val').textContent = currentLine.toFixed(2);
     document.getElementById('tb-ls-val').textContent   = currentLS.toFixed(2) + 'em';
+    setActiveAlignPill(ov.align !== undefined ? ov.align : (capDef.align || 'center'));
 
     // Position toolbar: above front captions, to the right of rotated spine captions
     const rect = capEl.getBoundingClientRect();
@@ -1633,6 +1644,7 @@
     document.getElementById('tb-size-val').textContent = currentSize + 'pt';
     document.getElementById('tb-line-val').textContent = currentLine.toFixed(2);
     document.getElementById('tb-ls-val').textContent   = currentLS.toFixed(2) + 'em';
+    setActiveAlignPill(ov.align !== undefined ? ov.align : (capDef.halign || 'center'));
 
     const rect = capEl.getBoundingClientRect();
     const tb   = document.getElementById('cover-caption-toolbar');
@@ -1698,6 +1710,12 @@
     }
   }
 
+  function setActiveAlignPill(align) {
+    document.querySelectorAll('#tb-align-group .tb-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.align === align);
+    });
+  }
+
   function applyStyleToCapEl(key) {
     const el = document.querySelector(`.cover-caption[data-cover-caption-key="${key}"]`);
     if (!el) return;
@@ -1711,6 +1729,7 @@
     const lsMult = ov.lineSpacing !== undefined ? ov.lineSpacing : 1.1;
     el.style.lineHeight    = ((ov.sizePt || capDef.sizePt) * lsMult).toFixed(1) + 'pt';
     el.style.letterSpacing = (ov.letterSpacing || 0) + 'em';
+    el.style.textAlign     = ov.align !== undefined ? ov.align : (capDef.align || 'center');
   }
 
   function applyStyleToSpreadCapEl() {
@@ -1732,6 +1751,7 @@
     _tbCapEl.style.fontSize      = isFunnyWordsEl ? (sizePt * SCALE) + 'px' : (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
     _tbCapEl.style.lineHeight    = lineSpacing;
     _tbCapEl.style.letterSpacing = letterSpacing + 'em';
+    _tbCapEl.style.textAlign     = ov.align !== undefined ? ov.align : (capDef.halign || 'center');
   }
 
   // Toolbar event wiring (runs once on DOMContentLoaded)
@@ -1808,6 +1828,16 @@
       const next = Math.min(0.5, parseFloat((cur + 0.02).toFixed(2)));
       tbUpdate({ letterSpacing: next });
       document.getElementById('tb-ls-val').textContent = next.toFixed(2) + 'em';
+    });
+
+    // Alignment pills
+    document.querySelectorAll('#tb-align-group .tb-pill').forEach(pill => {
+      pill.addEventListener('mousedown', e => {
+        e.preventDefault();
+        if (!_tbCapDef && !_tbSpreadCtx) return;
+        tbUpdate({ align: pill.dataset.align });
+        setActiveAlignPill(pill.dataset.align);
+      });
     });
 
   });
@@ -2117,7 +2147,8 @@
           captionEl.spellcheck = false;
           captionEl.style.left  = capLeft  + 'px';
           captionEl.style.width = capWidth + 'px';
-          captionEl.style.textAlign = cap.halign || 'center';
+          const _alignOv = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx]?.align;
+          captionEl.style.textAlign = _alignOv !== undefined ? _alignOv : (cap.halign || 'center');
 
           if (cap.valign === 'bottom') {
             // Bottom-anchored: pin to the bottom edge of the box, grow upward as text is added.
@@ -2257,7 +2288,8 @@
 
         panelEl.style.left      = panelLeft   + 'px';
         panelEl.style.width     = panelWidth  + 'px';
-        panelEl.style.textAlign = tpCap.halign || 'center';
+        const _tpAlignOv = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.['textPanel']?.align;
+        panelEl.style.textAlign = _tpAlignOv !== undefined ? _tpAlignOv : (tpCap.halign || 'center');
 
         if (isFunnyWords) {
           // Funny words: no fixed height — let the box grow as words are added.
@@ -2783,7 +2815,7 @@
     t.style.cssText = 'background:' + (kind === 'warn' ? '#b4453a' : '#2a2a2a') + ';color:#fff;font-size:13px;line-height:1.4;padding:10px 18px;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.18);max-width:440px;text-align:center;opacity:0;transition:opacity .2s;';
     host.appendChild(t);
     requestAnimationFrame(() => { t.style.opacity = '1'; });
-    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 250); }, 3200);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 250); }, 6000);
   }
 
   // Returns true if placing incomingPoolIdx into (spreadIndex, side, slotIdx) would mix orientations
