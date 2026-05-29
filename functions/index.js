@@ -142,6 +142,8 @@ exports.getOrder = functions
         staffBookAssignments: order.staffBookAssignments || null,
         staffBookCaptions:    order.staffBookCaptions    || null,
         staffBookSequence:    order.staffBookSequence    || null,
+        staffCoverCaptionStyles:  order.staffCoverCaptionStyles  || null,
+        staffSpreadCaptionStyles: order.staffSpreadCaptionStyles || null,
         signedUrls,
         storedNames: {
           cover:   manifest.cover   || null,
@@ -209,7 +211,8 @@ exports.saveStaffState = functions
       return res.status(403).json({ error: 'Unauthorised' });
     }
 
-    const { orderNumber, bookAssignments, bookCaptions, bookSequence } = req.body;
+    const { orderNumber, bookAssignments, bookCaptions, bookSequence,
+            coverCaptionStyles, spreadCaptionStyles } = req.body;
     if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
 
     try {
@@ -221,6 +224,8 @@ exports.saveStaffState = functions
         staffBookAssignments: bookAssignments || null,
         staffBookCaptions:    bookCaptions    || null,
         staffBookSequence:    bookSequence    || null,
+        staffCoverCaptionStyles:  coverCaptionStyles  || null,
+        staffSpreadCaptionStyles: spreadCaptionStyles || null,
         staffSavedAt:         admin.firestore.FieldValue.serverTimestamp(),
       });
 

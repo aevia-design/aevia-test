@@ -823,7 +823,10 @@
       if (!window.bookCaptions.cover && window.orderData.coverCaptions) {
         window.bookCaptions.cover = window.orderData.coverCaptions;
       }
-      window.coverCaptionStyles = window.orderData.coverCaptionStyles || {};
+      // Caption style maps: staff review edits win, else order-time cover styles.
+      window.coverCaptionStyles = window.orderData.staffCoverCaptionStyles
+        || window.orderData.coverCaptionStyles || {};
+      window.spreadCaptionStyles = window.orderData.staffSpreadCaptionStyles || {};
       renderBook();
     } catch (err) {
       console.error('Failed to load order:', err);
@@ -1094,7 +1097,7 @@
 
       const cap = document.createElement('div');
       cap.className = 'slot-caption cover-caption';
-      cap.textContent = text;
+      cap.innerHTML = text;
 
       let posCSS;
       if (capDef.rotate) {
@@ -1399,16 +1402,29 @@
           captionEl.spellcheck = false;
           captionEl.style.left = capLeft + 'px';
           captionEl.style.width = capWidth + 'px';
-          captionEl.style.top = capTop + 'px';
           captionEl.style.textAlign = cap.halign || 'center';
 
+          // Vertical alignment must mirror the staff engine exactly.
+          if (cap.valign === 'bottom') {
+            const CANVAS_PX = 200 * SCALE;
+            const capBottomEdge = (cap.yMm - BLEED_MM) * SCALE + capHeight / 2;
+            captionEl.style.bottom    = (CANVAS_PX - capBottomEdge) + 'px';
+            captionEl.style.maxHeight = capHeight + 'px';
+          } else {
+            captionEl.style.top    = capTop + 'px';
+            captionEl.style.height = capHeight + 'px';
+            if (cap.valign === 'center') {
+              captionEl.style.paddingTop = (capHeight / 2 - capHeight * 0.15) + 'px';
+            }
+          }
+
           const _scsOv = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
-          const _font = _scsOv.font || cap.font;
-          const _weight = _scsOv.weight || (cap.style === 'bold' ? 700 : cap.style === 'semibold' ? 600 : cap.style === 'medium' ? 500 : 400);
-          const _italic = _scsOv.italic !== undefined ? _scsOv.italic : (cap.style === 'italic');
-          const _sizePt = _scsOv.sizePt || cap.sizePt;
-          const _lineS = _scsOv.lineSpacing || (cap.lineSpacing || 1.28);
-          const _letS = _scsOv.letterSpacing || (cap.letterSpacing || 0);
+          const _font   = _scsOv.font          !== undefined ? _scsOv.font          : cap.font;
+          const _weight = _scsOv.weight        !== undefined ? _scsOv.weight        : (cap.style === 'bold' ? 700 : cap.style === 'semibold' ? 600 : cap.style === 'medium' ? 500 : 400);
+          const _italic = _scsOv.italic        !== undefined ? _scsOv.italic        : (cap.style === 'italic');
+          const _sizePt = _scsOv.sizePt        !== undefined ? _scsOv.sizePt        : cap.sizePt;
+          const _lineS  = _scsOv.lineSpacing   !== undefined ? _scsOv.lineSpacing   : (cap.lineSpacing || 1.28);
+          const _letS   = _scsOv.letterSpacing !== undefined ? _scsOv.letterSpacing : (cap.letterSpacing || 0);
 
           if (_font) captionEl.style.fontFamily = `'${_font}', var(--sans)`;
           if (_sizePt) captionEl.style.fontSize = (_sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';

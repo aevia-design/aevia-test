@@ -1493,11 +1493,12 @@
       }
       cap.style.cssText = posCSS;
 
-      if (savedCoverCaps[capDef.key]) cap.textContent = savedCoverCaps[capDef.key];
+      if (savedCoverCaps[capDef.key]) cap.innerHTML = savedCoverCaps[capDef.key];
 
       cap.addEventListener('input', () => {
         if (!window.bookCaptions['cover']) window.bookCaptions['cover'] = {};
-        window.bookCaptions['cover'][capDef.key] = cap.textContent;
+        // Save innerHTML to preserve line breaks and inline markup
+        window.bookCaptions['cover'][capDef.key] = cap.innerHTML;
       });
 
       cap.addEventListener('focus', () => showCoverCaptionToolbar(capDef, cap));
@@ -3460,6 +3461,8 @@
           bookAssignments: window.bookAssignments || {},
           bookCaptions:   window.bookCaptions    || {},
           bookSequence:   window._bookSequence   || [],
+          coverCaptionStyles:  window.coverCaptionStyles  || {},
+          spreadCaptionStyles: window.spreadCaptionStyles || {},
         }),
       });
       if (!res.ok) {
