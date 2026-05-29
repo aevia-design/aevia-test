@@ -175,6 +175,14 @@
       max-width: 1400px; margin: 0 auto;
       padding: 0 40px 80px;
     }
+    .edit-hint {
+      max-width: 1400px; margin: 0 auto 20px;
+      padding: 10px 40px 0;
+      font-size: 12px; color: var(--muted);
+      letter-spacing: 0.01em;
+    }
+    .edit-hint strong { color: var(--text); font-weight: 600; }
+    .page-body.preview-mode .edit-hint { display: none; }
     .book-canvas-wrap.preview-mode {
       max-width: 1000px;
       padding: 40px;
@@ -618,7 +626,7 @@
     </div>
   </div>
   <button class="nav-approve-btn" id="approve-btn" disabled data-state="coming-soon">
-    Approve
+    Save &amp; Approve
   </button>
 </nav>
 
@@ -637,6 +645,12 @@
 
 <!-- ── MAIN CONTENT ── -->
 <div class="page-body" id="page-body">
+  <div class="edit-hint">
+    <strong>Drag</strong> a photo to swap it with another &nbsp;·&nbsp;
+    <strong>Click</strong> any caption to edit the text &nbsp;·&nbsp;
+    Use the <strong>sidebar</strong> to place unplaced photos &nbsp;·&nbsp;
+    Switch to <strong>Preview</strong> to flip through your finished book
+  </div>
   <div class="book-canvas-wrap">
     <div id="book-canvas">
       <div class="canvas-placeholder">
