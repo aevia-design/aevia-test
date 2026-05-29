@@ -795,7 +795,16 @@
       await loadPhotos();
       const seq = buildBookSequence(window.orderData.pageCount || 20, window.orderData.fpSelections || []);
       window._bookSequence = seq;
-      assignPhotosToSpreads(seq, window.photoPool);
+      // Use staff-saved assignments if available, otherwise auto-assign
+      if (window.orderData.staffBookAssignments) {
+        window.bookAssignments = window.orderData.staffBookAssignments;
+      } else {
+        assignPhotosToSpreads(seq, window.photoPool);
+      }
+      // Pre-load staff captions so renderBook picks them up
+      if (window.orderData.staffBookCaptions) {
+        window.bookCaptions = window.orderData.staffBookCaptions;
+      }
       renderBook();
     } catch (err) {
       console.error('Failed to load order:', err);

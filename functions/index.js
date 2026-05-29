@@ -131,13 +131,15 @@ exports.getOrder = functions
       signedUrls.pool = await Promise.all((manifest.pool || []).map(p => signedReadUrl(p)));
 
       return res.status(200).json({
-        orderNumber:     order.orderNumber,
-        customerName:    order.customerName,
-        pageCount:       order.pageCount,
-        fpSelections:    order.fpSelections || [],
-        fpTexts:         order.fpTexts || {},
-        photoNotes:      order.photoNotes || null,
-        coverCaptions:   order.coverCaptions || null,
+        orderNumber:          order.orderNumber,
+        customerName:         order.customerName,
+        pageCount:            order.pageCount,
+        fpSelections:         order.fpSelections || [],
+        fpTexts:              order.fpTexts || {},
+        photoNotes:           order.photoNotes || null,
+        coverCaptions:        order.coverCaptions || null,
+        staffBookAssignments: order.staffBookAssignments || null,
+        staffBookCaptions:    order.staffBookCaptions    || null,
         signedUrls,
         storedNames: {
           cover:   manifest.cover   || null,
@@ -185,6 +187,43 @@ exports.saveOrderState = functions
       return res.status(200).json({ success: true });
     } catch (err) {
       console.error('saveOrderState error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+// ── Save staff book state (assignments + captions) ───────────────────────────
+// Accepts { orderNumber, bookAssignments, bookCaptions } with x-staff-key header
+exports.saveStaffState = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (req.headers['x-staff-key'] !== process.env.STAFF_KEY) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber, bookAssignments, bookCaptions } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+
+    try {
+      const db = admin.firestore();
+      const doc = await db.collection('orders').doc(orderNumber).get();
+      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+
+      await doc.ref.update({
+        staffBookAssignments: bookAssignments || null,
+        staffBookCaptions:    bookCaptions    || null,
+        staffSavedAt:         admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('saveStaffState error:', err);
       return res.status(500).json({ error: err.message });
     }
   });
