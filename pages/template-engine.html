@@ -2051,6 +2051,19 @@
               slotEl.classList.add('dragging');
             });
             slotEl.addEventListener('dragend', () => { window._dragType = null; slotEl.classList.remove('dragging'); });
+            // Double-click returns the photo to the unplaced sidebar.
+            slotEl.addEventListener('dblclick', () => {
+              const asgn = window.bookAssignments[spreadIndex];
+              if (!asgn || !asgn[side]) return;
+              asgn[side][slotIdx] = null;
+              const sid = window._bookSequence?.[spreadIndex];
+              if (sid?.startsWith('FP')) {
+                if (!window._fpAssignments) window._fpAssignments = {};
+                window._fpAssignments[sid] = asgn;
+              }
+              rerenderSpread(spreadIndex);
+              updateSidebarState();
+            });
           }
         } else {
           const ph = document.createElement('div');
@@ -2750,6 +2763,23 @@
     hydrateSpreadRow(newRow); // user just interacted — show photos immediately
   }
 
+  // Lightweight transient toast — self-contained, no CSS dependency.
+  function showToast(msg, kind) {
+    let host = document.getElementById('toast-host');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'toast-host';
+      host.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;';
+      document.body.appendChild(host);
+    }
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'background:' + (kind === 'warn' ? '#b4453a' : '#2a2a2a') + ';color:#fff;font-size:13px;line-height:1.4;padding:10px 18px;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.18);max-width:440px;text-align:center;opacity:0;transition:opacity .2s;';
+    host.appendChild(t);
+    requestAnimationFrame(() => { t.style.opacity = '1'; });
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 250); }, 3200);
+  }
+
   // Returns true if placing incomingPoolIdx into (spreadIndex, side, slotIdx) would mix orientations
   // on a multi-slot page. incomingPoolIdx===null means unassigning (always allowed).
   function wouldMixPage(spreadIndex, side, slotIdx, incomingPoolIdx) {
@@ -2778,6 +2808,8 @@
 
     if (data.type === 'strip') {
       if (wouldMixPage(targetSpreadIndex, targetSide, targetSlotIdx, data.poolIdx)) {
+        const o = window.photoPool[data.poolIdx]?.orientation === 'vertical' ? 'vertical' : 'horizontal';
+        showToast('Moving a ' + o + ' photo here is not allowed — this layout needs all photos to share the same orientation.', 'warn');
         dbLog('⛔ Cannot place ' + window.photoPool[data.poolIdx]?.orientation + ' photo here — page has ' + targetAsgn[targetSide].length + ' slots and all must share the same orientation', 'warn');
         return;
       }
@@ -2806,11 +2838,15 @@
       // Check both directions: incoming photo into target page, and displaced photo into source page
       if (wouldMixPage(targetSpreadIndex, targetSide, targetSlotIdx, srcPoolIdx)) {
         const name = srcPoolIdx !== null ? window.photoPool[srcPoolIdx]?.orientation : 'empty';
+        const o = name === 'vertical' ? 'vertical' : 'horizontal';
+        showToast('Moving a ' + o + ' photo here is not allowed — this layout needs all photos to share the same orientation.', 'warn');
         dbLog('⛔ Cannot place ' + name + ' photo here — would mix orientations on a multi-slot page', 'warn');
         return;
       }
       if (currentInTarget !== null && wouldMixPage(data.spreadIndex, data.side, data.slotIdx, currentInTarget)) {
         const name = window.photoPool[currentInTarget]?.orientation;
+        const o = name === 'vertical' ? 'vertical' : 'horizontal';
+        showToast('Can’t swap — moving a ' + o + ' photo back would mix orientations on a multi-photo layout.', 'warn');
         dbLog('⛔ Cannot swap — placing ' + name + ' photo back would mix orientations on a multi-slot page', 'warn');
         return;
       }

@@ -144,6 +144,11 @@ exports.getOrder = functions
         staffBookSequence:    order.staffBookSequence    || null,
         staffCoverCaptionStyles:  order.staffCoverCaptionStyles  || null,
         staffSpreadCaptionStyles: order.staffSpreadCaptionStyles || null,
+        // Customer's own saved edits — replayed on reopen so a closed tab loses nothing.
+        customerBookAssignments:    order.customerBookAssignments    || null,
+        customerCaptions:           order.customerCaptions           || null,
+        customerCaptionStyles:      order.customerCaptionStyles      || null,
+        customerCoverCaptionStyles: order.customerCoverCaptionStyles || null,
         signedUrls,
         storedNames: {
           cover:   manifest.cover   || null,

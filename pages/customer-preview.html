@@ -73,22 +73,6 @@
     .mode-toggle { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
     .mode-toggle-btn { padding: 6px 14px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: var(--white); color: var(--muted); border: none; cursor: pointer; transition: background 0.15s, color 0.15s; }
     .mode-toggle-btn.active { background: var(--text); color: var(--white); }
-    .nav-approve-btn {
-      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
-      border: none; border-radius: 3px;
-      padding: 8px 20px;
-      background: var(--text); color: var(--white);
-      cursor: pointer;
-      transition: background 0.15s, opacity 0.15s;
-    }
-    .nav-approve-btn:hover:not(:disabled) { background: #2a2a2a; }
-    .nav-approve-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .nav-approve-btn[data-state="coming-soon"]:disabled {
-      position: relative;
-    }
 
     /* ── PHOTO SIDEBAR ── */
     .photo-sidebar {
@@ -159,10 +143,11 @@
 
     /* ── MAIN CONTENT AREA ── */
     .page-body {
-      padding-top: calc(69px + 32px);
+      padding-top: calc(69px + 53px);
       padding-left: 260px;
       min-height: 100vh;
     }
+    .page-body.preview-mode { padding-top: calc(69px + 32px); }
     .page-body.preview-mode {
       padding-left: 0;
       display: flex;
@@ -178,8 +163,13 @@
     /* Preview mode centres the single spread */
     .page-body.preview-mode .book-canvas-wrap { margin: 0 auto; }
     .edit-hint {
-      max-width: 1400px; margin: 0 0 20px;
-      padding: 10px 40px 0;
+      position: fixed;
+      top: 69px; left: 260px; right: 0;
+      z-index: 80;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      margin: 0;
+      padding: 12px 40px;
       font-size: 12px; color: var(--muted);
       letter-spacing: 0.01em;
     }
@@ -396,7 +386,7 @@
     .preview-controls {
       display: none;
       position: fixed;
-      bottom: 40px;
+      bottom: 88px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 90;
@@ -521,7 +511,8 @@
       cursor: pointer;
       transition: background 0.15s;
     }
-    .submit-btn:hover { background: #2a2a2a; }
+    .submit-btn:hover:not(:disabled) { background: #2a2a2a; }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .cancel-btn {
       background: transparent;
       color: var(--text);
@@ -631,9 +622,6 @@
       <button class="mode-toggle-btn" id="mode-preview-btn">Preview</button>
     </div>
   </div>
-  <button class="nav-approve-btn" id="approve-btn" disabled data-state="coming-soon">
-    Save &amp; Approve
-  </button>
 </nav>
 
 <!-- ── PHOTO SIDEBAR ── -->
@@ -653,6 +641,7 @@
 <div class="page-body" id="page-body">
   <div class="edit-hint">
     <strong>Drag</strong> a photo to swap it with another &nbsp;·&nbsp;
+    <strong>Double-click</strong> a photo to return it to the sidebar &nbsp;·&nbsp;
     <strong>Click</strong> any caption to edit the text &nbsp;·&nbsp;
     Use the <strong>sidebar</strong> to place unplaced photos &nbsp;·&nbsp;
     Switch to <strong>Preview</strong> to flip through your finished book
@@ -674,10 +663,10 @@
   <button class="preview-arrow" id="preview-next" aria-label="Next spread">→</button>
 </div>
 
-<!-- ── SUBMIT BAR ── -->
+<!-- ── ACTION BAR ── -->
 <div class="submit-bar" id="submit-bar">
-  <button class="cancel-btn" id="cancel-btn">Cancel</button>
-  <button class="submit-btn" id="submit-btn">Submit Changes</button>
+  <button class="cancel-btn" id="save-btn">Save changes</button>
+  <button class="submit-btn" id="approve-btn" disabled data-state="coming-soon" title="Payment coming soon">Approve &amp; pay</button>
 </div>
 
 <!-- ── MOBILE GATE ── -->
@@ -836,24 +825,27 @@
         ? savedSeq
         : buildBookSequence(window.orderData.pageCount || 20, window.orderData.fpSelections || []);
       window._bookSequence = seq;
-      if (window.orderData.staffBookAssignments) {
-        window.bookAssignments = window.orderData.staffBookAssignments;
+      const od = window.orderData;
+      // Precedence on reopen: the customer's own saved edits win, then staff's review
+      // version, then the order-time defaults / auto-assignment. This is Option A —
+      // a customer who closes the tab and reopens the link resumes their saved book.
+      if (od.customerBookAssignments) {
+        window.bookAssignments = od.customerBookAssignments;
+      } else if (od.staffBookAssignments) {
+        window.bookAssignments = od.staffBookAssignments;
       } else {
         assignPhotosToSpreads(seq, window.photoPool);
       }
-      // Pre-load staff captions so renderBook picks them up
-      if (window.orderData.staffBookCaptions) {
-        window.bookCaptions = window.orderData.staffBookCaptions;
+      window.bookCaptions = od.customerCaptions || od.staffBookCaptions || {};
+      // Cover caption text: saved edits win, else order-time cover captions.
+      if (!window.bookCaptions.cover && od.coverCaptions) {
+        window.bookCaptions.cover = od.coverCaptions;
       }
-      // Cover caption text/styles: staff edits (in bookCaptions['cover']) win;
-      // otherwise fall back to order-time cover captions.
-      if (!window.bookCaptions.cover && window.orderData.coverCaptions) {
-        window.bookCaptions.cover = window.orderData.coverCaptions;
-      }
-      // Caption style maps: staff review edits win, else order-time cover styles.
-      window.coverCaptionStyles = window.orderData.staffCoverCaptionStyles
-        || window.orderData.coverCaptionStyles || {};
-      window.spreadCaptionStyles = window.orderData.staffSpreadCaptionStyles || {};
+      // Caption style maps: customer edits win, then staff, then order-time defaults.
+      window.coverCaptionStyles = od.customerCoverCaptionStyles
+        || od.staffCoverCaptionStyles || od.coverCaptionStyles || {};
+      window.spreadCaptionStyles = od.customerCaptionStyles
+        || od.staffSpreadCaptionStyles || {};
       renderBook();
     } catch (err) {
       console.error('Failed to load order:', err);
@@ -1441,6 +1433,16 @@
             slotEl.classList.add('dragging');
           });
           slotEl.addEventListener('dragend', () => { window._dragType = null; slotEl.classList.remove('dragging'); });
+          // Double-click returns the photo to the unplaced sidebar (pool photos only).
+          if (!isSpecialSlot) {
+            slotEl.addEventListener('dblclick', () => {
+              const asgn = window.bookAssignments[spreadIndex];
+              if (!asgn || !asgn[side]) return;
+              asgn[side][slotIdx] = null;
+              rerenderSpread(spreadIndex);
+              renderPhotoSidebar();
+            });
+          }
         } else {
           const ph = document.createElement('div');
           ph.className = 'slot-placeholder';
@@ -1626,13 +1628,61 @@
     return row;
   }
 
+  // Lightweight transient toast — self-contained, no CSS dependency.
+  function showToast(msg, kind) {
+    let host = document.getElementById('toast-host');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'toast-host';
+      host.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;';
+      document.body.appendChild(host);
+    }
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'background:' + (kind === 'warn' ? '#b4453a' : '#2a2a2a') + ';color:#fff;font-size:13px;line-height:1.4;padding:10px 18px;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.18);max-width:440px;text-align:center;opacity:0;transition:opacity .2s;';
+    host.appendChild(t);
+    requestAnimationFrame(() => { t.style.opacity = '1'; });
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 250); }, 3200);
+  }
+
+  // Returns true if placing incomingPoolIdx into (spreadIndex, side, slotIdx) would mix orientations
+  // on a multi-slot page. incomingPoolIdx===null means unassigning (always allowed).
+  function wouldMixPage(spreadIndex, side, slotIdx, incomingPoolIdx) {
+    const sidAsgn = (window.bookAssignments[spreadIndex] || {})[side];
+    if (!sidAsgn || sidAsgn.length <= 1) return false; // single-slot page — either orientation is fine
+    if (incomingPoolIdx === null || incomingPoolIdx === undefined) return false;
+    const incoming = window.photoPool[incomingPoolIdx];
+    if (!incoming) return false;
+    const others = sidAsgn
+      .map((idx, i) => i !== slotIdx ? idx : undefined)
+      .filter(idx => idx !== null && idx !== undefined)
+      .map(idx => window.photoPool[idx])
+      .filter(Boolean);
+    return others.some(p => p.orientation !== incoming.orientation);
+  }
+
+  function orientWord(poolIdx) {
+    return window.photoPool[poolIdx]?.orientation === 'vertical' ? 'vertical' : 'horizontal';
+  }
+
   function handleSlotDrop(e, spreadIndex, side, slotIdx) {
     let data;
     try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
 
     if (data.type === 'strip') {
       // From sidebar: assign photo to slot
+      if (wouldMixPage(spreadIndex, side, slotIdx, data.poolIdx)) {
+        showToast('Moving a ' + orientWord(data.poolIdx) + ' photo here is not allowed — this layout needs all photos to share the same orientation.', 'warn');
+        return;
+      }
       if (!window.bookAssignments[spreadIndex]) window.bookAssignments[spreadIndex] = { left: [], right: [] };
+      // Remove poolIdx from wherever it's currently assigned (avoids the same photo in two slots).
+      Object.values(window.bookAssignments).forEach(asgn => {
+        ['left', 'right'].forEach(s => {
+          if (!asgn[s]) return;
+          asgn[s].forEach((idx, i) => { if (idx === data.poolIdx) asgn[s][i] = null; });
+        });
+      });
       window.bookAssignments[spreadIndex][side][slotIdx] = data.poolIdx;
       rerenderSpread(spreadIndex);
       renderPhotoSidebar();
@@ -1641,9 +1691,19 @@
       const srcAsgn = window.bookAssignments[data.spreadIndex]?.[data.side];
       const tgtAsgn = window.bookAssignments[spreadIndex]?.[side];
       if (srcAsgn && tgtAsgn) {
-        const tmp = srcAsgn[data.slotIdx];
-        srcAsgn[data.slotIdx] = tgtAsgn[slotIdx];
-        tgtAsgn[slotIdx] = tmp;
+        const incoming = srcAsgn[data.slotIdx];
+        const displaced = tgtAsgn[slotIdx];
+        // Check both directions: incoming into target page, displaced back into source page.
+        if (wouldMixPage(spreadIndex, side, slotIdx, incoming)) {
+          showToast('Moving a ' + orientWord(incoming) + ' photo here is not allowed — this layout needs all photos to share the same orientation.', 'warn');
+          return;
+        }
+        if (displaced !== null && displaced !== undefined && wouldMixPage(data.spreadIndex, data.side, data.slotIdx, displaced)) {
+          showToast('Can’t swap — moving a ' + orientWord(displaced) + ' photo back would mix orientations on a multi-photo layout.', 'warn');
+          return;
+        }
+        srcAsgn[data.slotIdx] = displaced;
+        tgtAsgn[slotIdx] = incoming;
         rerenderSpread(data.spreadIndex);
         rerenderSpread(spreadIndex);
         renderPhotoSidebar();
@@ -1863,14 +1923,13 @@
     document.querySelectorAll('.book-canvas-wrap').forEach(el => el.classList.add('preview-mode'));
     document.getElementById('photo-sidebar').classList.add('hidden');
     document.getElementById('preview-controls').classList.add('visible');
-    document.getElementById('submit-bar').classList.add('hidden');
     updatePreviewMode();
     requestAnimationFrame(fitCover);
   });
 
-  // ── Submit & Cancel ──
-  document.getElementById('submit-btn').addEventListener('click', async () => {
-    const btn = document.getElementById('submit-btn');
+  // ── Save changes ──
+  document.getElementById('save-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('save-btn');
     btn.disabled = true;
     btn.innerHTML = '<span class="loading-spinner"></span>';
 
@@ -1906,19 +1965,13 @@
       });
 
       if (!updateResp.ok) throw new Error('Save failed');
-      alert('Changes saved! Staff will review your updates.');
+      showToast('Changes saved. You can safely close this tab — reopening your link will show your saved book.');
       btn.disabled = false;
-      btn.innerHTML = 'Submit Changes';
+      btn.innerHTML = 'Save changes';
     } catch (err) {
-      alert('Error saving changes: ' + err.message);
+      showToast('Could not save changes: ' + err.message, 'warn');
       btn.disabled = false;
-      btn.innerHTML = 'Submit Changes';
-    }
-  });
-
-  document.getElementById('cancel-btn').addEventListener('click', () => {
-    if (confirm('Discard changes and return?')) {
-      window.history.back();
+      btn.innerHTML = 'Save changes';
     }
   });
 
