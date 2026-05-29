@@ -303,6 +303,7 @@
     .special-sidebar-thumb {
       width: 100%; height: 90px; border-radius: 5px; overflow: hidden;
       border: 1px solid var(--border); position: relative; background: var(--bg);
+      opacity: 0.55;
     }
     .special-sidebar-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .special-sidebar-label {
@@ -2283,14 +2284,19 @@
           }
         }
 
-        // Typography from template-data (CSV source of truth)
-        if (tpCap.font)                        panelEl.style.fontFamily    = `'${tpCap.font}', var(--sans)`;
-        if (tpCap.sizePt) {
+        // Typography: CSV defaults, then any spreadCaptionStyles override for this textPanel.
+        const _tpOv     = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.['textPanel'] || {};
+        const _tpFont   = _tpOv.font          !== undefined ? _tpOv.font          : tpCap.font;
+        const _tpSizePt = _tpOv.sizePt        !== undefined ? _tpOv.sizePt        : tpCap.sizePt;
+        const _tpLineS  = _tpOv.lineSpacing   !== undefined ? _tpOv.lineSpacing   : tpCap.lineSpacing;
+        const _tpLetS   = _tpOv.letterSpacing !== undefined ? _tpOv.letterSpacing : tpCap.letterSpacing;
+        if (_tpFont)                         panelEl.style.fontFamily    = `'${_tpFont}', var(--sans)`;
+        if (_tpSizePt) {
           // funnyWords panel is scaled to the canvas (px); regular text panels use pt
-          panelEl.style.fontSize = isFunnyWords ? (tpCap.sizePt * SCALE) + 'px' : tpCap.sizePt + 'pt';
+          panelEl.style.fontSize = isFunnyWords ? (_tpSizePt * SCALE) + 'px' : _tpSizePt + 'pt';
         }
-        if (tpCap.lineSpacing)                 panelEl.style.lineHeight    = tpCap.lineSpacing;
-        if (tpCap.letterSpacing !== undefined) panelEl.style.letterSpacing = tpCap.letterSpacing + 'em';
+        if (_tpLineS !== undefined)           panelEl.style.lineHeight    = _tpLineS;
+        if (_tpLetS  !== undefined)           panelEl.style.letterSpacing = _tpLetS + 'em';
         // Line breaks handled via <br> tags (innerHTML round-trip) — pre-line not needed
 
         const formatFunnyWords = (text) => {
@@ -3219,10 +3225,19 @@
       }
       const order = await res.json();
       window._loadedOrderNumber = order.orderNumber || raw;
+      if (order.staffBookAssignments && Object.keys(order.staffBookAssignments).length > 0) {
+        const useSaved = confirm('This order has a saved book state. Load the saved state?\n\nOK = load saved  |  Cancel = start from scratch');
+        if (!useSaved) {
+          delete order.staffBookAssignments;
+          delete order.staffBookCaptions;
+          delete order.staffBookSequence;
+          delete order.staffCoverCaptionStyles;
+          delete order.staffSpreadCaptionStyles;
+        }
+      }
       await loadOrderIntoEngine(order);
-      status.className = 'order-status ok';
-      const fps = (order.fpSelections || []).join(', ');
-      status.textContent = `${order.customerName} · ${order.pageCount}p${fps ? ' · ' + fps : ''}`;
+      status.className = 'order-status';
+      status.textContent = '';
       showOrderInfoPanel(order);
     } catch (err) {
       status.className = 'order-status err';
@@ -3485,6 +3500,11 @@
     if (!window._loadedOrderNumber) {
       status.textContent = 'Load an order first.';
       return;
+    }
+    const unplacedCount = parseInt(document.getElementById('sidebar-unplaced-count')?.textContent || '0', 10);
+    if (unplacedCount > 0) {
+      const proceed = confirm(`${unplacedCount} photo${unplacedCount === 1 ? '' : 's'} still unplaced. Save anyway?`);
+      if (!proceed) return;
     }
     btn.disabled = true;
     status.textContent = 'Saving…';
