@@ -169,7 +169,7 @@ exports.saveOrderState = functions
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    const { token, bookAssignments, captions, spreadCaptionStyles } = req.body;
+    const { token, bookAssignments, captions, spreadCaptionStyles, coverCaptionStyles } = req.body;
     if (!token) return res.status(403).json({ error: 'Token required' });
 
     try {
@@ -185,6 +185,7 @@ exports.saveOrderState = functions
         customerBookAssignments: bookAssignments || null,
         customerCaptions:        captions        || null,
         customerCaptionStyles:   spreadCaptionStyles || null,
+        customerCoverCaptionStyles: coverCaptionStyles || null,
         customerUpdatedAt:       admin.firestore.FieldValue.serverTimestamp(),
       });
 

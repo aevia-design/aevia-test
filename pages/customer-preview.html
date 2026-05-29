@@ -172,11 +172,13 @@
 
     /* ── BOOK CANVAS ── */
     .book-canvas-wrap {
-      max-width: 1400px; margin: 0 auto;
+      max-width: 1400px; margin: 0;
       padding: 0 40px 80px;
     }
+    /* Preview mode centres the single spread */
+    .page-body.preview-mode .book-canvas-wrap { margin: 0 auto; }
     .edit-hint {
-      max-width: 1400px; margin: 0 auto 20px;
+      max-width: 1400px; margin: 0 0 20px;
       padding: 10px 40px 0;
       font-size: 12px; color: var(--muted);
       letter-spacing: 0.01em;
@@ -267,6 +269,11 @@
     .cover-scale-wrap {
       width: 100%;
       overflow: hidden;
+    }
+    .cover-caption:empty::before {
+      content: attr(data-label);
+      color: #c0b8ae;
+      pointer-events: none;
     }
     .photo-slot {
       position: absolute;
@@ -393,7 +400,6 @@
       left: 50%;
       transform: translateX(-50%);
       z-index: 90;
-      display: flex;
       align-items: center;
       gap: 24px;
       padding: 20px 32px;
@@ -788,6 +794,7 @@
   let _tbMode       = 'spread';
   let _tbCapEl      = null;
   let _tbSpreadCtx  = null;
+  let _tbCoverCtx   = null;
 
   /* ═══════════════════════════════════════════
      MAIN INITIALIZATION
@@ -1035,7 +1042,34 @@
     return text;
   }
 
-  // Read-only port of the staff engine's renderCover (no editing/toolbar).
+  // Position + style a cover caption from coverCaptionStyles (merged with CSV defaults).
+  // Shared by renderCover and the caption toolbar so edits re-render identically.
+  function applyCoverCaptionLayout(cap, capDef) {
+    const COVER_BLEED_MM = 18;
+    const ov = window.coverCaptionStyles?.[capDef.key] || {};
+    const font     = ov.font    || capDef.font;
+    const weight   = ov.weight !== undefined ? ov.weight : 400;
+    const italic   = ov.italic  || false;
+    const sizePt   = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
+    const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
+    const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
+
+    const capW  = capDef.wMm * SCALE;
+    const capCX = (capDef.xMm - COVER_BLEED_MM) * SCALE;
+    const capCY = (capDef.yMm - COVER_BLEED_MM) * SCALE;
+    const fontSize = (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
+    const lineH    = (sizePt * lineSpacing * SCALE * 25.4 / 72).toFixed(1) + 'px';
+    const lineHpx  = sizePt * (4 / 3) * lineSpacing;
+
+    if (capDef.rotate) {
+      const top = capCY - lineHpx / 2;
+      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:center;z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
+    } else {
+      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${capDef.align || 'center'};z-index:3;transform:translateY(-50%);`;
+    }
+  }
+
+  // Port of the staff engine's renderCover (editable captions like the rest of the book).
   function renderCover() {
     const coverDef = window.SCRIBBLE_DATA.cover;
     if (!coverDef) return null;
@@ -1103,40 +1137,30 @@
     }
     canvas.appendChild(slot);
 
-    // Captions (read-only) — coords are with-bleed; subtract before converting to px
+    // Captions — editable, styled identically to the staff engine. Coords are
+    // with-bleed; applyCoverCaptionLayout converts to canvas px.
     const savedCoverCaps = window.bookCaptions?.cover || {};
     coverDef.captions.forEach(capDef => {
-      const text = savedCoverCaps[capDef.key];
-      if (!text) return; // skip empty captions in the customer view
-
-      const capW  = capDef.wMm * SCALE;
-      const capCX = (capDef.xMm - COVER_BLEED_MM) * SCALE;
-      const capCY = (capDef.yMm - COVER_BLEED_MM) * SCALE;
-
-      const ov       = window.coverCaptionStyles?.[capDef.key] || {};
-      const font     = ov.font    || capDef.font;
-      const weight   = ov.weight !== undefined ? ov.weight : 400;
-      const italic   = ov.italic  || false;
-      const sizePt   = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
-      const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
-      const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
-
-      const fontSize = (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
-      const lineH    = (sizePt * lineSpacing * SCALE * 25.4 / 72).toFixed(1) + 'px';
-      const lineHpx  = sizePt * (4 / 3) * lineSpacing;
-
       const cap = document.createElement('div');
       cap.className = 'slot-caption cover-caption';
-      cap.innerHTML = text;
+      cap.contentEditable = 'true';
+      cap.spellcheck = false;
+      cap.dataset.coverCaptionKey = capDef.key;
+      cap.dataset.label = capDef.label || '';
+      cap.innerHTML = savedCoverCaps[capDef.key] || '';
+      applyCoverCaptionLayout(cap, capDef);
 
-      let posCSS;
-      if (capDef.rotate) {
-        const top = capCY - lineHpx / 2;
-        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:center;z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
-      } else {
-        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${capDef.align || 'center'};z-index:3;transform:translateY(-50%);`;
-      }
-      cap.style.cssText = posCSS;
+      cap.addEventListener('focus', () => showCoverCaptionToolbar(capDef, cap));
+      cap.addEventListener('blur', () => {
+        if (!window.bookCaptions.cover) window.bookCaptions.cover = {};
+        window.bookCaptions.cover[capDef.key] = cap.innerHTML.trim();
+      });
+      cap.addEventListener('mousedown', e => e.stopPropagation());
+      cap.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { e.preventDefault(); cap.blur(); return; }
+        if (e.key === 'Enter') { e.preventDefault(); document.execCommand('insertLineBreak'); }
+      });
+
       canvas.appendChild(cap);
     });
 
@@ -1148,13 +1172,16 @@
     return row;
   }
 
-  // Scale the fixed-width cover down to fit the available canvas width.
+  // Scale the fixed-width (1227px) cover down to fit the available width.
+  // Measures the wrapper's own laid-out width (reliable post-layout); retries
+  // on the next frame if the wrapper isn't measurable yet.
   function fitCover() {
     const wrap = document.querySelector('.cover-scale-wrap');
     if (!wrap) return;
     const canvas = wrap.querySelector('.cover-canvas');
     if (!canvas) return;
-    const avail = document.getElementById('book-canvas').clientWidth || wrap.clientWidth;
+    const avail = wrap.clientWidth;
+    if (!avail) { requestAnimationFrame(fitCover); return; }
     const scale = Math.min(1, avail / 1227);
     canvas.style.transformOrigin = 'top left';
     canvas.style.transform = `scale(${scale})`;
@@ -1180,7 +1207,7 @@
 
     renderPhotoSidebar();
     setupPreviewMode();
-    fitCover();
+    requestAnimationFrame(fitCover);
   }
 
   function renderPhotoSidebar() {
@@ -1670,6 +1697,43 @@
     tb.classList.add('visible');
   }
 
+  function showCoverCaptionToolbar(capDef, capEl) {
+    _tbMode = 'cover';
+    _tbCapEl = capEl;
+    _tbCoverCtx = { capDef };
+
+    const ov = window.coverCaptionStyles?.[capDef.key] || {};
+    const currentFont   = ov.font   || capDef.font;
+    const currentWeight = ov.weight !== undefined ? ov.weight : 400;
+    const currentItalic = ov.italic || false;
+    const currentSize   = ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt;
+    const currentLine   = ov.lineSpacing   !== undefined ? ov.lineSpacing   : 1.1;
+    const currentLS     = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
+
+    document.getElementById('tb-caption-label').textContent = capDef.label || 'Cover';
+
+    const sel = document.getElementById('tb-font');
+    sel.innerHTML = '';
+    CAPTION_FONTS.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.value;
+      opt.textContent = f.label;
+      if (f.value === currentFont) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    rebuildStylePills(currentFont, currentWeight, currentItalic);
+    document.getElementById('tb-size-val').textContent = currentSize + 'pt';
+    document.getElementById('tb-line-val').textContent = currentLine.toFixed(2);
+    document.getElementById('tb-ls-val').textContent = currentLS.toFixed(2) + 'em';
+
+    const rect = capEl.getBoundingClientRect();
+    const tb = document.getElementById('caption-toolbar');
+    tb.style.top = Math.max(8, rect.top - 58) + 'px';
+    tb.style.left = Math.max(8, rect.left) + 'px';
+    tb.classList.add('visible');
+  }
+
   function rebuildStylePills(fontValue, activeWeight, activeItalic) {
     const group = document.getElementById('tb-style-group');
     group.innerHTML = '';
@@ -1691,6 +1755,14 @@
   }
 
   function tbUpdate(patch) {
+    if (_tbMode === 'cover') {
+      if (!_tbCoverCtx || !_tbCapEl) return;
+      const key = _tbCoverCtx.capDef.key;
+      if (!window.coverCaptionStyles[key]) window.coverCaptionStyles[key] = {};
+      Object.assign(window.coverCaptionStyles[key], patch);
+      applyCoverCaptionLayout(_tbCapEl, _tbCoverCtx.capDef);
+      return;
+    }
     if (!_tbSpreadCtx || !_tbCapEl) return;
     const { spreadIndex, side, slotIdx, capDef } = _tbSpreadCtx;
     const si = String(spreadIndex);
@@ -1781,6 +1853,7 @@
     document.getElementById('photo-sidebar').classList.remove('hidden');
     document.getElementById('preview-controls').classList.remove('visible');
     document.getElementById('submit-bar').classList.remove('hidden');
+    requestAnimationFrame(fitCover);
   });
 
   document.getElementById('mode-preview-btn').addEventListener('click', () => {
@@ -1792,6 +1865,7 @@
     document.getElementById('preview-controls').classList.add('visible');
     document.getElementById('submit-bar').classList.add('hidden');
     updatePreviewMode();
+    requestAnimationFrame(fitCover);
   });
 
   // ── Submit & Cancel ──
@@ -1817,6 +1891,7 @@
         bookAssignments: assignments,
         captions: window.bookCaptions || {},
         spreadCaptionStyles: window.spreadCaptionStyles || {},
+        coverCaptionStyles: window.coverCaptionStyles || {},
       };
 
       // POST to Firestore (via Cloud Function or direct update)
@@ -1855,6 +1930,8 @@
         tb.classList.remove('visible');
         _tbCapEl = null;
         _tbSpreadCtx = null;
+        _tbCoverCtx = null;
+        _tbMode = 'spread';
       }
     });
 
@@ -1868,6 +1945,14 @@
 
     ['size', 'line', 'ls'].forEach(type => {
       const getVal = () => {
+        if (_tbMode === 'cover') {
+          if (!_tbCoverCtx) return 0;
+          const cd = _tbCoverCtx.capDef;
+          const ov = window.coverCaptionStyles?.[cd.key] || {};
+          if (type === 'size') return ov.sizePt !== undefined ? ov.sizePt : (cd.sizePt || 16);
+          if (type === 'line') return ov.lineSpacing !== undefined ? ov.lineSpacing : 1.1;
+          if (type === 'ls') return ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
+        }
         if (!_tbSpreadCtx) return 0;
         const { spreadIndex, side, slotIdx, capDef } = _tbSpreadCtx;
         const ov = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[slotIdx] || {};
@@ -1878,7 +1963,7 @@
 
       document.getElementById(`tb-${type}-down`).addEventListener('mousedown', e => {
         e.preventDefault();
-        if (!_tbSpreadCtx) return;
+        if (!_tbSpreadCtx && !_tbCoverCtx) return;
         const cur = getVal();
         let next;
         if (type === 'size') next = Math.max(6, cur - 1);
@@ -1890,7 +1975,7 @@
 
       document.getElementById(`tb-${type}-up`).addEventListener('mousedown', e => {
         e.preventDefault();
-        if (!_tbSpreadCtx) return;
+        if (!_tbSpreadCtx && !_tbCoverCtx) return;
         const cur = getVal();
         let next;
         if (type === 'size') next = Math.min(120, cur + 1);
