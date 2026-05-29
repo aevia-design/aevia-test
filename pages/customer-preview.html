@@ -791,8 +791,11 @@
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       window.orderData = await resp.json();
 
-      // Load photos from signed URLs
+      // Load photos from signed URLs, assign to spreads, then render
       await loadPhotos();
+      const seq = buildBookSequence(window.orderData.pageCount || 20, window.orderData.fpSelections || []);
+      window._bookSequence = seq;
+      assignPhotosToSpreads(seq, window.photoPool);
       renderBook();
     } catch (err) {
       console.error('Failed to load order:', err);
@@ -802,33 +805,44 @@
   }
 
   async function loadPhotos() {
-    if (!window.orderData?.signedUrls) {
-      console.warn('No signed URLs in order data');
-      return;
-    }
+    const signedUrls  = window.orderData?.signedUrls;
+    const storedNames = window.orderData?.storedNames;
+    if (!signedUrls) { console.warn('No signed URLs in order data'); return; }
 
-    // Load from signed URLs (order data provides them)
     const photos = [];
-    for (const [filename, signedUrl] of Object.entries(window.orderData.signedUrls || {})) {
+
+    async function addPhoto(url, name) {
+      if (!url) return;
       try {
-        const resp = await fetch(signedUrl);
+        const resp = await fetch(url);
         const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
+        const objUrl = URL.createObjectURL(blob);
         const { orientation, w, h } = await getOrientationFromBlob(blob);
-        const lowRes = w > 0 && Math.min(w, h) < 1500;
-        photos.push({
-          file: null,
-          url,
-          date: null,
-          name: filename,
-          w, h,
-          orientation,
-          lowRes,
-        });
+        photos.push({ file: null, url: objUrl, date: null, name, w, h, orientation,
+          lowRes: w > 0 && Math.min(w, h) < 1500 });
       } catch (err) {
-        console.error('Failed to load photo:', filename, err);
+        console.error('Failed to load photo:', name, err);
       }
     }
+
+    // Cover
+    await addPhoto(signedUrls.cover, storedNames?.cover || 'cover');
+
+    // Special (FP) photos: { fp3: [url], fp5: [url1, url2] }
+    for (const [slug, urls] of Object.entries(signedUrls.special || {})) {
+      const nameArr = storedNames?.special?.[slug] || [];
+      const urlArr  = Array.isArray(urls) ? urls : [urls];
+      for (let i = 0; i < urlArr.length; i++) {
+        await addPhoto(urlArr[i], (Array.isArray(nameArr) ? nameArr[i] : nameArr) || `${slug}-${i}`);
+      }
+    }
+
+    // Pool photos
+    const poolNames = storedNames?.pool || [];
+    await Promise.all((signedUrls.pool || []).map((url, i) =>
+      addPhoto(url, poolNames[i] || `pool-${i}`)
+    ));
+
     window.photoPool = photos;
   }
 
@@ -850,11 +864,118 @@
     });
   }
 
+  function assignPhotosToSpreads(sequence, pool) {
+    const validIndices = pool.map((p, i) => p.duplicate ? null : i).filter(i => i !== null);
+    const validPool    = validIndices.map(i => pool[i]);
+    const assignments  = {};
+    let ptr = 0;
+
+    function resolveVariant(pageDef, orient) {
+      const preferred = orient === 'vertical' ? 'V' : 'H';
+      if (pageDef[preferred]) return preferred;
+      if (pageDef['default']) return 'default';
+      return Object.keys(pageDef)[0];
+    }
+
+    sequence.forEach((spreadId, spreadIndex) => {
+      const spreadDef0 = window.SCRIBBLE_DATA.spreads[spreadId];
+      if (spreadId.startsWith('FP') && spreadDef0) {
+        const hasRegularSlots = ['left', 'right'].some(side => {
+          const pd = spreadDef0.pages[side];
+          if (!pd) return false;
+          const rv = pd['H'] || pd['V'] || pd[Object.keys(pd)[0]];
+          return (rv?.slots || []).some(s => !s.pool || s.pool === 'regular');
+        });
+        if (!hasRegularSlots) { assignments[spreadIndex] = { left: [], right: [] }; return; }
+      }
+
+      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+      if (!spreadDef) return;
+
+      const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
+      const assignment = { left: [], right: [] };
+
+      const sideInfos = sides.map(side => {
+        const pageDef = spreadDef.pages[side];
+        if (!pageDef) return null;
+        const repVariant = pageDef['H'] || pageDef['V'] || pageDef[Object.keys(pageDef)[0]];
+        const slots = (repVariant?.slots || []).filter(s => !s.pool || s.pool === 'regular').length;
+        return { side, pageDef, slots };
+      }).filter(Boolean);
+
+      const totalNeeded = sideInfos.reduce((sum, x) => sum + x.slots, 0);
+      const ptrStart = ptr;
+      const win = validPool.slice(ptrStart, ptrStart + totalNeeded);
+      ptr += win.length;
+
+      const multiSides  = sideInfos.filter(x => x.slots >= 2);
+      const singleSides = sideInfos.filter(x => x.slots === 1);
+      const usedLocal   = new Set();
+
+      multiSides.forEach(({ side, pageDef, slots }) => {
+        const byOrient = {};
+        win.forEach((p, li) => {
+          if (usedLocal.has(li)) return;
+          if (!byOrient[p.orientation]) byOrient[p.orientation] = [];
+          byOrient[p.orientation].push(li);
+        });
+        let bestOrient = null, bestCount = -1;
+        Object.entries(byOrient).forEach(([o, idxs]) => {
+          if (idxs.length > bestCount) { bestOrient = o; bestCount = idxs.length; }
+        });
+        const chosen = (byOrient[bestOrient] || []).slice(0, slots);
+        chosen.forEach(li => usedLocal.add(li));
+        const variantKey = resolveVariant(pageDef, bestOrient || 'horizontal');
+        const variant = pageDef[variantKey];
+        let ci = 0;
+        assignment[side] = (variant?.slots || []).map(s => {
+          if (s.pool === 'special' || s.pool === 'artwork') return null;
+          const li = chosen[ci++];
+          return li !== undefined ? validIndices[ptrStart + li] : null;
+        });
+      });
+
+      const remaining = win.map((_, li) => li).filter(li => !usedLocal.has(li));
+      singleSides.forEach(({ side, pageDef }, ri) => {
+        const li = remaining[ri];
+        const photo = li !== undefined ? win[li] : null;
+        const variantKey = resolveVariant(pageDef, photo?.orientation || 'horizontal');
+        const variant = pageDef[variantKey];
+        let slotFilled = false;
+        assignment[side] = (variant?.slots || []).map(s => {
+          if (s.pool === 'special' || s.pool === 'artwork') return null;
+          if (!slotFilled) { slotFilled = true; return li !== undefined ? validIndices[ptrStart + li] : null; }
+          return null;
+        });
+      });
+
+      assignments[spreadIndex] = assignment;
+    });
+
+    window.bookAssignments = assignments;
+    return assignments;
+  }
+
+  function buildBookSequence(pageCount, selectedFPs) {
+    const totalSpreads  = pageCount / 2;
+    const remaining     = totalSpreads - 1;
+    const standardCount = remaining - selectedFPs.length;
+    const stdIds = ['SP1','SP2','SP3','SP4','SP5','SP6'];
+    const standards = [];
+    for (let i = 0; i < standardCount; i++) standards.push(stdIds[i % stdIds.length]);
+    const fpCount   = selectedFPs.length;
+    const positions = selectedFPs.map((_, i) =>
+      Math.round((i + 1) * (standards.length + 1) / (fpCount + 1))
+    );
+    for (let i = fpCount - 1; i >= 0; i--) standards.splice(positions[i], 0, selectedFPs[i]);
+    return ['SP0', ...standards];
+  }
+
   function renderBook() {
     const canvas = document.getElementById('book-canvas');
     canvas.innerHTML = '';
 
-    const seq = window.orderData?.bookSequence || Object.keys(window.SCRIBBLE_DATA.spreads).filter(k => !k.startsWith('FP')).slice(0, 3);
+    const seq = buildBookSequence(window.orderData?.pageCount || 20, window.orderData?.fpSelections || []);
 
     seq.forEach((spreadId, idx) => {
       const asgn = window.bookAssignments[idx] || { left: [], right: [] };
@@ -1332,7 +1453,7 @@
   }
 
   function setupPreviewMode() {
-    const seq = window.orderData?.bookSequence || Object.keys(window.SCRIBBLE_DATA.spreads).filter(k => !k.startsWith('FP')).slice(0, 3);
+    const seq = buildBookSequence(window.orderData?.pageCount || 20, window.orderData?.fpSelections || []);
     const dotsContainer = document.getElementById('preview-dots');
     dotsContainer.innerHTML = '';
     seq.forEach((_, idx) => {
@@ -1358,7 +1479,7 @@
   }
 
   function updatePreviewMode() {
-    const seq = window.orderData?.bookSequence || Object.keys(window.SCRIBBLE_DATA.spreads).filter(k => !k.startsWith('FP')).slice(0, 3);
+    const seq = buildBookSequence(window.orderData?.pageCount || 20, window.orderData?.fpSelections || []);
     document.querySelectorAll('.spread-row').forEach((row, idx) => {
       row.classList.toggle('preview-hidden', idx !== window.previewSpreadIndex);
     });

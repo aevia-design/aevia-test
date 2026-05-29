@@ -2092,6 +2092,9 @@
           const captionEl = document.createElement('div');
           captionEl.className = 'slot-caption';
           captionEl.contentEditable = 'true';
+          captionEl.dataset.spreadIndex = spreadIndex;
+          captionEl.dataset.side = side;
+          captionEl.dataset.slotIdx = slotIdx;
           captionEl.spellcheck = false;
           captionEl.style.left  = capLeft  + 'px';
           captionEl.style.width = capWidth + 'px';
@@ -3371,6 +3374,54 @@
         if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
         if (!window.bookCaptions[spreadIndex].left) window.bookCaptions[spreadIndex].left = {};
         window.bookCaptions[spreadIndex].left['textPanel'] = text;
+      }
+    });
+
+    // 7b. Pre-fill slot captions for FP spreads without a textPanel (FP3, FP4, FP5)
+    Object.entries(fpTexts).forEach(([slug, value]) => {
+      const fpKey     = slug.toUpperCase();
+      const spreadDef = window.SCRIBBLE_DATA?.spreads?.[fpKey];
+      if (!spreadDef?.orderFormMeta) return;
+
+      // Skip FP spreads already handled by the textPanel path above (FP1, FP2)
+      const hasTextPanel = Object.values(spreadDef.pages || {}).some(pageDef =>
+        Object.values(pageDef).some(v => v.textPanel?.caption?.allowed)
+      );
+      if (hasTextPanel) return;
+
+      const spreadIndex = seq.indexOf(fpKey);
+      if (spreadIndex === -1) return;
+
+      const meta   = spreadDef.orderFormMeta;
+      const values = Array.isArray(value) ? value : [value];
+
+      if ((meta.count || 1) >= 2) {
+        // Multi-caption FP (e.g. FP5 Art Gallery): index 0 → left, index 1 → right
+        ['left', 'right'].forEach((capSide, i) => {
+          const text = (values[i] || '').trim();
+          if (!text) return;
+          const el = document.querySelector(
+            `.slot-caption[data-spread-index="${spreadIndex}"][data-side="${capSide}"]:not(.fp-text-panel)`
+          );
+          if (!el) return;
+          el.innerHTML = text;
+          if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+          if (!window.bookCaptions[spreadIndex][capSide]) window.bookCaptions[spreadIndex][capSide] = {};
+          window.bookCaptions[spreadIndex][capSide][Number(el.dataset.slotIdx)] = text;
+        });
+      } else {
+        // Single-caption FP (FP3 Favourite toy, FP4 First steps): fill first allowed slot
+        const text = (values[0] || '').trim();
+        if (!text) return;
+        const el = document.querySelector(
+          `.slot-caption[data-spread-index="${spreadIndex}"]:not(.fp-text-panel)`
+        );
+        if (!el) return;
+        el.innerHTML = text;
+        const capSide = el.dataset.side;
+        if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+        if (!window.bookCaptions[spreadIndex][capSide]) window.bookCaptions[spreadIndex][capSide] = {};
+        window.bookCaptions[spreadIndex][capSide][Number(el.dataset.slotIdx)] = text;
       }
     });
 
