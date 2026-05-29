@@ -1,10 +1,29 @@
 # Session Status
-_Last updated: 2026-05-29 (session 7)_
+_Last updated: 2026-05-29 (session 8)_
 
 ## Status
-Three commits deployed to Cloudflare + Firebase this session. Customer preview engine substantially fixed but **not yet verified with a live test order** — that's the first task next session.
+Session 8 focused on making the **customer preview render identically to the staff engine** across the whole book (cover, standard, functional pages) while letting the customer edit photo sequence + captions in our styling. Six commits deployed to Cloudflare + Firebase. **None of session 8's changes are live-tested yet** — user will verify later, then report one outstanding "critical issue".
 
-### Completed this session (2026-05-29)
+**Meta-task bar (user, explicit):** customer-rendered book must look EXACTLY like staff (fonts, styling, captions, photo positions, spreads, cover). Customer can change photo sequence AND captions, always using our styling/layout.
+
+### Completed this session (2026-05-29, session 8)
+- **Order confirmation wording** (`pages/order.html`): reworded Design/Approval/Print steps; removed "print in Vienna".
+- **Replay staff-saved book**: staff now saves `staffBookSequence`; customer replays it instead of recomputing → fixes spreads out of order / missing. Ported read-only `renderCover` (cover now renders) + `heartClip`/`fullBleed` slot branch (birthday heart).
+- **Caption styles persisted**: "Save book state" now saves `coverCaptionStyles` + `spreadCaptionStyles`; customer replays them (was falling back to CSV defaults). Slot captions mirror staff `valign`. Cover text saved as innerHTML (multi-line).
+- **FP text-panel parity**: ported funnyWords + valign + pt/px sizing + typographic rules to customer (birthday/funny-words captions).
+- **Deleted** stale `template-engine-public.html`.
+- **Customer UX**: arrows hidden in Edit mode (Preview-only); book left-aligned near sidebar; `fitCover()` scales cover to fit (no clip at zoom); instruction hint bar in Edit mode; Approve button relabelled "Save & Approve".
+- **Cover captions editable**: text + full styling toolbar (new `_tbMode==='cover'`); `saveOrderState` persists `customerCoverCaptionStyles`.
+
+### Still untested (user verifies next)
+- Cover scaling at different browser zoom levels
+- Funny-words font size (fix shipped commit 96f685f — may have been tested stale)
+- Cover caption editing + toolbar; empty-field label placeholders
+- FP1 (birthday) / FP2 (funny words) caption positioning
+- Left-aligned Edit-mode layout
+- **User's outstanding "critical issue"** — not yet reported
+
+### Completed in session 7 (2026-05-29, earlier)
 
 - **FP slot captions pre-fill in staff engine** (`pages/template-engine.html`):
   - Added `data-spread-index`, `data-side`, `data-slot-idx` to caption elements so they can be found post-render
@@ -26,15 +45,10 @@ Three commits deployed to Cloudflare + Firebase this session. Customer preview e
   - Added `buildBookSequence()` (copied from staff engine); fixed 3x broken `bookSequence` references
   - Added `assignPhotosToSpreads()` (adapted from staff engine) for auto-assignment when no saved state
 
-### Still untested (needs live verification next session)
-- **Customer preview full flow** — load staff engine, save book state, open preview link, verify it matches
-- FP slot captions pre-fill (needs new test order with FP3/4/5 add-ons)
-- Auto-assign fallback path in customer preview (no saved state)
-
 ## Immediate next steps
-1. **Test customer preview** — place/load test order in staff engine → save book state → open customer preview → verify layout + FP photos + captions match
-2. **Check cover** — customer preview has no dedicated cover canvas (staff engine does); decide whether to add it or defer (Could Have vs MVP)
-3. **chunk-004** — `approveOrder` Cloud Function → status `approved` → staff email + Stripe Payment Link URL
+1. **Live-test session 8 changes** — staff: load order → Save book state (REQUIRED after this deploy for `staffBookSequence` + caption styles) → open customer preview → verify cover renders + scales at zoom, sequence/photos/spreads match, captions match (font/size/position), funny-words size, cover caption editing.
+2. **Resolve user's outstanding "critical issue"** — to be reported.
+3. **chunk-004** — `approveOrder` Cloud Function → status `approved` → staff email + Stripe Payment Link URL. NOTE: wire "Save & Approve" = run the Submit-Changes save payload, THEN approve. Also decide how customer edits (`customer*` Firestore fields) reconcile back into the staff view.
 4. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
 5. **TO-DO #44** — Prune dashboard status bar
 
@@ -44,8 +58,9 @@ Three commits deployed to Cloudflare + Firebase this session. Customer preview e
 - **chunks 010–017** — Template digitisation. Wait for CSV + SVG files from Kseniia.
 
 ## Open questions
-1. **Customer preview cover canvas** — staff engine has a separate cover panel (front/spine/back with cover photo + captions). Customer preview shows SP0 (first inside spread) but no physical book cover. Add in this sprint or defer?
-2. **Stripe account** — not yet set up. Needed before chunk-005.
+1. ~~Customer preview cover canvas~~ — RESOLVED session 8: customer now renders the full cover (read-only `renderCover` port) with editable captions.
+2. **Customer edit reconciliation** — customer submitted edits write to Firestore `customer*` fields that staff does NOT read. How/when do these merge back into the staff view? Resolve as part of chunk-004 (approve flow).
+3. **Stripe account** — not yet set up. Needed before chunk-005.
 3. **"Approved for print" flow** — dashboard button, CLI flag, or both? Resolve before chunk-008.
 4. **PDF script shared access** — each installs Node locally (near-term) vs Cloud Run job (long-term). Resolve before second founder needs to generate PDFs.
 
@@ -63,6 +78,10 @@ Three commits deployed to Cloudflare + Firebase this session. Customer preview e
 - EB Garamond uses per-character `drawText` (LIGATURE_FONTS). New ligature-heavy fonts need same treatment.
 - Template chunks (010–017) need CSV + SVG assets from Kseniia before starting.
 - `markDuplicates(existingPool, incoming)` excludes pool entries already flagged `duplicate:true` from the "seen" set — intentional, don't revert.
+- **(S8)** `staffBookSequence` / `staffCoverCaptionStyles` / `staffSpreadCaptionStyles` only on orders saved AFTER the session-8 deploy. Older saves → customer recomputes sequence + uses CSV-default caption styles.
+- **(S8)** Customer & staff are parallel copies of the same render logic — change one, mirror the other. Any divergence = staff didn't save something OR customer recomputes differently. Fix by saving + replaying, not by re-deriving. See `feedback_engine_parity` memory.
+- **(S8)** Text panels: regular use raw `pt` (96dpi); funnyWords uses `sizePt*SCALE px`. Asymmetry is intentional and matches staff — do not normalise.
+- **(S8)** Cover caption text stored as innerHTML (multi-line). Cover toolbar styling writes `coverCaptionStyles[key]` via `_tbMode==='cover'`.
 
 ## Key files
 - Session log: `sessions/2026-05-29.md`
