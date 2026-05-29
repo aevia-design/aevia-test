@@ -246,6 +246,14 @@
       pointer-events: none;
       z-index: 2;
     }
+    .cover-canvas {
+      width: 1227px !important; /* (200 + 9 + 200)mm × 3px/mm */
+      height: 600px !important;
+    }
+    .cover-canvas .svg-overlay {
+      width: 1227px;
+      height: 600px;
+    }
     .photo-slot {
       position: absolute;
       overflow: hidden;
@@ -794,9 +802,13 @@
 
       // Load photos from signed URLs, assign to spreads, then render
       await loadPhotos();
-      const seq = buildBookSequence(window.orderData.pageCount || 20, window.orderData.fpSelections || []);
+      // Replay the staff-saved book verbatim if present (sequence + assignments + captions).
+      // Falls back to recomputing only for orders saved before staff state existed.
+      const savedSeq = window.orderData.staffBookSequence;
+      const seq = (Array.isArray(savedSeq) && savedSeq.length)
+        ? savedSeq
+        : buildBookSequence(window.orderData.pageCount || 20, window.orderData.fpSelections || []);
       window._bookSequence = seq;
-      // Use staff-saved assignments if available, otherwise auto-assign
       if (window.orderData.staffBookAssignments) {
         window.bookAssignments = window.orderData.staffBookAssignments;
       } else {
@@ -806,6 +818,12 @@
       if (window.orderData.staffBookCaptions) {
         window.bookCaptions = window.orderData.staffBookCaptions;
       }
+      // Cover caption text/styles: staff edits (in bookCaptions['cover']) win;
+      // otherwise fall back to order-time cover captions.
+      if (!window.bookCaptions.cover && window.orderData.coverCaptions) {
+        window.bookCaptions.cover = window.orderData.coverCaptions;
+      }
+      window.coverCaptionStyles = window.orderData.coverCaptionStyles || {};
       renderBook();
     } catch (err) {
       console.error('Failed to load order:', err);
@@ -984,11 +1002,126 @@
     return ['SP0', ...standards];
   }
 
+  // Read-only port of the staff engine's renderCover (no editing/toolbar).
+  function renderCover() {
+    const coverDef = window.SCRIBBLE_DATA.cover;
+    if (!coverDef) return null;
+
+    const secs = coverDef.sections;
+
+    const row = document.createElement('div');
+    row.className = 'spread-row';
+    row.dataset.spreadId = 'cover';
+
+    const header = document.createElement('div');
+    header.className = 'spread-row-header';
+    header.innerHTML = `
+      <div class="spread-index-badge">C</div>
+      <span class="spread-title">Cover</span>
+      <span class="spread-type-tag">Cover</span>
+    `;
+    row.appendChild(header);
+
+    const pagesWrap = document.createElement('div');
+    pagesWrap.className = 'spread-pages';
+
+    const canvas = document.createElement('div');
+    canvas.className = 'page-canvas cover-canvas';
+
+    {
+      const spineStartPx = secs.back.wMm * SCALE;
+      const frontStartPx = (secs.back.wMm + secs.spine.wMm) * SCALE;
+      const backColor  = secs.back.bgColor  || '#3d1f5c';
+      const spineColor = secs.spine.bgColor || '#fdd16f';
+      const frontColor = secs.front.bgColor || '#f8ead9';
+      canvas.style.background = `linear-gradient(90deg, ${backColor} 0px ${spineStartPx}px, ${spineColor} ${spineStartPx}px ${frontStartPx}px, ${frontColor} ${frontStartPx}px 100%)`;
+    }
+
+    const svgImg = document.createElement('img');
+    svgImg.className = 'svg-overlay';
+    svgImg.src = SVG_BASE + coverDef.svg;
+    svgImg.alt = '';
+    svgImg.onerror = () => { console.warn('Cover SVG failed to load:', svgImg.src); };
+    canvas.appendChild(svgImg);
+
+    // Photo slot (center-based coords, with-bleed)
+    const slotDef = coverDef.slots[0];
+    const COVER_BLEED_MM = 18;
+    const slotW = slotDef.wMm * SCALE;
+    const slotH = slotDef.hMm * SCALE;
+    const slotL = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2;
+    const slotT = (slotDef.yMm - COVER_BLEED_MM) * SCALE - slotH / 2;
+
+    const slot = document.createElement('div');
+    slot.className = 'photo-slot';
+    slot.style.cssText = `left:${slotL}px;top:${slotT}px;width:${slotW}px;height:${slotH}px;z-index:1;`;
+
+    const coverPhoto = (window.specialPhotos.cover || [])[0];
+    if (coverPhoto) {
+      const img = document.createElement('img');
+      img.className = 'slot-photo';
+      img.src = coverPhoto.url;
+      slot.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'slot-placeholder';
+      ph.textContent = 'Cover photo';
+      slot.appendChild(ph);
+    }
+    canvas.appendChild(slot);
+
+    // Captions (read-only) — coords are with-bleed; subtract before converting to px
+    const savedCoverCaps = window.bookCaptions?.cover || {};
+    coverDef.captions.forEach(capDef => {
+      const text = savedCoverCaps[capDef.key];
+      if (!text) return; // skip empty captions in the customer view
+
+      const capW  = capDef.wMm * SCALE;
+      const capCX = (capDef.xMm - COVER_BLEED_MM) * SCALE;
+      const capCY = (capDef.yMm - COVER_BLEED_MM) * SCALE;
+
+      const ov       = window.coverCaptionStyles?.[capDef.key] || {};
+      const font     = ov.font    || capDef.font;
+      const weight   = ov.weight !== undefined ? ov.weight : 400;
+      const italic   = ov.italic  || false;
+      const sizePt   = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
+      const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
+      const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
+
+      const fontSize = (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
+      const lineH    = (sizePt * lineSpacing * SCALE * 25.4 / 72).toFixed(1) + 'px';
+      const lineHpx  = sizePt * (4 / 3) * lineSpacing;
+
+      const cap = document.createElement('div');
+      cap.className = 'slot-caption cover-caption';
+      cap.textContent = text;
+
+      let posCSS;
+      if (capDef.rotate) {
+        const top = capCY - lineHpx / 2;
+        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:center;z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
+      } else {
+        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${capDef.align || 'center'};z-index:3;transform:translateY(-50%);`;
+      }
+      cap.style.cssText = posCSS;
+      canvas.appendChild(cap);
+    });
+
+    pagesWrap.appendChild(canvas);
+    row.appendChild(pagesWrap);
+    return row;
+  }
+
   function renderBook() {
     const canvas = document.getElementById('book-canvas');
     canvas.innerHTML = '';
 
-    const seq = buildBookSequence(window.orderData?.pageCount || 20, window.orderData?.fpSelections || []);
+    // Render the physical cover first
+    const coverRow = renderCover();
+    if (coverRow) canvas.appendChild(coverRow);
+
+    const seq = window._bookSequence
+      || buildBookSequence(window.orderData?.pageCount || 20, window.orderData?.fpSelections || []);
 
     seq.forEach((spreadId, idx) => {
       const asgn = window.bookAssignments[idx] || { left: [], right: [] };
@@ -1196,10 +1329,23 @@
 
         const slotEl = document.createElement('div');
         slotEl.className = 'photo-slot';
-        slotEl.style.left = ((slotDef.x - slotDef.w / 2) * SCALE) + 'px';
-        slotEl.style.top = ((slotDef.y - slotDef.h / 2) * SCALE) + 'px';
-        slotEl.style.width = (slotDef.w * SCALE) + 'px';
-        slotEl.style.height = (slotDef.h * SCALE) + 'px';
+        if (slotDef.heartClip || slotDef.fullBleed) {
+          // Full-canvas slot: heartClip uses an SVG-derived clip-path; fullBleed fills the page.
+          slotEl.style.left   = '0px';
+          slotEl.style.top    = '0px';
+          slotEl.style.width  = (200 * SCALE) + 'px';
+          slotEl.style.height = (200 * SCALE) + 'px';
+        } else {
+          slotEl.style.left = ((slotDef.x - slotDef.w / 2) * SCALE) + 'px';
+          slotEl.style.top = ((slotDef.y - slotDef.h / 2) * SCALE) + 'px';
+          slotEl.style.width = (slotDef.w * SCALE) + 'px';
+          slotEl.style.height = (slotDef.h * SCALE) + 'px';
+        }
+        if (slotDef.heartClip) {
+          // Heart path scaled from original 566.93×566.93 SVG space to 600×600 canvas
+          slotEl.style.clipPath = "path('M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z')";
+          slotEl.style.background = 'transparent';
+        }
 
         if (photo) {
           const img = document.createElement('img');
@@ -1489,22 +1635,23 @@
   }
 
   function setupPreviewMode() {
-    const seq = buildBookSequence(window.orderData?.pageCount || 20, window.orderData?.fpSelections || []);
+    // One dot per rendered row, including the cover (row 0)
+    const rowCount = document.querySelectorAll('.spread-row').length;
     const dotsContainer = document.getElementById('preview-dots');
     dotsContainer.innerHTML = '';
-    seq.forEach((_, idx) => {
+    for (let idx = 0; idx < rowCount; idx++) {
       const dot = document.createElement('div');
       dot.className = 'preview-dot' + (idx === 0 ? ' active' : '');
       dot.addEventListener('click', () => goToPreviewSpread(idx));
       dotsContainer.appendChild(dot);
-    });
+    }
 
     document.getElementById('preview-prev').addEventListener('click', () => {
       window.previewSpreadIndex = Math.max(0, window.previewSpreadIndex - 1);
       updatePreviewMode();
     });
     document.getElementById('preview-next').addEventListener('click', () => {
-      window.previewSpreadIndex = Math.min(seq.length - 1, window.previewSpreadIndex + 1);
+      window.previewSpreadIndex = Math.min(rowCount - 1, window.previewSpreadIndex + 1);
       updatePreviewMode();
     });
   }
@@ -1515,15 +1662,15 @@
   }
 
   function updatePreviewMode() {
-    const seq = buildBookSequence(window.orderData?.pageCount || 20, window.orderData?.fpSelections || []);
-    document.querySelectorAll('.spread-row').forEach((row, idx) => {
+    const rows = document.querySelectorAll('.spread-row');
+    rows.forEach((row, idx) => {
       row.classList.toggle('preview-hidden', idx !== window.previewSpreadIndex);
     });
 
     const prevBtn = document.getElementById('preview-prev');
     const nextBtn = document.getElementById('preview-next');
     prevBtn.disabled = window.previewSpreadIndex === 0;
-    nextBtn.disabled = window.previewSpreadIndex === seq.length - 1;
+    nextBtn.disabled = window.previewSpreadIndex === rows.length - 1;
 
     document.querySelectorAll('.preview-dot').forEach((dot, idx) => {
       dot.classList.toggle('active', idx === window.previewSpreadIndex);

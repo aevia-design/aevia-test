@@ -138,8 +138,10 @@ exports.getOrder = functions
         fpTexts:              order.fpTexts || {},
         photoNotes:           order.photoNotes || null,
         coverCaptions:        order.coverCaptions || null,
+        coverCaptionStyles:   order.coverCaptionStyles || null,
         staffBookAssignments: order.staffBookAssignments || null,
         staffBookCaptions:    order.staffBookCaptions    || null,
+        staffBookSequence:    order.staffBookSequence    || null,
         signedUrls,
         storedNames: {
           cover:   manifest.cover   || null,
@@ -207,7 +209,7 @@ exports.saveStaffState = functions
       return res.status(403).json({ error: 'Unauthorised' });
     }
 
-    const { orderNumber, bookAssignments, bookCaptions } = req.body;
+    const { orderNumber, bookAssignments, bookCaptions, bookSequence } = req.body;
     if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
 
     try {
@@ -218,6 +220,7 @@ exports.saveStaffState = functions
       await doc.ref.update({
         staffBookAssignments: bookAssignments || null,
         staffBookCaptions:    bookCaptions    || null,
+        staffBookSequence:    bookSequence    || null,
         staffSavedAt:         admin.firestore.FieldValue.serverTimestamp(),
       });
 
