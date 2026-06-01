@@ -2630,6 +2630,56 @@
   }
 
   /* ═══════════════════════════════════════════
+     ASSIGNMENT (DE)SERIALISATION — by photo name, not position
+     ───────────────────────────────────────────
+     Saved book state references photos by NAME, not pool index. Pool ordering
+     differs between staff (date-sorted) and customer (manifest order), so an
+     index means different photos in each. Names are stable identities, so the
+     saved arrangement reproduces exactly everywhere (staff, customer, PDF).
+  ═══════════════════════════════════════════ */
+
+  // Photo names are compared by basename: the staff engine stores bare filenames
+  // ("photo_053.jpg") while the customer engine stores full GCS paths
+  // ("folder/pool/photo_053.jpg"). Normalising to basename makes them match.
+  const _baseName = s => (s || '').split('/').pop();
+
+  // indices → {name, orientation}  (for SAVE)
+  function assignmentsToNames(assignments, pool) {
+    const out = {};
+    for (const [si, sides] of Object.entries(assignments || {})) {
+      out[si] = {};
+      for (const side of ['left', 'right']) {
+        if (!sides[side]) continue;
+        out[si][side] = sides[side].map(idx =>
+          (idx === null || idx === undefined || !pool[idx])
+            ? null
+            : { name: _baseName(pool[idx].name), orientation: pool[idx].orientation });
+      }
+    }
+    return out;
+  }
+
+  // {name,...} | name | legacy index → index into the current pool  (for LOAD)
+  function assignmentsToIndices(saved, pool) {
+    const byName = new Map();
+    pool.forEach((p, i) => { const n = _baseName(p && p.name); if (n && !byName.has(n)) byName.set(n, i); });
+    const out = {};
+    for (const [si, sides] of Object.entries(saved || {})) {
+      out[si] = { left: [], right: [] };
+      for (const side of ['left', 'right']) {
+        if (!sides[side]) continue;
+        out[si][side] = sides[side].map(v => {
+          if (v === null || v === undefined) return null;
+          if (typeof v === 'number') return v;  // legacy index-based save (pre-fix orders)
+          const name = _baseName((typeof v === 'string') ? v : v.name);
+          return byName.has(name) ? byName.get(name) : null;
+        });
+      }
+    }
+    return out;
+  }
+
+  /* ═══════════════════════════════════════════
      FULL BOOK RENDERER
   ═══════════════════════════════════════════ */
 
@@ -2655,7 +2705,7 @@
       // Restoring a saved book: use the saved layout/captions/styles instead of
       // auto-arranging. One-shot — cleared after use so later renders (drag/drop,
       // sequence edits) auto-assign normally. Mirrors the customer engine.
-      window.bookAssignments     = rs.assignments;
+      window.bookAssignments     = assignmentsToIndices(rs.assignments, pool);
       window.bookCaptions        = rs.captions            || {};
       window.coverCaptionStyles  = rs.coverCaptionStyles  || {};
       window.spreadCaptionStyles = rs.spreadCaptionStyles || {};
@@ -3609,7 +3659,7 @@
         headers: { 'Content-Type': 'application/json', 'X-Staff-Key': STAFF_KEY },
         body:    JSON.stringify({
           orderNumber:    window._loadedOrderNumber,
-          bookAssignments: window.bookAssignments || {},
+          bookAssignments: assignmentsToNames(window.bookAssignments, window.photoPool),
           bookCaptions:   window.bookCaptions    || {},
           bookSequence:   window._bookSequence   || [],
           coverCaptionStyles:  window.coverCaptionStyles  || {},

@@ -670,6 +670,9 @@
 
 <!-- ── ACTION BAR ── -->
 <div class="submit-bar" id="submit-bar">
+  <span id="approved-notice" style="display:none;font-size:13px;color:var(--muted);letter-spacing:0.02em;">
+    ✓ This book has been approved — it can no longer be edited. We'll be in touch soon.
+  </span>
   <button class="cancel-btn" id="save-btn">Save changes</button>
   <button class="submit-btn" id="approve-btn">Approve &amp; confirm</button>
 </div>
@@ -830,6 +833,10 @@
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       window.orderData = await resp.json();
 
+      // Lock the page to view-only once the order is approved or paid — a customer
+      // reopening the link can browse their book but cannot edit or re-approve.
+      window._readOnly = (window.orderData.status === 'approved' || window.orderData.status === 'paid');
+
       // Load photos from signed URLs, assign to spreads, then render
       await loadPhotos();
       // Replay the staff-saved book verbatim if present (sequence + assignments + captions).
@@ -844,9 +851,9 @@
       // version, then the order-time defaults / auto-assignment. This is Option A —
       // a customer who closes the tab and reopens the link resumes their saved book.
       if (od.customerBookAssignments) {
-        window.bookAssignments = od.customerBookAssignments;
+        window.bookAssignments = assignmentsToIndices(od.customerBookAssignments, window.photoPool);
       } else if (od.staffBookAssignments) {
-        window.bookAssignments = od.staffBookAssignments;
+        window.bookAssignments = assignmentsToIndices(od.staffBookAssignments, window.photoPool);
       } else {
         assignPhotosToSpreads(seq, window.photoPool);
       }
@@ -861,6 +868,7 @@
       window.spreadCaptionStyles = od.customerCaptionStyles
         || od.staffSpreadCaptionStyles || {};
       renderBook();
+      if (window._readOnly) lockForApproval();
     } catch (err) {
       console.error('Failed to load order:', err);
       document.getElementById('book-canvas').innerHTML =
@@ -1021,6 +1029,44 @@
 
     window.bookAssignments = assignments;
     return assignments;
+  }
+
+  // Saved book state references photos by NAME, not pool index — pool ordering
+  // differs between engines, so indices are not portable. These translate at the
+  // save/load boundary; internal state stays index-based. Mirrors the staff engine.
+  // Match by basename: staff stores bare filenames, customer stores full GCS paths.
+  const _baseName = s => (s || '').split('/').pop();
+  function assignmentsToNames(assignments, pool) {
+    const out = {};
+    for (const [si, sides] of Object.entries(assignments || {})) {
+      out[si] = {};
+      for (const side of ['left', 'right']) {
+        if (!sides[side]) continue;
+        out[si][side] = sides[side].map(idx =>
+          (idx === null || idx === undefined || !pool[idx])
+            ? null
+            : { name: _baseName(pool[idx].name), orientation: pool[idx].orientation });
+      }
+    }
+    return out;
+  }
+  function assignmentsToIndices(saved, pool) {
+    const byName = new Map();
+    pool.forEach((p, i) => { const n = _baseName(p && p.name); if (n && !byName.has(n)) byName.set(n, i); });
+    const out = {};
+    for (const [si, sides] of Object.entries(saved || {})) {
+      out[si] = { left: [], right: [] };
+      for (const side of ['left', 'right']) {
+        if (!sides[side]) continue;
+        out[si][side] = sides[side].map(v => {
+          if (v === null || v === undefined) return null;
+          if (typeof v === 'number') return v;  // legacy index-based save (pre-fix orders)
+          const name = _baseName((typeof v === 'string') ? v : v.name);
+          return byName.has(name) ? byName.get(name) : null;
+        });
+      }
+    }
+    return out;
   }
 
   function buildBookSequence(pageCount, selectedFPs) {
@@ -1981,15 +2027,9 @@
 
   // ── Save helper ──
   async function saveBookState() {
-    // Build save payload matching staff engine format
-    const assignments = {};
-    for (const [si, sides] of Object.entries(window.bookAssignments || {})) {
-      assignments[si] = {};
-      for (const side of ['left', 'right']) {
-        if (!sides[side]) continue;
-        assignments[si][side] = sides[side].map(idx => idx !== null ? idx : null);
-      }
-    }
+    if (window._readOnly) return;  // approved/paid — never persist edits
+    // Save by photo name (not pool index) so the arrangement is portable across engines.
+    const assignments = assignmentsToNames(window.bookAssignments, window.photoPool);
 
     const payload = {
       orderNumber: window.orderData?.orderNumber,
@@ -2031,8 +2071,24 @@
     }
   });
 
+  // ── View-only lock (order already approved/paid) ──
+  // Sweep after render: make every caption non-editable and every photo non-draggable,
+  // disable the action buttons, and show the approved notice. The customer can still
+  // scroll/flip through their book, but nothing can be changed or re-submitted.
+  function lockForApproval() {
+    document.querySelectorAll('[contenteditable="true"]').forEach(el => el.setAttribute('contenteditable', 'false'));
+    document.querySelectorAll('[draggable="true"]').forEach(el => el.draggable = false);
+    const approveBtn = document.getElementById('approve-btn');
+    const saveBtn    = document.getElementById('save-btn');
+    const notice     = document.getElementById('approved-notice');
+    if (approveBtn) { approveBtn.disabled = true; approveBtn.textContent = 'Approved ✓'; }
+    if (saveBtn)    { saveBtn.style.display = 'none'; }
+    if (notice)     { notice.style.display = ''; }
+  }
+
   // ── Approve & confirm ──
   document.getElementById('approve-btn').addEventListener('click', async () => {
+    if (window._readOnly) return;  // already approved — defence in depth
     const btn = document.getElementById('approve-btn');
     btn.disabled = true;
     btn.innerHTML = '<span class="loading-spinner"></span>';
