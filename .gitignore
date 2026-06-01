@@ -2,6 +2,7 @@
 functions/.env
 functions/serviceAccountKey.json
 motif-engine/.env
+aevia-uploads-*.json
 
 # Dependencies — too large, reinstalled with `npm install`
 node_modules/
