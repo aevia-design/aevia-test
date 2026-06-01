@@ -539,10 +539,14 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     if (font) {
       const isFunnyWords = capDef.font === 'FirstTimeWriting';
       // FunnyWords: template sizePt is in mm (canvas-scaled units), convert to PDF pt.
-      // Regular panels: sizePt is standard typographic pt.
+      // Regular panels: the engine renders these in raw CSS pt at 96dpi, which on its
+      // 3px/mm (76.2dpi) canvas makes them ~1.26× larger than their nominal pt. The PDF
+      // reads sizePt as a true 72dpi point, so it prints ~1.26× smaller than the screen.
+      // Scale panel pt up by 96dpi / 76.2dpi so the print matches the engine appearance.
+      const PANEL_PT_SCALE = (96 / 25.4) / 3;  // ≈ 1.2598  (SCALE = 3 px/mm in both engines)
       const sizePt        = isFunnyWords
         ? ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 20) * MM_TO_PT
-        : ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 16);
+        : ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 16) * PANEL_PT_SCALE;
       const lineSpacingPt = sizePt * ((ov.lineSpacing !== undefined ? ov.lineSpacing : capDef.lineSpacing) || 1.28);
       const charSpacing   = LIGATURE_FONTS.has(fontName) ? 0
       : ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;

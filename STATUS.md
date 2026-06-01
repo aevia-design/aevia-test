@@ -1,7 +1,10 @@
 # Session Status
-_Last updated: 2026-06-01 (session 12)_
+_Last updated: 2026-06-01 (session 13)_
 
 ## Status
+Session 13 fixed **TO-DO #54** — the birthday "wishes" text panel printed ~1.26× smaller in the PDF than it looks in the engine. Root cause was a **size**, not font, mismatch: the engine renders text panels in raw CSS pt @96dpi (~1.26× larger on the 3px/mm = 76.2dpi canvas), while the PDF read the same sizePt as a true 72dpi point. Fixed by scaling the PDF's regular text-panel size by `PANEL_PT_SCALE = (96/25.4)/3` in `scripts/export-pdf.js`. Both engines left untouched (the bigger on-screen look is wanted). User verified the exported PDF now looks right.
+
+### Earlier (session 12)
 Session 12 built **chunk-006** (PDF export pulls full-res originals from GCS by order number) and fixed a **critical state-fidelity bug**: the staff and customer engines ordered the photo pool differently (staff sorts by EXIF date, customer uses upload order) but stored assignments as positional indices — so the customer's approved layout was scrambled in the staff engine and PDF. Now fixed by saving the book layout **by photo name**, not index. Verified spread-for-spread identical across both engines. Also added: staff restores saved book state on load (was silently auto-arranging), an "Export book state" button in Order mode, and a **view-only lock** on customer-preview after approval. All deployed/pushed.
 
 **Meta-task bar (user, explicit):** customer-rendered book must look EXACTLY like staff (fonts, styling, captions, photo positions, spreads, cover). Customer can change photo sequence, captions, caption styling AND alignment, always using our layout.
@@ -16,10 +19,11 @@ Session 12 built **chunk-006** (PDF export pulls full-res originals from GCS by 
 - **PDF live-tested** by user — works great. Two issues found for next session (see below).
 
 ## Immediate next steps
-1. **TO-DO #54** — Birthday spread left-page caption font wrong in exported PDF (font-mapping gap in `export-pdf.js`).
-2. **TO-DO #55** — Photo crop mechanism: understand how slots crop, add staff control over crop — **crucial for heart-mask page** (crops faces).
-3. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
-4. **chunk-005** — Stripe payment. Still blocked: Stripe account not yet set up.
+1. **TO-DO #55** — Photo crop mechanism: understand how slots crop, add staff control over crop — **crucial for heart-mask page** (crops faces).
+2. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
+3. **chunk-005** — Stripe payment. Still blocked: Stripe account not yet set up.
+
+_TO-DO #54 done this session — see Status above._
 
 ## Deferred
 - **Playwright browser tests** — deferred until customer preview is stable in production.
@@ -47,7 +51,7 @@ Session 12 built **chunk-006** (PDF export pulls full-res originals from GCS by 
 - **(S9)** `wouldMixPage` + `showToast` live in BOTH engines (parallel copies) — keep in sync.
 - **(S9)** Customer load precedence is customer > staff > defaults.
 - **(S8)** Customer & staff are parallel copies of the same render logic — change one, mirror the other.
-- **(S8)** Text panels: regular use raw `pt` (96dpi); funnyWords uses `sizePt*SCALE px`. Asymmetry is intentional — do not normalise.
+- **(S8)** Text panels: regular use raw `pt` (96dpi); funnyWords uses `sizePt*SCALE px`. Asymmetry is intentional — do not normalise. **(S13 note)** Because the engine renders regular panels at 96dpi but the PDF reads sizePt as true 72dpi pt, the PDF printed ~1.26× too small. `export-pdf.js` now multiplies the regular panel size by `PANEL_PT_SCALE = (96/25.4)/3` to match the engine's on-screen size. If SCALE (=3 px/mm) ever changes, update that constant too.
 - `order-details.txt` in GCS only on orders after 2026-05-27 deploy. `photoManifest` only after Plan 12-03 deploy. `coverCaptions` only after 2026-05-28 deploy.
 - `staffBookAssignments`/`staffBookCaptions` only on orders where staff clicked "Save book state" — else customer auto-assigns.
 - Firestore `hasOnly([...])` allowlist now includes: `status`, `statusHistory`, `previewToken`, `sentSnapshot`.
