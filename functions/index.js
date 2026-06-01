@@ -238,7 +238,7 @@ exports.approveOrder = functions
         approvedAt: admin.firestore.FieldValue.serverTimestamp(),
         statusHistory: admin.firestore.FieldValue.arrayUnion({
           status: 'approved',
-          timestamp: admin.firestore.FieldValue.serverTimestamp()
+          timestamp: admin.firestore.Timestamp.now()
         })
       };
 

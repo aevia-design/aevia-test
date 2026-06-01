@@ -54,6 +54,8 @@
 | # | Item | Priority | Notes |
 |---|------|----------|-------|
 | 1  | Review order page link in confirmation email | High | Link is implemented but approach needs review — token generation timing and email structure may be suboptimal. `functions/upload.js:130–226` |
+| 50 | Sent snapshot visual view (`?view=sent`) | Low | Customer preview page should accept `?view=sent` param and render the `sentSnapshot` Firestore field instead of live customer state. Gives staff a visual audit of exactly what was sent vs what was approved. |
+| 51 | Customer preview load performance | Low | Photos are fetched as blobs then converted to object URLs. Switch to using signed URL directly as `img.src` (Option 4) to let browser stream images progressively. Saves ~150MB round-trip through JS memory. |
 | 2  | Dashboard: add previewUrl input field | High | Staff need to paste the GCS signed URL for preview PDF into Firestore without going to Cloud Console. `pages/dashboard.html` |
 | 13 | Dashboard: overdue order tracking | Medium | Highlight orders that haven't moved status in X days. Prevents orders falling through cracks. `pages/dashboard.html` |
 | 30 | Dashboard: internal notes per order | Low | Free-text field on each order for staff notes (e.g. "customer requested warmer tones"). `pages/dashboard.html` |

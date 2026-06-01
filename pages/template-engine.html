@@ -3539,8 +3539,22 @@
       return;
     }
     const unplacedCount = parseInt(document.getElementById('sidebar-unplaced-count')?.textContent || '0', 10);
-    if (unplacedCount > 0) {
-      const proceed = confirm(`${unplacedCount} photo${unplacedCount === 1 ? '' : 's'} still unplaced. Save anyway?`);
+
+    // Count slots in bookAssignments that have no photo (null/undefined).
+    // This catches empty slots even when 0 photos are left unplaced.
+    let emptySlotCount = 0;
+    Object.values(window.bookAssignments || {}).forEach(asgn => {
+      [...(asgn.left || []), ...(asgn.right || [])].forEach(idx => {
+        if (idx === null || idx === undefined) emptySlotCount++;
+      });
+    });
+
+    const warnings = [];
+    if (unplacedCount > 0) warnings.push(`${unplacedCount} photo${unplacedCount === 1 ? '' : 's'} still unplaced`);
+    if (emptySlotCount > 0) warnings.push(`${emptySlotCount} spread slot${emptySlotCount === 1 ? '' : 's'} empty`);
+
+    if (warnings.length > 0) {
+      const proceed = confirm(`${warnings.join(' and ')}. Save anyway?`);
       if (!proceed) return;
     }
     btn.disabled = true;
