@@ -1,30 +1,25 @@
 # Session Status
-_Last updated: 2026-06-01 (session 11)_
+_Last updated: 2026-06-01 (session 12)_
 
 ## Status
-Session 11 completed chunk-004 (approve flow), fixed several staff engine bugs, and live-tested the full order → preview → approve cycle. All code is deployed. The approve button works end-to-end: customer saves, approves, status flips to "approved" in dashboard, `staff*` fields overwritten with customer's final version.
+Session 12 built **chunk-006** (PDF export pulls full-res originals from GCS by order number) and fixed a **critical state-fidelity bug**: the staff and customer engines ordered the photo pool differently (staff sorts by EXIF date, customer uses upload order) but stored assignments as positional indices — so the customer's approved layout was scrambled in the staff engine and PDF. Now fixed by saving the book layout **by photo name**, not index. Verified spread-for-spread identical across both engines. Also added: staff restores saved book state on load (was silently auto-arranging), an "Export book state" button in Order mode, and a **view-only lock** on customer-preview after approval. All deployed/pushed.
 
 **Meta-task bar (user, explicit):** customer-rendered book must look EXACTLY like staff (fonts, styling, captions, photo positions, spreads, cover). Customer can change photo sequence, captions, caption styling AND alignment, always using our layout.
 
-### Completed this session (2026-06-01, session 11)
-- **S10 round 2 live-tested** — alignment control, preview↔edit round-trip confirmed working.
-- **Alignment icons** — L/C/R text pills replaced with SVG line icons (both engines).
-- **Toolbar viewport clamping** — caption toolbar no longer overflows right edge of screen (both engines). Uses `offsetWidth` fallback of 340px.
-- **chunk-004 complete:**
-  - `approveOrder` Cloud Function: merges `customer*` → `staff*` (null-safe), sets `status: approved`, appends to `statusHistory` using `Timestamp.now()` (NOT `serverTimestamp()` — Firestore rejects serverTimestamp inside arrayUnion).
-  - `sentSnapshot` written to Firestore when staff generates preview link — frozen audit of what was sent.
-  - "Approve & confirm" button live in customer-preview (was `coming-soon`). Auto-saves first, then calls `approveOrder`.
-  - Firestore rules updated: added `sentSnapshot` to browser-write allowlist.
-- **Order form photo guard** — submit blocked if pool photos < required minimum, with specific count message.
-- **Save warning improved** — counts actual null slots in `bookAssignments` (not estimate). Warns on both unplaced pool photos AND empty spread slots.
-- **Photo sequencing TDD** — 6 new tests added for `comparePhotos` edge cases (zero-padded, mixed prefixes, WhatsApp names, EXIF priority). All pass. Algorithm confirmed solid.
-- **TO-DO #50** — `?view=sent` snapshot visual view (not built yet, logged for later).
-- **TO-DO #51** — customer preview load performance via direct `img.src` (not built yet, logged for later).
+### Completed this session (2026-06-01, session 12)
+- **chunk-006 done** — `scripts/export-pdf.js` accepts `--order <orderNumber>` (alternative to `--photos <dir>`): calls `getOrder` for fresh signed URLs to the full-res ORIGINALS, matched to `book-state.json` by filename, downloaded on demand. Added `scripts/package.json` so it runs on any machine (`cd scripts && npm install`). Verified end-to-end on AEV-019/AEV-020.
+- **Staff restore fix** — `loadOrderIntoEngine` now applies the saved book state (assignments, captions, sequence, caption styles) instead of letting `renderBook` auto-arrange. One-shot `_restoreState` guard. Mirrors the customer engine.
+- **Name-based assignments (the big fix)** — both engines translate assignments to/from photo **basename** at the save/load boundary (`assignmentsToNames`/`assignmentsToIndices`); internal state stays index-based. Match by basename (staff stores bare filenames, customer stores full GCS paths). Legacy index saves still load via passthrough. Export/PDF already used names, so all three consumers now agree.
+- **Export button in Order mode** — "Export book state (JSON)" added to the order panel (was Local-mode only).
+- **Customer view-only lock** — `getOrder` now returns `status` (deployed); customer-preview locks editing + disables approve + shows a notice once `approved`/`paid`. Customer can still browse.
+- **Order form photo-count guard** — re-tested by user: correctly blocks submitting fewer than the required photos. ✓
+- **PDF live-tested** by user — works great. Two issues found for next session (see below).
 
 ## Immediate next steps
-1. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
-2. **TO-DO #44** — Prune dashboard status bar.
-3. **chunk-005** — Stripe payment. Still blocked: Stripe account not yet set up.
+1. **TO-DO #54** — Birthday spread left-page caption font wrong in exported PDF (font-mapping gap in `export-pdf.js`).
+2. **TO-DO #55** — Photo crop mechanism: understand how slots crop, add staff control over crop — **crucial for heart-mask page** (crops faces).
+3. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
+4. **chunk-005** — Stripe payment. Still blocked: Stripe account not yet set up.
 
 ## Deferred
 - **Playwright browser tests** — deferred until customer preview is stable in production.
@@ -39,6 +34,10 @@ Session 11 completed chunk-004 (approve flow), fixed several staff engine bugs, 
 3. **PDF script shared access** — each installs Node locally (near-term) vs Cloud Run job (long-term). Resolve before second founder needs to generate PDFs.
 
 ## Open watch-outs
+- **(S12)** Book layout is saved **by photo basename**, not pool index. `assignmentsToNames`/`assignmentsToIndices` exist in BOTH engines (parallel copies) — keep in sync. Match is by basename because staff stores bare filenames (`photo_053.jpg`) and customer stores full GCS paths. Never go back to index-based saves: the two engines order the pool differently (staff sorts by EXIF date, customer = upload order).
+- **(S12)** Legacy (pre-S12) orders have index-based saves. They load via a numeric passthrough — correct only if their photos were dateless/sequential (staff sort == manifest order). Orders with date-bearing photos need ONE re-save through the staff engine to convert to name-based. AEV-019/AEV-020 are test orders.
+- **(S12)** Staff `renderBook` auto-arranges UNLESS `window._restoreState` is set (one-shot, set in `loadOrderIntoEngine` when the order has saved assignments). Don't remove the guard or saved layouts get clobbered.
+- **(S12)** PDF script: `--order` mode fetches signed URLs via `getOrder` (1h expiry) and downloads originals on demand. Run from repo root; deps live in `scripts/node_modules` (`scripts/package.json`).
 - **(S11)** `FieldValue.serverTimestamp()` cannot be nested inside `arrayUnion` — throws "Element at index 0 is not a valid array element." Use `Timestamp.now()` inside array entries only.
 - **(S11)** Any new field written from the browser (not Cloud Function) must be added to the `hasOnly([...])` allowlist in `firestore.rules`. Cloud Function writes (admin SDK) bypass rules; browser writes do not.
 - **(S11)** `sentSnapshot` is frozen at preview-link generation time. The customer preview link always shows live customer state — after approval it shows their approved version, not what was originally sent. `sentSnapshot` in Firestore is the only record of the original.
@@ -58,8 +57,9 @@ Session 11 completed chunk-004 (approve flow), fixed several staff engine bugs, 
 - `markDuplicates(existingPool, incoming)` excludes pool entries already flagged `duplicate:true` from the "seen" set — intentional, don't revert.
 
 ## Key files
-- Session log: `sessions/2026-06-01.md` (session 11)
+- Session log: `sessions/2026-06-01.md` (sessions 11 & 12)
 - Previous session log: `sessions/2026-05-29.md` (sessions 7–10)
+- PDF export script + its deps: `scripts/export-pdf.js`, `scripts/package.json`
 - Product requirements: `PRD.md`
 - Architecture: `ARCHITECTURE.md`
 - Roadmap (active): `ROADMAP.md`

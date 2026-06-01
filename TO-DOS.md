@@ -12,6 +12,8 @@
 | 7 | Fix hero slide 3 text alignment | Medium | Slide 3 has inline `style="text-align:center"` while slides 1 & 2 are left-aligned. Remove the inline style. `pages/home.html:331` |
 | 43 | Template engine scroll performance | Medium | After alt-tab and return, interface stalls 10–15s before responding. Investigate virtual scroll or viewport-gated rendering. `pages/template-engine.html` |
 | 44 | Prune dashboard status bar | High | Status bar logic needs review — unclear what it currently shows, may have stale or redundant states. `pages/dashboard.html` |
+| 54 | Birthday spread left-page font wrong in PDF | High | **(next session)** On the birthday spread, the left-page caption font in the exported PDF does not match what the preview engines show. Likely a font-mapping gap in `scripts/export-pdf.js` (engine uses a font the PDF embed list doesn't map). Confirmed in AEV-020 PDF test, 2026-06-01. |
+| 55 | Photo crop mechanism — understand + give control | High | **(next session)** Need to understand how slots crop photos (sharp `fit:'cover'`/`position:'centre'` in PDF; CSS object-fit in engine) and add a way for staff to adjust crop when the auto-crop is bad. **Crucial for the heart-mask page** — the heart clip can crop faces. Investigate per-slot crop/offset control. Engines + `scripts/export-pdf.js`. |
 
 ---
 

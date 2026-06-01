@@ -174,12 +174,14 @@ _Goal: Customer pays; staff can generate and deliver the print PDF._
 
 **Type:** feature
 **Component:** PDF export script
-**Status:** pending
+**Status:** ✅ done (2026-06-01, session 12)
 **Size:** S
 **Depends on:** —
-**Files:** `scripts/export-pdf.js`
+**Files:** `scripts/export-pdf.js`, `scripts/package.json`
 
 **Description:** Currently the PDF script reads photos from a local directory. Update it to accept GCS signed read URLs from `book-state.json` and download photos at export time. This unblocks running export from any machine with Node.js installed, without needing photos present locally.
+
+**Implemented:** Added `--order <orderNumber>` mode — calls `getOrder` (staff key) for fresh signed URLs to the full-res ORIGINALS (from `photoManifest`), matched to `book-state.json` by filename, downloaded on demand via a single cached `loadPhoto()`. Local `--photos` mode preserved. Added `scripts/package.json` (pdf-lib, fontkit, sharp) so it runs on any machine. Live-tested end-to-end on AEV-019/AEV-020.
 
 ---
 
