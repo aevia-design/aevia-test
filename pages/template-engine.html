@@ -575,6 +575,11 @@
       image-rendering: -webkit-optimize-contrast;
       image-rendering: smooth;
     }
+    .photo-slot img.slot-photo.heart-dragging {
+      cursor: grabbing;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
     .photo-slot .slot-placeholder {
       width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
@@ -929,6 +934,62 @@
   window.specialPhotos      = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
   window.coverCaptionStyles  = {};   // { year: { font, weight, style, sizePt, lineSpacing, letterSpacing }, name: {...} }
   window.spreadCaptionStyles = {};   // { spreadIndex: { side: { slotIdx: { font, weight, italic, sizePt, lineSpacing, letterSpacing } } } }
+  window.heartCrop          = {};   // { photoName: { x, y } } — object-position % for the heart-mask slot (default 50/50 = center)
+
+  // Crop offset for the heart-mask slot, keyed by photo name (mirrors caption-by-name).
+  // x/y are CSS object-position percentages (0–100); default 50/50 = centred (today's behaviour).
+  function getHeartCrop(name) {
+    const c = window.heartCrop[name];
+    return { x: (c && typeof c.x === 'number') ? c.x : 50,
+             y: (c && typeof c.y === 'number') ? c.y : 50 };
+  }
+  function setHeartCrop(name, x, y) {
+    const clamp = v => Math.max(0, Math.min(100, v));
+    window.heartCrop[name] = { x: clamp(x), y: clamp(y) };
+  }
+
+  // Pointer-drag to reposition a photo inside the heart slot. The photo tracks the
+  // cursor 1:1: a drag of dx px moves the displayed image by dx px, which maps to a
+  // change in object-position %. Only the axis that overflows the (square) slot moves.
+  function attachHeartDrag(img, slotEl, photoName, spreadIndex) {
+    img.addEventListener('pointerdown', e => {
+      // natural dims needed to know the cover-scaled image size; bail if not loaded yet
+      const natW = img.naturalWidth, natH = img.naturalHeight;
+      if (!natW || !natH) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const slotW = slotEl.clientWidth, slotH = slotEl.clientHeight;
+      const scale = Math.max(slotW / natW, slotH / natH);   // object-fit: cover
+      const imgW = natW * scale, imgH = natH * scale;
+      // overflow = how far the image extends beyond the slot on each axis (≥0)
+      const overflowX = imgW - slotW, overflowY = imgH - slotH;
+
+      const start = getHeartCrop(photoName);
+      const startX = e.clientX, startY = e.clientY;
+      img.setPointerCapture(e.pointerId);
+      img.classList.add('heart-dragging');
+
+      const onMove = ev => {
+        // object-position offset = -(overflow) * pct/100. Moving the image by +d px
+        // means offset += d, so pct -= d / overflow * 100.
+        let x = start.x, y = start.y;
+        if (overflowX > 0.5) x = start.x - (ev.clientX - startX) / overflowX * 100;
+        if (overflowY > 0.5) y = start.y - (ev.clientY - startY) / overflowY * 100;
+        setHeartCrop(photoName, x, y);
+        const hc = getHeartCrop(photoName);
+        img.style.objectPosition = hc.x + '% ' + hc.y + '%';
+      };
+      const onUp = ev => {
+        img.releasePointerCapture(e.pointerId);
+        img.classList.remove('heart-dragging');
+        img.removeEventListener('pointermove', onMove);
+        img.removeEventListener('pointerup', onUp);
+      };
+      img.addEventListener('pointermove', onMove);
+      img.addEventListener('pointerup', onUp);
+    });
+  }
 
   const SCALE    = 3;            // px per mm
   const BLEED_MM = 3;            // spread bleed (mm); caption/slot CSV coords are with-bleed
@@ -1184,6 +1245,7 @@
       coverCaptions,
       coverCaptionStyles: window.coverCaptionStyles || {},
       spreadCaptionStyles: window.spreadCaptionStyles || {},
+      heartCrop: window.heartCrop || {},
     };
 
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
@@ -2074,6 +2136,18 @@
           };
           slotEl.appendChild(img);
 
+          // Heart-mask slot: apply saved crop offset and let staff drag the photo to
+          // reposition it inside the heart (so the heart's pinched top/bottom never
+          // crops a face). Keyed by photo name; the % drives both engine and PDF.
+          if (slotDef.heartClip) {
+            const hc = getHeartCrop(photo.name);
+            img.style.objectPosition = hc.x + '% ' + hc.y + '%';
+            img.style.cursor = 'move';
+            img.draggable = false;   // suppress native image drag-ghost; we drive our own
+            img.title = 'Drag to reposition inside the heart';
+            attachHeartDrag(img, slotEl, photo.name, spreadIndex);
+          }
+
           if (photo.lowRes) {
             slotEl.style.outline = '3px solid #f4ca6f';
           }
@@ -2709,6 +2783,7 @@
       window.bookCaptions        = rs.captions            || {};
       window.coverCaptionStyles  = rs.coverCaptionStyles  || {};
       window.spreadCaptionStyles = rs.spreadCaptionStyles || {};
+      window.heartCrop           = rs.heartCrop           || {};
       window._restoreState = null;
     } else {
       window.bookCaptions   = {}; // reset captions on full rebuild
@@ -3517,6 +3592,7 @@
         sequence:            order.staffBookSequence || null,
         coverCaptionStyles:  order.staffCoverCaptionStyles  || order.coverCaptionStyles || {},
         spreadCaptionStyles: order.staffSpreadCaptionStyles || {},
+        heartCrop:           order.staffHeartCrop || {},
       };
     }
 
@@ -3664,6 +3740,7 @@
           bookSequence:   window._bookSequence   || [],
           coverCaptionStyles:  window.coverCaptionStyles  || {},
           spreadCaptionStyles: window.spreadCaptionStyles || {},
+          heartCrop:           window.heartCrop           || {},
         }),
       });
       if (!res.ok) {

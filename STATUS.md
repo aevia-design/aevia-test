@@ -1,7 +1,10 @@
 # Session Status
-_Last updated: 2026-06-01 (session 13)_
+_Last updated: 2026-06-01 (session 14)_
 
 ## Status
+Session 14 built **TO-DO #55** — staff can now **drag the heart-mask photo to reposition it** inside the heart so it never crops a face (the heart pinches at top/bottom, so a centred vertical photo lost the head). New `heartCrop` state = per-photo `object-position` % (`{x,y}`, default 50/50 = old centred behaviour), keyed by photo name. Staff drag + render in `template-engine.html`; read-only apply in `customer-preview.html`; PDF replicates via scale-to-cover + `extract()` in `export-pdf.js`; persisted through local export, cloud save/load (`staffHeartCrop`, `functions/index.js`). Scope: **heart slot only** (other slots match photo orientation, so centre-crop is fine). Verified by user: staff drag feel + PDF export. **Not yet tested in customer-preview view** (read-only mirror, expected to match).
+
+### Earlier (session 13)
 Session 13 fixed **TO-DO #54** — the birthday "wishes" text panel printed ~1.26× smaller in the PDF than it looks in the engine. Root cause was a **size**, not font, mismatch: the engine renders text panels in raw CSS pt @96dpi (~1.26× larger on the 3px/mm = 76.2dpi canvas), while the PDF read the same sizePt as a true 72dpi point. Fixed by scaling the PDF's regular text-panel size by `PANEL_PT_SCALE = (96/25.4)/3` in `scripts/export-pdf.js`. Both engines left untouched (the bigger on-screen look is wanted). User verified the exported PDF now looks right.
 
 ### Earlier (session 12)
@@ -19,11 +22,11 @@ Session 12 built **chunk-006** (PDF export pulls full-res originals from GCS by 
 - **PDF live-tested** by user — works great. Two issues found for next session (see below).
 
 ## Immediate next steps
-1. **TO-DO #55** — Photo crop mechanism: understand how slots crop, add staff control over crop — **crucial for heart-mask page** (crops faces).
+1. **Verify #55 in customer-preview view** — confirm the heart crop renders identically (read-only) on a customer preview link. Only remaining check.
 2. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
 3. **chunk-005** — Stripe payment. Still blocked: Stripe account not yet set up.
 
-_TO-DO #54 done this session — see Status above._
+_TO-DO #55 done this session (staff + PDF verified; customer view untested) — see Status above._
 
 ## Deferred
 - **Playwright browser tests** — deferred until customer preview is stable in production.
@@ -38,6 +41,7 @@ _TO-DO #54 done this session — see Status above._
 3. **PDF script shared access** — each installs Node locally (near-term) vs Cloud Run job (long-term). Resolve before second founder needs to generate PDFs.
 
 ## Open watch-outs
+- **(S14)** Heart crop parity rests on ONE number: engine sets `object-position: x% y%`; PDF computes `window-left = (scaledW − CONTENT_PX) × x/100` (exact inverse of CSS object-position). Don't change one side's math without the other. `heartCrop`/`getHeartCrop` exist in BOTH engines (parallel copies) — keep in sync. `attachHeartDrag` (staff only) is a dedicated pointer handler because the heart is `pool:'special'` (non-draggable via the normal path); img `draggable=false` kills the native drag-ghost. Default 50/50 = old centred behaviour, so existing books are unchanged. Persisted as `staffHeartCrop` in Firestore via `saveStaffState`; returned by `getOrder`; survives approval (approveOrder doesn't touch it).
 - **(S12)** Book layout is saved **by photo basename**, not pool index. `assignmentsToNames`/`assignmentsToIndices` exist in BOTH engines (parallel copies) — keep in sync. Match is by basename because staff stores bare filenames (`photo_053.jpg`) and customer stores full GCS paths. Never go back to index-based saves: the two engines order the pool differently (staff sorts by EXIF date, customer = upload order).
 - **(S12)** Legacy (pre-S12) orders have index-based saves. They load via a numeric passthrough — correct only if their photos were dateless/sequential (staff sort == manifest order). Orders with date-bearing photos need ONE re-save through the staff engine to convert to name-based. AEV-019/AEV-020 are test orders.
 - **(S12)** Staff `renderBook` auto-arranges UNLESS `window._restoreState` is set (one-shot, set in `loadOrderIntoEngine` when the order has saved assignments). Don't remove the guard or saved layouts get clobbered.

@@ -783,7 +783,16 @@
   window.bookAssignments    = {};
   window.bookCaptions       = {};
   window.spreadCaptionStyles = {};
+  window.heartCrop          = {};   // { photoName: { x, y } } — staff-set object-position % for the heart slot (read-only here)
   window.orderData          = null;
+
+  // Heart-slot crop offset, keyed by photo name. Read-only in the customer engine —
+  // the crop is part of our layout. Mirrors the staff engine's getHeartCrop.
+  function getHeartCrop(name) {
+    const c = window.heartCrop[name];
+    return { x: (c && typeof c.x === 'number') ? c.x : 50,
+             y: (c && typeof c.y === 'number') ? c.y : 50 };
+  }
   window.previewSpreadIndex = 0;
 
   const SCALE    = 3;
@@ -867,6 +876,7 @@
         || od.staffCoverCaptionStyles || od.coverCaptionStyles || {};
       window.spreadCaptionStyles = od.customerCaptionStyles
         || od.staffSpreadCaptionStyles || {};
+      window.heartCrop = od.staffHeartCrop || {};
       renderBook();
       if (window._readOnly) lockForApproval();
     } catch (err) {
@@ -1495,6 +1505,12 @@
           img.className = 'slot-photo';
           img.src = photo.url;
           img.alt = photo.name;
+          // Heart-mask slot: apply the staff-set crop offset (read-only — crop is part of
+          // our layout, not customer-editable). Mirrors the staff engine's render-apply.
+          if (slotDef.heartClip) {
+            const hc = getHeartCrop(photo.name);
+            img.style.objectPosition = hc.x + '% ' + hc.y + '%';
+          }
           slotEl.appendChild(img);
           slotEl.draggable = true;
           slotEl.addEventListener('dragstart', e => {

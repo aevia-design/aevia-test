@@ -143,6 +143,7 @@ exports.getOrder = functions
         staffBookAssignments: order.staffBookAssignments || null,
         staffBookCaptions:    order.staffBookCaptions    || null,
         staffBookSequence:    order.staffBookSequence    || null,
+        staffHeartCrop:       order.staffHeartCrop       || null,
         staffCoverCaptionStyles:  order.staffCoverCaptionStyles  || null,
         staffSpreadCaptionStyles: order.staffSpreadCaptionStyles || null,
         // Customer's own saved edits — replayed on reopen so a closed tab loses nothing.
@@ -286,7 +287,7 @@ exports.saveStaffState = functions
     }
 
     const { orderNumber, bookAssignments, bookCaptions, bookSequence,
-            coverCaptionStyles, spreadCaptionStyles } = req.body;
+            coverCaptionStyles, spreadCaptionStyles, heartCrop } = req.body;
     if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
 
     try {
@@ -300,6 +301,7 @@ exports.saveStaffState = functions
         staffBookSequence:    bookSequence    || null,
         staffCoverCaptionStyles:  coverCaptionStyles  || null,
         staffSpreadCaptionStyles: spreadCaptionStyles || null,
+        staffHeartCrop:       heartCrop || null,
         staffSavedAt:         admin.firestore.FieldValue.serverTimestamp(),
       });
 

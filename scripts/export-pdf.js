@@ -287,8 +287,24 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
           `</svg>`
         );
         const maskBuffer = await sharp(maskSvg).resize(CONTENT_PX, CONTENT_PX).png().toBuffer();
+        // Crop offset (object-position %) the staff set so the heart never clips a face.
+        // Default 50/50 = centred (matches the old fit:'cover', position:'centre').
+        const hc = (state.heartCrop && state.heartCrop[photo.name]) || {};
+        const cropX = typeof hc.x === 'number' ? hc.x : 50;
+        const cropY = typeof hc.y === 'number' ? hc.y : 50;
+        // Replicate CSS object-fit:cover + object-position exactly: scale the image to
+        // cover the square, then extract the CONTENT_PX window offset by the same %.
+        // window-left = (scaledW − CONTENT_PX) × x/100 — the inverse of CSS's object-position.
+        const meta = await sharp(photoData).metadata();
+        const coverScale = Math.max(CONTENT_PX / meta.width, CONTENT_PX / meta.height);
+        const scaledW = Math.round(meta.width  * coverScale);
+        const scaledH = Math.round(meta.height * coverScale);
+        const clamp = (v, max) => Math.max(0, Math.min(max, v));
+        const exLeft = clamp(Math.round((scaledW - CONTENT_PX) * cropX / 100), scaledW - CONTENT_PX);
+        const exTop  = clamp(Math.round((scaledH - CONTENT_PX) * cropY / 100), scaledH - CONTENT_PX);
         const photoBuffer = await sharp(photoData)
-          .resize(CONTENT_PX, CONTENT_PX, { fit: 'cover', position: 'centre' })
+          .resize(scaledW, scaledH)
+          .extract({ left: exLeft, top: exTop, width: CONTENT_PX, height: CONTENT_PX })
           .png()
           .toBuffer();
         const maskedBuffer = await sharp(photoBuffer)
