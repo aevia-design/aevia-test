@@ -24,7 +24,7 @@ Session 12 built **chunk-006** (PDF export pulls full-res originals from GCS by 
 ## Immediate next steps
 1. **Verify #55 in customer-preview view** — confirm the heart crop renders identically (read-only) on a customer preview link. Only remaining check.
 2. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
-3. **chunk-005** — Stripe payment. Still blocked: Stripe account not yet set up.
+3. **chunk-005** — Code done. Pending: fill in Stripe keys in `functions/.env`, run `npm install` in `functions/`, deploy functions, then add the webhook endpoint in Stripe dashboard. See below.
 
 _TO-DO #55 done this session (staff + PDF verified; customer view untested) — see Status above._
 

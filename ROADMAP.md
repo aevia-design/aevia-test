@@ -157,16 +157,30 @@ _Goal: Staff can send a customer a link; customer can view, make minor edits, an
 
 _Goal: Customer pays; staff can generate and deliver the print PDF._
 
-### chunk-005: Stripe payment link + webhook
+### chunk-005: Stripe Checkout + webhook
 
 **Type:** integration
-**Component:** Firebase backend + Stripe
+**Component:** Firebase backend + customer preview
 **Status:** pending
 **Size:** M
 **Depends on:** chunk-004
-**Files:** `functions/index.js`, `functions/stripe.js`
+**Files:** `functions/index.js`, `pages/customer-preview.html`
 
-**Description:** Set up Stripe account (manual prerequisite). Create a Stripe Payment Link per order or per template/price point. Add a `stripeWebhook` Cloud Function that receives `payment_intent.succeeded`, verifies it, updates Firestore status → `paid`, and sends email notification to staff. Payment Link URL stored in Firestore per order for re-sending if needed.
+**Description:** Integrate Stripe Prebuilt Checkout (hosted redirect). New `createCheckoutSession` Cloud Function (customer-token auth) takes an order number, creates a Stripe Checkout Session with the configured price ID, and returns the Checkout URL. Customer-preview "Pay now" button (shown after approval) calls this function and redirects. New `stripeWebhook` Cloud Function receives `checkout.session.completed`, verifies the Stripe signature, updates Firestore status → `paid`, appends to `statusHistory`, and sends staff notification email. Customer-preview handles `?payment=success` on return (show confirmation message, no further action needed beyond the view-only lock already in place).
+
+**Prerequisites (manual, in Stripe dashboard before coding):**
+1. Create a Product + one-time Price (EUR) → copy the **Price ID** (`price_...`)
+2. Developers → API keys → copy **Secret key** (`sk_test_...`) and **Publishable key** (`pk_test_...`)
+3. After deploy: Developers → Webhooks → Add endpoint (URL = `stripeWebhook` function URL), event = `checkout.session.completed` → copy **Webhook signing secret** (`whsec_...`)
+4. Add to `functions/.env`: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`
+
+**Acceptance criteria:**
+- Approved orders show a "Pay now" button in customer-preview; clicking it redirects to the Stripe-hosted Checkout page
+- On successful payment, customer is returned to customer-preview with `?payment=success`; a confirmation message is shown
+- `stripeWebhook` verifies the Stripe signature; on `checkout.session.completed` sets Firestore status → `paid` and appends to `statusHistory`
+- Staff notification email is sent on payment (same nodemailer pattern as existing order notification)
+- Test mode: Stripe test card `4242 4242 4242 4242` completes the full flow end-to-end
+- No regressions on unapproved or already-paid orders (button not shown / already locked)
 
 ---
 

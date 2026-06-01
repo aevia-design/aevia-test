@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createUploadSessionHandler } = require('./upload');
 
 admin.initializeApp();
@@ -364,5 +365,177 @@ exports.convertHeic = functions
     } catch (err) {
       console.error('convertHeic error:', err);
       res.status(500).json({ error: err.message });
+    }
+  });
+
+// ── Create Checkout Session (Stripe payment) ─────────────────────────────────
+exports.createCheckoutSession = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const hasStaffAuth = req.headers['x-staff-key'] === process.env.STAFF_KEY;
+    const { orderNumber, token } = req.body;
+
+    // Auth: require either staff key or customer token
+    if (!hasStaffAuth && !token) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    try {
+      const db = admin.firestore();
+      let order;
+      let resolvedOrderNumber;
+
+      if (hasStaffAuth) {
+        // Staff path: fetch by orderNumber
+        if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+        const doc = await db.collection('orders').doc(orderNumber).get();
+        if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+        order = doc.data();
+      } else {
+        // Customer path: fetch by previewToken
+        if (!token) return res.status(400).json({ error: 'token required' });
+        const snapshot = await db.collection('orders')
+          .where('previewToken', '==', token)
+          .limit(1)
+          .get();
+
+        if (snapshot.empty) {
+          return res.status(403).json({ error: 'Invalid or expired token' });
+        }
+
+        order = snapshot.docs[0].data();
+        resolvedOrderNumber = snapshot.docs[0].id;
+      }
+
+      const orderNum = hasStaffAuth ? (order.orderNumber || orderNumber) : resolvedOrderNumber;
+
+      // Validate order status is approved
+      if (order.status !== 'approved') {
+        return res.status(409).json({ error: 'Order must be approved before payment' });
+      }
+
+      // Construct success/cancel URLs with token
+      const baseUrl = 'https://aevia-test.pages.dev/pages/customer-preview.html';
+      const successUrl = `${baseUrl}?token=${token || order.previewToken}&payment=success`;
+      const cancelUrl = `${baseUrl}?token=${token || order.previewToken}`;
+
+      // Create Stripe Checkout Session
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        line_items: [
+          {
+            price: process.env.STRIPE_PRICE_ID,
+            quantity: 1,
+          },
+        ],
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata: {
+          orderNumber: orderNum,
+          token: token || order.previewToken,
+        },
+      });
+
+      return res.status(200).json({ url: session.url });
+    } catch (err) {
+      console.error('createCheckoutSession error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+// ── Stripe Webhook (payment completion) ──────────────────────────────────────
+exports.stripeWebhook = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    try {
+      // Verify Stripe signature
+      const signature = req.headers['stripe-signature'];
+      const event = stripe.webhooks.constructEvent(
+        req.rawBody,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+
+      // Handle checkout.session.completed event
+      if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const orderNumber = session.metadata?.orderNumber;
+        const token = session.metadata?.token;
+
+        if (!orderNumber) {
+          console.warn('Webhook: no orderNumber in metadata');
+          return res.status(200).json({ received: true });
+        }
+
+        const db = admin.firestore();
+        const orderRef = db.collection('orders').doc(orderNumber);
+        const orderDoc = await orderRef.get();
+
+        if (!orderDoc.exists) {
+          console.warn('Webhook: order not found:', orderNumber);
+          return res.status(200).json({ received: true });
+        }
+
+        const order = orderDoc.data();
+
+        // Update order status to 'paid' and append to statusHistory
+        await orderRef.update({
+          status: 'paid',
+          paidAt: admin.firestore.FieldValue.serverTimestamp(),
+          statusHistory: admin.firestore.FieldValue.arrayUnion({
+            status: 'paid',
+            timestamp: admin.firestore.Timestamp.now(),
+          }),
+        });
+
+        // Send staff notification email
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+
+        await transporter.sendMail({
+          from: `"Aevia Orders" <${process.env.EMAIL_USER}>`,
+          to: process.env.EMAIL_NOTIFY,
+          subject: `[${orderNumber}] Payment received — ready for print`,
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;color:#333">
+              <h2 style="border-bottom:2px solid #eee;padding-bottom:12px">
+                Payment Received
+              </h2>
+              <p style="margin:16px 0">Payment confirmed for order <strong>${orderNumber}</strong>.</p>
+              <p style="margin:16px 0">Customer: <strong>${order.customerName}</strong></p>
+              <p style="margin:16px 0">The book is ready to be sent to print.</p>
+              <p style="color:#999;font-size:12px;margin-top:24px">
+                Received ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}
+              </p>
+            </div>
+          `,
+        });
+
+        console.log('Order paid:', orderNumber);
+      }
+
+      // Always return 200 for webhook success
+      return res.status(200).json({ received: true });
+    } catch (err) {
+      console.error('stripeWebhook error:', err);
+      return res.status(400).json({ error: err.message });
     }
   });

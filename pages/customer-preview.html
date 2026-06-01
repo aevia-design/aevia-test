@@ -673,8 +673,12 @@
   <span id="approved-notice" style="display:none;font-size:13px;color:var(--muted);letter-spacing:0.02em;">
     ✓ This book has been approved — it can no longer be edited. We'll be in touch soon.
   </span>
+  <span id="payment-success-notice" style="display:none;font-size:13px;color:var(--muted);letter-spacing:0.02em;">
+    ✓ Payment received — we'll be in touch soon!
+  </span>
   <button class="cancel-btn" id="save-btn">Save changes</button>
   <button class="submit-btn" id="approve-btn">Approve &amp; confirm</button>
+  <button class="submit-btn" id="pay-btn" style="display:none;">Pay now</button>
 </div>
 
 <!-- ── MOBILE GATE ── -->
@@ -2097,10 +2101,52 @@
     const approveBtn = document.getElementById('approve-btn');
     const saveBtn    = document.getElementById('save-btn');
     const notice     = document.getElementById('approved-notice');
+    const payBtn     = document.getElementById('pay-btn');
+    const payNotice  = document.getElementById('payment-success-notice');
     if (approveBtn) { approveBtn.disabled = true; approveBtn.textContent = 'Approved ✓'; }
     if (saveBtn)    { saveBtn.style.display = 'none'; }
-    if (notice)     { notice.style.display = ''; }
+
+    const status = window.orderData && window.orderData.status;
+    const params = new URLSearchParams(location.search);
+
+    if (status === 'paid' || params.get('payment') === 'success') {
+      // Already paid or just returned from Stripe — show confirmation, hide pay button
+      if (notice)    { notice.style.display = 'none'; }
+      if (payNotice) { payNotice.style.display = ''; }
+      if (payBtn)    { payBtn.style.display = 'none'; }
+    } else if (status === 'approved') {
+      // Approved but not yet paid — show pay button
+      if (notice)  { notice.style.display = ''; }
+      if (payBtn)  { payBtn.style.display = ''; }
+    } else {
+      if (notice)  { notice.style.display = ''; }
+    }
   }
+
+  // ── Pay now ──
+  document.getElementById('pay-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('pay-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span>';
+    try {
+      const token = new URLSearchParams(location.search).get('token');
+      const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/createCheckoutSession', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.error || `Payment initiation failed (${resp.status})`);
+      }
+      const { url } = await resp.json();
+      window.location.href = url;
+    } catch (err) {
+      showToast('Could not start payment: ' + err.message, 'warn');
+      btn.disabled = false;
+      btn.innerHTML = 'Pay now';
+    }
+  });
 
   // ── Approve & confirm ──
   document.getElementById('approve-btn').addEventListener('click', async () => {
