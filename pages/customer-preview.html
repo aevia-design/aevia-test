@@ -2049,7 +2049,10 @@
         body: JSON.stringify({ token }),
       });
 
-      if (!approveResp.ok) throw new Error('Approval failed');
+      if (!approveResp.ok) {
+        const body = await approveResp.json().catch(() => ({}));
+        throw new Error(body.error || `Approval failed (${approveResp.status})`);
+      }
       showToast('Your book has been approved! We\'ll be in touch soon.');
       btn.disabled = true;
       btn.innerHTML = 'Approved';
