@@ -2114,6 +2114,9 @@
       if (notice)    { notice.style.display = 'none'; }
       if (payNotice) { payNotice.style.display = ''; }
       if (payBtn)    { payBtn.style.display = 'none'; }
+      if (params.get('payment') === 'success') {
+        setTimeout(() => showToast('Payment received — we\'ll be in touch soon!'), 500);
+      }
     } else if (status === 'approved') {
       // Approved but not yet paid — show pay button
       if (notice)  { notice.style.display = ''; }
