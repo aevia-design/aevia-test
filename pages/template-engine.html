@@ -808,6 +808,10 @@
            style="font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:7px 14px;background:#fff;cursor:pointer;">
           Save book state
         </button>
+        <button id="oip-export-btn" onclick="exportBookState()"
+           style="font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:7px 14px;background:#fff;cursor:pointer;">
+          Export book state (JSON)
+        </button>
         <span id="oip-preview-status" style="font-size:12px;color:var(--muted);"></span>
       </div>
     </div>
@@ -2643,11 +2647,23 @@
     const selectedFPs = Array.from(document.querySelectorAll('input[name="fp"]:checked'))
                              .map(cb => cb.value);
 
-    const sequence = buildBookSequence(pageCount, selectedFPs);
+    const rs = window._restoreState;
+    const sequence = (rs && rs.sequence && rs.sequence.length) ? rs.sequence : buildBookSequence(pageCount, selectedFPs);
     window._bookSequence = sequence;
     window._fpAssignments = {}; // reset FP pinned assignments on full rebuild
-    window.bookCaptions   = {}; // reset captions on full rebuild
-    assignPhotosToSpreads(sequence, pool);
+    if (rs) {
+      // Restoring a saved book: use the saved layout/captions/styles instead of
+      // auto-arranging. One-shot — cleared after use so later renders (drag/drop,
+      // sequence edits) auto-assign normally. Mirrors the customer engine.
+      window.bookAssignments     = rs.assignments;
+      window.bookCaptions        = rs.captions            || {};
+      window.coverCaptionStyles  = rs.coverCaptionStyles  || {};
+      window.spreadCaptionStyles = rs.spreadCaptionStyles || {};
+      window._restoreState = null;
+    } else {
+      window.bookCaptions   = {}; // reset captions on full rebuild
+      assignPhotosToSpreads(sequence, pool);
+    }
 
     // Count regular photo slots (excluding special/artwork)
     let regularSlots = 0;
@@ -3439,6 +3455,21 @@
 
     renderPhotoSidebar();
 
+    // Restore the saved book state instead of auto-arranging. The staff engine had
+    // drifted from the customer engine and silently re-auto-arranged on load, throwing
+    // away the saved layout (and the customer's approved changes). staff* fields hold
+    // the approved version — approveOrder merges customer* → staff* at approval time.
+    const restoring = !!(order.staffBookAssignments && Object.keys(order.staffBookAssignments).length);
+    if (restoring) {
+      window._restoreState = {
+        assignments:         order.staffBookAssignments,
+        captions:            order.staffBookCaptions || {},
+        sequence:            order.staffBookSequence || null,
+        coverCaptionStyles:  order.staffCoverCaptionStyles  || order.coverCaptionStyles || {},
+        spreadCaptionStyles: order.staffSpreadCaptionStyles || {},
+      };
+    }
+
     if (!window.photoPool.length) {
       // Order loaded but no photos in manifest — pre-12-03 order or upload issue
       document.getElementById('book-canvas').innerHTML =
@@ -3447,6 +3478,19 @@
         '<p>This order has no photo manifest (submitted before the current system). Upload photos manually using Local mode, or switch to Local and add them via + Add Photos.</p></div>';
     } else {
       renderBook();  // NOTE: renderBook() resets window.bookCaptions = {}
+    }
+
+    // On restore, the saved bookCaptions already holds the approved FP/slot/cover
+    // caption text — so skip the order-form prefill below (which would clobber a
+    // customer's edited captions). Just rebuild the cover from the restored captions.
+    if (restoring) {
+      if (!window.bookCaptions['cover'] && order.coverCaptions && Object.keys(order.coverCaptions).length) {
+        window.bookCaptions['cover'] = { ...order.coverCaptions };
+      }
+      rerenderCover();
+      updatePhotoHint();
+      dbLog('Order loaded (saved book state restored).', 'info');
+      return;
     }
 
     // 7. After renderBook, populate FP text panels into DOM + bookCaptions
