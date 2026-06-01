@@ -133,6 +133,7 @@ exports.getOrder = functions
       return res.status(200).json({
         orderNumber:          order.orderNumber,
         customerName:         order.customerName,
+        status:               order.status || null,
         pageCount:            order.pageCount,
         fpSelections:         order.fpSelections || [],
         fpTexts:              order.fpTexts || {},
