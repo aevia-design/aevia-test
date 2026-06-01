@@ -490,6 +490,12 @@ exports.stripeWebhook = functions
 
         const order = orderDoc.data();
 
+        // Idempotency guard — Stripe may deliver the same event more than once
+        if (order.status === 'paid') {
+          console.log('Webhook: order already paid, skipping:', orderNumber);
+          return res.status(200).json({ received: true });
+        }
+
         // Update order status to 'paid' and append to statusHistory
         await orderRef.update({
           status: 'paid',
