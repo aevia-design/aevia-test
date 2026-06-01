@@ -44,7 +44,11 @@ const stripHtml = s => {
 const args   = process.argv.slice(2);
 const getArg = (flag) => { const i = args.indexOf(flag); return i !== -1 ? args[i + 1] : null; };
 
-const photosDir = getArg('--photos');
+// Photo source: exactly one of --photos (local dir) or --order (pull full-res
+// ORIGINALS from GCS via getOrder, matched to book-state.json by filename).
+const photosDir   = getArg('--photos');
+const orderNumber = getArg('--order');
+const staffKey    = getArg('--staff-key') || process.env.STAFF_KEY || '865865';
 const stateFile = getArg('--state') || 'book-state.json';
 const outDir    = getArg('--out')   || 'pdf-out';
 // --mode preview  → single combined preview.pdf (cover + all content pages)
@@ -52,11 +56,12 @@ const outDir    = getArg('--out')   || 'pdf-out';
 // default: preview
 const mode = getArg('--mode') || 'preview';
 
-if (!photosDir) {
-  console.error('Usage: node scripts/export-pdf.js --photos <dir> [--state book-state.json] [--out pdf-out] [--mode preview|print]');
+if (!photosDir && !orderNumber) {
+  console.error('Usage: node scripts/export-pdf.js (--photos <dir> | --order <orderNumber>) [--state book-state.json] [--out pdf-out] [--mode preview|print] [--staff-key <key>]');
   process.exit(1);
 }
-if (!fs.existsSync(photosDir)) { console.error('Photos dir not found:', photosDir); process.exit(1); }
+if (photosDir && orderNumber) { console.error('Provide either --photos or --order, not both.'); process.exit(1); }
+if (photosDir && !fs.existsSync(photosDir)) { console.error('Photos dir not found:', photosDir); process.exit(1); }
 if (!fs.existsSync(stateFile)) { console.error('State file not found:', stateFile); process.exit(1); }
 
 fs.mkdirSync(outDir, { recursive: true });
@@ -132,8 +137,60 @@ function expandSvgViewBox(svgStr, bleedUnits) {
 const SPREAD_SVG_BLEED_UNITS = BLEED_MM * 72 / 25.4;  // ~8.504
 // COVER_SVG_BLEED_UNITS is defined near the cover constants below (depends on COVER_BLEED_MM).
 
-function photoPath(name) {
-  return path.join(photosDir, name);
+// ── Photo source ────────────────────────────────────────────────────────────
+// loadPhoto(name) returns a Buffer (or null if missing) so sharp() reads the
+// same way regardless of source. In --order mode the bytes are the uncompressed
+// ORIGINALS the customer uploaded (from photoManifest), never the render-
+// compressed versions. URLs come from getOrder and are fresh (1h expiry).
+const GET_ORDER_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getOrder';
+const photoCache  = new Map();   // name → Buffer (avoids re-downloading a photo used twice)
+let gcsUrlByName  = null;        // basename → signed URL (built by setupPhotoSource)
+
+async function setupPhotoSource() {
+  if (!orderNumber) return;      // local --photos mode: nothing to set up
+  const resp = await fetch(GET_ORDER_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Staff-Key': staffKey },
+    body: JSON.stringify({ orderNumber }),
+  });
+  if (!resp.ok) {
+    const msg = await resp.text().catch(() => '');
+    throw new Error(`getOrder failed (HTTP ${resp.status}) for order ${orderNumber}: ${msg}`);
+  }
+  const { signedUrls = {}, storedNames = {} } = await resp.json();
+  gcsUrlByName = new Map();
+  const add = (storedPath, url) => {
+    if (!storedPath || !url) return;
+    const base = path.basename(storedPath);
+    if (gcsUrlByName.has(base)) console.warn(`  ⚠ Duplicate photo filename in manifest: ${base} — later entry wins`);
+    gcsUrlByName.set(base, url);
+  };
+  add(storedNames.cover, signedUrls.cover);
+  for (const slug of Object.keys(storedNames.special || {})) {
+    const paths = storedNames.special[slug] || [];
+    const urls  = (signedUrls.special || {})[slug] || [];
+    paths.forEach((p, i) => add(p, urls[i]));
+  }
+  (storedNames.pool || []).forEach((p, i) => add(p, (signedUrls.pool || [])[i]));
+}
+
+async function loadPhoto(name) {
+  if (!name) return null;
+  if (photoCache.has(name)) return photoCache.get(name);
+  let buf = null;
+  if (orderNumber) {
+    const url = gcsUrlByName.get(name) || gcsUrlByName.get(path.basename(name));
+    if (!url) { console.warn(`  ⚠ Photo not in order manifest: ${name}`); return null; }
+    const r = await fetch(url);
+    if (!r.ok) { console.warn(`  ⚠ Download failed (HTTP ${r.status}): ${name}`); return null; }
+    buf = Buffer.from(await r.arrayBuffer());
+  } else {
+    const p = path.join(photosDir, name);
+    if (!fs.existsSync(p)) return null;
+    buf = fs.readFileSync(p);
+  }
+  photoCache.set(name, buf);
+  return buf;
 }
 
 // Normalise a photo entry — handle both old string format and new {name,orientation} format
@@ -205,8 +262,8 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
 
     if (!photo || !photo.name) continue;
 
-    const pPath = photoPath(photo.name);
-    if (!fs.existsSync(pPath)) {
+    const photoData = await loadPhoto(photo.name);
+    if (!photoData) {
       console.warn(`  ⚠ Photo not found: ${photo.name}`);
       continue;
     }
@@ -215,7 +272,7 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
       if (slot.fullBleed) {
         // Full-bleed photo fills the entire 206×206mm canvas including bleed.
         // Sized to FULL_PX × FULL_PX and placed at (0,0) — no crop gap at any edge.
-        const photoBuffer = await sharp(pPath)
+        const photoBuffer = await sharp(photoData)
           .resize(FULL_PX, FULL_PX, { fit: 'cover', position: 'centre' })
           .png()
           .toBuffer();
@@ -230,7 +287,7 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
           `</svg>`
         );
         const maskBuffer = await sharp(maskSvg).resize(CONTENT_PX, CONTENT_PX).png().toBuffer();
-        const photoBuffer = await sharp(pPath)
+        const photoBuffer = await sharp(photoData)
           .resize(CONTENT_PX, CONTENT_PX, { fit: 'cover', position: 'centre' })
           .png()
           .toBuffer();
@@ -240,7 +297,7 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
           .toBuffer();
         composites.push({ input: maskedBuffer, left: BLEED_PX, top: BLEED_PX });
       } else {
-        const photoBuffer = await sharp(pPath)
+        const photoBuffer = await sharp(photoData)
           .resize(sw, sh, { fit: 'cover', position: 'centre' })
           .png()
           .toBuffer();
@@ -544,7 +601,7 @@ const COVER_SVG_BLEED_UNITS = COVER_BLEED_MM * 72 / 25.4;  // ~51.024
 
 // Render the full cover spread as a PNG buffer.
 // coverDef = DATA.cover; coverPhoto = filename string; coverCaptions = { year, name, spineName, spineYear }
-async function renderCoverImage(coverDef, coverPhotoName, photosDir) {
+async function renderCoverImage(coverDef, coverPhotoName) {
   const { sections, slots, svg } = coverDef;
   // Cover SVG lives in the same Spreads/ folder as content SVGs (ASSET_BASE already points there)
   const COVER_ASSET_BASE = ASSET_BASE;
@@ -569,8 +626,8 @@ async function renderCoverImage(coverDef, coverPhotoName, photosDir) {
 
   // ── Front photo slot (BEFORE SVG so decorations can overlay) ──────────────
   if (coverPhotoName) {
-    const pPath = path.join(photosDir, coverPhotoName);
-    if (fs.existsSync(pPath)) {
+    const photoData = await loadPhoto(coverPhotoName);
+    if (photoData) {
       const slot = slots[0]; // single cover photo slot
       // slot.xMm/yMm are CENTER coords already including the 18mm bleed — do NOT add COVER_BLEED_PX.
       const sw = Math.round(slot.wMm * MM_TO_PX);
@@ -578,7 +635,7 @@ async function renderCoverImage(coverDef, coverPhotoName, photosDir) {
       const sx = Math.round((slot.xMm - slot.wMm / 2) * MM_TO_PX);
       const sy = Math.round((slot.yMm - slot.hMm / 2) * MM_TO_PX);
       try {
-        const photoBuffer = await sharp(pPath)
+        const photoBuffer = await sharp(photoData)
           .resize(sw, sh, { fit: 'cover', position: 'centre' })
           .png().toBuffer();
         composites.push({ input: photoBuffer, left: sx, top: sy });
@@ -731,11 +788,13 @@ async function main() {
   const printDir = path.join(outDir, 'print');
   if (isPrint) fs.mkdirSync(printDir, { recursive: true });
 
+  await setupPhotoSource();
+
   console.log(`\n📖 Aevia PDF export`);
   console.log(`   Template : ${state.template}`);
   console.log(`   Pages    : ${state.pageCount}`);
   console.log(`   Spreads  : ${state.sequence.length}`);
-  console.log(`   Photos   : ${photosDir}`);
+  console.log(`   Photos   : ${orderNumber ? `GCS order ${orderNumber} (${gcsUrlByName.size} originals)` : photosDir}`);
   console.log(`   Mode     : ${mode}`);
   console.log(`   Output   : ${isPrint ? printDir : path.join(outDir, 'preview.pdf')}`);
   console.log(`   Canvas   : ${FULL_PX}×${FULL_PX}px (${FULL_MM}mm at ${DPI}dpi)\n`);
@@ -784,7 +843,7 @@ async function main() {
     ? specialPhotos.cover : specialPhotos.cover?.name;
 
   try {
-    const coverBuf = await renderCoverImage(coverDef, coverPhotoName, photosDir);
+    const coverBuf = await renderCoverImage(coverDef, coverPhotoName);
 
     const COVER_W_PT = COVER_FULL_W_MM / 25.4 * 72;
     const COVER_H_PT = COVER_FULL_H_MM / 25.4 * 72;
@@ -827,10 +886,10 @@ async function main() {
       spName = typeof spRaw === 'string' ? spRaw : spRaw?.name;
     }
     if (!spName) return 'H';
-    const spPath = photoPath(spName);
-    if (!fs.existsSync(spPath)) return 'H';
+    const spData = await loadPhoto(spName);
+    if (!spData) return 'H';
     try {
-      const meta = await sharp(spPath).metadata();
+      const meta = await sharp(spData).metadata();
       return (meta.height > meta.width) ? 'V' : 'H';
     } catch (e) { return 'H'; }
   }

@@ -1,0 +1,14 @@
+{
+  "name": "aevia-export-pdf",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone PDF export for Aevia photobooks. Run from any machine with Node 18+.",
+  "scripts": {
+    "export": "node export-pdf.js"
+  },
+  "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
+    "pdf-lib": "^1.17.1",
+    "sharp": "^0.33.5"
+  }
+}
