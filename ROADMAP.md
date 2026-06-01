@@ -161,7 +161,7 @@ _Goal: Customer pays; staff can generate and deliver the print PDF._
 
 **Type:** integration
 **Component:** Firebase backend + customer preview
-**Status:** pending
+**Status:** ✅ done (2026-06-01, session 15)
 **Size:** M
 **Depends on:** chunk-004
 **Files:** `functions/index.js`, `pages/customer-preview.html`
