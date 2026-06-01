@@ -908,9 +908,9 @@
   <div class="tb-group">
     <span class="tb-label">Align</span>
     <div class="tb-group" id="tb-align-group">
-      <button class="tb-pill" data-align="left" title="Align left">L</button>
-      <button class="tb-pill" data-align="center" title="Align center">C</button>
-      <button class="tb-pill" data-align="right" title="Align right">R</button>
+      <button class="tb-pill" data-align="left" title="Align left"><svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor"><rect x="0" y="0" width="14" height="2" rx="1"/><rect x="0" y="5" width="10" height="2" rx="1"/><rect x="0" y="10" width="12" height="2" rx="1"/></svg></button>
+      <button class="tb-pill" data-align="center" title="Align center"><svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor"><rect x="0" y="0" width="14" height="2" rx="1"/><rect x="2" y="5" width="10" height="2" rx="1"/><rect x="1" y="10" width="12" height="2" rx="1"/></svg></button>
+      <button class="tb-pill" data-align="right" title="Align right"><svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor"><rect x="0" y="0" width="14" height="2" rx="1"/><rect x="4" y="5" width="10" height="2" rx="1"/><rect x="2" y="10" width="12" height="2" rx="1"/></svg></button>
     </div>
   </div>
 </div>
@@ -1603,14 +1603,17 @@
     setActiveAlignPill(ov.align !== undefined ? ov.align : (capDef.align || 'center'));
 
     // Position toolbar: above front captions, to the right of rotated spine captions
-    const rect = capEl.getBoundingClientRect();
-    const tb   = document.getElementById('cover-caption-toolbar');
+    // Clamp left so it never overflows the right edge of the viewport.
+    const rect   = capEl.getBoundingClientRect();
+    const tb     = document.getElementById('cover-caption-toolbar');
+    const tbW    = tb.offsetWidth || 340;
+    const maxLeft = window.innerWidth - tbW - 8;
     if (capDef.rotate) {
       tb.style.top  = Math.max(8, rect.top) + 'px';
-      tb.style.left = (rect.right + 12) + 'px';
+      tb.style.left = Math.min(rect.right + 12, maxLeft) + 'px';
     } else {
       tb.style.top  = Math.max(8, rect.top - 58) + 'px';
-      tb.style.left = Math.max(8, rect.left) + 'px';
+      tb.style.left = Math.min(Math.max(8, rect.left), maxLeft) + 'px';
     }
     tb.classList.add('visible');
   }
@@ -1646,10 +1649,12 @@
     document.getElementById('tb-ls-val').textContent   = currentLS.toFixed(2) + 'em';
     setActiveAlignPill(ov.align !== undefined ? ov.align : (capDef.halign || 'center'));
 
-    const rect = capEl.getBoundingClientRect();
-    const tb   = document.getElementById('cover-caption-toolbar');
+    const rect    = capEl.getBoundingClientRect();
+    const tb      = document.getElementById('cover-caption-toolbar');
+    const tbW     = tb.offsetWidth || 340;
+    const maxLeft = window.innerWidth - tbW - 8;
     tb.style.top  = Math.max(8, rect.top - 58) + 'px';
-    tb.style.left = Math.max(8, rect.left) + 'px';
+    tb.style.left = Math.min(Math.max(8, rect.left), maxLeft) + 'px';
     tb.classList.add('visible');
   }
 

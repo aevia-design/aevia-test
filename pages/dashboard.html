@@ -430,13 +430,26 @@
   window.generatePreviewLink = async function(orderNumber) {
     try {
       const token = crypto.randomUUID();
+      const order = allOrders.find(o => o.orderNumber === orderNumber);
+
+      // Capture staff's current book state as immutable snapshot
+      const sentSnapshot = {
+        bookAssignments: order?.staffBookAssignments || null,
+        bookCaptions: order?.staffBookCaptions || null,
+        bookSequence: order?.staffBookSequence || null,
+        coverCaptionStyles: order?.staffCoverCaptionStyles || null,
+        spreadCaptionStyles: order?.staffSpreadCaptionStyles || null,
+        sentAt: serverTimestamp()
+      };
+
       await updateDoc(doc(db, 'orders', orderNumber), {
-        previewToken: token
+        previewToken: token,
+        sentSnapshot: sentSnapshot
       });
       // Update local state
-      const order = allOrders.find(o => o.orderNumber === orderNumber);
       if (order) {
         order.previewToken = token;
+        order.sentSnapshot = sentSnapshot;
       }
       renderTable();
     } catch (err) {

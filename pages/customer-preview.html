@@ -671,7 +671,7 @@
 <!-- ── ACTION BAR ── -->
 <div class="submit-bar" id="submit-bar">
   <button class="cancel-btn" id="save-btn">Save changes</button>
-  <button class="submit-btn" id="approve-btn" disabled data-state="coming-soon" title="Payment coming soon">Approve &amp; pay</button>
+  <button class="submit-btn" id="approve-btn">Approve &amp; confirm</button>
 </div>
 
 <!-- ── MOBILE GATE ── -->
@@ -728,9 +728,9 @@
   <div class="tb-group">
     <span class="tb-label">Align</span>
     <div class="tb-group" id="tb-align-group">
-      <button class="tb-pill" data-align="left" title="Align left">L</button>
-      <button class="tb-pill" data-align="center" title="Align center">C</button>
-      <button class="tb-pill" data-align="right" title="Align right">R</button>
+      <button class="tb-pill" data-align="left" title="Align left"><svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor"><rect x="0" y="0" width="14" height="2" rx="1"/><rect x="0" y="5" width="10" height="2" rx="1"/><rect x="0" y="10" width="12" height="2" rx="1"/></svg></button>
+      <button class="tb-pill" data-align="center" title="Align center"><svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor"><rect x="0" y="0" width="14" height="2" rx="1"/><rect x="2" y="5" width="10" height="2" rx="1"/><rect x="1" y="10" width="12" height="2" rx="1"/></svg></button>
+      <button class="tb-pill" data-align="right" title="Align right"><svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor"><rect x="0" y="0" width="14" height="2" rx="1"/><rect x="4" y="5" width="10" height="2" rx="1"/><rect x="2" y="10" width="12" height="2" rx="1"/></svg></button>
     </div>
   </div>
 </div>
@@ -1787,10 +1787,12 @@
     document.getElementById('tb-ls-val').textContent = currentLS.toFixed(2) + 'em';
     setActiveAlignPill(ov.align !== undefined ? ov.align : (capDef.halign || 'center'));
 
-    const rect = capEl.getBoundingClientRect();
-    const tb = document.getElementById('caption-toolbar');
-    tb.style.top = Math.max(8, rect.top - 58) + 'px';
-    tb.style.left = Math.max(8, rect.left) + 'px';
+    const rect    = capEl.getBoundingClientRect();
+    const tb      = document.getElementById('caption-toolbar');
+    const tbW     = tb.offsetWidth || 340;
+    const maxLeft = window.innerWidth - tbW - 8;
+    tb.style.top  = Math.max(8, rect.top - 58) + 'px';
+    tb.style.left = Math.min(Math.max(8, rect.left), maxLeft) + 'px';
     tb.classList.add('visible');
   }
 
@@ -1825,10 +1827,12 @@
     document.getElementById('tb-ls-val').textContent = currentLS.toFixed(2) + 'em';
     setActiveAlignPill(ov.align !== undefined ? ov.align : (capDef.align || 'center'));
 
-    const rect = capEl.getBoundingClientRect();
-    const tb = document.getElementById('caption-toolbar');
-    tb.style.top = Math.max(8, rect.top - 58) + 'px';
-    tb.style.left = Math.max(8, rect.left) + 'px';
+    const rect    = capEl.getBoundingClientRect();
+    const tb      = document.getElementById('caption-toolbar');
+    const tbW     = tb.offsetWidth || 340;
+    const maxLeft = window.innerWidth - tbW - 8;
+    tb.style.top  = Math.max(8, rect.top - 58) + 'px';
+    tb.style.left = Math.min(Math.max(8, rect.left), maxLeft) + 'px';
     tb.classList.add('visible');
   }
 
@@ -1975,6 +1979,40 @@
     requestAnimationFrame(fitCover);
   });
 
+  // ── Save helper ──
+  async function saveBookState() {
+    // Build save payload matching staff engine format
+    const assignments = {};
+    for (const [si, sides] of Object.entries(window.bookAssignments || {})) {
+      assignments[si] = {};
+      for (const side of ['left', 'right']) {
+        if (!sides[side]) continue;
+        assignments[si][side] = sides[side].map(idx => idx !== null ? idx : null);
+      }
+    }
+
+    const payload = {
+      orderNumber: window.orderData?.orderNumber,
+      fpSelections: window.orderData?.fpSelections || [],
+      bookAssignments: assignments,
+      captions: window.bookCaptions || {},
+      spreadCaptionStyles: window.spreadCaptionStyles || {},
+      coverCaptionStyles: window.coverCaptionStyles || {},
+    };
+
+    // POST to Firestore via Cloud Function
+    const updateResp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/saveOrderState', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: new URLSearchParams(location.search).get('token'),
+        ...payload,
+      }),
+    });
+
+    if (!updateResp.ok) throw new Error('Save failed');
+  }
+
   // ── Save changes ──
   document.getElementById('save-btn').addEventListener('click', async () => {
     const btn = document.getElementById('save-btn');
@@ -1982,37 +2020,7 @@
     btn.innerHTML = '<span class="loading-spinner"></span>';
 
     try {
-      // Build save payload matching staff engine format
-      const assignments = {};
-      for (const [si, sides] of Object.entries(window.bookAssignments || {})) {
-        assignments[si] = {};
-        for (const side of ['left', 'right']) {
-          if (!sides[side]) continue;
-          assignments[si][side] = sides[side].map(idx => idx !== null ? idx : null);
-        }
-      }
-
-      const payload = {
-        orderNumber: window.orderData?.orderNumber,
-        fpSelections: window.orderData?.fpSelections || [],
-        bookAssignments: assignments,
-        captions: window.bookCaptions || {},
-        spreadCaptionStyles: window.spreadCaptionStyles || {},
-        coverCaptionStyles: window.coverCaptionStyles || {},
-      };
-
-      // POST to Firestore (via Cloud Function or direct update)
-      // For MVP, store in Firestore under order doc using admin SDK endpoint
-      const updateResp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/saveOrderState', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: new URLSearchParams(location.search).get('token'),
-          ...payload,
-        }),
-      });
-
-      if (!updateResp.ok) throw new Error('Save failed');
+      await saveBookState();
       showToast('Changes saved. You can safely close this tab — reopening your link will show your saved book.');
       btn.disabled = false;
       btn.innerHTML = 'Save changes';
@@ -2020,6 +2028,35 @@
       showToast('Could not save changes: ' + err.message, 'warn');
       btn.disabled = false;
       btn.innerHTML = 'Save changes';
+    }
+  });
+
+  // ── Approve & confirm ──
+  document.getElementById('approve-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('approve-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span>';
+
+    try {
+      // Auto-save first
+      await saveBookState();
+
+      // Call approveOrder Cloud Function
+      const token = new URLSearchParams(location.search).get('token');
+      const approveResp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/approveOrder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+
+      if (!approveResp.ok) throw new Error('Approval failed');
+      showToast('Your book has been approved! We\'ll be in touch soon.');
+      btn.disabled = true;
+      btn.innerHTML = 'Approved';
+    } catch (err) {
+      showToast('Could not approve: ' + err.message, 'warn');
+      btn.disabled = false;
+      btn.innerHTML = 'Approve & confirm';
     }
   });
 

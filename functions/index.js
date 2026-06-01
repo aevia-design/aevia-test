@@ -201,6 +201,73 @@ exports.saveOrderState = functions
     }
   });
 
+// ── Approve order (customer approves book, staff state merges to final) ────────
+exports.approveOrder = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const { token } = req.body;
+    if (!token) return res.status(403).json({ error: 'Token required' });
+
+    try {
+      const db = admin.firestore();
+      const snapshot = await db.collection('orders')
+        .where('previewToken', '==', token)
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) return res.status(403).json({ error: 'Invalid or expired token' });
+
+      const orderRef = snapshot.docs[0].ref;
+      const orderData = snapshot.docs[0].data();
+
+      if (orderData.status === 'approved' || orderData.status === 'paid') {
+        return res.status(409).json({ error: 'Order is already approved or paid' });
+      }
+
+      // Merge customer-approved state into staff fields
+      // Only overwrite if customer field exists and is not null
+      const updates = {
+        status: 'approved',
+        approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+        statusHistory: admin.firestore.FieldValue.arrayUnion({
+          status: 'approved',
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        })
+      };
+
+      // Copy customer fields to staff fields, respecting existing staff values if customer is null
+      if (orderData.customerBookAssignments != null) {
+        updates.staffBookAssignments = orderData.customerBookAssignments;
+      }
+      if (orderData.customerCaptions != null) {
+        updates.staffBookCaptions = orderData.customerCaptions;
+      }
+      if (orderData.customerCaptionStyles != null) {
+        updates.staffSpreadCaptionStyles = orderData.customerCaptionStyles;
+      }
+      if (orderData.customerCoverCaptionStyles != null) {
+        updates.staffCoverCaptionStyles = orderData.customerCoverCaptionStyles;
+      }
+      if (orderData.customerBookSequence != null) {
+        updates.staffBookSequence = orderData.customerBookSequence;
+      }
+
+      await orderRef.update(updates);
+
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('approveOrder error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
 // ── Save staff book state (assignments + captions) ───────────────────────────
 // Accepts { orderNumber, bookAssignments, bookCaptions } with x-staff-key header
 exports.saveStaffState = functions

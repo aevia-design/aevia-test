@@ -1183,6 +1183,17 @@ async function submitOrder() {
     return;
   }
 
+  // Validate pool photo count
+  const required = window._photoCountTarget || 0;
+  const uploaded = (mainFiles || []).length;
+  if (uploaded < required) {
+    const diff = required - uploaded;
+    errEl.textContent = `Please upload ${diff} more photo${diff === 1 ? '' : 's'} (${uploaded} of ${required} added).`;
+    errEl.style.display = 'block';
+    errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
   // Validate active FP sections using SCRIBBLE_DATA
   for (const addon of ORDER.addons) {
     if (cancelledAddons.has(addon.slug)) continue;

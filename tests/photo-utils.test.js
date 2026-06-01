@@ -136,6 +136,96 @@ describe('comparePhotos', () => {
   });
 });
 
+// ─── comparePhotos — sequencing edge cases ────────────────────────────────────
+// These tests specify the exact sort behaviour that the staff engine relies on
+// when no EXIF date is available (the common case for scanned/renamed photos).
+describe('comparePhotos — filename sequencing', () => {
+  test('photo007 sorts before photo005 is WRONG — 005 must come first', () => {
+    // Regression: filenameNumber picks last digit run, so both resolve correctly.
+    // This test documents the expected order explicitly.
+    const pool = [
+      photo('photo007.jpg'),
+      photo('photo005.jpg'),
+      photo('photo003.jpg'),
+    ];
+    const sorted = [...pool].sort(comparePhotos);
+    expect(sorted.map(p => p.name)).toEqual([
+      'photo003.jpg',
+      'photo005.jpg',
+      'photo007.jpg',
+    ]);
+  });
+
+  test('zero-padded numbers sort numerically not lexically (009 < 010)', () => {
+    const pool = [
+      photo('img010.jpg'),
+      photo('img009.jpg'),
+      photo('img011.jpg'),
+    ];
+    const sorted = [...pool].sort(comparePhotos);
+    expect(sorted.map(p => p.name)).toEqual([
+      'img009.jpg',
+      'img010.jpg',
+      'img011.jpg',
+    ]);
+  });
+
+  test('mixed prefix styles: DSC vs IMG — sort by number, not prefix', () => {
+    const pool = [
+      photo('DSC00010.jpg'),
+      photo('IMG_0005.jpg'),
+      photo('DSC00008.jpg'),
+    ];
+    const sorted = [...pool].sort(comparePhotos);
+    expect(sorted.map(p => p.name)).toEqual([
+      'IMG_0005.jpg',
+      'DSC00008.jpg',
+      'DSC00010.jpg',
+    ]);
+  });
+
+  test('WhatsApp-style names (20240101-WA0003) sort by trailing number', () => {
+    // filenameNumber picks last digit group: WA0003 → 3, WA0001 → 1
+    const pool = [
+      photo('20240101-WA0003.jpg'),
+      photo('20240101-WA0001.jpg'),
+      photo('20240101-WA0002.jpg'),
+    ];
+    const sorted = [...pool].sort(comparePhotos);
+    expect(sorted.map(p => p.name)).toEqual([
+      '20240101-WA0001.jpg',
+      '20240101-WA0002.jpg',
+      '20240101-WA0003.jpg',
+    ]);
+  });
+
+  test('date-style names (2024-12-25) with no sequence number: stable order', () => {
+    // No sequence number → filenameNumber returns null for both → compare returns 0
+    // Array.sort is stable in Node 18+, so original order is preserved.
+    const pool = [
+      photo('2024-12-25.jpg'),
+      photo('2024-12-26.jpg'),
+    ];
+    const sorted = [...pool].sort(comparePhotos);
+    // Both return null from filenameNumber → compare returns 0 → stable
+    expect(sorted[0].name).toBe('2024-12-25.jpg');
+    expect(sorted[1].name).toBe('2024-12-26.jpg');
+  });
+
+  test('EXIF date beats filename number regardless of filename order', () => {
+    // Even if filename says 001, a later EXIF date puts it after an undated 002
+    const early = photo('IMG_0002.jpg', new Date('2023-01-01'));
+    const late  = photo('IMG_0001.jpg', new Date('2023-06-01'));
+    const noDate = photo('IMG_0003.jpg', null);
+    const sorted = [late, noDate, early].sort(comparePhotos);
+    expect(sorted.map(p => p.name)).toEqual([
+      'IMG_0002.jpg', // earliest EXIF
+      'IMG_0001.jpg', // later EXIF
+      'IMG_0003.jpg', // no EXIF, filename number last
+    ]);
+  });
+});
+
 // ─── markDuplicates ───────────────────────────────────────────────────────────
 describe('markDuplicates', () => {
   test('new files with unique names: no duplicates', () => {

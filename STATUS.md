@@ -27,7 +27,7 @@ Session 10 polished both engines: staff load/save UX, customer SP0 + preview-mod
 
 ## Immediate next steps
 1. **Live-test session 10 round 2** — alignment control (cover/slot/funnyWords), preview-mode centering, edit-mode book reappears after preview.
-2. **chunk-004** — `approveOrder` Cloud Function → status `approved` → staff email + Stripe Payment Link URL. Wire "Approve & pay" (currently disabled `coming-soon`) = run the save payload, THEN approve. Decide how customer edits (`customer*` Firestore fields) reconcile back into the staff view (open question #2).
+2. **chunk-004** — `approveOrder` Cloud Function → status `approved` → staff email + Stripe Payment Link URL. Wire "Approve & pay" (currently disabled `coming-soon`) = run the save payload, THEN approve. **Decided:** at approval, overwrite `staff*` with `customer*` (customer's approved version = print-ready). Also write `sentSnapshot` (frozen copy of `staff*` at preview-link generation time) for audit trail — proof of what was sent vs. what customer approved.
 3. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
 4. **TO-DO #44** — Prune dashboard status bar.
 
@@ -38,7 +38,8 @@ Session 10 polished both engines: staff load/save UX, customer SP0 + preview-mod
 
 ## Open questions
 1. **Customer edit reconciliation** — customer submitted edits write to Firestore `customer*` fields that staff does NOT read. How/when do these merge back into the staff view? Resolve as part of chunk-004 (approve flow).
-2. **Stripe account** — not yet set up. Needed before chunk-005.
+2. **Customer edit reconciliation** — **RESOLVED (2026-06-01):** at approval, Cloud Function overwrites `staff*` with `customer*`. `sentSnapshot` written at preview-link generation = frozen audit of what was sent.
+3. **Stripe account** — not yet set up. Needed before chunk-005.
 3. **"Approved for print" flow** — dashboard button, CLI flag, or both? Resolve before chunk-008.
 4. **PDF script shared access** — each installs Node locally (near-term) vs Cloud Run job (long-term). Resolve before second founder needs to generate PDFs.
 
