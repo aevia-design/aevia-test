@@ -242,7 +242,7 @@ When Kseniia needs to trigger renders remotely, add a GitHub Actions workflow on
 
 **Type:** feature
 **Component:** Staff dashboard
-**Status:** pending
+**Status:** done (session 19, commit 70db5d1)
 **Size:** S
 **Depends on:** chunk-007
 **Files:** `pages/dashboard.html`, `functions/index.js`

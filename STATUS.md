@@ -1,10 +1,11 @@
 # Session Status
-_Last updated: 2026-06-02 (session 18)_
+_Last updated: 2026-06-02 (session 19)_
 
 ## Status
-Session 18 fixed bugs found in the user's full end-to-end test of chunk-007 (8 issues + 4 net-new follow-ups). Committed `0d2d8f7`, pushed; `getOrder` redeployed.
+Session 19 built **chunk-008 — "Approved for print" dashboard button** (developer-agent + independent verify). Committed `70db5d1`, pushed; `markSentToPrint` deployed by user and verified live (a paid order flipped to `sent_to_print` in both dashboard and Firestore). chunk-008 is DONE. Decided: button only, no CLI (resolves the open question). Also installed jest at repo root so `npm test` runs (57/57 pass) and deleted two stale motif-engine trial files.
 
-**Verified:** #9 PDF — cover + all SVG overlays now render in `--order` mode (re-ran AEV-021 clean).
+### Earlier (session 18)
+Fixed bugs from the chunk-007 end-to-end test (8 issues + 4 follow-ups). Committed `0d2d8f7`, pushed; `getOrder` redeployed. **Verified:** #9 PDF — cover + all SVG overlays render in `--order` mode (AEV-021 clean).
 
 **UNTESTED in browser (verify next session):**
 - #2 post-payment thank-you screen (skips book reload on `?payment=success`)
@@ -23,9 +24,8 @@ Session 18 fixed bugs found in the user's full end-to-end test of chunk-007 (8 i
 ## Immediate next steps
 1. **Browser-verify Session 18 untested items** (#2, #3, #4, thank-you email) — see UNTESTED list above. Test #2 needs a fresh order paid via Stripe (returns with `?payment=success`).
 2. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
-3. **chunk-008** — "Approved for print" dashboard button (sets status → `sent_to_print`).
-4. **TO-DO #56** — post-payment confirmation email to the customer (only staff notified on payment today).
-5. **Switch Stripe to live mode** — when real website is deployed.
+3. **TO-DO #56** — post-payment confirmation email to the customer (only staff notified on payment today).
+4. **Switch Stripe to live mode** — when real website is deployed.
 
 ## Deferred
 - **Playwright browser tests** — deferred until customer preview is stable in production.
@@ -35,11 +35,12 @@ Session 18 fixed bugs found in the user's full end-to-end test of chunk-007 (8 i
 - **Verify #55 in customer-preview view** — confirm heart crop renders identically (read-only) on a live customer preview link. Do with a real new order.
 
 ## Open questions
-1. **"Approved for print" flow** — dashboard button, CLI flag, or both? Resolve before chunk-008.
-2. **PDF script shared access** — each installs Node locally (near-term) vs Cloud Run job (long-term). Resolve before second founder needs to generate PDFs.
-3. **Stripe live mode** — requires live website URL for full Stripe account activation. Currently running in test mode.
+1. **PDF script shared access** — each installs Node locally (near-term) vs Cloud Run job (long-term). Resolve before second founder needs to generate PDFs.
+2. **Stripe live mode** — requires live website URL for full Stripe account activation. Currently running in test mode.
 
 ## Open watch-outs
+- **(S19)** chunk-008: `markSentToPrint` write is admin-SDK (Cloud Function) → bypasses `firestore.rules`, no allowlist entry needed. Button only renders on `paid` orders and 404s until the function is deployed (`firebase deploy --only functions:markSentToPrint`). This function is the future hook for Elanders/SiteFlow API submission (P2) — plug the API call inside it, no UI rebuild.
+- **(S19)** Repo-root `npm test` (jest) now works but needs `npm install` at repo root on a fresh clone — separate from `scripts/npm install` for the PDF export. `node_modules/` is gitignored.
 - **(S18)** `scripts/export-pdf.js`: any constant derived from `MM_TO_PX`/`BLEED_MM`/`MM_TO_PT` MUST be assigned inside `initializePrintConstants()`, not at module top — they're lazy in `--order` mode. Module-load math gives `NaN` (broke cover + all SVGs).
 - **(S18)** Order-form thumbnails are downscaled display-only copies (`_thumbUrl`). Full-res `_objUrl` is used for the lightbox AND the GCS upload (`fileObjects`) — never swap the upload to the thumbnail. PDF unaffected (pulls full-res originals from GCS).
 - **(S18)** Birthday textPanel centering: engine now uses flexbox; PDF centers via `(boxHeight − textHeight)/2`. Both read `valign:'center'` from CSV. A future Top/Mid/Bottom toolbar control would need the PDF to read `ov.valign` too (currently reads `capDef.valign` only).
