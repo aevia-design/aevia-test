@@ -1,29 +1,31 @@
 # Session Status
-_Last updated: 2026-06-02 (session 17)_
+_Last updated: 2026-06-02 (session 18)_
 
 ## Status
-Session 17 completed **chunk-007** — full PDF pipeline in three parts:
-- **Part 1:** Staff engine "Export book state" button uploads `book-state.json` directly to GCS (`{orderNumber}/book-state.json`) instead of downloading locally.
-- **Part 2:** `scripts/export-pdf.js` in `--order` mode fetches `book-state.json` from GCS automatically, renders PDFs, and auto-uploads both to GCS with signed URLs printed on completion.
-- **Part 3:** Dashboard shows "Preview PDF" / "Print PDF" download links per order (via new `getPdfUrl` Cloud Function); clicking fetches a fresh signed URL and opens in a new tab.
+Session 18 fixed bugs found in the user's full end-to-end test of chunk-007 (8 issues + 4 net-new follow-ups). Committed `0d2d8f7`, pushed; `getOrder` redeployed.
 
-Also fixed: **GCS folder naming** now uses order number (`AEV-001/`) instead of `templatename_customername_date/`. Applies to all new orders; existing test orders retain old naming but still work.
+**Verified:** #9 PDF — cover + all SVG overlays now render in `--order` mode (re-ran AEV-021 clean).
 
-**Full workflow now:**
-1. Staff loads order in engine → arranges book → clicks "Export book state" → uploads to GCS
-2. `cd scripts && npm run pdf -- AEV-001` → PDFs rendered + uploaded to GCS
-3. Dashboard → "Preview PDF" button appears → click to download
+**UNTESTED in browser (verify next session):**
+- #2 post-payment thank-you screen (skips book reload on `?payment=success`)
+- #3 rotating reassurance lines on customer book load (counter kept)
+- #4 paste-as-plain-text in caption editors (both engines)
+- Thank-you screen showing the exact customer email (needs deployed `getOrder` — done)
 
-### Earlier (sessions 11–16)
-See `sessions/2026-06-01.md` for chunks 001–006, Stripe payment flow, heart crop, and planning.
+**Other fixes this session (lower risk):** #8 pay button appears after approve; #3 order-form "undefined" hint gone; #1 spine labels; #5 caption toolbar no longer clips/overlaps; #6 birthday text box true flexbox centering (now matches PDF); #4 order-form scroll stall fixed via downscaled display thumbnails.
+
+### Earlier
+- Session 17: chunk-007 full PDF pipeline (see `sessions/2026-06-02.md`).
+- Sessions 11–16: chunks 001–006, Stripe, heart crop (see `sessions/2026-06-01.md`).
 
 **Meta-task bar (user, explicit):** customer-rendered book must look EXACTLY like staff (fonts, styling, captions, photo positions, spreads, cover). Customer can change photo sequence, captions, caption styling AND alignment, always using our layout.
 
 ## Immediate next steps
-1. **End-to-end test** — submit a real test order, run full pipeline (engine → export → pdf → dashboard download → preview link → approve → pay). Fix any bugs found.
+1. **Browser-verify Session 18 untested items** (#2, #3, #4, thank-you email) — see UNTESTED list above. Test #2 needs a fresh order paid via Stripe (returns with `?payment=success`).
 2. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
 3. **chunk-008** — "Approved for print" dashboard button (sets status → `sent_to_print`).
-4. **Switch Stripe to live mode** — when real website is deployed.
+4. **TO-DO #56** — post-payment confirmation email to the customer (only staff notified on payment today).
+5. **Switch Stripe to live mode** — when real website is deployed.
 
 ## Deferred
 - **Playwright browser tests** — deferred until customer preview is stable in production.
@@ -38,6 +40,10 @@ See `sessions/2026-06-01.md` for chunks 001–006, Stripe payment flow, heart cr
 3. **Stripe live mode** — requires live website URL for full Stripe account activation. Currently running in test mode.
 
 ## Open watch-outs
+- **(S18)** `scripts/export-pdf.js`: any constant derived from `MM_TO_PX`/`BLEED_MM`/`MM_TO_PT` MUST be assigned inside `initializePrintConstants()`, not at module top — they're lazy in `--order` mode. Module-load math gives `NaN` (broke cover + all SVGs).
+- **(S18)** Order-form thumbnails are downscaled display-only copies (`_thumbUrl`). Full-res `_objUrl` is used for the lightbox AND the GCS upload (`fileObjects`) — never swap the upload to the thumbnail. PDF unaffected (pulls full-res originals from GCS).
+- **(S18)** Birthday textPanel centering: engine now uses flexbox; PDF centers via `(boxHeight − textHeight)/2`. Both read `valign:'center'` from CSV. A future Top/Mid/Bottom toolbar control would need the PDF to read `ov.valign` too (currently reads `capDef.valign` only).
+- **(S18)** `getOrder` now returns `email` — used by the post-payment thank-you screen. Deployed.
 - **(S17)** GCS folder naming: new orders use `AEV-001/` as folder. Old test orders use `templatename_customername_date/` — their Firestore `folderName` still points to old path, they still work.
 - **(S17)** `scripts/node_modules` must be installed (`cd scripts && npm install`) on any fresh clone before running PDF export.
 - **(S17)** `npm run pdf -- AEV-001` runs from `scripts/` dir (not repo root). The `--` is required npm syntax to pass the order number to the script.
@@ -54,7 +60,7 @@ See `sessions/2026-06-01.md` for chunks 001–006, Stripe payment flow, heart cr
 - **(S8)** Customer & staff are parallel copies of the same render logic — change one, mirror the other.
 
 ## Key files
-- Session log: `sessions/2026-06-02.md` (session 17)
+- Session log: `sessions/2026-06-02.md` (sessions 17 + 18)
 - Previous session log: `sessions/2026-06-01.md` (sessions 11–16)
 - Cloud Functions: `functions/index.js`, `functions/upload.js`
 - Customer preview page: `pages/customer-preview.html`
