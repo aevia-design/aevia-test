@@ -293,6 +293,7 @@
   const PASS     = 'keanuredcat';
   const STAFF_KEY = '865865';
   const GET_PDF_URL_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getPdfUrl';
+  const MARK_SENT_TO_PRINT_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/markSentToPrint';
 
   window.unlock = function() {
     const val = document.getElementById('pwd-input').value;
@@ -421,6 +422,12 @@
             }
           </div>
           <div class="pdf-links-row" id="pdf-row-${esc(o.orderNumber)}" style="display:none;margin-top:8px;gap:8px;flex-wrap:wrap;"></div>
+          <div class="print-action-row" id="print-action-${esc(o.orderNumber)}" style="margin-top:8px;">
+            ${o.status === 'paid'
+              ? `<button class="pdf-link-btn" onclick="markSentToPrint('${esc(o.orderNumber)}')">Mark approved for print</button>`
+              : (o.status === 'sent_to_print' ? `<span style="font-size:10px;color:var(--muted);">Sent to print</span>` : '')
+            }
+          </div>
         </td>
         <td class="status-cell">
           <select class="status-select" onchange="updateStatus('${esc(o.orderNumber)}', this.value)">
@@ -552,6 +559,47 @@
       }
     } catch (err) {
       alert('Could not fetch PDF: ' + err.message);
+    }
+  };
+
+  // ── Mark order as sent to print (staff approval before hand-off) ──────────
+  window.markSentToPrint = async function(orderNumber) {
+    const confirmed = confirm(`Mark order ${orderNumber} as approved for print? This cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(MARK_SENT_TO_PRINT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Staff-Key': STAFF_KEY },
+        body: JSON.stringify({ orderNumber }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        // Update local state
+        const order = allOrders.find(o => o.orderNumber === orderNumber);
+        if (order) {
+          order.status = 'sent_to_print';
+          order.statusHistory = order.statusHistory || [];
+          order.statusHistory.push({
+            status: 'sent_to_print',
+            timestamp: { seconds: Math.floor(Date.now() / 1000) }
+          });
+        }
+        renderTable();
+        alert('Order marked as approved for print.');
+      } else {
+        // Handle error codes
+        if (res.status === 409) {
+          alert('Error: Order is not in paid status. Status may have changed.');
+        } else if (res.status === 403) {
+          alert('Error: Not authorised to perform this action.');
+        } else {
+          alert(`Error: ${data.error || 'Could not mark order as approved for print'}`);
+        }
+      }
+    } catch (err) {
+      alert('Could not mark order as approved for print: ' + err.message);
     }
   };
 

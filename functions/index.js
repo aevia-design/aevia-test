@@ -649,3 +649,53 @@ exports.getPdfUrl = functions
       return res.status(500).json({ error: err.message });
     }
   });
+
+// ── Mark order as sent to print (staff tool) ────────────────────────────────
+// Accepts { orderNumber } with x-staff-key header
+// Transitions order from 'paid' to 'sent_to_print', guarded against wrong state
+exports.markSentToPrint = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (req.headers['x-staff-key'] !== process.env.STAFF_KEY) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+
+    try {
+      const db = admin.firestore();
+      const doc = await db.collection('orders').doc(orderNumber).get();
+      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+
+      const order = doc.data();
+
+      // Guard: only transition from 'paid' status (idempotency + state guard)
+      if (order.status !== 'paid') {
+        return res.status(409).json({ error: 'Order must be in paid status' });
+      }
+
+      // Transition to 'sent_to_print' with server timestamp and statusHistory entry
+      // NOTE (S11 invariant): Timestamp.now() inside arrayUnion, not serverTimestamp()
+      await doc.ref.update({
+        status: 'sent_to_print',
+        sentToPrintAt: admin.firestore.FieldValue.serverTimestamp(),
+        statusHistory: admin.firestore.FieldValue.arrayUnion({
+          status: 'sent_to_print',
+          timestamp: admin.firestore.Timestamp.now()
+        })
+      });
+
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('markSentToPrint error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
