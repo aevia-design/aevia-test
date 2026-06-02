@@ -49,7 +49,7 @@ Read these in order before doing anything:
 npx serve . -p 8080   # from project root
 ```
 Pages: `http://localhost:8080/pages/home.html`  
-Engine: `http://localhost:8080/pages/template-engine.html`
+Engine: `http://localhost:8080/pages/staff/template-engine.html`
 
 ---
 

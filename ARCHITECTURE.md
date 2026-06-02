@@ -70,9 +70,10 @@ aevia-test/
 │   ├── scribble.html               Scribble product page (one per template at MVP)
 │   ├── [template].html             Additional template product pages — one per template
 │   ├── order.html                  Order form — all templates, Step 1+2 flow
-│   ├── template-engine.html        Staff assembly tool — loads order, drag-drop, captions
-│   ├── dashboard.html              Staff order dashboard — status, list, actions
-│   └── [customer-preview.html]     Customer limited engine — NOT YET BUILT
+│   ├── staff/                      Staff-only pages (relocated 2026-06-02, chunk-009 prep)
+│   │   ├── template-engine.html    Staff assembly tool — loads order, drag-drop, captions
+│   │   └── dashboard.html          Staff order dashboard — status, list, actions
+│   └── customer-preview.html       Customer limited engine — view/edit/approve via ?token=
 │
 ├── assets/
 │   ├── Template_Scribble/          One folder per template — pattern repeats for all 9
@@ -170,7 +171,7 @@ Key functions:
 
 2. BOOK ASSEMBLY
    Aevia staff browser
-     → pages/template-engine.html (Order mode)
+     → pages/staff/template-engine.html (Order mode)
      → GET /getOrder?orderNumber=AEV-XXX (X-Staff-Key header)
      → GCS: photos downloaded via signed GET URLs
      → Staff assembles, drags, captions

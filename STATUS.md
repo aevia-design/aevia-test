@@ -71,13 +71,13 @@ Fixed bugs from the chunk-007 end-to-end test (8 issues + 4 follow-ups). Committ
 - Previous session log: `sessions/2026-06-01.md` (sessions 11–16)
 - Cloud Functions: `functions/index.js`, `functions/upload.js`
 - Customer preview page: `pages/customer-preview.html`
-- Staff dashboard: `pages/dashboard.html`
+- Staff dashboard: `pages/staff/dashboard.html`
 - PDF export script: `scripts/export-pdf.js`, `scripts/package.json`
 - Product requirements: `PRD.md`
 - Architecture: `ARCHITECTURE.md`
 - Roadmap (active): `ROADMAP.md`
 - Backlog: `TO-DOS.md`
-- Staff engine: `pages/template-engine.html`
+- Staff engine: `pages/staff/template-engine.html`
 - Firestore rules: `firestore.rules`
 - Template data: `assets/Template_Scribble/scribble-data.js`
 - ADRs: `docs/decisions/`
