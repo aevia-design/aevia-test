@@ -62,40 +62,53 @@ if (!photosDir && !orderNumber) {
 }
 if (photosDir && orderNumber) { console.error('Provide either --photos or --order, not both.'); process.exit(1); }
 if (photosDir && !fs.existsSync(photosDir)) { console.error('Photos dir not found:', photosDir); process.exit(1); }
-if (!fs.existsSync(stateFile)) { console.error('State file not found:', stateFile); process.exit(1); }
+// In --order mode, state is fetched from GCS, so skip disk check
+if (!orderNumber && !fs.existsSync(stateFile)) { console.error('State file not found:', stateFile); process.exit(1); }
 
 fs.mkdirSync(outDir, { recursive: true });
 
 // ── Load state + template data ────────────────────────────────────────────────
-const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-
-// Check schema version (Plan 13-04)
-if (!state.schemaVersion || state.schemaVersion < 3) {
-  console.warn('⚠  book-state.json is schema v' + (state.schemaVersion || 1) +
-    '. Re-export from the template engine to get correct bleed coordinates and caption boxes.');
+// In --order mode, state is loaded from GCS by setupPhotoSource() and assigned in main() after.
+// In --photos mode, state is loaded from disk.
+let state = null;
+if (!orderNumber) {
+  state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
 }
+
+// Initialize print constants and DATA lazily (they depend on state which is loaded asynchronously in --order mode)
+let DPI, MM_TO_PX, CONTENT_MM, BLEED_MM, FULL_MM, FULL_PX, CONTENT_PX, BLEED_PX, DATA;
+let slotLeft, slotTop, slotW, slotH;
 
 // template-data.js assigns to window.SCRIBBLE_DATA
 global.window = {};
 require(path.resolve(__dirname, '../assets/Template_Scribble/scribble-data.js'));
-const DATA = global.window.SCRIBBLE_DATA;
+DATA = global.window.SCRIBBLE_DATA;
 
-// ── Print constants ───────────────────────────────────────────────────────────
-// SCALE=3 px/mm lives in pages/template-engine.html only. DPI=300 is the print target.
-// If either changes, update both files and re-verify caption sizing math: sizePt * SCALE * 25.4 / 72.
-const DPI        = 300;
-const MM_TO_PX   = DPI / 25.4;                          // 11.811 px/mm
-const CONTENT_MM = DATA.pageSize;                        // 200mm
-const BLEED_MM   = DATA.bleed;                           // 3mm
-const FULL_MM    = CONTENT_MM + BLEED_MM * 2;            // 206mm
-const FULL_PX    = Math.round(FULL_MM * MM_TO_PX);       // 2433px
-const CONTENT_PX = Math.round(CONTENT_MM * MM_TO_PX);   // 2362px
-const BLEED_PX   = Math.round(BLEED_MM * MM_TO_PX);     // 35px
-// slot.xBleed/yBleed are CENTER coords (with bleed). Subtract half-dimension to get top-left corner.
-const slotLeft = (s) => Math.round((s.xBleed - s.w / 2) * MM_TO_PX);
-const slotTop  = (s) => Math.round((s.yBleed - s.h / 2) * MM_TO_PX);
-const slotW    = (s) => Math.round(s.w * MM_TO_PX);
-const slotH    = (s) => Math.round(s.h * MM_TO_PX);
+function initializePrintConstants() {
+  // Check schema version (Plan 13-04)
+  if (!state.schemaVersion || state.schemaVersion < 3) {
+    console.warn('⚠  book-state.json is schema v' + (state.schemaVersion || 1) +
+      '. Re-export from the template engine to get correct bleed coordinates and caption boxes.');
+  }
+
+  // ── Print constants ───────────────────────────────────────────────────────────
+  // SCALE=3 px/mm lives in pages/template-engine.html only. DPI=300 is the print target.
+  // If either changes, update both files and re-verify caption sizing math: sizePt * SCALE * 25.4 / 72.
+  DPI        = 300;
+  MM_TO_PX   = DPI / 25.4;                          // 11.811 px/mm
+  CONTENT_MM = DATA.pageSize;                        // 200mm
+  BLEED_MM   = DATA.bleed;                           // 3mm
+  FULL_MM    = CONTENT_MM + BLEED_MM * 2;            // 206mm
+  FULL_PX    = Math.round(FULL_MM * MM_TO_PX);       // 2433px
+  CONTENT_PX = Math.round(CONTENT_MM * MM_TO_PX);   // 2362px
+  BLEED_PX   = Math.round(BLEED_MM * MM_TO_PX);     // 35px
+
+  // slot.xBleed/yBleed are CENTER coords (with bleed). Subtract half-dimension to get top-left corner.
+  slotLeft = (s) => Math.round((s.xBleed - s.w / 2) * MM_TO_PX);
+  slotTop  = (s) => Math.round((s.yBleed - s.h / 2) * MM_TO_PX);
+  slotW    = (s) => Math.round(s.w * MM_TO_PX);
+  slotH    = (s) => Math.round(s.h * MM_TO_PX);
+}
 
 const ASSET_BASE = path.resolve(__dirname, '../assets/Template_Scribble/Spreads');
 
@@ -145,6 +158,8 @@ const SPREAD_SVG_BLEED_UNITS = BLEED_MM * 72 / 25.4;  // ~8.504
 const GET_ORDER_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getOrder';
 const photoCache  = new Map();   // name → Buffer (avoids re-downloading a photo used twice)
 let gcsUrlByName  = null;        // basename → signed URL (built by setupPhotoSource)
+let folderName    = null;        // derived from storedNames in setupPhotoSource
+let gcsOrder      = null;        // full order object from getOrder (for book-state.json fetch in --order mode)
 
 async function setupPhotoSource() {
   if (!orderNumber) return;      // local --photos mode: nothing to set up
@@ -157,7 +172,18 @@ async function setupPhotoSource() {
     const msg = await resp.text().catch(() => '');
     throw new Error(`getOrder failed (HTTP ${resp.status}) for order ${orderNumber}: ${msg}`);
   }
-  const { signedUrls = {}, storedNames = {} } = await resp.json();
+  const orderData = await resp.json();
+  const { signedUrls = {}, storedNames = {} } = orderData;
+
+  // Store the full order for later (used to fetch book-state.json from GCS)
+  gcsOrder = orderData;
+
+  // Derive folderName from the first available storedName (e.g., cover or pool[0])
+  const firstPath = storedNames.cover || (Array.isArray(storedNames.pool) && storedNames.pool[0]) || Object.values(storedNames.special || {})?.[0]?.[0];
+  if (firstPath) {
+    folderName = firstPath.split('/')[0];
+  }
+
   gcsUrlByName = new Map();
   const add = (storedPath, url) => {
     if (!storedPath || !url) return;
@@ -802,6 +828,21 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
   }
 }
 
+// ── Fetch book state from GCS (--order mode only) ────────────────────────────
+async function fetchBookStateFromGCS() {
+  if (!orderNumber || state) return;  // Already loaded or not in --order mode
+  const { Storage } = require('@google-cloud/storage');
+  const storage = new Storage({ keyFilename: path.join(__dirname, '..', 'functions', 'serviceAccountKey.json') });
+  const bucket = storage.bucket('aevia-uploads.firebasestorage.app');
+  const bookStateFile = bucket.file(`${folderName}/book-state.json`);
+  try {
+    const [content] = await bookStateFile.download();
+    state = JSON.parse(content.toString('utf8'));
+  } catch (err) {
+    throw new Error(`Failed to fetch book-state.json from GCS at ${folderName}/book-state.json: ${err.message}`);
+  }
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
   const isPrint = mode === 'print';
@@ -809,6 +850,12 @@ async function main() {
   if (isPrint) fs.mkdirSync(printDir, { recursive: true });
 
   await setupPhotoSource();
+
+  // In --order mode, fetch book-state.json from GCS after setupPhotoSource() sets folderName
+  await fetchBookStateFromGCS();
+
+  // Now that state is loaded, initialize print constants
+  initializePrintConstants();
 
   console.log(`\n📖 Aevia PDF export`);
   console.log(`   Template : ${state.template}`);
@@ -996,8 +1043,63 @@ async function main() {
     fs.writeFileSync(outPath, pdfBytes);
     console.log(`\n✅ Done — cover + ${pageNum} pages (incl. blank QR page) → ${outPath}`);
     console.log(`   File size: ${(pdfBytes.length / 1024 / 1024).toFixed(1)} MB\n`);
+
+    // In --order mode: upload preview.pdf to GCS and print signed URL
+    if (orderNumber) {
+      await uploadAndSignPdf(outPath, `${folderName}/pdfs/preview.pdf`, 'preview.pdf');
+    }
   } else {
     console.log(`\n✅ Done — cover + ${pageNum} pages (incl. blank QR page) → ${printDir}/`);
+
+    // In --order mode: merge all print PDFs into print.pdf, upload to GCS, and print signed URL
+    if (orderNumber) {
+      // Collect all PDFs in print directory and merge them
+      const printFiles = fs.readdirSync(printDir)
+        .filter(f => f.endsWith('.pdf'))
+        .sort(); // Ensure cover is first (alphabetically), then pages in order
+
+      if (printFiles.length > 0) {
+        const { PDFDocument: PDFDocMerge } = require('pdf-lib');
+        const mergedDoc = await PDFDocMerge.create();
+
+        for (const file of printFiles) {
+          const filePath = path.join(printDir, file);
+          const fileBytes = fs.readFileSync(filePath);
+          const sourceDoc = await PDFDocMerge.load(fileBytes);
+          const pages = await mergedDoc.copyPages(sourceDoc, sourceDoc.getPageIndices());
+          pages.forEach(pg => mergedDoc.addPage(pg));
+        }
+
+        const mergedBytes = await mergedDoc.save();
+        const printPdfPath = path.join(outDir, 'print.pdf');
+        fs.writeFileSync(printPdfPath, mergedBytes);
+        await uploadAndSignPdf(printPdfPath, `${folderName}/pdfs/print.pdf`, 'print.pdf');
+      }
+    }
+  }
+}
+
+// Helper: upload a PDF to GCS and print its signed download URL
+async function uploadAndSignPdf(localPath, gcsPath, label) {
+  try {
+    const { Storage } = require('@google-cloud/storage');
+    const storage = new Storage({ keyFilename: path.join(__dirname, '..', 'functions', 'serviceAccountKey.json') });
+    const bucket = storage.bucket('aevia-uploads.firebasestorage.app');
+
+    // Upload
+    const fileBytes = fs.readFileSync(localPath);
+    await bucket.file(gcsPath).save(fileBytes, { contentType: 'application/pdf' });
+
+    // Generate signed URL (1-hour expiry, same as photo URLs)
+    const expires = new Date(Date.now() + 60 * 60 * 1000);
+    const [signedUrl] = await bucket.file(gcsPath).getSignedUrl({ action: 'read', version: 'v4', expires });
+
+    console.log(`\n📄 ${label} uploaded to GCS`);
+    console.log(`   Path: gs://${bucket.name}/${gcsPath}`);
+    console.log(`   Download: ${signedUrl}\n`);
+  } catch (err) {
+    console.error(`Failed to upload and sign ${label}: ${err.message}`);
+    process.exit(1);
   }
 }
 
