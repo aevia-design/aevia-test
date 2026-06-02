@@ -4,38 +4,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aevia — Template Engine (Staff)</title>
-  <script src="../assets/Template_Scribble/scribble-data.js"></script>
-  <script src="../assets/js/photo-utils.js"></script>
+  <script src="../../assets/Template_Scribble/scribble-data.js"></script>
+  <script src="../../assets/js/photo-utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <style>
     @font-face {
       font-family: 'NT Somic';
-      src: url('../assets/fonts/NTSomic-Regular.ttf') format('truetype');
+      src: url('../../assets/fonts/NTSomic-Regular.ttf') format('truetype');
       font-weight: 400; font-style: normal; font-display: swap;
     }
     @font-face {
       font-family: 'NT Somic';
-      src: url('../assets/fonts/NTSomic-Medium.ttf') format('truetype');
+      src: url('../../assets/fonts/NTSomic-Medium.ttf') format('truetype');
       font-weight: 500; font-style: normal; font-display: swap;
     }
     @font-face {
       font-family: 'NT Somic';
-      src: url('../assets/fonts/NTSomic-Bold.ttf') format('truetype');
+      src: url('../../assets/fonts/NTSomic-Bold.ttf') format('truetype');
       font-weight: 700; font-style: normal; font-display: swap;
     }
     @font-face {
       font-family: 'EB Garamond';
-      src: url('../assets/fonts/EBGaramond-VariableFont_wght.ttf') format('truetype');
+      src: url('../../assets/fonts/EBGaramond-VariableFont_wght.ttf') format('truetype');
       font-weight: 400 900; font-style: normal; font-display: swap;
     }
     @font-face {
       font-family: 'EB Garamond';
-      src: url('../assets/fonts/EBGaramond-Italic-VariableFont_wght.ttf') format('truetype');
+      src: url('../../assets/fonts/EBGaramond-Italic-VariableFont_wght.ttf') format('truetype');
       font-weight: 400 900; font-style: italic; font-display: swap;
     }
     @font-face {
       font-family: 'FirstTimeWriting';
-      src: url('../assets/fonts/FirstTimeWriting!.ttf') format('truetype');
+      src: url('../../assets/fonts/FirstTimeWriting!.ttf') format('truetype');
       font-weight: 400; font-style: normal; font-display: swap;
     }
     :root {
@@ -660,17 +660,17 @@
 <body>
 
 <nav class="nav">
-  <a href="home.html" class="nav-logo">
-    <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia"
+  <a href="../home.html" class="nav-logo">
+    <img src="../../assets/images/aevia_logo_transparent.png" alt="Aevia"
          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
     <span class="nav-logo-text" style="display:none;">aevia</span>
   </a>
   <div class="nav-links">
-    <a href="home.html">Home</a>
-    <a href="about.html">About us</a>
-    <a href="help.html">Help</a>
+    <a href="../home.html">Home</a>
+    <a href="../about.html">About us</a>
+    <a href="../help.html">Help</a>
   </div>
-  <a href="collections.html" class="nav-cta">Our Collections</a>
+  <a href="../collections.html" class="nav-cta">Our Collections</a>
   <button class="nav-burger" aria-label="Open menu">
     <span></span><span></span><span></span>
   </button>
@@ -842,7 +842,7 @@
   <div class="footer-inner">
     <div class="foot-brand">
       <div class="foot-logo">
-        <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia" style="height:28px; width:auto;"
+        <img src="../../assets/images/aevia_logo_transparent.png" alt="Aevia" style="height:28px; width:auto;"
              onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');" />
       </div>
       <p>A premium photo book studio in Vienna. We design and print; you keep forever.</p>
@@ -853,22 +853,22 @@
     </div>
     <div class="foot-col">
       <h5>Products</h5>
-      <a href="collections.html">All templates</a>
-      <a href="collections.html#love">Love</a>
-      <a href="collections.html#kids">Kids</a>
-      <a href="collections.html#adventures">Adventures</a>
+      <a href="../collections.html">All templates</a>
+      <a href="../collections.html#love">Love</a>
+      <a href="../collections.html#kids">Kids</a>
+      <a href="../collections.html#adventures">Adventures</a>
     </div>
     <div class="foot-col">
       <h5>Company</h5>
-      <a href="about.html">Our story</a>
-      <a href="home.html#how">How it works</a>
+      <a href="../about.html">Our story</a>
+      <a href="../home.html#how">How it works</a>
       <a href="#">Quality promise</a>
     </div>
     <div class="foot-col">
       <h5>Support</h5>
-      <a href="help.html">FAQ</a>
+      <a href="../help.html">FAQ</a>
       <a href="#">Instagram</a>
-      <a href="help.html#contact">Contact</a>
+      <a href="../help.html#contact">Contact</a>
     </div>
   </div>
   <div class="foot-base">
@@ -994,7 +994,7 @@
   const SCALE    = 3;            // px per mm
   const BLEED_MM = 3;            // spread bleed (mm); caption/slot CSV coords are with-bleed
   const HEIC_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/convertHeic';
-  const SVG_BASE      = '../assets/Template_Scribble/Spreads/';
+  const SVG_BASE      = '../../assets/Template_Scribble/Spreads/';
 
   /* ── TYPOGRAPHIC HELPERS ── */
 

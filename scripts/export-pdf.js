@@ -92,7 +92,7 @@ function initializePrintConstants() {
   }
 
   // ── Print constants ───────────────────────────────────────────────────────────
-  // SCALE=3 px/mm lives in pages/template-engine.html only. DPI=300 is the print target.
+  // SCALE=3 px/mm lives in pages/staff/template-engine.html only. DPI=300 is the print target.
   // If either changes, update both files and re-verify caption sizing math: sizePt * SCALE * 25.4 / 72.
   DPI        = 300;
   MM_TO_PX   = DPI / 25.4;                          // 11.811 px/mm
