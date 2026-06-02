@@ -313,6 +313,51 @@ exports.saveStaffState = functions
     }
   });
 
+// ── Save book state to GCS (staff tool) ──────────────────────────────────────
+// Accepts { orderNumber, bookState } with x-staff-key header
+// Writes book-state.json to GCS at {folderName}/book-state.json
+exports.saveBookState = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (req.headers['x-staff-key'] !== process.env.STAFF_KEY) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber, bookState } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+    if (!bookState) return res.status(400).json({ error: 'bookState required' });
+
+    try {
+      const db = admin.firestore();
+      const doc = await db.collection('orders').doc(orderNumber).get();
+      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+
+      const order = doc.data();
+      const folderName = order.folderName;
+      if (!folderName) return res.status(400).json({ error: 'Order has no folderName' });
+
+      const { Storage } = require('@google-cloud/storage');
+      const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
+      const bucket = storage.bucket('aevia-uploads.firebasestorage.app');
+      const gcsPath = `${folderName}/book-state.json`;
+      const jsonString = JSON.stringify(bookState, null, 2);
+
+      await bucket.file(gcsPath).save(jsonString, { contentType: 'application/json' });
+
+      return res.status(200).json({ success: true, gcsPath });
+    } catch (err) {
+      console.error('saveBookState error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
 // ── HEIC → JPEG converter ────────────────────────────────────────────────────
 exports.convertHeic = functions
   .region('europe-west1')
