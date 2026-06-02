@@ -1702,20 +1702,24 @@
     document.getElementById('tb-ls-val').textContent   = currentLS.toFixed(2) + 'em';
     setActiveAlignPill(ov.align !== undefined ? ov.align : (capDef.align || 'center'));
 
-    // Position toolbar: above front captions, to the right of rotated spine captions
-    // Clamp left so it never overflows the right edge of the viewport.
+    // Position toolbar: above front captions, to the right of rotated spine captions.
+    // Show it FIRST so offsetWidth/Height report real values (display:none returns 0,
+    // which forced the wrong fallback width and let the toolbar clip the viewport edge).
     const rect   = capEl.getBoundingClientRect();
     const tb     = document.getElementById('cover-caption-toolbar');
-    const tbW    = tb.offsetWidth || 340;
+    tb.classList.add('visible');
+    const tbW    = tb.offsetWidth  || 520;
+    const tbH    = tb.offsetHeight || 58;
     const maxLeft = window.innerWidth - tbW - 8;
     if (capDef.rotate) {
       tb.style.top  = Math.max(8, rect.top) + 'px';
       tb.style.left = Math.min(rect.right + 12, maxLeft) + 'px';
     } else {
-      tb.style.top  = Math.max(8, rect.top - 58) + 'px';
+      // Sit the full toolbar height above the caption; drop below if there's no room.
+      const aboveTop = rect.top - tbH - 8;
+      tb.style.top  = (aboveTop >= 8 ? aboveTop : rect.bottom + 8) + 'px';
       tb.style.left = Math.min(Math.max(8, rect.left), maxLeft) + 'px';
     }
-    tb.classList.add('visible');
   }
 
   function showSpreadCaptionToolbar(spreadIndex, side, slotIdx, capDef, capEl) {
@@ -1749,13 +1753,16 @@
     document.getElementById('tb-ls-val').textContent   = currentLS.toFixed(2) + 'em';
     setActiveAlignPill(ov.align !== undefined ? ov.align : (capDef.halign || 'center'));
 
+    // Show first so offsetWidth/Height are real (see showCoverCaptionToolbar note).
     const rect    = capEl.getBoundingClientRect();
     const tb      = document.getElementById('cover-caption-toolbar');
-    const tbW     = tb.offsetWidth || 340;
-    const maxLeft = window.innerWidth - tbW - 8;
-    tb.style.top  = Math.max(8, rect.top - 58) + 'px';
-    tb.style.left = Math.min(Math.max(8, rect.left), maxLeft) + 'px';
     tb.classList.add('visible');
+    const tbW     = tb.offsetWidth  || 520;
+    const tbH     = tb.offsetHeight || 58;
+    const maxLeft = window.innerWidth - tbW - 8;
+    const aboveTop = rect.top - tbH - 8;
+    tb.style.top  = (aboveTop >= 8 ? aboveTop : rect.bottom + 8) + 'px';
+    tb.style.left = Math.min(Math.max(8, rect.left), maxLeft) + 'px';
   }
 
 
@@ -1858,6 +1865,16 @@
     _tbCapEl.style.letterSpacing = letterSpacing + 'em';
     _tbCapEl.style.textAlign     = ov.align !== undefined ? ov.align : (capDef.halign || 'center');
   }
+
+  // Paste as plain text in caption editors — strip any source formatting so pasted text
+  // adopts the caption's current styling instead of carrying over fonts/colours from a website.
+  document.addEventListener('paste', e => {
+    const ce = e.target.closest && e.target.closest('[contenteditable="true"]');
+    if (!ce) return;
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, text);
+  });
 
   // Toolbar event wiring (runs once on DOMContentLoaded)
   document.addEventListener('DOMContentLoaded', () => {
@@ -2425,11 +2442,16 @@
           panelEl.style.maxHeight = panelHeight + 'px';
           // No fixed height — box grows upward as text is added.
         } else {
-          // top-anchored or center-anchored: fixed box, padding-top for center valign
+          // top-anchored or center-anchored: fixed box. For center valign use flexbox so the
+          // text block is TRULY centered and grows symmetrically. The old paddingTop hack pinned
+          // text ~35% down — top stayed dead and overflow ran off the bottom. This now matches
+          // the PDF, which centers via (boxHeight − textHeight) / 2.
           panelEl.style.top    = panelTop    + 'px';
           panelEl.style.height = panelHeight + 'px';
           if (tpCap.valign === 'center') {
-            panelEl.style.paddingTop = (panelHeight / 2 - panelHeight * 0.15) + 'px';
+            panelEl.style.display        = 'flex';
+            panelEl.style.flexDirection  = 'column';
+            panelEl.style.justifyContent = 'center';
           }
         }
 

@@ -124,6 +124,9 @@
 
     /* Photo grid */
     .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 16px; }
+    /* content-visibility:auto keeps initial render of many thumbs fast. It's safe here now
+       that grid images are downscaled (~240px) instead of the full-res originals — re-decode
+       on scroll-back is instant, so no more frozen white space. */
     .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 4px; overflow: hidden; background: var(--surface); content-visibility: auto; contain-intrinsic-size: 96px; }
     .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .photo-thumb .file-badge { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
@@ -336,11 +339,11 @@
         </div>
         <div class="field-row">
           <div class="field" style="margin:0;">
-            <label for="cover-spine-name" style="font-size:11px;color:var(--muted);">Spine — name (one word)</label>
+            <label for="cover-spine-name" style="font-size:11px;color:var(--muted);">Spine — name</label>
             <input type="text" id="cover-spine-name" placeholder="Ann" maxlength="20" />
           </div>
           <div class="field" style="margin:0;">
-            <label for="cover-spine-year" style="font-size:11px;color:var(--muted);">Spine — year (one word)</label>
+            <label for="cover-spine-year" style="font-size:11px;color:var(--muted);">Spine — year</label>
             <input type="text" id="cover-spine-year" placeholder="2026" maxlength="10" />
           </div>
         </div>
@@ -698,7 +701,7 @@ function initFPSections() {
     if (textMeta) {
       html += `<div style="margin-top:${photoMeta ? '22px' : '0'};">`;
       html += `<div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${textMeta.textPrompt || 'Notes'}</div>`;
-      html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${textMeta.hint}</div>`;
+      html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${textMeta.hint || ''}</div>`;
 
       if (textMeta.funnyWords) {
         const maxWords = textMeta.maxWords || 10;
@@ -994,11 +997,12 @@ async function processAndAddFile(f) {
     if (blob) {
       f._objUrl = URL.createObjectURL(blob);
       await checkResolution(f);
+      await generateAndApplyThumb(f);
     }
     refreshThumbBadge(f);
     updatePhotoStatusBar();
   } else {
-    // Create URL synchronously so the thumb shows the image on first paint
+    // Create URL synchronously so we can decode/downscale it for the thumb
     if (isImage(f)) f._objUrl = URL.createObjectURL(f);
     mainFiles.push(f);
     appendPhotoThumb(f);
@@ -1012,6 +1016,8 @@ async function processAndAddFile(f) {
         updatePhotoStatusBar();
       }
     }
+    // Generate the small display thumbnail and swap it into the grid tile
+    if (f._objUrl) await generateAndApplyThumb(f);
   }
 }
 
@@ -1026,6 +1032,41 @@ function checkResolution(f) {
     checker.onerror = resolve;
     checker.src = f._objUrl;
   });
+}
+
+// Generate a small (~240px) display thumbnail from a full-res image URL. Returns a blob
+// object URL, or null on failure. This is browser-only and display-only — it is never
+// uploaded and never reaches GCS or the PDF (those always use the original File bytes).
+// Downscaling here means the grid decodes ~0.16MB tiles instead of ~50MB full-res bitmaps,
+// which is what caused the scroll stall / grey squares with many large photos.
+async function makeThumbUrl(srcUrl, maxPx = 240) {
+  try {
+    const blob = await (await fetch(srcUrl)).blob();
+    const bmp  = await createImageBitmap(blob);
+    const scale = Math.min(1, maxPx / Math.max(bmp.width, bmp.height));
+    const w = Math.max(1, Math.round(bmp.width  * scale));
+    const h = Math.max(1, Math.round(bmp.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    bmp.close();  // free the full-res decode immediately — peak memory stays at one image
+    return await new Promise(res =>
+      canvas.toBlob(b => res(b ? URL.createObjectURL(b) : null), 'image/jpeg', 0.8));
+  } catch (e) {
+    console.warn('Thumbnail generation failed:', e);
+    return null;
+  }
+}
+
+// Build the thumb, then swap in the small downscaled version once it's ready.
+// Falls back to the full-res image only if downscaling failed.
+async function generateAndApplyThumb(f) {
+  if (!f._objUrl) return;
+  const url = await makeThumbUrl(f._objUrl);
+  if (url) f._thumbUrl = url; else f._thumbFailed = true;
+  const thumb = document.querySelector(`[data-file-id="${f._id}"]`);
+  const img = thumb?.querySelector('img');
+  if (img) img.src = f._thumbUrl || f._objUrl;
 }
 
 // Append a single thumb to the grid — never touches existing thumbs
@@ -1043,6 +1084,7 @@ function refreshThumbBadge(f) {
   // Update image src if we now have a URL (HEIC case)
   const img = thumb.querySelector('img');
   if (img && f._objUrl && !img.src) {
+    img.decoding = 'async';
     img.src = f._objUrl;
     img.onclick = () => openLightbox(f._objUrl);
   }
@@ -1066,10 +1108,13 @@ function buildThumbEl(f) {
 
   if (isImage(f)) {
     const img = document.createElement('img');
-    if (f._objUrl) {
-      img.src = f._objUrl;
-      img.onclick = () => openLightbox(f._objUrl);
-    }
+    img.decoding = 'async';  // decode off the main thread so it never freezes paint
+    // Use the small downscaled thumb for the grid. Until it's generated (or if generation
+    // failed) leave the tile grey rather than decode the full-res original into a 96px box.
+    const thumbSrc = f._thumbUrl || (f._thumbFailed ? f._objUrl : null);
+    if (thumbSrc) img.src = thumbSrc;
+    // Lightbox always opens the full-resolution image, exactly as uploaded.
+    if (f._objUrl) img.onclick = () => openLightbox(f._objUrl);
     img.alt = '';
     thumb.appendChild(img);
   } else {
@@ -1101,7 +1146,8 @@ function buildThumbEl(f) {
 
 function removeMainFile(idx) {
   const f = mainFiles[idx];
-  if (f && f._objUrl) URL.revokeObjectURL(f._objUrl);
+  if (f && f._objUrl)   URL.revokeObjectURL(f._objUrl);
+  if (f && f._thumbUrl) URL.revokeObjectURL(f._thumbUrl);
   mainFiles.splice(idx, 1);
   // Full rebuild on remove — needed to fix all onclick indices
   rebuildPhotoGrid();

@@ -108,6 +108,15 @@ function initializePrintConstants() {
   slotTop  = (s) => Math.round((s.yBleed - s.h / 2) * MM_TO_PX);
   slotW    = (s) => Math.round(s.w * MM_TO_PX);
   slotH    = (s) => Math.round(s.h * MM_TO_PX);
+
+  // Downstream constants that depend on the lazy MM_TO_PX / BLEED_MM above.
+  // Must be assigned here (not at module load) or they become NaN in --order mode,
+  // corrupting SVG viewBoxes and the cover canvas dimensions.
+  SPREAD_SVG_BLEED_UNITS = BLEED_MM * 72 / 25.4;       // ~8.504
+  BLEED_PT      = BLEED_MM * MM_TO_PT;
+  COVER_FULL_W_PX = Math.round(COVER_FULL_W_MM * MM_TO_PX); // 5256px
+  COVER_FULL_H_PX = Math.round(COVER_FULL_H_MM * MM_TO_PX); // 2787px
+  COVER_BLEED_PX  = Math.round(COVER_BLEED_MM * MM_TO_PX);  // 213px
 }
 
 const ASSET_BASE = path.resolve(__dirname, '../assets/Template_Scribble/Spreads');
@@ -147,7 +156,8 @@ function expandSvgViewBox(svgStr, bleedUnits) {
 
 // SVG user units per mm at 72 dpi (SVG default).
 // Spread SVG: 200mm content → 566.93 user units; 3mm bleed → 8.504 units.
-const SPREAD_SVG_BLEED_UNITS = BLEED_MM * 72 / 25.4;  // ~8.504
+// Assigned in initializePrintConstants() — depends on BLEED_MM, which is lazy (--order mode loads state async).
+let SPREAD_SVG_BLEED_UNITS;
 // COVER_SVG_BLEED_UNITS is defined near the cover constants below (depends on COVER_BLEED_MM).
 
 // ── Photo source ────────────────────────────────────────────────────────────
@@ -381,7 +391,7 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
 // ── Caption rendering ─────────────────────────────────────────────────────────
 const FONT_DIR   = path.resolve(__dirname, '../assets/fonts');
 const MM_TO_PT   = 72 / 25.4;
-const BLEED_PT   = BLEED_MM * MM_TO_PT;
+let   BLEED_PT;  // assigned in initializePrintConstants() — depends on lazy BLEED_MM
 const CAPTION_COLOR = rgb(0.12, 0.12, 0.12); // default near-black
 
 const FONT_FILE_MAP = {
@@ -639,9 +649,9 @@ const COVER_CONTENT_W   = 200 + 9 + 200;   // 409mm
 const COVER_CONTENT_H   = 200;              // 200mm
 const COVER_FULL_W_MM   = COVER_CONTENT_W + COVER_BLEED_MM * 2;   // 445mm
 const COVER_FULL_H_MM   = COVER_CONTENT_H + COVER_BLEED_MM * 2;   // 236mm
-const COVER_FULL_W_PX   = Math.round(COVER_FULL_W_MM * MM_TO_PX); // 5256px
-const COVER_FULL_H_PX   = Math.round(COVER_FULL_H_MM * MM_TO_PX); // 2787px
-const COVER_BLEED_PX    = Math.round(COVER_BLEED_MM * MM_TO_PX);  // 213px
+let   COVER_FULL_W_PX;   // assigned in initializePrintConstants() — depends on lazy MM_TO_PX
+let   COVER_FULL_H_PX;   // (5256px)
+let   COVER_BLEED_PX;    // (213px)
 // Cover SVG: 409mm wide → 1159.37 user units; 18mm bleed → 51.024 user units.
 const COVER_SVG_BLEED_UNITS = COVER_BLEED_MM * 72 / 25.4;  // ~51.024
 

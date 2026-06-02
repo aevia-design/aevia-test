@@ -103,6 +103,7 @@
 | # | Item | Priority | Notes |
 |---|------|----------|-------|
 | 53 | Improve photo upload speed on order form | Medium | 1.12 GB took 5+ min. Current approach: sequential fetch() calls to GCS signed URLs. Plan: (1) parallelise to 4–6 concurrent uploads; (2) consider client-side resize before upload; (3) per-file speed estimate in progress overlay. `pages/order.html` submitOrder(). |
+| 56 | Post-payment confirmation email to customer | Medium | After successful payment (Stripe `checkout.session.completed`), send the customer an email confirming payment + next steps (production timeline, delivery). Currently only a staff notification is sent on payment. Add to `stripeWebhook` in `functions/index.js` (mirror the existing staff email + order-submission confirmation email pattern). |
 
 ---
 

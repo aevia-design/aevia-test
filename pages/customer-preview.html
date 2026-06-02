@@ -656,6 +656,11 @@
       <div class="canvas-placeholder">
         <div class="canvas-placeholder-icon">⏳</div>
         <h3>Loading your book preview…</h3>
+        <p id="load-humour" style="margin-top:6px;transition:opacity 0.4s ease;min-height:1.4em;">Assembling your spreads…</p>
+        <div id="load-progress-track" style="width:240px;height:6px;background:#eee;border-radius:3px;margin-top:14px;overflow:hidden;">
+          <div id="load-progress-bar" style="width:0%;height:100%;background:var(--text);transition:width 0.3s ease;"></div>
+        </div>
+        <p id="load-progress-label" style="margin-top:10px;font-size:13px;color:var(--muted);">Preparing…</p>
       </div>
     </div>
   </div>
@@ -819,6 +824,27 @@
      MAIN INITIALIZATION
   ═══════════════════════════════════════════ */
 
+  // Full-screen confirmation shown after a successful payment. Hides the editing chrome
+  // and replaces the canvas with a thank-you message — mirrors the order-form success screen.
+  function showPaymentSuccessScreen(email, orderNumber) {
+    ['submit-bar', 'photo-sidebar', 'preview-controls'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    const hint = document.querySelector('.edit-hint'); if (hint) hint.style.display = 'none';
+    const emailLine = email
+      ? `We've sent a confirmation to <strong>${email}</strong>. `
+      : `We've sent a confirmation to your email. `;
+    document.getElementById('book-canvas').innerHTML = `
+      <div class="canvas-placeholder">
+        <div style="display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+          <svg width="40" height="32" viewBox="0 0 20 16" fill="none"><path d="M2 8L7.5 13.5L18 2" stroke="#2e6b4e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        ${orderNumber ? `<div style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Order ${orderNumber}</div>` : ''}
+        <h3>Payment received — thank you!</h3>
+        <p>${emailLine}Your book is now confirmed for print. Our team will prepare it and keep you updated on production and delivery.</p>
+      </div>`;
+  }
+
   async function init() {
     // Check viewport width for mobile gate
     if (window.innerWidth < 900) {
@@ -830,10 +856,31 @@
     }
 
     // Fetch order via token
-    const token = new URLSearchParams(location.search).get('token');
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
     if (!token) {
       document.getElementById('book-canvas').innerHTML =
         '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">⚠</div><h3>No preview link</h3><p>This page requires a valid preview token.</p></div>';
+      return;
+    }
+
+    // Returning from a successful Stripe payment: the customer is done. Show a confirmation
+    // screen and STOP — no point re-loading the whole book (the old flow re-rendered it,
+    // which looked like an error). Fetch the order only for the email/order number.
+    if (params.get('payment') === 'success') {
+      let email = '', orderNumber = '';
+      try {
+        const r = await fetch(GET_ORDER_ENDPOINT, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        if (r.ok) {
+          const od = await r.json();
+          email       = od.email || od.customerEmail || '';
+          orderNumber = od.orderNumber || od.orderRef || '';
+        }
+      } catch (_) { /* best-effort — fall back to a generic message */ }
+      showPaymentSuccessScreen(email, orderNumber);
       return;
     }
 
@@ -850,6 +897,8 @@
       // reopening the link can browse their book but cannot edit or re-approve.
       window._readOnly = (window.orderData.status === 'approved' || window.orderData.status === 'paid');
 
+      // Rotating reassurance lines while the book loads (mirrors the order-form upload overlay).
+      startLoadHumour();
       // Load photos from signed URLs, assign to spreads, then render
       await loadPhotos();
       // Replay the staff-saved book verbatim if present (sequence + assignments + captions).
@@ -881,19 +930,60 @@
       window.spreadCaptionStyles = od.customerCaptionStyles
         || od.staffSpreadCaptionStyles || {};
       window.heartCrop = od.staffHeartCrop || {};
+      stopLoadHumour();
       renderBook();
       if (window._readOnly) lockForApproval();
     } catch (err) {
+      stopLoadHumour();
       console.error('Failed to load order:', err);
       document.getElementById('book-canvas').innerHTML =
         '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">⚠</div><h3>Could not load preview</h3><p>' + err.message + '</p></div>';
     }
   }
 
+  // Rotating reassurance lines shown in #load-humour while the book loads. The photo
+  // counter in #load-progress-label updates independently (see loadPhotos.tickProgress).
+  let _loadHumourTimer = null;
+  function startLoadHumour() {
+    const lines = [
+      'Assembling your spreads…',
+      'Placing your photos…',
+      'Setting your captions…',
+      'Your book is nearly ready.',
+    ];
+    const el = document.getElementById('load-humour');
+    if (!el) return;
+    let i = 0;
+    el.textContent = lines[0];
+    _loadHumourTimer = setInterval(() => {
+      i = (i + 1) % lines.length;
+      el.style.opacity = '0';
+      setTimeout(() => { el.textContent = lines[i]; el.style.opacity = '1'; }, 400);
+    }, 4000);
+  }
+  function stopLoadHumour() {
+    if (_loadHumourTimer) { clearInterval(_loadHumourTimer); _loadHumourTimer = null; }
+  }
+
   async function loadPhotos() {
     const signedUrls  = window.orderData?.signedUrls;
     const storedNames = window.orderData?.storedNames;
     if (!signedUrls) { console.warn('No signed URLs in order data'); return; }
+
+    // Real progress: count every photo we're about to fetch, then tick the bar as each
+    // resolves (success or failure). Beats the bare hourglass — the customer sees movement.
+    const specialCount = Object.values(signedUrls.special || {})
+      .reduce((n, urls) => n + (Array.isArray(urls) ? urls.length : (urls ? 1 : 0)), 0);
+    const totalPhotos = (signedUrls.cover ? 1 : 0) + specialCount + (signedUrls.pool || []).length;
+    let donePhotos = 0;
+    const bar   = document.getElementById('load-progress-bar');
+    const label = document.getElementById('load-progress-label');
+    const tickProgress = () => {
+      donePhotos++;
+      const pct = totalPhotos ? Math.round(donePhotos / totalPhotos * 100) : 100;
+      if (bar)   bar.style.width = pct + '%';
+      if (label) label.textContent = `Loading photos… ${donePhotos} of ${totalPhotos}`;
+    };
 
     async function fetchPhoto(url, name) {
       if (!url) return null;
@@ -907,6 +997,8 @@
       } catch (err) {
         console.error('Failed to load photo:', name, err);
         return null;
+      } finally {
+        tickProgress();
       }
     }
 
@@ -1664,10 +1756,14 @@
           panelEl.style.bottom    = (CANVAS_PX - panelBottomEdge) + 'px';
           panelEl.style.maxHeight = panelHeight + 'px';
         } else {
+          // center valign: flexbox so text is truly centered and grows symmetrically
+          // (matches staff engine + PDF). Old paddingTop hack pinned text ~35% down.
           panelEl.style.top    = panelTop    + 'px';
           panelEl.style.height = panelHeight + 'px';
           if (tpCap.valign === 'center') {
-            panelEl.style.paddingTop = (panelHeight / 2 - panelHeight * 0.15) + 'px';
+            panelEl.style.display        = 'flex';
+            panelEl.style.flexDirection  = 'column';
+            panelEl.style.justifyContent = 'center';
           }
         }
 
@@ -1853,13 +1949,17 @@
     document.getElementById('tb-ls-val').textContent = currentLS.toFixed(2) + 'em';
     setActiveAlignPill(ov.align !== undefined ? ov.align : (capDef.halign || 'center'));
 
+    // Show first so offsetWidth/Height are real (display:none returns 0, which forced
+    // the wrong fallback width and let the toolbar clip the viewport edge / overlap the caption).
     const rect    = capEl.getBoundingClientRect();
     const tb      = document.getElementById('caption-toolbar');
-    const tbW     = tb.offsetWidth || 340;
-    const maxLeft = window.innerWidth - tbW - 8;
-    tb.style.top  = Math.max(8, rect.top - 58) + 'px';
-    tb.style.left = Math.min(Math.max(8, rect.left), maxLeft) + 'px';
     tb.classList.add('visible');
+    const tbW     = tb.offsetWidth  || 520;
+    const tbH     = tb.offsetHeight || 58;
+    const maxLeft = window.innerWidth - tbW - 8;
+    const aboveTop = rect.top - tbH - 8;
+    tb.style.top  = (aboveTop >= 8 ? aboveTop : rect.bottom + 8) + 'px';
+    tb.style.left = Math.min(Math.max(8, rect.left), maxLeft) + 'px';
   }
 
   function showCoverCaptionToolbar(capDef, capEl) {
@@ -1893,13 +1993,17 @@
     document.getElementById('tb-ls-val').textContent = currentLS.toFixed(2) + 'em';
     setActiveAlignPill(ov.align !== undefined ? ov.align : (capDef.align || 'center'));
 
+    // Show first so offsetWidth/Height are real (display:none returns 0, which forced
+    // the wrong fallback width and let the toolbar clip the viewport edge / overlap the caption).
     const rect    = capEl.getBoundingClientRect();
     const tb      = document.getElementById('caption-toolbar');
-    const tbW     = tb.offsetWidth || 340;
-    const maxLeft = window.innerWidth - tbW - 8;
-    tb.style.top  = Math.max(8, rect.top - 58) + 'px';
-    tb.style.left = Math.min(Math.max(8, rect.left), maxLeft) + 'px';
     tb.classList.add('visible');
+    const tbW     = tb.offsetWidth  || 520;
+    const tbH     = tb.offsetHeight || 58;
+    const maxLeft = window.innerWidth - tbW - 8;
+    const aboveTop = rect.top - tbH - 8;
+    tb.style.top  = (aboveTop >= 8 ? aboveTop : rect.bottom + 8) + 'px';
+    tb.style.left = Math.min(Math.max(8, rect.left), maxLeft) + 'px';
   }
 
   function rebuildStylePills(fontValue, activeWeight, activeItalic) {
@@ -2174,14 +2278,27 @@
         const body = await approveResp.json().catch(() => ({}));
         throw new Error(body.error || `Approval failed (${approveResp.status})`);
       }
-      showToast('Your book has been approved! We\'ll be in touch soon.');
-      btn.disabled = true;
-      btn.innerHTML = 'Approved';
+      showToast('Your book has been approved! You can now pay to send it to print.');
+      // Reflect the new status locally and re-run the lock sweep so the Pay button appears
+      // (lockForApproval gates on window.orderData.status, which is otherwise only read at load).
+      window._readOnly = true;
+      if (window.orderData) window.orderData.status = 'approved';
+      lockForApproval();
     } catch (err) {
       showToast('Could not approve: ' + err.message, 'warn');
       btn.disabled = false;
       btn.innerHTML = 'Approve & confirm';
     }
+  });
+
+  // Paste as plain text in caption editors — strip any source formatting so pasted text
+  // adopts the caption's current styling instead of carrying over fonts/colours from a website.
+  document.addEventListener('paste', e => {
+    const ce = e.target.closest && e.target.closest('[contenteditable="true"]');
+    if (!ce) return;
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, text);
   });
 
   // ── Toolbar event wiring ──

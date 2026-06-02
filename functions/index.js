@@ -134,6 +134,7 @@ exports.getOrder = functions
       return res.status(200).json({
         orderNumber:          order.orderNumber,
         customerName:         order.customerName,
+        email:                order.email || null,
         status:               order.status || null,
         pageCount:            order.pageCount,
         fpSelections:         order.fpSelections || [],
