@@ -142,7 +142,7 @@ All backend logic lives in Firebase Cloud Functions (Node.js, `europe-west1`). N
 
 Key functions:
 - `createUploadSession` — creates order, generates signed PUT URLs, saves to Firestore + GCS, sends emails
-- `getOrder` — staff/customer fetch: returns order metadata + signed GET URLs (1h). Auth via `X-Staff-Key` header (staff) or `?token=` UUID param (customer — see ADR-0002)
+- `getOrder` — staff/customer fetch: returns order metadata + signed GET URLs (1h). Staff auth via Firebase ID token (`Authorization: Bearer`, allowlisted email — chunk-018) or legacy `X-Staff-Key` (PDF CLI only); customer auth via `?token=` UUID param (see ADR-0002)
 - `generateCaption` — proxies photo to caption AI, returns suggestion. Provider is an implementation detail inside this function — switchable without touching the calling code
 
 ### PDF pipeline
@@ -208,7 +208,7 @@ Key functions:
 
 | Surface | Mechanism |
 |---|---|
-| Staff engine + dashboard | Cloudflare Access (Zero Trust, OTP to allowed emails) gates the staff subdomain. `X-Staff-Key` header on Cloud Function calls as a second layer. |
+| Staff engine + dashboard | Firebase Email/Password login on both pages (chunk-018). Staff Cloud Function calls send the user's Firebase ID token; `isStaff()` verifies it against a server-side email allowlist that mirrors `firestore.rules`. `firestore.rules` locks `/orders` read+update to allowlisted staff. Static `865865` key retained only for the local PDF export CLI. |
 | Customer preview | UUID `previewToken` stored in Firestore per order. `getOrder` validates via `?token=` param. 30-day TTL recommended. See ADR-0002. |
 | GCS photos | Signed URLs only — no public bucket access |
 | Order data | Firestore — not publicly readable; Cloud Functions mediate all access |

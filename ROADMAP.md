@@ -259,7 +259,7 @@ _Goal: Staff tools and order data are usable only by authenticated staff — no 
 
 **Type:** security
 **Component:** Staff pages + Firestore rules + Cloud Functions
-**Status:** pending — **next chunk**
+**Status:** ✅ DONE (session 21, 2026-06-02, commit `1a7a3fa`)
 **Size:** M
 **Priority:** High — this is the real access boundary; supersedes chunk-009.
 **Depends on:** —
