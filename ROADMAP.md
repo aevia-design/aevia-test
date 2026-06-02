@@ -251,20 +251,65 @@ When Kseniia needs to trigger renders remotely, add a GitHub Actions workflow on
 
 ---
 
+## Phase 2.5 — Security hardening (do next)
+
+_Goal: Staff tools and order data are usable only by authenticated staff — no scrapeable secrets, no anonymous tampering. Replaces the Cloudflare Access plan (see chunk-009 and the Decisions Log)._
+
+### chunk-018: Staff authentication (Firebase Auth)
+
+**Type:** security
+**Component:** Staff pages + Firestore rules + Cloud Functions
+**Status:** pending — **next chunk**
+**Size:** M
+**Priority:** High — this is the real access boundary; supersedes chunk-009.
+**Depends on:** —
+**Files:** `pages/staff/dashboard.html`, `pages/staff/template-engine.html`, `firestore.rules`, `functions/index.js`
+
+**Why:** Today `firestore.rules` has `allow read: if true` on `/orders` (every order is world-readable, incl. by automated Firebase scanners), the anonymous `update` branch lets anyone change order `status`/`previewToken`/`sentSnapshot`, and the only "lock" is a hardcoded password (`keanuredcat`) + staff key (`865865`) sitting in client JS — both scrapeable from View Source. Founder's stated need: only authorised people should reach the dashboard and tweak orders / generate links.
+
+**Description:** Introduce real staff login via Firebase Authentication (already in the stack — no new dependency). Email/Password method, two accounts (Evgenii, Xenia) created in the Firebase Console. Both staff pages show a login screen and only render after auth. `firestore.rules` lock `/orders` read + staff-write to authenticated staff emails (keep the customer token-match approve branch untouched). Staff Cloud Functions verify the Firebase Auth ID token instead of the static `865865` key; delete the hardcoded password + key from client JS.
+
+**Acceptance criteria:**
+- Visiting either staff page while logged out shows a login screen and **no** order data or controls; no password/staff-key string present in page source
+- After login with an allowed account, dashboard + engine work exactly as before (list orders, generate/revoke links, mark approved for print, load/save engine state)
+- An unauthenticated direct Firestore read of `/orders` is **denied**; an unauthenticated write (status flip) is **denied**
+- Customer preview + approve-and-pay flow is unchanged (still token-based, no login)
+- Removing/disabling an account in the Console immediately revokes that person's access
+
+**Build order (avoid locking yourself out):**
+1. Enable Firebase Auth + create the two accounts in the Console.
+2. Add the login screen + auth gate to the dashboard; confirm **you** can log in and the page still works **before** touching rules.
+3. Update Cloud Functions to accept the Firebase Auth ID token (keep the static key working in parallel for one step, then remove).
+4. Tighten `firestore.rules`; re-verify staff flows + customer flow.
+5. Delete the hardcoded password + staff key; mirror the auth gate onto the template-engine page.
+
+**Pattern references:**
+- Firebase is already initialised in both staff pages (`firebaseConfig` in `dashboard.html`); add the Auth SDK alongside the Firestore SDK import
+- Customer token path in `getOrder` (chunk-001) is the model for "this request is authorised differently from staff" — leave it as the customer branch; staff branch switches from key to ID token
+- `firestore.rules` already uses `hasOnly([...])` allowlists — extend with `request.auth` checks
+
+---
+
 ## Phase 3 — Infrastructure + Templates
 
 _Goal: Staff tool accessible remotely; full 9-template catalogue ready for launch._
 
-### chunk-009: Cloudflare Access setup
+### chunk-009: Cloudflare Access setup — RETIRED (superseded by chunk-018)
 
 **Type:** infrastructure
 **Component:** Hosting / security
-**Status:** pending
+**Status:** retired — replaced by chunk-018 (Firebase Auth)
 **Size:** S
 **Depends on:** —
 **Files:** Cloudflare Zero Trust dashboard (no code changes)
 
-**Description:** Configure Cloudflare Access on the staff subdomain or path to gate `template-engine.html` and `dashboard.html` behind OTP-to-allowed-emails. See ADR-0001. No code changes required — pure Cloudflare dashboard config. Unblocks remote access to the staff engine.
+**What happened (session 20, 2026-06-02):** Attempted the ADR-0001 plan. Two findings killed it:
+1. **Path-scoped Cloudflare Access does not enforce on a single `*.pages.dev` project.** A self-hosted Access app pointed at `aevia-test.pages.dev/pages/staff/*` never sits in the request path (verified: unauthenticated requests returned 200 with no Access challenge). Cloudflare's supported pages.dev method is the whole-project Access toggle, which is all-or-nothing and would lock customers out of the shared project. Proper path-scoping needs a custom domain in a Cloudflare zone (aevia.at), not yet live.
+2. **Page-gating was the wrong tool anyway.** The real exposure is `firestore.rules` (`allow read: if true`) + scrapeable client-side secrets — gating the page would not have closed either. The founder's actual need (only authorised people can reach + tamper with the dashboard) is met by **real staff login on the data + page**, not an edge gate.
+
+**Done & kept:** Staff pages moved to `pages/staff/` (commit `c2682a2`) — tidy URL grouping, still useful. The non-enforcing Cloudflare self-hosted Access app should be **deleted** in the dashboard to avoid the illusion of protection.
+
+**Decision:** Retired in favour of chunk-018 (Firebase Auth). Cloudflare Access not needed once the dashboard requires login and the data requires auth — a publicly-reachable but login-walled page is acceptable. May revisit only as optional defence-in-depth after aevia.at migration.
 
 ---
 
@@ -414,7 +459,11 @@ Each of the 8 remaining templates is structurally identical (CSV → data file �
 
 ### 2026-05-28: Cloudflare Access is a config chunk with no code
 
-ADR-0001 decided Cloudflare Access for staff auth. No application code changes needed. Included as chunk-009 so it is tracked and doesn't fall through the cracks.
+ADR-0001 decided Cloudflare Access for staff auth. No application code changes needed. Included as chunk-009 so it is tracked and doesn't fall through the cracks. **— Superseded 2026-06-02, see below.**
+
+### 2026-06-02: Staff auth moved from Cloudflare Access to Firebase Auth (chunk-009 retired → chunk-018)
+
+Tried to implement chunk-009. Discovered (a) path-scoped Cloudflare Access can't enforce on a single `*.pages.dev` project — only the all-or-nothing whole-project toggle works, which would lock customers out of the shared project; proper path-scoping needs the aevia.at custom domain (not live), and (b) page-gating wouldn't close the actual hole anyway: `firestore.rules` is `allow read: if true` and the staff password/key are hardcoded in client JS (scrapeable). Founder's real need is "only authorised people can reach + tamper with the dashboard." Decided real staff login (Firebase Auth — already in the stack) on the data + pages is the correct, simpler single-system fix. chunk-009 retired; **chunk-018 (Firebase Auth) is the new next chunk** and supersedes the Cloudflare approach. Kept: staff pages relocated to `pages/staff/` (commit `c2682a2`). ADR-0001 should be updated to record this reversal.
 
 ### 2026-05-28: "Approved for print" is a manual checkpoint for MVP
 

@@ -1,6 +1,8 @@
 # ADR-0001: Staff Engine Public Hosting and Authentication
 
-**Status:** Committed — 2026-05-28  
+> **⚠️ SUPERSEDED 2026-06-02 (session 20).** Option A (Cloudflare Access) was attempted and abandoned: path-scoped Access can't enforce on a single `*.pages.dev` project, and page-gating wouldn't close the real hole (open `firestore.rules` + scrapeable client-side secrets). **New decision: staff auth via Firebase Authentication** — see ROADMAP chunk-018 and the ROADMAP Decisions Log (2026-06-02). The "Decision" section below is retained for history but no longer reflects the current plan.
+
+**Status:** Superseded by chunk-018 (Firebase Auth) — see banner above. (Originally: Committed — 2026-05-28)  
 **Date:** 2026-05-28  
 **Driver:** Staff template engine currently runs local only. Both founders need remote access.
 

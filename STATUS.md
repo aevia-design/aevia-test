@@ -2,6 +2,9 @@
 _Last updated: 2026-06-02 (session 19)_
 
 ## Status
+Session 20 (2026-06-02) attempted **chunk-009 (Cloudflare Access)** and **retired it**. Findings: path-scoped Cloudflare Access can't enforce on a single `*.pages.dev` project (verified — unauth requests got 200, no challenge), and page-gating wouldn't close the real hole anyway (`firestore.rules` is `allow read: if true`; dashboard password `keanuredcat` + staff key `865865` are hardcoded in client JS, scrapeable). Founder's real need = only authorised people can reach/tamper with the dashboard. **Decision: real staff login via Firebase Auth** — now **chunk-018** in a new ROADMAP "Phase 2.5 — Security hardening (do next)", superseding chunk-009. Done & kept this session: staff pages moved to `pages/staff/` (commit `c2682a2`, pushed; live, links/assets verified, 57/57 tests pass). **Next session = build chunk-018 fresh.**
+
+### Earlier (session 19)
 Session 19 built **chunk-008 — "Approved for print" dashboard button** (developer-agent + independent verify). Committed `70db5d1`, pushed; `markSentToPrint` deployed by user and verified live (a paid order flipped to `sent_to_print` in both dashboard and Firestore). chunk-008 is DONE. Decided: button only, no CLI (resolves the open question). Also installed jest at repo root so `npm test` runs (57/57 pass) and deleted two stale motif-engine trial files.
 
 ### Earlier (session 18)
@@ -22,8 +25,8 @@ Fixed bugs from the chunk-007 end-to-end test (8 issues + 4 follow-ups). Committ
 **Meta-task bar (user, explicit):** customer-rendered book must look EXACTLY like staff (fonts, styling, captions, photo positions, spreads, cover). Customer can change photo sequence, captions, caption styling AND alignment, always using our layout.
 
 ## Immediate next steps
-1. **Browser-verify Session 18 untested items** (#2, #3, #4, thank-you email) — see UNTESTED list above. Test #2 needs a fresh order paid via Stripe (returns with `?payment=success`).
-2. **chunk-009** — Cloudflare Access setup (~20 min dashboard config). Unblocks Xenia's remote engine access.
+1. **chunk-018 — Staff authentication (Firebase Auth)** ← **NEXT, high priority.** Real login for dashboard + engine; lock `firestore.rules` to authed staff; functions verify ID token not the static key; delete hardcoded password/key. See ROADMAP Phase 2.5 for full spec + build order. **Critical: step 2 = get your own login working before tightening rules, or you lock yourself out.** Also: delete the non-enforcing Cloudflare self-hosted Access app in the dashboard (illusion of protection).
+2. **Browser-verify Session 18 untested items** (#2, #3, #4, thank-you email) — see UNTESTED list above. Test #2 needs a fresh order paid via Stripe (returns with `?payment=success`).
 3. **TO-DO #56** — post-payment confirmation email to the customer (only staff notified on payment today).
 4. **Switch Stripe to live mode** — when real website is deployed.
 
@@ -39,6 +42,9 @@ Fixed bugs from the chunk-007 end-to-end test (8 issues + 4 follow-ups). Committ
 2. **Stripe live mode** — requires live website URL for full Stripe account activation. Currently running in test mode.
 
 ## Open watch-outs
+- **(S20)** **Known exposure, accepted short-term until chunk-018:** `firestore.rules` `allow read: if true` → all orders world-readable; anonymous `update` branch allows status/token tampering; dashboard password + staff key are in client JS. Live now at `aevia-test.pages.dev/pages/staff/*` (ungated). Low risk while data is all-test; chunk-018 closes it. Do NOT onboard a real customer before chunk-018 ships.
+- **(S20)** chunk-018 build order matters: enable Firebase Auth + create accounts → add login to dashboard and confirm YOU can get in → switch functions to ID token (keep static key one step in parallel) → tighten `firestore.rules` → delete password/key → mirror onto engine. Tightening rules before your login works = locked out.
+- **(S20)** A non-enforcing Cloudflare self-hosted Access app (`Aevia Staff`, dest `aevia-test.pages.dev/pages/staff/*`) exists in Zero Trust — delete it; it protects nothing.
 - **(S19)** chunk-008: `markSentToPrint` write is admin-SDK (Cloud Function) → bypasses `firestore.rules`, no allowlist entry needed. Button only renders on `paid` orders and 404s until the function is deployed (`firebase deploy --only functions:markSentToPrint`). This function is the future hook for Elanders/SiteFlow API submission (P2) — plug the API call inside it, no UI rebuild.
 - **(S19)** Repo-root `npm test` (jest) now works but needs `npm install` at repo root on a fresh clone — separate from `scripts/npm install` for the PDF export. `node_modules/` is gitignored.
 - **(S18)** `scripts/export-pdf.js`: any constant derived from `MM_TO_PX`/`BLEED_MM`/`MM_TO_PT` MUST be assigned inside `initializePrintConstants()`, not at module top — they're lazy in `--order` mode. Module-load math gives `NaN` (broke cover + all SVGs).
