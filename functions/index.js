@@ -590,3 +590,61 @@ exports.stripeWebhook = functions
       return res.status(400).json({ error: err.message });
     }
   });
+
+// ── Get PDF signed URL (staff tool) ─────────────────────────────────────────
+// Accepts { orderNumber, type } with x-staff-key header
+// Returns { url } — signed GCS URL (1h expiry) if file exists, or { url: null } if not
+exports.getPdfUrl = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (req.headers['x-staff-key'] !== process.env.STAFF_KEY) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber, type } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+    if (!type || !['preview', 'print'].includes(type)) {
+      return res.status(400).json({ error: 'type must be "preview" or "print"' });
+    }
+
+    try {
+      const db = admin.firestore();
+      const doc = await db.collection('orders').doc(orderNumber).get();
+      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+
+      const order = doc.data();
+      const folderName = order.folderName;
+      if (!folderName) return res.status(400).json({ error: 'Order has no folderName' });
+
+      const { Storage } = require('@google-cloud/storage');
+      const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
+      const bucket = storage.bucket('aevia-uploads.firebasestorage.app');
+      const gcsPath = `${folderName}/pdfs/${type}.pdf`;
+
+      // Check if file exists
+      const [exists] = await bucket.file(gcsPath).exists();
+      if (!exists) {
+        return res.status(200).json({ url: null });
+      }
+
+      // Generate 1-hour signed URL
+      const expires = new Date(Date.now() + 60 * 60 * 1000);
+      const [url] = await bucket.file(gcsPath).getSignedUrl({
+        action: 'read',
+        version: 'v4',
+        expires
+      });
+
+      return res.status(200).json({ url });
+    } catch (err) {
+      console.error('getPdfUrl error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });

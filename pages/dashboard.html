@@ -143,6 +143,16 @@
     .preview-link-row {
       display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px;
     }
+    .pdf-links-row {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    }
+    .pdf-link-btn {
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 5px 10px; border: 1px solid var(--border); border-radius: 4px;
+      color: var(--text); background: var(--white); cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .pdf-link-btn:hover { border-color: var(--text); background: var(--surface); }
     .preview-link-btn {
       font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
       padding: 5px 10px; border: 1px solid var(--border); border-radius: 4px;
@@ -278,9 +288,11 @@
   const app = initializeApp(firebaseConfig);
   const db  = getFirestore(app);
 
-  // ── Password ──────────────────────────────────────────────────────────────
+  // ── Auth ──────────────────────────────────────────────────────────────────
   const PASS_KEY = 'aevia_dash_auth';
   const PASS     = 'keanuredcat';
+  const STAFF_KEY = '865865';
+  const GET_PDF_URL_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getPdfUrl';
 
   window.unlock = function() {
     const val = document.getElementById('pwd-input').value;
@@ -408,6 +420,7 @@
               : `<button class="preview-link-btn" onclick="generatePreviewLink('${esc(o.orderNumber)}')">Generate preview link</button>`
             }
           </div>
+          <div class="pdf-links-row" id="pdf-row-${esc(o.orderNumber)}" style="display:none;margin-top:8px;gap:8px;flex-wrap:wrap;"></div>
         </td>
         <td class="status-cell">
           <select class="status-select" onchange="updateStatus('${esc(o.orderNumber)}', this.value)">
@@ -424,6 +437,44 @@
         </td>
       </tr>`;
     }).join('');
+    // After rendering, check PDF existence and populate PDF links
+    updatePdfLinks();
+  }
+
+  // ── Update PDF links (check existence and show/hide) ─────────────────────
+  async function updatePdfLinks() {
+    const visible = currentFilter === 'all'
+      ? allOrders
+      : allOrders.filter(o => o.status === currentFilter);
+
+    for (const order of visible) {
+      const row = document.getElementById(`pdf-row-${esc(order.orderNumber)}`);
+      if (!row) continue;
+
+      // Check both preview and print PDFs
+      const pdfLinks = [];
+      for (const type of ['preview', 'print']) {
+        try {
+          const res = await fetch(GET_PDF_URL_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Staff-Key': STAFF_KEY },
+            body: JSON.stringify({ orderNumber: order.orderNumber, type }),
+          });
+          const data = await res.json();
+          if (data.url) {
+            const label = type === 'preview' ? 'Preview PDF' : 'Print PDF';
+            pdfLinks.push(`<button class="pdf-link-btn" onclick="openPdf('${esc(order.orderNumber)}', '${type}')">${label}</button>`);
+          }
+        } catch (err) {
+          console.error(`Error checking ${type} PDF for ${order.orderNumber}:`, err);
+        }
+      }
+
+      if (pdfLinks.length > 0) {
+        row.innerHTML = pdfLinks.join('');
+        row.style.display = 'flex';
+      }
+    }
   }
 
   // ── Generate preview link ────────────────────────────────────────────────
@@ -482,6 +533,25 @@
       alert('Copied to clipboard!');
     } catch (err) {
       alert('Could not copy: ' + err.message);
+    }
+  };
+
+  // ── Open PDF (fetch fresh signed URL and open in new tab) ────────────────
+  window.openPdf = async function(orderNumber, type) {
+    try {
+      const res = await fetch(GET_PDF_URL_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Staff-Key': STAFF_KEY },
+        body: JSON.stringify({ orderNumber, type }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.open(data.url, '_blank');
+      } else {
+        alert('PDF not found. Run the export script first.');
+      }
+    } catch (err) {
+      alert('Could not fetch PDF: ' + err.message);
     }
   };
 
