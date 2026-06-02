@@ -38,15 +38,6 @@ async function getNextOrderNumber() {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function sanitize(str) {
-  return str.toLowerCase().trim().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
-}
-
-function buildFolderName(templateName, customerName) {
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  return `${sanitize(templateName)}_${sanitize(customerName)}_${date}`;
-}
-
 async function limitedConcurrent(tasks, limit = 10) {
   const results = new Array(tasks.length);
   let index = 0;
@@ -88,8 +79,9 @@ async function handler(req, res) {
       return res.status(400).json({ error: `Missing fields: ${missing.join(', ')}` });
     }
 
-    const folderName = buildFolderName(templateName, customerName);
-    const fileList   = Array.isArray(files) ? files : [];
+    const orderNumber = await getNextOrderNumber();
+    const folderName  = orderNumber;
+    const fileList    = Array.isArray(files) ? files : [];
     const totalSlots = Math.max(fileList.length, MIN_UPLOAD_SLOTS);
 
     const bucket    = storage.bucket(BUCKET_NAME);
@@ -143,7 +135,6 @@ async function handler(req, res) {
       }
     });
 
-    const orderNumber = await getNextOrderNumber();
     const token = crypto.randomBytes(32).toString('hex');
     const orderPageUrl = `https://aevia-test.pages.dev/pages/my-order.html?token=${token}`;
 
