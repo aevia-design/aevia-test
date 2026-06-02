@@ -199,16 +199,42 @@ _Goal: Customer pays; staff can generate and deliver the print PDF._
 
 ---
 
-### chunk-007: PDF-to-GCS upload + dashboard download link
+### chunk-007: PDF pipeline — state handoff, render, artefact management
 
 **Type:** feature
-**Component:** PDF export script + Staff dashboard
-**Status:** pending
-**Size:** S
+**Component:** Staff engine + PDF export script + Staff dashboard + Firebase backend
+**Status:** ✅ done (2026-06-02, session 17)
+**Size:** M
 **Depends on:** chunk-006
-**Files:** `scripts/export-pdf.js`, `pages/dashboard.html`, `functions/index.js`
+**Files:** `pages/template-engine.html`, `scripts/export-pdf.js`, `pages/dashboard.html`, `functions/index.js`
 
-**Description:** After export, script auto-uploads generated PDFs to GCS under `{folderName}/pdfs/`. A new `getPdfUrl` Cloud Function (staff-authed) returns a signed download URL. Dashboard shows a "Download PDF" link per order once PDFs are present. Resolves the shared-access open question — either founder can trigger export and both can download the result.
+**Description:** Three connected pieces that together replace the current "run a local command, get a random-named file" workflow with a proper production pipeline.
+
+**Part 1 — State handoff: "Export" button in staff engine**
+Staff clicks "Export book state" in the engine → saves the current `book-state.json` to GCS under `{folderName}/book-state.json` (overwrites previous). This replaces the current local-download approach and ensures the render script always pulls the authoritative version from GCS.
+
+**Part 2 — Render script upgrade**
+`npm run pdf AEV-001` (run locally by staff) fetches `book-state.json` from GCS, renders two PDFs:
+- `{folderName}/pdfs/preview.pdf` — spread view, lower res, for internal QA only
+- `{folderName}/pdfs/print.pdf` — bleed, full res, for Elanders
+
+Both uploaded to GCS automatically after render. Script prints signed URLs on completion. Named files, not random.
+
+**Part 3 — Dashboard links + retention**
+New `getPdfUrl` Cloud Function (staff-authed) returns signed GCS URLs for both PDFs. Dashboard shows "Preview PDF" and "Print PDF" download links per order once files exist. Retention policy:
+- Preview PDF: deleted when order status moves to `approved` (served its purpose)
+- Print PDF: deleted 90 days after status moves to `sent_to_print`
+Auto-deletion can be a GCS lifecycle rule or a scheduled Cloud Function — decide at build time.
+
+**Acceptance criteria:**
+- Clicking "Export" in the staff engine writes `book-state.json` to GCS (verified in GCS console)
+- `npm run pdf AEV-001` completes without error, produces two named PDFs in GCS under `AEV-001/pdfs/`
+- Dashboard shows download links for both PDFs once they exist; links work (signed URL, no auth required to download)
+- Preview PDF is not shown to customers at any point
+- Script does not require photos on local disk (uses GCS signed URLs from `getOrder`, already implemented in chunk-006)
+
+**Future upgrade path (not in scope now):**
+When Kseniia needs to trigger renders remotely, add a GitHub Actions workflow on top — the script itself won't change, only the trigger mechanism. Tracked separately.
 
 ---
 
