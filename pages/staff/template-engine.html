@@ -8,6 +8,34 @@
   <script src="../../assets/js/photo-utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <style>
+    /* ── Staff login gate ── */
+    #eng-lock {
+      position: fixed; inset: 0; background: #f7f5f1;
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    }
+    .eng-lock-box { width: 340px; text-align: center; font-family: Georgia, serif; }
+    .eng-lock-logo { font-size: 26px; letter-spacing: 1px; margin-bottom: 6px; color: #1a1a1a; }
+    .eng-lock-title { font-size: 14px; color: #888; margin-bottom: 24px; }
+    .eng-lock-input {
+      width: 100%; padding: 12px 16px; font-size: 14px;
+      background: #fff; border: 1px solid #ddd; border-radius: 4px;
+      outline: none; margin-bottom: 10px; color: #1a1a1a; box-sizing: border-box;
+    }
+    .eng-lock-input:focus { border-color: #1a1a1a; }
+    .eng-pwd-wrap { position: relative; margin-bottom: 10px; }
+    .eng-pwd-wrap .eng-lock-input { padding-right: 60px; margin-bottom: 0; }
+    .eng-pwd-toggle {
+      position: absolute; top: 0; bottom: 0; right: 0; padding: 0 14px;
+      border: none; background: none; cursor: pointer; font-size: 12px; color: #888;
+    }
+    .eng-pwd-toggle:hover { color: #1a1a1a; }
+    .eng-lock-btn {
+      width: 100%; padding: 12px; font-size: 14px; cursor: pointer;
+      background: #1a1a1a; color: #fff; border: none; border-radius: 4px;
+    }
+    .eng-lock-btn:hover { background: #333; }
+    .eng-lock-error { color: #c0392b; font-size: 13px; margin-top: 12px; min-height: 16px; }
+
     @font-face {
       font-family: 'NT Somic';
       src: url('../../assets/fonts/NTSomic-Regular.ttf') format('truetype');
@@ -659,6 +687,26 @@
 </head>
 <body>
 
+<!-- ══ STAFF LOGIN GATE ══ -->
+<div id="eng-lock">
+  <div class="eng-lock-box">
+    <div class="eng-lock-logo">aevia</div>
+    <div class="eng-lock-title">Template Engine — Staff</div>
+    <input id="eng-email" class="eng-lock-input" type="email"
+           placeholder="Email" autocomplete="username"
+           onkeydown="if(event.key==='Enter')document.getElementById('eng-pwd').focus()" />
+    <div class="eng-pwd-wrap">
+      <input id="eng-pwd" class="eng-lock-input" type="password"
+             placeholder="Password" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')engUnlock()" />
+      <button type="button" class="eng-pwd-toggle" id="eng-pwd-toggle"
+              onclick="engTogglePwd()" aria-label="Show password">Show</button>
+    </div>
+    <button class="eng-lock-btn" onclick="engUnlock()">Log in</button>
+    <div class="eng-lock-error" id="eng-lock-error"></div>
+  </div>
+</div>
+
 <nav class="nav">
   <a href="../home.html" class="nav-logo">
     <img src="../../assets/images/aevia_logo_transparent.png" alt="Aevia"
@@ -1271,7 +1319,7 @@
     try {
       const res = await fetch(SAVE_BOOK_STATE_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Staff-Key': STAFF_KEY },
+        headers: await window.staffHeaders(),
         body: JSON.stringify({
           orderNumber: window._loadedOrderNumber,
           bookState,
@@ -3412,7 +3460,6 @@
   const GET_ORDER_ENDPOINT      = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getOrder';
   const SAVE_STAFF_STATE_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/saveStaffState';
   const SAVE_BOOK_STATE_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/saveBookState';
-  const STAFF_KEY = '865865';
 
   function setEngineMode(mode) {
     const isOrder = mode === 'order';
@@ -3451,7 +3498,7 @@
     try {
       const res = await fetch(GET_ORDER_ENDPOINT, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Staff-Key': STAFF_KEY },
+        headers: await window.staffHeaders(),
         body:    JSON.stringify({ orderNumber: raw }),
       });
       if (!res.ok) {
@@ -3789,7 +3836,7 @@
     try {
       const res = await fetch(SAVE_STAFF_STATE_ENDPOINT, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Staff-Key': STAFF_KEY },
+        headers: await window.staffHeaders(),
         body:    JSON.stringify({
           orderNumber:    window._loadedOrderNumber,
           bookAssignments: assignmentsToNames(window.bookAssignments, window.photoPool),
@@ -3812,6 +3859,65 @@
       btn.disabled = false;
     }
   }
+</script>
+
+<!-- ══ Firebase Auth — staff login gate (chunk-018) ══ -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAki1W4N3xVvHSTZl77uTVukeiA3yqO1K4",
+    authDomain:        "aevia-uploads.firebaseapp.com",
+    projectId:         "aevia-uploads",
+    storageBucket:     "aevia-uploads.firebasestorage.app",
+    messagingSenderId: "677807969667",
+    appId:             "1:677807969667:web:b92b02a38bda89161652b6",
+    measurementId:     "G-2QZ4MBKG2B"
+  };
+
+  const auth = getAuth(initializeApp(firebaseConfig));
+
+  // Headers for staff Cloud Function calls — sends the current user's Firebase
+  // ID token. The function verifies it against the server-side staff allowlist.
+  // Used by the main engine script's fetch calls (getOrder, saveStaffState,
+  // saveBookState).
+  window.staffHeaders = async function() {
+    const user = auth.currentUser;
+    const token = user ? await user.getIdToken() : '';
+    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  };
+
+  window.engUnlock = async function() {
+    const email = document.getElementById('eng-email').value.trim();
+    const pwd   = document.getElementById('eng-pwd').value;
+    const errEl = document.getElementById('eng-lock-error');
+    errEl.textContent = '';
+    try {
+      await signInWithEmailAndPassword(auth, email, pwd);
+    } catch (err) {
+      errEl.textContent = 'Incorrect email or password.';
+      document.getElementById('eng-pwd').value = '';
+    }
+  };
+
+  window.engTogglePwd = function() {
+    const input = document.getElementById('eng-pwd');
+    const btn   = document.getElementById('eng-pwd-toggle');
+    const show  = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.textContent = show ? 'Hide' : 'Show';
+  };
+
+  window.engLogout = function() {
+    signOut(auth).then(() => location.reload());
+  };
+
+  // Show the engine only when signed in as staff; otherwise show the gate.
+  onAuthStateChanged(auth, (user) => {
+    document.getElementById('eng-lock').style.display = user ? 'none' : 'flex';
+  });
 </script>
 
 </body>

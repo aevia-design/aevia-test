@@ -36,6 +36,15 @@
       outline: none; margin-bottom: 10px; color: var(--text); transition: border-color 0.15s;
     }
     .lock-input:focus { border-color: var(--text); }
+    .pwd-wrap { position: relative; margin-bottom: 10px; }
+    .pwd-wrap .lock-input { padding-right: 60px; margin-bottom: 0; }
+    .pwd-toggle {
+      position: absolute; top: 0; bottom: 0; right: 0;
+      padding: 0 14px; border: none; background: none; cursor: pointer;
+      font-family: var(--sans); font-size: 12px; color: var(--muted);
+      transition: color 0.15s;
+    }
+    .pwd-toggle:hover { color: var(--text); }
     .lock-btn {
       width: 100%; padding: 12px; background: var(--text); color: var(--white);
       font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
@@ -182,9 +191,17 @@
   <div class="lock-box">
     <div class="lock-logo">aevia</div>
     <div class="lock-title">Internal Dashboard</div>
-    <input id="pwd-input" class="lock-input" type="password"
-           placeholder="Password" onkeydown="if(event.key==='Enter')unlock()" />
-    <button class="lock-btn" onclick="unlock()">Enter</button>
+    <input id="email-input" class="lock-input" type="email"
+           placeholder="Email" autocomplete="username"
+           onkeydown="if(event.key==='Enter')document.getElementById('pwd-input').focus()" />
+    <div class="pwd-wrap">
+      <input id="pwd-input" class="lock-input" type="password"
+             placeholder="Password" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')unlock()" />
+      <button type="button" class="pwd-toggle" id="pwd-toggle"
+              onclick="togglePwd()" aria-label="Show password">Show</button>
+    </div>
+    <button class="lock-btn" onclick="unlock()">Log in</button>
     <div class="lock-error" id="lock-error"></div>
   </div>
 </div>
@@ -274,6 +291,8 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
   import { getFirestore, collection, getDocs, doc, updateDoc, query, orderBy, arrayUnion, serverTimestamp, Timestamp }
     from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
   const firebaseConfig = {
     apiKey:            "AIzaSyAki1W4N3xVvHSTZl77uTVukeiA3yqO1K4",
@@ -285,38 +304,61 @@
     measurementId:     "G-2QZ4MBKG2B"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
+  const app  = initializeApp(firebaseConfig);
+  const db   = getFirestore(app);
+  const auth = getAuth(app);
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
-  const PASS_KEY = 'aevia_dash_auth';
-  const PASS     = 'keanuredcat';
-  const STAFF_KEY = '865865';
+  // ── Auth (Firebase Email/Password) ─────────────────────────────────────────
   const GET_PDF_URL_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getPdfUrl';
   const MARK_SENT_TO_PRINT_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/markSentToPrint';
 
-  window.unlock = function() {
-    const val = document.getElementById('pwd-input').value;
-    if (val === PASS) {
-      sessionStorage.setItem(PASS_KEY, '1');
-      document.getElementById('lock').style.display = 'none';
-      document.getElementById('app').style.display  = 'block';
-      loadOrders();
-    } else {
-      document.getElementById('lock-error').textContent = 'Incorrect password.';
+  // Headers for staff Cloud Function calls — sends the current user's Firebase
+  // ID token. The function verifies it against the server-side staff allowlist.
+  async function staffHeaders() {
+    const user = auth.currentUser;
+    const token = user ? await user.getIdToken() : '';
+    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  }
+
+  window.unlock = async function() {
+    const email = document.getElementById('email-input').value.trim();
+    const pwd   = document.getElementById('pwd-input').value;
+    const errEl = document.getElementById('lock-error');
+    errEl.textContent = '';
+    try {
+      await signInWithEmailAndPassword(auth, email, pwd);
+      // onAuthStateChanged handles showing the app + loading orders.
+    } catch (err) {
+      errEl.textContent = 'Incorrect email or password.';
       document.getElementById('pwd-input').value = '';
     }
   };
 
-  window.logout = function() {
-    sessionStorage.removeItem(PASS_KEY);
-    location.reload();
+  window.togglePwd = function() {
+    const input = document.getElementById('pwd-input');
+    const btn   = document.getElementById('pwd-toggle');
+    const show  = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.textContent = show ? 'Hide' : 'Show';
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
   };
 
-  if (sessionStorage.getItem(PASS_KEY) === '1') {
-    document.getElementById('lock').style.display = 'none';
-    document.getElementById('app').style.display  = 'block';
-  }
+  window.logout = function() {
+    signOut(auth).then(() => location.reload());
+  };
+
+  // Source of truth for "are we logged in". Firebase persists the session
+  // across reloads/restarts by default, so this fires on every page load.
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById('lock').style.display = 'none';
+      document.getElementById('app').style.display  = 'block';
+      loadOrders();
+    } else {
+      document.getElementById('app').style.display  = 'none';
+      document.getElementById('lock').style.display = 'flex';
+    }
+  });
 
   // ── Filter state ──────────────────────────────────────────────────────────
   let currentFilter = 'all';
@@ -464,7 +506,7 @@
         try {
           const res = await fetch(GET_PDF_URL_ENDPOINT, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Staff-Key': STAFF_KEY },
+            headers: await staffHeaders(),
             body: JSON.stringify({ orderNumber: order.orderNumber, type }),
           });
           const data = await res.json();
@@ -548,7 +590,7 @@
     try {
       const res = await fetch(GET_PDF_URL_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Staff-Key': STAFF_KEY },
+        headers: await staffHeaders(),
         body: JSON.stringify({ orderNumber, type }),
       });
       const data = await res.json();
@@ -570,7 +612,7 @@
     try {
       const res = await fetch(MARK_SENT_TO_PRINT_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Staff-Key': STAFF_KEY },
+        headers: await staffHeaders(),
         body: JSON.stringify({ orderNumber }),
       });
       const data = await res.json();
@@ -658,8 +700,6 @@
     return months === 1 ? '1 month ago' : `${months} months ago`;
   }
 
-  // Auto-load if already unlocked
-  if (sessionStorage.getItem(PASS_KEY) === '1') loadOrders();
 </script>
 
 </body>

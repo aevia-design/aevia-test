@@ -5,6 +5,33 @@ const { createUploadSessionHandler } = require('./upload');
 
 admin.initializeApp();
 
+// ── Staff auth (chunk-018) ─────────────────────────────────────────────────
+// Allowlist of staff Firebase Auth accounts. Email/Password sign-up is open on
+// the project, so we must check the email — a valid token alone is NOT enough.
+// Emails compared lower-case. Add/remove people here (redeploy to apply).
+const STAFF_EMAILS = ['evg.myasin@gmail.com', 'xenia@aevia.at'];
+
+// Returns true if the request is from authorised staff: either a valid Firebase
+// ID token (Authorization: Bearer <token>) for an allowlisted email, OR the
+// static staff key. As of chunk-018 the key is no longer used by any browser
+// page (dashboard + engine send tokens) — it is retained ONLY for the local PDF
+// export CLI (scripts/export-pdf.js), which has no logged-in user. To fully
+// retire the key, migrate that script to admin credentials.
+async function isStaff(req) {
+  const authHeader = req.headers.authorization || '';
+  const m = authHeader.match(/^Bearer (.+)$/);
+  if (m) {
+    try {
+      const decoded = await admin.auth().verifyIdToken(m[1]);
+      const email = (decoded.email || '').toLowerCase();
+      if (STAFF_EMAILS.includes(email)) return true;
+    } catch (e) {
+      // invalid/expired token — fall through to legacy key check
+    }
+  }
+  return req.headers['x-staff-key'] === process.env.STAFF_KEY;
+}
+
 exports.createUploadSession = functions
   .region('europe-west1')
   .runWith({ timeoutSeconds: 120, memory: '256MB' })
@@ -75,11 +102,11 @@ exports.getOrder = functions
   .https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    const hasStaffAuth = req.headers['x-staff-key'] === process.env.STAFF_KEY;
+    const hasStaffAuth = await isStaff(req);
     const { orderNumber, token } = req.body;
 
     // Auth: require either staff key or customer token
@@ -280,11 +307,11 @@ exports.saveStaffState = functions
   .https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    if (req.headers['x-staff-key'] !== process.env.STAFF_KEY) {
+    if (!(await isStaff(req))) {
       return res.status(403).json({ error: 'Unauthorised' });
     }
 
@@ -323,11 +350,11 @@ exports.saveBookState = functions
   .https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    if (req.headers['x-staff-key'] !== process.env.STAFF_KEY) {
+    if (!(await isStaff(req))) {
       return res.status(403).json({ error: 'Unauthorised' });
     }
 
@@ -421,11 +448,11 @@ exports.createCheckoutSession = functions
   .https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    const hasStaffAuth = req.headers['x-staff-key'] === process.env.STAFF_KEY;
+    const hasStaffAuth = await isStaff(req);
     const { orderNumber, token } = req.body;
 
     // Auth: require either staff key or customer token
@@ -601,11 +628,11 @@ exports.getPdfUrl = functions
   .https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    if (req.headers['x-staff-key'] !== process.env.STAFF_KEY) {
+    if (!(await isStaff(req))) {
       return res.status(403).json({ error: 'Unauthorised' });
     }
 
@@ -659,11 +686,11 @@ exports.markSentToPrint = functions
   .https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    if (req.headers['x-staff-key'] !== process.env.STAFF_KEY) {
+    if (!(await isStaff(req))) {
       return res.status(403).json({ error: 'Unauthorised' });
     }
 

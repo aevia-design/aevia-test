@@ -136,7 +136,6 @@ async function handler(req, res) {
     });
 
     const token = crypto.randomBytes(32).toString('hex');
-    const orderPageUrl = `https://aevia-test.pages.dev/pages/my-order.html?token=${token}`;
 
     const folderLink =
       `https://console.cloud.google.com/storage/browser/` +
@@ -222,16 +221,6 @@ async function handler(req, res) {
 
             <p style="margin:0 0 12px">We're assembling your photo book and will send you a preview for approval within 48 hours.</p>
             <p style="color:#999;font-style:italic;font-size:13px;margin:0 0 24px">You won't be charged until you review and approve the final design.</p>
-
-            <!-- Track order CTA -->
-            <div style="text-align:center;margin:0 0 32px">
-              <a href="${orderPageUrl}"
-                 style="background:#1a1a1a;color:#ffffff;padding:14px 28px;text-decoration:none;
-                        border-radius:4px;display:inline-block;font-family:Georgia,serif;
-                        font-size:14px;letter-spacing:0.5px">
-                Track your order →
-              </a>
-            </div>
 
             <hr style="border:none;border-top:1px solid #e0e0e0;margin:0 0 24px">
 
