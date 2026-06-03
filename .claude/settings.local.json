@@ -4,7 +4,25 @@
       "Bash(node -e \"const { chromium } = require\\('playwright'\\); \\(async \\(\\) => { const browser = await chromium.launch\\(\\); const page = await browser.newPage\\(\\); await page.setViewportSize\\({ width: 1440, height: 900 }\\); await page.goto\\('https://aevia-v1.webflow.io/templates/vows', { waitUntil: 'networkidle', timeout: 60000 }\\); await page.screenshot\\({ path: 'screenshots/aevia-vows.png', fullPage: true }\\); console.log\\('aevia done'\\); await browser.close\\(\\); }\\)\\(\\).catch\\(e => { console.error\\(e\\); process.exit\\(1\\); }\\);\")",
       "Bash(npm install:*)",
       "Bash(npx playwright:*)",
-      "Bash(node -e ':*)"
+      "Bash(node -e ':*)",
+      "Bash(npx jest *)",
+      "Bash(QA_PREVIEW_URL=\"http://localhost:8080/pages/customer-preview.html?token=56c8f808-950b-4dfb-ac36-18dd58a1150a\" timeout 120 node qa/verify-completeness.mjs)",
+      "Bash(QA_PREVIEW_URL=\"http://localhost:8080/pages/customer-preview.html?token=56c8f808-950b-4dfb-ac36-18dd58a1150a\" timeout 140 node qa/verify-completeness.mjs)",
+      "Bash(curl -s -D - -o /dev/null \"http://localhost:8080/pages/customer-preview.html?token=ABC\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8080/pages/customer-preview?token=ABC\")",
+      "Bash(QA_PREVIEW_URL=\"http://localhost:8080/pages/customer-preview?token=56c8f808-950b-4dfb-ac36-18dd58a1150a\" timeout 140 node qa/verify-completeness.mjs)",
+      "Bash(timeout 140 node qa/inspect-shapes.mjs)",
+      "Bash(git checkout *)",
+      "Bash(git commit *)",
+      "Bash(firebase deploy *)",
+      "Bash(node qa/order-journey.mjs)",
+      "Bash(grep -rn \"special_pages\\\\|fp5\\\\|fp\\\\${\\\\|special.*\\\\.jpg\\\\|slug.*-\\\\|\\\\-0\\\\.jpg\\\\|\\\\-1\\\\.jpg\" functions/upload.js functions/index.js)",
+      "Bash(npm run *)",
+      "Bash(rm -f CormorantGaramond-*.ttf)",
+      "Bash(curl -sL \"https://api.github.com/repos/google/fonts/contents/ofl/cormorantgaramond\")",
+      "Bash(node -e ' *)",
+      "Bash(git log *)",
+      "Bash(git rev-list *)"
     ]
   },
   "hooks": {

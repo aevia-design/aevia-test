@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Pages" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 566.93 566.93">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+      }
+
+      .cls-2 {
+        clip-path: url(#clippath);
+      }
+    </style>
+    <clipPath id="clippath">
+      <rect id="_Clipping_Path_" data-name="&amp;lt;Clipping Path&amp;gt;" class="cls-1" x="-8.5" y="-8.5" width="583.94" height="583.94"/>
+    </clipPath>
+    <image id="image" width="1444" height="2148" xlink:href="../elements/used/final version/flower/flower_kevin_palette_transparent_alpha.png"/>
+  </defs>
+  <g id="SP_02_V_Right" data-name="SP 02 V Right">
+    <g id="Design_01_Right" data-name="Design 01 Right">
+      <g class="cls-2">
+        <use transform="translate(-8.5 480.73) scale(.05)" xlink:href="#image"/>
+        <use transform="translate(510.49 325.34) scale(.05)" xlink:href="#image"/>
+        <use transform="translate(70.78 18.68) scale(.05)" xlink:href="#image"/>
+      </g>
+    </g>
+  </g>
+</svg>

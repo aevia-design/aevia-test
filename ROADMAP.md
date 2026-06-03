@@ -313,16 +313,79 @@ _Goal: Staff tool accessible remotely; full 9-template catalogue ready for launc
 
 ---
 
-### chunk-010: Template 2 digitisation
+### chunk-020: Multi-template engine seam
 
-**Type:** feature
-**Component:** Template data + product pages
+**Type:** refactor / infrastructure
+**Component:** Staff engine + Customer preview + PDF export
 **Status:** pending
 **Size:** M
+**Priority:** High — blocks every template chunk (010–017). One-time cost paid by the first second-template (Wander).
 **Depends on:** —
-**Files:** `assets/Template_<Name>/`, `pages/<name>.html`
+**Files:** `pages/staff/template-engine.html`, `pages/customer-preview.html`, `scripts/export-pdf.js`
 
-**Description:** Spread sizing CSV + cover sizing CSV (from Kseniia), SVG artwork files, run `csv-to-template.js` to generate the data file, product page following the Scribble pattern. Repeat pattern for each template.
+**Description:** The engine, customer preview, and PDF script are hardwired to `window.SCRIBBLE_DATA` and Scribble-only asset paths (`SVG_BASE = …/Template_Scribble/Spreads/`, `ASSET_BASE` in `export-pdf.js`). Introduce a per-order template selector: load the matching data file and asset base by the order's template name. No template-specific behaviour changes — purely the seam that lets multiple templates coexist.
+
+**Acceptance criteria:**
+- All three surfaces resolve template data + asset base from the order's template name (no hardcoded `SCRIBBLE_DATA`).
+- Per-template asset base honoured: Scribble = `…/Template_Scribble/Spreads/`; Wander = `…/Template_Wander/` (no `Spreads/` subfolder).
+- A Scribble order renders byte-identically to today on all three surfaces (no regression) — verified in browser + a Scribble PDF.
+- `npm test` stays green.
+
+**Pattern references:**
+- Data include + `window.SCRIBBLE_DATA` usages in `template-engine.html` / `customer-preview.html`; `SVG_BASE` at `template-engine.html:1046`; `ASSET_BASE` at `export-pdf.js:122`, data require at `export-pdf.js:84`.
+
+**Contextual notes:**
+- Engine-parity rule: the loader change must be mirrored in both staff + customer pages.
+- See `docs/briefs/wander-template.md` (Phase 1).
+
+---
+
+### chunk-022: Travel map functional page
+
+**Type:** feature
+**Component:** Staff engine + Customer preview + PDF export + Order form
+**Status:** pending
+**Size:** L
+**Depends on:** chunk-020
+**Files:** `pages/staff/template-engine.html`, `pages/customer-preview.html`, `scripts/export-pdf.js`, `pages/order.html`, `functions/`
+
+**Description:** New functional-page type reused across the Travel collection: a regional map (left) with location pins, and a staff-formatted itinerary (right). Customer selects a country (or several in one region); the region map auto-loads; a pin drops at each country's coordinates; staff format the customer's raw route into the itinerary panel. No photo upload on this page. Full design + data contract in `docs/briefs/wander-template.md` (Phase 3 + open decisions).
+
+**Acceptance criteria:**
+- Left page renders the region map from `WANDER_DATA.spreads.FP1.maps[region]`; right page renders the itinerary `textPanel` over `FP 01 Map Right.svg`.
+- One pin per selected country at `mapCoordinates[country]` (with-bleed mm), centre-anchored, 12×23 mm, from `pin.png`.
+- Order form: country multi-select, no photo upload; blocks cross-region selection (prompts to pick one region); shows which map will appear.
+- Mirrored across engine + customer-preview; PDF reproduces map + pins + itinerary identically.
+
+**Pattern references:**
+- Existing functional-page handling (Scribble FP1–FP5) for the textPanel + order-form meta flow; cover photo compositing in `export-pdf.js` for PNG overlay on a page.
+
+**Contextual notes:**
+- Reusable by all future Travel templates — not Wander-specific.
+- Open decision (cross-region UX) tracked in the brief.
+
+---
+
+### chunk-010: Wander template (Template 2)
+
+**Type:** feature
+**Component:** Template data + product page
+**Status:** in-progress (data file + fonts done, session 25)
+**Size:** M
+**Depends on:** chunk-020, chunk-022
+**Files:** `assets/Template_Wander/`, `pages/<wander>.html`, `pages/staff/template-engine.html`, `pages/customer-preview.html`, `scripts/export-pdf.js`
+
+**Description:** Assemble the Wander template from the shared infrastructure: the data file (`wander-data.js` — cover + SP0–SP6 + FP1 map contract + 183-country coordinates, ✅ done); register Cormorant Garamond (Light/Regular/SemiBold/Bold ✅ downloaded into `assets/fonts/`) in both HTML pages, the font picker, and `export-pdf.js` `FONT_MAP`; wire Wander into the chunk-020 selector; product page following the Scribble pattern.
+
+**Acceptance criteria:**
+- A Wander order renders end-to-end (cover → SP0–SP6 → map page) in engine, customer preview, and PDF.
+- Cormorant captions render correctly on screen and in PDF (no fallback / `.notdef`).
+- Cover free-text fields (front + spine) editable; right-aligned front caption lands per design.
+
+**Contextual notes:**
+- Cormorant registration (brief Phase 2) and the map page (chunk-022) are the substantive sub-parts; the data file is already done.
+- Future template chunks (011–017) reuse chunk-020; Travel ones reuse chunk-022 — so each becomes the cheap "CSV → data file → SVGs → product page" the Decisions Log assumed.
+- See `docs/briefs/wander-template.md` for the full plan.
 
 ---
 
@@ -421,7 +484,9 @@ _Goal: Staff tool accessible remotely; full 9-template catalogue ready for launc
 
 _Start only after first test orders have completed end-to-end._
 
-### chunk-018: Page-flip preview viewer
+### chunk-021: Page-flip preview viewer
+
+_(Renumbered from a duplicate chunk-018 — chunk-018 is Firebase Auth.)_
 
 **Type:** feature
 **Component:** Customer preview engine
@@ -448,6 +513,10 @@ _Start only after first test orders have completed end-to-end._
 ---
 
 ## Decisions Log
+
+### 2026-06-03: First second-template (Wander) carries the multi-template + map infrastructure (chunks 020, 022 added)
+
+The 2026-05-28 decision assumed every template is an identical, independent "CSV → data file → SVGs → product page" chunk. That holds for templates 3–9 but **not** for Wander (template 2, chunk-010): the engine is hardwired to one template, and Wander introduces a reusable **Travel map functional page** with no Scribble equivalent. Rather than bloat chunk-010, the two cross-cutting, reusable costs were extracted into new chunks — **chunk-020 (multi-template engine seam)** and **chunk-022 (Travel map functional page)** — which chunk-010 now depends on. Templates 011–017 then reuse 020 (and Travel ones reuse 022), so they remain the cheap identical chunks originally assumed. Full plan in `docs/briefs/wander-template.md`. Also: the Phase-4 page-flip viewer was renumbered from a duplicate chunk-018 to **chunk-021** (chunk-018 is Firebase Auth). Brief-per-chunk policy: the roadmap chunk entry *is* the brief for well-understood chunks; reserve standalone briefs for novel/ambiguous ones (e.g. chunk-022, the map page).
 
 ### 2026-05-28: Roadmap scope expanded from template engine to full pipeline
 
