@@ -1,10 +1,32 @@
 # Session Status
-_Last updated: 2026-06-02 (session 21)_
+_Last updated: 2026-06-03 (session 22)_
 
 ## Status
-Session 21 (2026-06-02) built and verified **chunk-018 — staff authentication (Firebase Auth)**. DONE. Committed `1a7a3fa` (not yet pushed). Both staff pages (dashboard + template-engine) now require real Firebase Email/Password login; staff Cloud Function calls send the user ID token (`Authorization: Bearer`); `functions/index.js` `isStaff()` verifies the token against a server-side allowlist (`evg.myasin@gmail.com`, `xenia@aevia.at`); `firestore.rules` `/orders` read + update now require an allowlisted staff auth email. The hardcoded password (`keanuredcat`) and staff key (`865865`) are gone from all browser pages — the key survives ONLY in `functions` env + the local PDF CLI (`scripts/export-pdf.js`). Retired legacy `my-order.html` (read Firestore directly by token → forced `allow read: if true`) and removed its "Track your order" email button (see ADR `docs/decisions/0003`). **Verified live:** staff login, dashboard read+update, engine order-load + export, PDF export, customer preview/approve/pay all work; anonymous reads denied. 57/57 tests pass.
+**Session 22 (2026-06-03) — QA automation + incomplete-book guard.** Built real browser testing of the customer journey (Playwright drives via Node scripts in `qa/`, Claude judges screenshots). The staff→customer→pay chain (`qa/staff-customer-chain.mjs`) now runs end-to-end through Stripe after fixing login, `networkidle` hangs, and the Stripe payment-method picker (must select "Karte"/Card radio before filling). Mid-session pivoted to a **product feature**: hard-block sending/approving an **incomplete book**.
 
-**Outstanding wrap-up (not blocking):** (1) **push** the commit; (2) **delete the dead Cloudflare Access app** `Aevia Staff` in Zero Trust (you, manual); (3) docs ARCHITECTURE.md / ROADMAP partly still describe the old `X-Staff-Key`/Cloudflare model — updated where critical, full sweep deferred.
+**NEW FEATURE — incomplete-book guard (built, tested, partly verified).** Saving an incomplete book stays allowed; **sending a preview link** and **approving** are now hard-blocked when the book has empty photo slots, unplaced photos, or blank captions on special pages (data-driven: a caption is required iff the layout shows an editable text box). Shared tested helper `assets/js/book-completeness.js` (`checkBookComplete` → `{complete, reasons[]}`), 12 new jest tests, **suite 69/69 green**. Wired into customer-preview approve (live block + warn toast), staff engine save (stores `bookComplete`), `saveStaffState` function (persists `staffBookComplete`+reasons), dashboard `generatePreviewLink` (blocks send). VERIFIED it correctly **blocks** an incomplete book; NOT yet verified it **allows** a complete one.
+
+**⚠ AEV-023 is corrupted as a fixture** — its customer-side data (`customerBookAssignments`) was saved empty by the earlier automated chain runs (Approve serialized the book before render populated it). Its customer view renders empty (51 unplaced). Staff data is intact. Do not reuse it for clean verification.
+
+### ▶ NEXT SESSION — start here
+1. **Deploy the function FIRST:** `firebase deploy --only functions:saveStaffState`. Until then `staffBookComplete` is never written and the dashboard send-gate blocks EVERY order ("not saved as complete yet").
+2. **Mint a FRESH order** via the front-leg (`node qa/order-journey.mjs`) — AEV-023 is corrupted, don't reuse it.
+3. **Verify the incomplete-book guard on the fresh order:**
+   - Staff: load in engine, leave a slot empty / a special-page caption blank → save (allowed, warns) → dashboard "Generate preview link" must be **blocked** with reasons.
+   - Complete the book → save → send must now **succeed**.
+   - Customer: on an incomplete book, the **Approve** button must block + show the warn toast; on a complete book, approve proceeds.
+4. **Then run the full chain** (`qa/staff-customer-chain.mjs`) on the fresh complete order through Stripe `?payment=success`.
+5. **Test data:** AEV-023 + any chain-created orders are real test orders to clean up later.
+
+### Local verification helpers (this session, in `qa/`)
+- `qa/probe-photos.mjs`, `qa/verify-completeness.mjs`, `qa/inspect-shapes.mjs` — read-only diagnostics against the **public** customer-preview (no staff pw). To test LOCAL edits, run `npx serve . -p 8080` and use the **clean URL** `http://localhost:8080/pages/customer-preview?token=…` (the `.html` form 301-drops the `?token=`).
+
+---
+
+### Session 21 (2026-06-02) built and verified
+Session 21 built and verified **chunk-018 — staff authentication (Firebase Auth)**. DONE. Committed `1a7a3fa` (not yet pushed). Both staff pages (dashboard + template-engine) now require real Firebase Email/Password login; staff Cloud Function calls send the user ID token (`Authorization: Bearer`); `functions/index.js` `isStaff()` verifies the token against a server-side allowlist (`evg.myasin@gmail.com`, `xenia@aevia.at`); `firestore.rules` `/orders` read + update now require an allowlisted staff auth email. The hardcoded password (`keanuredcat`) and staff key (`865865`) are gone from all browser pages — the key survives ONLY in `functions` env + the local PDF CLI (`scripts/export-pdf.js`). Retired legacy `my-order.html` (read Firestore directly by token → forced `allow read: if true`) and removed its "Track your order" email button (see ADR `docs/decisions/0003`). **Verified live:** staff login, dashboard read+update, engine order-load + export, PDF export, customer preview/approve/pay all work; anonymous reads denied. 57/57 tests pass.
+
+**Outstanding wrap-up (not blocking):** (1) ✅ commit pushed; (2) ✅ dead Cloudflare Access app `Aevia Staff` deleted from Zero Trust; (3) docs ARCHITECTURE.md / ROADMAP partly still describe the old `X-Staff-Key`/Cloudflare model — updated where critical, full sweep deferred.
 
 ### Earlier (session 20)
 Session 20 attempted **chunk-009 (Cloudflare Access)** and **retired it** (superseded by chunk-018). Path-scoped Cloudflare Access can't enforce on a single `*.pages.dev` project (verified). Kept: staff pages moved to `pages/staff/` (commit `c2682a2`, pushed).
@@ -30,7 +52,7 @@ Fixed bugs from the chunk-007 end-to-end test (8 issues + 4 follow-ups). Committ
 **Meta-task bar (user, explicit):** customer-rendered book must look EXACTLY like staff (fonts, styling, captions, photo positions, spreads, cover). Customer can change photo sequence, captions, caption styling AND alignment, always using our layout.
 
 ## Immediate next steps
-1. **Push** the chunk-018 commit (`1a7a3fa`) and **delete the dead Cloudflare Access app** (`Aevia Staff`, Zero Trust → Access → Applications) — it enforces nothing.
+1. ~~Push the chunk-018 commit + delete the dead Cloudflare Access app~~ — both DONE (session 22).
 2. **Browser-verify Session 18 untested items** (#2, #3, #4, thank-you email) — see UNTESTED list above. Test #2 needs a fresh order paid via Stripe (returns with `?payment=success`).
 3. **TO-DO #56** — post-payment confirmation email to the customer (only staff notified on payment today).
 4. **Switch Stripe to live mode** — when real website is deployed.
@@ -47,6 +69,10 @@ Fixed bugs from the chunk-007 end-to-end test (8 issues + 4 follow-ups). Committ
 2. **Stripe live mode** — requires live website URL for full Stripe account activation. Currently running in test mode.
 
 ## Open watch-outs
+- **(S22)** **Incomplete-book guard needs a function deploy to work.** `firebase deploy --only functions:saveStaffState` writes `staffBookComplete`/`staffIncompleteReasons`. Until deployed, the dashboard send-gate (`generatePreviewLink`, blocks when `staffBookComplete !== true`) will refuse EVERY order. Completeness logic lives in ONE place: `assets/js/book-completeness.js` (included in engine + customer-preview via `<script src>`). Both render paths must keep pushing `{spread,side}` into `window._requiredCaptions` wherever `variant.textPanel?.caption?.allowed` — mirrored edit, per the engine-parity rule.
+- **(S22)** **Customer save can override good staff data.** On reopen, load precedence is customer > staff > defaults (`customer-preview.html:916-923`). A customer (or an automated approve) that serializes an empty/partial book writes `customerBookAssignments`/`customerCaptions` that then REPLACE the intact staff arrangement on next load. AEV-023 got bricked this way. The new approve-gate mitigates (can't approve an incomplete book), but the precedence + a save-before-render race are worth a proper look.
+- **(S22)** **`serve` drops query strings on `.html`.** Loading the local customer-preview with a token: use `/pages/customer-preview?token=…` (clean URL). The `.html` form 301-redirects and loses `?token=` → no order loads.
+- **(S22)** **AEV-023 customer data corrupted** — empty `customerBookAssignments`, lost special-page captions. Staff data intact. Don't use it to verify the "allow complete book" path; mint a fresh order.
 - **(S21)** **chunk-018 done — the S20 exposure is now CLOSED.** `firestore.rules` locks `/orders` read+update to `request.auth.token.email in ['evg.myasin@gmail.com','xenia@aevia.at']`. This allowlist exists in TWO places that MUST stay in sync: `firestore.rules` and `STAFF_EMAILS` in `functions/index.js`. Add/remove staff in both, then `firebase deploy --only firestore:rules,functions`.
 - **(S21)** Staff Cloud Functions accept a Firebase ID token (`Authorization: Bearer`) OR the static `865865` key. The key is no longer in any browser page — it remains only in `functions` env (`STAFF_KEY`) and `scripts/export-pdf.js` (local PDF CLI, no logged-in user). To fully retire the key, migrate that script to admin credentials.
 - **(S21)** Customer flows (preview/approve/pay/book-save) run via admin-SDK Cloud Functions and BYPASS `firestore.rules` — tightening rules never affects them. `customer-preview.html` does NOT touch Firestore directly. Do not "fix" customer auth in rules.

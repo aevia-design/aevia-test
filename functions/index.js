@@ -316,7 +316,8 @@ exports.saveStaffState = functions
     }
 
     const { orderNumber, bookAssignments, bookCaptions, bookSequence,
-            coverCaptionStyles, spreadCaptionStyles, heartCrop } = req.body;
+            coverCaptionStyles, spreadCaptionStyles, heartCrop,
+            bookComplete, incompleteReasons } = req.body;
     if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
 
     try {
@@ -331,6 +332,8 @@ exports.saveStaffState = functions
         staffCoverCaptionStyles:  coverCaptionStyles  || null,
         staffSpreadCaptionStyles: spreadCaptionStyles || null,
         staffHeartCrop:       heartCrop || null,
+        staffBookComplete:    bookComplete === true,
+        staffIncompleteReasons: incompleteReasons || [],
         staffSavedAt:         admin.firestore.FieldValue.serverTimestamp(),
       });
 

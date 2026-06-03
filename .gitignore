@@ -15,6 +15,9 @@ assets/test photos/
 # PDF export test output
 pdf-out/
 
+# QA run artefacts — screenshots/logs accumulate per run, not source
+sessions/qa-runs/
+
 # Local Claude config / worktrees — not part of the project
 .claude/
 

@@ -6,6 +6,7 @@
   <title>Aevia — Your Book Preview</title>
   <script src="../assets/Template_Scribble/scribble-data.js"></script>
   <script src="../assets/js/photo-utils.js"></script>
+  <script src="../assets/js/book-completeness.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <style>
     @font-face {
@@ -1351,6 +1352,11 @@
     const canvas = document.getElementById('book-canvas');
     canvas.innerHTML = '';
 
+    // Reset the list of caption boxes this render asks the customer to fill. Each
+    // renderSpread() below pushes a {spread, side} wherever it shows an editable text
+    // panel — checkBookComplete() uses this to require exactly those captions.
+    window._requiredCaptions = [];
+
     // Render the physical cover first
     const coverRow = renderCover();
     if (coverRow) canvas.appendChild(coverRow);
@@ -1728,6 +1734,8 @@
 
       // Text panel for FPs — mirrors staff engine (funnyWords + valign + pt/px sizing)
       if (variant.textPanel?.caption?.allowed) {
+        // This page shows an editable caption box → its text is required to be filled.
+        (window._requiredCaptions = window._requiredCaptions || []).push({ spread: spreadIndex, side });
         const isFunnyWords = !!variant.textPanel.funnyWords;
         const tpCap = variant.textPanel.caption;
         const panelWidth  = tpCap.wMm * SCALE;
@@ -2258,6 +2266,20 @@
   // ── Approve & confirm ──
   document.getElementById('approve-btn').addEventListener('click', async () => {
     if (window._readOnly) return;  // already approved — defence in depth
+
+    // Gate: an incomplete book cannot be approved. Same rule the staff send-gate uses.
+    const completeness = checkBookComplete({
+      bookAssignments:  window.bookAssignments,
+      photoPool:        window.photoPool,
+      requiredCaptions: window._requiredCaptions,
+      bookCaptions:     window.bookCaptions,
+    });
+    if (!completeness.complete) {
+      showToast('Your book isn’t ready to approve yet — ' + completeness.reasons.join(', ') +
+        '. Please complete it before approving.', 'warn');
+      return;
+    }
+
     const btn = document.getElementById('approve-btn');
     btn.disabled = true;
     btn.innerHTML = '<span class="loading-spinner"></span>';

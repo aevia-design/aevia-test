@@ -532,6 +532,17 @@
       const token = crypto.randomUUID();
       const order = allOrders.find(o => o.orderNumber === orderNumber);
 
+      // Send-gate: an incomplete book must never reach the customer. The completeness
+      // flag is computed and stored when staff saves in the template engine
+      // (assets/js/book-completeness.js). Missing flag = never saved as complete.
+      if (!order || order.staffBookComplete !== true) {
+        const reasons = (order && order.staffIncompleteReasons && order.staffIncompleteReasons.length)
+          ? order.staffIncompleteReasons.join(', ')
+          : 'the book has not been saved as complete yet';
+        alert(`Can’t send this book yet — ${reasons}.\n\nOpen it in the template engine, complete it, and save before sending the preview link.`);
+        return;
+      }
+
       // Capture staff's current book state as immutable snapshot
       const sentSnapshot = {
         bookAssignments: order?.staffBookAssignments || null,
