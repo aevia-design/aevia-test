@@ -1330,8 +1330,9 @@
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `Server error ${res.status}`);
       }
-      status.textContent = 'Exported ✓';
-      setTimeout(() => { status.textContent = ''; }, 3000);
+      // Persist the confirmation (no auto-clear): export feeds the PDF pipeline, and a
+      // flashed-then-gone message left staff unsure whether book-state.json was written.
+      status.textContent = 'Exported ✓ — book-state.json saved (PDF ready)';
     } catch (err) {
       status.textContent = 'Export failed: ' + err.message;
     } finally {
@@ -2862,10 +2863,13 @@
           const o = (p.orientation || '?').charAt(0).toUpperCase();
           let tag = `${sideTag}${slot + 1} ${name} (${o})`;
           const rk = rank[idx];
-          if (rk !== undefined && prevRank !== -1 && rk !== prevRank + 1) {
+          // Only flag BACKWARD moves: a photo placed after a higher-ranked one
+          // (a genuine inversion worth a swap). Forward skips are almost always
+          // benign — the skipped photo was already used earlier, or sits on a
+          // later page — and flagging them buries the real inversions in noise.
+          if (rk !== undefined && prevRank !== -1 && rk < prevRank) {
             breaks++; spreadHasBreak = true;
-            const d = rk - prevRank;
-            tag += d > 0 ? `  ⚠ skipped +${d}` : `  ⚠ back ${d}`;
+            tag += `  ⚠ back ${rk - prevRank}`;
           }
           if (rk !== undefined) prevRank = rk;
           parts.push(tag);
@@ -2874,7 +2878,7 @@
       if (parts.length) dbLog(`${label}  ${parts.join('   ')}`, spreadHasBreak ? 'warn' : 'muted');
     });
 
-    if (breaks) dbLog(`Placement audit: ${breaks} chronology break(s) — ⚠ spreads pulled a photo out of date order (usually to keep one orientation per page). Review those for swaps.`, 'warn');
+    if (breaks) dbLog(`Placement audit: ${breaks} out-of-order placement(s) — ⚠ a photo sits after a later one (usually because a single-slot page took the leftover after a multi-slot page filled first). Review those for swaps.`, 'warn');
     else dbLog('Placement audit: photos placed in perfect chronological order ✓', 'info');
   }
 

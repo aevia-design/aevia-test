@@ -737,7 +737,10 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
   const COVER_BLEED_PT = COVER_BLEED_MM * MM_TO_PT;
 
   for (const capDef of coverDef.captions) {
-    const text = (coverCaptions[capDef.key] || '').trim();
+    // Route through stripHtml (like spread captions) so NBSP (U+00A0) and any stray
+    // markup are normalised — the embedded print font has no NBSP glyph and would
+    // otherwise draw a .notdef box (e.g. the box that appeared after "WILD").
+    const text = stripHtml(coverCaptions[capDef.key] || '');
     if (!text) continue;
 
     const ov = coverCaptionStyles?.[capDef.key] || {};
@@ -1049,14 +1052,17 @@ async function main() {
 
   if (!isPrint) {
     const pdfBytes = await previewDoc.save();
-    const outPath  = path.join(outDir, 'preview.pdf');
-    fs.writeFileSync(outPath, pdfBytes);
-    console.log(`\n✅ Done — cover + ${pageNum} pages (incl. blank QR page) → ${outPath}`);
+    console.log(`\n✅ Done — cover + ${pageNum} pages (incl. blank QR page)`);
     console.log(`   File size: ${(pdfBytes.length / 1024 / 1024).toFixed(1)} MB\n`);
 
-    // In --order mode: upload preview.pdf to GCS and print signed URL
     if (orderNumber) {
-      await uploadAndSignPdf(outPath, `${folderName}/pdfs/preview.pdf`, 'preview.pdf');
+      // Order mode: GCS is the system of record — upload directly, keep no local copy.
+      await uploadAndSignPdf(pdfBytes, `${folderName}/pdfs/preview.pdf`, 'preview.pdf');
+    } else {
+      // Local (--photos) mode: write to disk for manual inspection.
+      const outPath = path.join(outDir, 'preview.pdf');
+      fs.writeFileSync(outPath, pdfBytes);
+      console.log(`   → ${outPath}`);
     }
   } else {
     console.log(`\n✅ Done — cover + ${pageNum} pages (incl. blank QR page) → ${printDir}/`);
@@ -1081,23 +1087,20 @@ async function main() {
         }
 
         const mergedBytes = await mergedDoc.save();
-        const printPdfPath = path.join(outDir, 'print.pdf');
-        fs.writeFileSync(printPdfPath, mergedBytes);
-        await uploadAndSignPdf(printPdfPath, `${folderName}/pdfs/print.pdf`, 'print.pdf');
+        await uploadAndSignPdf(mergedBytes, `${folderName}/pdfs/print.pdf`, 'print.pdf');
       }
     }
   }
 }
 
 // Helper: upload a PDF to GCS and print its signed download URL
-async function uploadAndSignPdf(localPath, gcsPath, label) {
+async function uploadAndSignPdf(fileBytes, gcsPath, label) {
   try {
     const { Storage } = require('@google-cloud/storage');
     const storage = new Storage({ keyFilename: path.join(__dirname, '..', 'functions', 'serviceAccountKey.json') });
     const bucket = storage.bucket('aevia-uploads.firebasestorage.app');
 
-    // Upload
-    const fileBytes = fs.readFileSync(localPath);
+    // Upload straight from the in-memory bytes — no local file is kept in --order mode.
     await bucket.file(gcsPath).save(fileBytes, { contentType: 'application/pdf' });
 
     // Generate signed URL (1-hour expiry, same as photo URLs)
