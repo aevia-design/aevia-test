@@ -1,22 +1,27 @@
 # Session Status
-_Last updated: 2026-06-03 (session 22)_
+_Last updated: 2026-06-03 (session 23)_
 
 ## Status
-**Session 22 (2026-06-03) — QA automation + incomplete-book guard.** Built real browser testing of the customer journey (Playwright drives via Node scripts in `qa/`, Claude judges screenshots). The staff→customer→pay chain (`qa/staff-customer-chain.mjs`) now runs end-to-end through Stripe after fixing login, `networkidle` hangs, and the Stripe payment-method picker (must select "Karte"/Card radio before filling). Mid-session pivoted to a **product feature**: hard-block sending/approving an **incomplete book**.
+**Session 23 (2026-06-03) — incomplete-book guard ALLOW-path verified end-to-end.** Deployed `saveStaffState` (the deploy that unblocks the dashboard send-gate — earlier failure was transient). Extended `qa/order-journey.mjs` to configure **all five** special pages (was only FP1+FP2): FP1 Birthday, FP2 Funny words, FP3 Favourite toy, FP4 First steps, FP5 Artwork gallery (art-1/art-2 reserved + excluded from the general pool). Minted fresh order **AEV-024**, then ran `qa/staff-customer-chain.mjs` on it: engine save → `"Saved ✓"` → dashboard **Generate preview link allowed (not blocked)** → customer **Approve** proceeded → Stripe **`payment=success`**. This closes the S22 gap ("verified it blocks incomplete; NOT yet verified it allows complete"). The guard now verified both ways. Note: `checkBookComplete` reads the data model, not the painted DOM — it isn't fooled by render timing (engine screenshot 07 was mid-render/empty yet the book correctly judged complete).
+
+**Found + logged a real bug (TO-DO #61, High): Art gallery (FP5) loses one photo on upload.** FP5 is the only 2-photo special page. `order.html:1370` sends `addonSlug:'fp5'` for both art photos (with a `slotIndex` rider) but `functions/upload.js:103-104` names the file `${slug}.${ext}`, ignoring `slotIndex` → art-1 and art-2 both write to `special_pages/fp5.jpg`, second overwrites first. Fix: include slotIndex in storedName when present; redeploy `uploadPhotos`. Not blocking; logged.
+
+### S23 remaining manual negative-checks (optional, low priority)
+The block path was verified once in S22. Two explicit manual sub-checks remain un-automated: (a) break a slot/caption in-engine → dashboard preview link blocked **with reasons shown**; (b) customer-side incomplete-approve **warn toast**. Re-confirm if touching the guard again.
+
+---
+
+### Session 22 (2026-06-03) — QA automation + incomplete-book guard (built). Built real browser testing of the customer journey (Playwright drives via Node scripts in `qa/`, Claude judges screenshots). The staff→customer→pay chain (`qa/staff-customer-chain.mjs`) now runs end-to-end through Stripe after fixing login, `networkidle` hangs, and the Stripe payment-method picker (must select "Karte"/Card radio before filling). Mid-session pivoted to a **product feature**: hard-block sending/approving an **incomplete book**.
 
 **NEW FEATURE — incomplete-book guard (built, tested, partly verified).** Saving an incomplete book stays allowed; **sending a preview link** and **approving** are now hard-blocked when the book has empty photo slots, unplaced photos, or blank captions on special pages (data-driven: a caption is required iff the layout shows an editable text box). Shared tested helper `assets/js/book-completeness.js` (`checkBookComplete` → `{complete, reasons[]}`), 12 new jest tests, **suite 69/69 green**. Wired into customer-preview approve (live block + warn toast), staff engine save (stores `bookComplete`), `saveStaffState` function (persists `staffBookComplete`+reasons), dashboard `generatePreviewLink` (blocks send). VERIFIED it correctly **blocks** an incomplete book; NOT yet verified it **allows** a complete one.
 
 **⚠ AEV-023 is corrupted as a fixture** — its customer-side data (`customerBookAssignments`) was saved empty by the earlier automated chain runs (Approve serialized the book before render populated it). Its customer view renders empty (51 unplaced). Staff data is intact. Do not reuse it for clean verification.
 
 ### ▶ NEXT SESSION — start here
-1. **Deploy the function FIRST:** `firebase deploy --only functions:saveStaffState`. Until then `staffBookComplete` is never written and the dashboard send-gate blocks EVERY order ("not saved as complete yet").
-2. **Mint a FRESH order** via the front-leg (`node qa/order-journey.mjs`) — AEV-023 is corrupted, don't reuse it.
-3. **Verify the incomplete-book guard on the fresh order:**
-   - Staff: load in engine, leave a slot empty / a special-page caption blank → save (allowed, warns) → dashboard "Generate preview link" must be **blocked** with reasons.
-   - Complete the book → save → send must now **succeed**.
-   - Customer: on an incomplete book, the **Approve** button must block + show the warn toast; on a complete book, approve proceeds.
-4. **Then run the full chain** (`qa/staff-customer-chain.mjs`) on the fresh complete order through Stripe `?payment=success`.
-5. **Test data:** AEV-023 + any chain-created orders are real test orders to clean up later.
+1. ~~Deploy `saveStaffState`~~ — DONE (S23). ~~Mint fresh order~~ — DONE, AEV-024. ~~Verify allow-complete path~~ — DONE (chain ran AEV-024 through to `payment=success`).
+2. **Run more complex QA scenarios** (user request, S23) — exercise the guard + journey on harder cases: e.g. deliberately-incomplete book (empty slot / blank special-page caption) driven by script to assert the dashboard block + reasons and the customer approve-toast; books with fewer/more photos; missing special-page captions; the FP5 art-gallery path once #61 is fixed.
+3. **Fix TO-DO #61 (FP5 art gallery upload)** — surgical: include `slotIndex` in `upload.js` storedName; redeploy `uploadPhotos`; re-mint to confirm both art files persist.
+4. **Test data:** AEV-023 (corrupted) + AEV-024 + any chain-created orders are real test orders to clean up later (TO-DO #60).
 
 ### Local verification helpers (this session, in `qa/`)
 - `qa/probe-photos.mjs`, `qa/verify-completeness.mjs`, `qa/inspect-shapes.mjs` — read-only diagnostics against the **public** customer-preview (no staff pw). To test LOCAL edits, run `npx serve . -p 8080` and use the **clean URL** `http://localhost:8080/pages/customer-preview?token=…` (the `.html` form 301-drops the `?token=`).

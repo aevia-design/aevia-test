@@ -13,9 +13,15 @@ const BASE = 'https://aevia-test.pages.dev/pages';
 
 fs.mkdirSync(RUN_DIR, { recursive: true });
 
-const photos = fs.readdirSync(PHOTO_DIR)
+const allJpgs = fs.readdirSync(PHOTO_DIR)
   .filter(f => /\.jpe?g$/i.test(f))
-  .sort()
+  .sort();
+// Art gallery (FP5) uses two specific scanned artworks; reserve them and keep
+// them out of the general pool so they don't get reused as cover/main photos.
+const art1 = path.join(PHOTO_DIR, 'art-1.jpg');
+const art2 = path.join(PHOTO_DIR, 'art-2.jpg');
+const photos = allJpgs
+  .filter(f => !/^art-[12]\.jpe?g$/i.test(f))
   .map(f => path.join(PHOTO_DIR, f));
 
 const log = [];
@@ -41,9 +47,12 @@ try {
   await page.goto(`${BASE}/scribble.html`, { waitUntil: 'networkidle' });
   await shot(page, '01-scribble-default.png');
 
-  // 40 pages is the default selected chip. Select two optional spreads.
+  // 40 pages is the default selected chip. Select ALL five optional spreads.
   await page.click('.addon[data-fp="FP1"]'); // Birthday spread (1 photo + caption)
   await page.click('.addon[data-fp="FP2"]'); // Funny words (text only)
+  await page.click('.addon[data-fp="FP3"]'); // Favourite toy (1 photo + caption)
+  await page.click('.addon[data-fp="FP4"]'); // First steps (1 photo + caption)
+  await page.click('.addon[data-fp="FP5"]'); // Artwork gallery (2 photos + 2 captions)
   const photoCountText = await page.textContent('#photo-count');
   note(`Configurator photo-count text: "${photoCountText.trim()}"`);
   await shot(page, '02-scribble-configured.png');
@@ -90,10 +99,36 @@ try {
     await fp2Inputs[i].fill(words[i]);
   }
   note(`FP2 (Funny words) filled ${Math.min(fp2Inputs.length, words.length)} words`);
+
+  // FP3 — Favourite toy: 1 photo + caption
+  await page.setInputFiles('#dz-special-fp3 input[type=file]', photos[2]);
+  await page.waitForSelector('#special-preview-fp3', { state: 'visible' });
+  const fp3Text = await page.$('#addon-text-fp3');
+  if (fp3Text) await page.fill('#addon-text-fp3', "Bunny — Leo's constant companion since day one.");
+  note('FP3 (Favourite toy) photo + caption done');
+
+  // FP4 — First steps: 1 photo + caption
+  await page.setInputFiles('#dz-special-fp4 input[type=file]', photos[3]);
+  await page.waitForSelector('#special-preview-fp4', { state: 'visible' });
+  const fp4Text = await page.$('#addon-text-fp4');
+  if (fp4Text) await page.fill('#addon-text-fp4', 'First wobbly steps — 14 March 2024, in the kitchen.');
+  note('FP4 (First steps) photo + caption done');
+
+  // FP5 — Artwork gallery: 2 photos (art-1, art-2) + 2 captions
+  await page.setInputFiles('#dz-special-fp5-0 input[type=file]', art1);
+  await page.waitForSelector('#special-preview-fp5-0', { state: 'visible' });
+  await page.setInputFiles('#dz-special-fp5-1 input[type=file]', art2);
+  await page.waitForSelector('#special-preview-fp5-1', { state: 'visible' });
+  const fp5Cap0 = await page.$('#addon-text-fp5-0');
+  if (fp5Cap0) await page.fill('#addon-text-fp5-0', 'Autumn leaves, October 2024');
+  const fp5Cap1 = await page.$('#addon-text-fp5-1');
+  if (fp5Cap1) await page.fill('#addon-text-fp5-1', 'The big red dog, November 2024');
+  note('FP5 (Artwork gallery) 2 photos + 2 captions done');
   await shot(page, '04-step2-special-pages.png');
 
-  // Main grid — upload exactly `target` distinct photos (skip the 2 already used)
-  const mainSet = photos.slice(2, 2 + target);
+  // Main grid — upload exactly `target` distinct photos (skip the 4 already used:
+  // cover + FP1 + FP3 + FP4; FP5 uses the reserved art photos, not the pool)
+  const mainSet = photos.slice(4, 4 + target);
   note(`Uploading ${mainSet.length} main photos`);
   await page.setInputFiles('#dz-main input[type=file]', mainSet);
 
