@@ -317,7 +317,7 @@ _Goal: Staff tool accessible remotely; full 9-template catalogue ready for launc
 
 **Type:** refactor / infrastructure
 **Component:** Staff engine + Customer preview + PDF export
-**Status:** pending
+**Status:** done (S26, commit `374af3d`) — `TEMPLATES` registry keyed by lowercased `templateName`; Scribble verified byte-identical on engine + customer-preview; PDF leg deferred. Registry convention in memory `project_template_seam.md`.
 **Size:** M
 **Priority:** High — blocks every template chunk (010–017). One-time cost paid by the first second-template (Wander).
 **Depends on:** —
