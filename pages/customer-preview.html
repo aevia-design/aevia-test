@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aevia — Your Book Preview</title>
   <script src="../assets/Template_Scribble/scribble-data.js"></script>
+  <script src="../assets/Template_Wander/wander-data.js"></script>
   <script src="../assets/js/photo-utils.js"></script>
   <script src="../assets/js/book-completeness.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
@@ -807,7 +808,31 @@
 
   const SCALE    = 3;
   const BLEED_MM = 3;
-  const SVG_BASE = '../assets/Template_Scribble/Spreads/';
+
+  // ── Multi-template seam ──
+  // Registry keyed by template name (matched case-insensitively against the
+  // order's templateName, which the product form sets — e.g. 'Scribble',
+  // 'Wander'). Add a new template by adding one entry here. Falls back to
+  // Scribble for unknown/missing names (back-compat with pre-templateName orders).
+  const TEMPLATES = {
+    scribble: { data: () => window.SCRIBBLE_DATA, svgBase: '../assets/Template_Scribble/Spreads/' },
+    wander:   { data: () => window.WANDER_DATA,   svgBase: '../assets/Template_Wander/' },
+  };
+
+  let _activeTemplateData = window.SCRIBBLE_DATA; // default
+  let SVG_BASE = TEMPLATES.scribble.svgBase;      // default
+
+  function getActiveTemplateData() {
+    return _activeTemplateData;
+  }
+
+  function setActiveTemplate(templateName) {
+    const key = String(templateName || '').toLowerCase();
+    const t = (TEMPLATES[key] && TEMPLATES[key].data()) ? TEMPLATES[key] : TEMPLATES.scribble;
+    _activeTemplateData = t.data();
+    SVG_BASE = t.svgBase;
+  }
+
   const GET_ORDER_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getOrder';
 
   const CAPTION_FONTS = [
@@ -893,6 +918,7 @@
       });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       window.orderData = await resp.json();
+      setActiveTemplate(window.orderData.templateName);
 
       // Lock the page to view-only once the order is approved or paid — a customer
       // reopening the link can browse their book but cannot edit or re-approve.
@@ -1060,7 +1086,7 @@
     }
 
     sequence.forEach((spreadId, spreadIndex) => {
-      const spreadDef0 = window.SCRIBBLE_DATA.spreads[spreadId];
+      const spreadDef0 = getActiveTemplateData().spreads[spreadId];
       if (spreadId.startsWith('FP') && spreadDef0) {
         const hasRegularSlots = ['left', 'right'].some(side => {
           const pd = spreadDef0.pages[side];
@@ -1071,7 +1097,7 @@
         if (!hasRegularSlots) { assignments[spreadIndex] = { left: [], right: [] }; return; }
       }
 
-      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+      const spreadDef = getActiveTemplateData().spreads[spreadId];
       if (!spreadDef) return;
 
       const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
@@ -1231,7 +1257,7 @@
 
   // Port of the staff engine's renderCover (editable captions like the rest of the book).
   function renderCover() {
-    const coverDef = window.SCRIBBLE_DATA.cover;
+    const coverDef = getActiveTemplateData().cover;
     if (!coverDef) return null;
 
     const secs = coverDef.sections;
@@ -1477,7 +1503,7 @@
   }
 
   function renderSpread(spreadId, photoSlice, spreadIndex) {
-    const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+    const spreadDef = getActiveTemplateData().spreads[spreadId];
     if (!spreadDef) return null;
 
     const row = document.createElement('div');

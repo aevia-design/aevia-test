@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aevia — Template Engine (Staff)</title>
   <script src="../../assets/Template_Scribble/scribble-data.js"></script>
+  <script src="../../assets/Template_Wander/wander-data.js"></script>
   <script src="../../assets/js/photo-utils.js"></script>
   <script src="../../assets/js/book-completeness.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
@@ -1043,7 +1044,30 @@
   const SCALE    = 3;            // px per mm
   const BLEED_MM = 3;            // spread bleed (mm); caption/slot CSV coords are with-bleed
   const HEIC_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/convertHeic';
-  const SVG_BASE      = '../../assets/Template_Scribble/Spreads/';
+
+  // ── Multi-template seam ──
+  // Registry keyed by template name (matched case-insensitively against the
+  // order's templateName, which the product form sets — e.g. 'Scribble',
+  // 'Wander'). Add a new template by adding one entry here. Falls back to
+  // Scribble for unknown/missing names (back-compat with pre-templateName orders).
+  const TEMPLATES = {
+    scribble: { data: () => window.SCRIBBLE_DATA, svgBase: '../../assets/Template_Scribble/Spreads/' },
+    wander:   { data: () => window.WANDER_DATA,   svgBase: '../../assets/Template_Wander/' },
+  };
+
+  let _activeTemplateData = window.SCRIBBLE_DATA; // default
+  let SVG_BASE = TEMPLATES.scribble.svgBase;      // default
+
+  function getActiveTemplateData() {
+    return _activeTemplateData;
+  }
+
+  function setActiveTemplate(templateName) {
+    const key = String(templateName || '').toLowerCase();
+    const t = (TEMPLATES[key] && TEMPLATES[key].data()) ? TEMPLATES[key] : TEMPLATES.scribble;
+    _activeTemplateData = t.data();
+    SVG_BASE = t.svgBase;
+  }
 
   /* ── TYPOGRAPHIC HELPERS ── */
 
@@ -1545,7 +1569,7 @@
   ═══════════════════════════════════════════ */
 
   function renderCover() {
-    const coverDef = window.SCRIBBLE_DATA.cover;
+    const coverDef = getActiveTemplateData().cover;
     if (!coverDef) return null;
 
     const secs  = coverDef.sections;
@@ -1881,7 +1905,7 @@
   function applyStyleToCapEl(key) {
     const el = document.querySelector(`.cover-caption[data-cover-caption-key="${key}"]`);
     if (!el) return;
-    const capDef = window.SCRIBBLE_DATA.cover.captions.find(c => c.key === key);
+    const capDef = getActiveTemplateData().cover.captions.find(c => c.key === key);
     if (!capDef) return;
     const ov = window.coverCaptionStyles[key] || {};
     el.style.fontFamily    = `'${ov.font || capDef.font}', serif`;
@@ -2023,7 +2047,7 @@
    * Returns a .spread-row DOM element ready to append.
    */
   function renderSpread(spreadId, photoSlice, spreadIndex) {
-    const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+    const spreadDef = getActiveTemplateData().spreads[spreadId];
     if (!spreadDef) { console.error('Unknown spreadId', spreadId); return null; }
 
     const row = document.createElement('div');
@@ -2078,7 +2102,7 @@
     [...standardTypes, ...fpTypes].forEach(id => {
       const opt = document.createElement('option');
       opt.value = id;
-      opt.textContent = window.SCRIBBLE_DATA.spreads[id]?.label || id;
+      opt.textContent = getActiveTemplateData().spreads[id]?.label || id;
       if (id === spreadId) opt.selected = true;
       // Disable unique FP types already present elsewhere in the book
       if (id.startsWith('FP') && id !== 'FP5' && id !== spreadId) {
@@ -2700,7 +2724,7 @@
     sequence.forEach((spreadId, spreadIndex) => {
       // FP spreads with no regular slots on either side (FP1, FP2, FP5): pinned, skip pool consumption
       // FP3 and FP4 have a regular right page — they must fall through to the normal assignment logic
-      const spreadDef0 = window.SCRIBBLE_DATA.spreads[spreadId];
+      const spreadDef0 = getActiveTemplateData().spreads[spreadId];
       if (spreadId.startsWith('FP') && spreadDef0) {
         const hasRegularSlots = ['left', 'right'].some(side => {
           const pd = spreadDef0.pages[side];
@@ -2728,7 +2752,7 @@
         }
       }
 
-      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+      const spreadDef = getActiveTemplateData().spreads[spreadId];
       if (!spreadDef) return;
 
       const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
@@ -2841,7 +2865,7 @@
 
     let prevRank = -1, breaks = 0;
     sequence.forEach((spreadId, si) => {
-      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+      const spreadDef = getActiveTemplateData().spreads[spreadId];
       if (!spreadDef) return;
       const asgn = window.bookAssignments[si] || { left: [], right: [] };
       const label = `Spread ${String(si + 1).padStart(2, '0')}  ${spreadId.padEnd(4)}`;
@@ -2977,7 +3001,7 @@
     // Count regular photo slots (excluding special/artwork)
     let regularSlots = 0;
     sequence.forEach((spreadId, si) => {
-      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+      const spreadDef = getActiveTemplateData().spreads[spreadId];
       if (!spreadDef) return;
       const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
       const orientToKey = { horizontal: 'H', vertical: 'V', square: 'S' };
@@ -3108,7 +3132,7 @@
     // FP1–FP4 can only appear once (FP5 = Art Gallery, unlimited)
     if (newSpreadId.startsWith('FP') && newSpreadId !== 'FP5') {
       if (seq.includes(newSpreadId)) {
-        const label = window.SCRIBBLE_DATA.spreads[newSpreadId]?.label || newSpreadId;
+        const label = getActiveTemplateData().spreads[newSpreadId]?.label || newSpreadId;
         alert(`"${label}" is already in this book. Each special page can only appear once.`);
         return false;
       }
@@ -3323,7 +3347,7 @@
     const orientToKey = { horizontal: 'H', vertical: 'V', square: 'S' };
     let total = 0;
     sequence.forEach(spreadId => {
-      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+      const spreadDef = getActiveTemplateData().spreads[spreadId];
       if (!spreadDef) return;
       const sides = spreadDef.rightOnly ? ['right'] : ['left', 'right'];
       sides.forEach(side => {
@@ -3522,7 +3546,7 @@
   updateSpecialPanel();
 
   (function verifyData() {
-    const d = window.SCRIBBLE_DATA;
+    const d = getActiveTemplateData();
     if (!d) { console.error('SCRIBBLE_DATA not loaded'); return; }
     const keys = Object.keys(d.spreads);
     const expected = ['SP0','SP1','SP2','SP3','SP4','SP5','SP6','FP1','FP2','FP3','FP4','FP5'];
@@ -3599,6 +3623,7 @@
           delete order.staffSpreadCaptionStyles;
         }
       }
+      setActiveTemplate(order.templateName);
       await loadOrderIntoEngine(order);
       status.className = 'order-status';
       status.textContent = '';
@@ -3831,7 +3856,7 @@
     // 7b. Pre-fill slot captions for FP spreads without a textPanel (FP3, FP4, FP5)
     Object.entries(fpTexts).forEach(([slug, value]) => {
       const fpKey     = slug.toUpperCase();
-      const spreadDef = window.SCRIBBLE_DATA?.spreads?.[fpKey];
+      const spreadDef = getActiveTemplateData()?.spreads?.[fpKey];
       if (!spreadDef?.orderFormMeta) return;
 
       // Skip FP spreads already handled by the textPanel path above (FP1, FP2)

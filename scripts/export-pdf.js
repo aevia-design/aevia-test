@@ -79,10 +79,11 @@ if (!orderNumber) {
 let DPI, MM_TO_PX, CONTENT_MM, BLEED_MM, FULL_MM, FULL_PX, CONTENT_PX, BLEED_PX, DATA;
 let slotLeft, slotTop, slotW, slotH;
 
-// template-data.js assigns to window.SCRIBBLE_DATA
+// template-data.js assigns to window.SCRIBBLE_DATA / window.WANDER_DATA
 global.window = {};
 require(path.resolve(__dirname, '../assets/Template_Scribble/scribble-data.js'));
-DATA = global.window.SCRIBBLE_DATA;
+require(path.resolve(__dirname, '../assets/Template_Wander/wander-data.js'));
+DATA = global.window.SCRIBBLE_DATA; // default; will be updated in main() if needed
 
 function initializePrintConstants() {
   // Check schema version (Plan 13-04)
@@ -119,7 +120,25 @@ function initializePrintConstants() {
   COVER_BLEED_PX  = Math.round(COVER_BLEED_MM * MM_TO_PX);  // 213px
 }
 
-const ASSET_BASE = path.resolve(__dirname, '../assets/Template_Scribble/Spreads');
+// ── Multi-template seam ──
+// Registry keyed by template name (matched case-insensitively against the
+// order's templateName, which the product form sets — e.g. 'Scribble',
+// 'Wander'). Add a new template by adding one entry here. Falls back to
+// Scribble for unknown/missing names. ASSET_BASE is set in main() before any
+// asset operations.
+const TEMPLATES = {
+  scribble: { data: () => global.window.SCRIBBLE_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Scribble/Spreads') },
+  wander:   { data: () => global.window.WANDER_DATA,   assetBase: path.resolve(__dirname, '../assets/Template_Wander') },
+};
+
+let ASSET_BASE = TEMPLATES.scribble.assetBase; // default
+
+function setActiveTemplate(templateName) {
+  const key = String(templateName || '').toLowerCase();
+  const t = (TEMPLATES[key] && TEMPLATES[key].data()) ? TEMPLATES[key] : TEMPLATES.scribble;
+  DATA = t.data();
+  ASSET_BASE = t.assetBase;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -863,6 +882,11 @@ async function main() {
   if (isPrint) fs.mkdirSync(printDir, { recursive: true });
 
   await setupPhotoSource();
+
+  // Set active template based on order's templateName (--order mode only; gcsOrder is set by setupPhotoSource)
+  if (gcsOrder && gcsOrder.templateName) {
+    setActiveTemplate(gcsOrder.templateName);
+  }
 
   // In --order mode, fetch book-state.json from GCS after setupPhotoSource() sets folderName
   await fetchBookStateFromGCS();
