@@ -31,6 +31,7 @@ Read these in order before doing anything:
 - Session logs: `sessions/`
 - ADRs: `docs/decisions/`
 - Unit tests: `tests/` (run with `npm test` from project root)
+- QA browser scripts: `qa/` (Playwright via Node; run artefacts in `sessions/qa-runs/`, gitignored)
 
 ---
 
