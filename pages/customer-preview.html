@@ -1575,7 +1575,10 @@
         if (slotDef.pool === 'special' || slotDef.pool === 'artwork') {
           isSpecialSlot = true;
           const spArr = window.specialPhotos[spreadId] || [];
-          photo = spArr[slotIdx] || null;
+          // Artwork spreads (FP5): left page = artwork 0, right page = artwork 1.
+          // Each page has one slot (slotIdx 0), so index by side, not slotIdx.
+          const photoIdx = slotDef.pool === 'artwork' ? (side === 'left' ? 0 : 1) : slotIdx;
+          photo = spArr[photoIdx] || null;
         } else {
           const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
           photo = poolIdx !== null ? window.photoPool[poolIdx] : null;

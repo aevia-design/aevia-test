@@ -2195,7 +2195,12 @@
           isSpecialSlot = true;
           const spKey = spreadId; // e.g. 'FP3', 'FP4', 'FP5'
           const spArr = window.specialPhotos[spKey] || [];
-          photo = spArr[slotIdx] || null;
+          // Artwork spreads (FP5) place one photo per PAGE — left = artwork 0,
+          // right = artwork 1. Each page has a single slot (slotIdx 0), so slotIdx
+          // can't tell the pages apart; index by side. Other special pools (FP3/FP4,
+          // one photo total) keep slotIdx.
+          const photoIdx = slotDef.pool === 'artwork' ? (side === 'left' ? 0 : 1) : slotIdx;
+          photo = spArr[photoIdx] || null;
         } else {
           const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
           photo = poolIdx !== null ? window.photoPool[poolIdx] : null;
@@ -2811,6 +2816,69 @@
   }
 
   /* ═══════════════════════════════════════════
+     PLACEMENT AUDIT — staff-only console diagnostic
+     ───────────────────────────────────────────
+     Prints, in reading order, which photo landed in which spread/page/slot, and
+     flags every point where the auto-arrange BROKE chronological order — so staff
+     can see WHY (usually orientation grouping on a multi-slot page) and decide
+     whether to swap. Read-only; no effect on the book. Pool is already sorted
+     (EXIF date → filename number → upload order), so a photo's position in the
+     pool IS its chronological rank.
+  ═══════════════════════════════════════════ */
+  function logPlacementAudit(sequence, pool) {
+    if (!pool || !pool.length) return;
+    // Chronological rank among non-duplicate photos (duplicates never get placed,
+    // so skipping them keeps "next in order" meaning prev rank + 1).
+    const rank = {}; let r = 0;
+    pool.forEach((p, i) => { if (!p.duplicate) { rank[i] = r++; } });
+
+    const allDated = pool.filter(p => !p.duplicate).every(p => p.date);
+    const anyNumbered = pool.some(p => typeof filenameNumber === 'function' && filenameNumber(p.name) !== null);
+    const sortMethod = allDated ? 'EXIF date' : anyNumbered ? 'filename number' : 'upload order';
+
+    dbLog(`── PLACEMENT AUDIT — sort: ${sortMethod} · ${r} photo(s) ──`, 'info');
+
+    let prevRank = -1, breaks = 0;
+    sequence.forEach((spreadId, si) => {
+      const spreadDef = window.SCRIBBLE_DATA.spreads[spreadId];
+      if (!spreadDef) return;
+      const asgn = window.bookAssignments[si] || { left: [], right: [] };
+      const label = `Spread ${String(si + 1).padStart(2, '0')}  ${spreadId.padEnd(4)}`;
+
+      // Special pages: show but don't order-check (they use special pools).
+      if (spreadId.startsWith('FP')) {
+        const hasRegular = ['left', 'right'].some(s => (asgn[s] || []).some(x => x !== null && x !== undefined));
+        if (!hasRegular) { dbLog(`${label}  ${spreadDef.label || 'special'} · special page`, 'muted'); return; }
+      }
+
+      const parts = [];
+      let spreadHasBreak = false;
+      ['left', 'right'].forEach(side => {
+        const sideTag = side === 'left' ? 'L' : 'R';
+        (asgn[side] || []).forEach((idx, slot) => {
+          if (idx === null || idx === undefined) return;
+          const p = pool[idx] || {};
+          const name = (p.name || '?').split('/').pop();
+          const o = (p.orientation || '?').charAt(0).toUpperCase();
+          let tag = `${sideTag}${slot + 1} ${name} (${o})`;
+          const rk = rank[idx];
+          if (rk !== undefined && prevRank !== -1 && rk !== prevRank + 1) {
+            breaks++; spreadHasBreak = true;
+            const d = rk - prevRank;
+            tag += d > 0 ? `  ⚠ skipped +${d}` : `  ⚠ back ${d}`;
+          }
+          if (rk !== undefined) prevRank = rk;
+          parts.push(tag);
+        });
+      });
+      if (parts.length) dbLog(`${label}  ${parts.join('   ')}`, spreadHasBreak ? 'warn' : 'muted');
+    });
+
+    if (breaks) dbLog(`Placement audit: ${breaks} chronology break(s) — ⚠ spreads pulled a photo out of date order (usually to keep one orientation per page). Review those for swaps.`, 'warn');
+    else dbLog('Placement audit: photos placed in perfect chronological order ✓', 'info');
+  }
+
+  /* ═══════════════════════════════════════════
      ASSIGNMENT (DE)SERIALISATION — by photo name, not position
      ───────────────────────────────────────────
      Saved book state references photos by NAME, not pool index. Pool ordering
@@ -2933,6 +3001,8 @@
     } else {
       dbLog('✓ Photos fill book exactly', 'info');
     }
+
+    logPlacementAudit(sequence, pool);
 
     // Photo status bar
     const placed = new Set();

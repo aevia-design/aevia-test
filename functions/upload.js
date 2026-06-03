@@ -101,7 +101,12 @@ async function handler(req, res) {
           storedName = `${folderName}/cover/cover.${ext}`;
         } else if (fileInfo.fileType === 'special') {
           const slug = fileInfo.addonSlug || `special_${String(i + 1).padStart(3, '0')}`;
-          storedName = `${folderName}/special_pages/${slug}.${ext}`;
+          // Multi-photo special pages (only FP5 art gallery, 2 photos) send a
+          // slotIndex; without it both files would share one name and the second
+          // would overwrite the first in GCS. Single-photo pages omit the suffix.
+          const suffix = (fileInfo.slotIndex !== undefined && fileInfo.slotIndex !== null)
+            ? `-${fileInfo.slotIndex}` : '';
+          storedName = `${folderName}/special_pages/${slug}${suffix}.${ext}`;
         } else {
           storedName = `${folderName}/photos/photo_${String(i + 1).padStart(3, '0')}.${ext}`;
         }
