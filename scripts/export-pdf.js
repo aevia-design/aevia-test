@@ -421,6 +421,11 @@ const FONT_FILE_MAP = {
   'EB Garamond_italic':        'EBGaramond-Italic.ttf',
   'EB Garamond_semibold':      'EBGaramond-SemiBold.ttf',
   'FirstTimeWriting_regular':  'FirstTimeWriting!.ttf',
+  'Cormorant Garamond_light':    'CormorantGaramond-Light.ttf',
+  'Cormorant Garamond_regular':  'CormorantGaramond-Regular.ttf',
+  'Cormorant Garamond_medium':   'CormorantGaramond-Medium.ttf',
+  'Cormorant Garamond_semibold': 'CormorantGaramond-SemiBold.ttf',
+  'Cormorant Garamond_bold':     'CormorantGaramond-Bold.ttf',
 };
 
 // Pre-embed all fonts into a PDFDocument; returns a lookup map

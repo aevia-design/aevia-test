@@ -40,6 +40,31 @@
       src: url('../assets/fonts/FirstTimeWriting!.ttf') format('truetype');
       font-weight: 400; font-style: normal; font-display: swap;
     }
+    @font-face {
+      font-family: 'Cormorant Garamond';
+      src: url('../assets/fonts/CormorantGaramond-Light.ttf') format('truetype');
+      font-weight: 300; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Cormorant Garamond';
+      src: url('../assets/fonts/CormorantGaramond-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Cormorant Garamond';
+      src: url('../assets/fonts/CormorantGaramond-Medium.ttf') format('truetype');
+      font-weight: 500; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Cormorant Garamond';
+      src: url('../assets/fonts/CormorantGaramond-SemiBold.ttf') format('truetype');
+      font-weight: 600; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Cormorant Garamond';
+      src: url('../assets/fonts/CormorantGaramond-Bold.ttf') format('truetype');
+      font-weight: 700; font-style: normal; font-display: swap;
+    }
     :root {
       --bg:        #fafaf8;
       --surface:   #f3efe9;
@@ -1297,31 +1322,34 @@
     svgImg.onerror = () => { console.warn('Cover SVG failed to load:', svgImg.src); };
     canvas.appendChild(svgImg);
 
-    // Photo slot (center-based coords, with-bleed)
+    // Photo slot (center-based coords, with-bleed). Some templates (e.g. Wander)
+    // have a free-text cover with no photo slot (cover.slots === []) — skip it then,
+    // mirroring template-engine.html. Without this guard renderCover throws.
     const slotDef = coverDef.slots[0];
-    const COVER_BLEED_MM = 18;
-    const slotW = slotDef.wMm * SCALE;
-    const slotH = slotDef.hMm * SCALE;
-    const slotL = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2;
-    const slotT = (slotDef.yMm - COVER_BLEED_MM) * SCALE - slotH / 2;
+    if (slotDef) {
+      const slotW = slotDef.wMm * SCALE;
+      const slotH = slotDef.hMm * SCALE;
+      const slotL = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2;
+      const slotT = (slotDef.yMm - COVER_BLEED_MM) * SCALE - slotH / 2;
 
-    const slot = document.createElement('div');
-    slot.className = 'photo-slot';
-    slot.style.cssText = `left:${slotL}px;top:${slotT}px;width:${slotW}px;height:${slotH}px;z-index:1;`;
+      const slot = document.createElement('div');
+      slot.className = 'photo-slot';
+      slot.style.cssText = `left:${slotL}px;top:${slotT}px;width:${slotW}px;height:${slotH}px;z-index:1;`;
 
-    const coverPhoto = (window.specialPhotos.cover || [])[0];
-    if (coverPhoto) {
-      const img = document.createElement('img');
-      img.className = 'slot-photo';
-      img.src = coverPhoto.url;
-      slot.appendChild(img);
-    } else {
-      const ph = document.createElement('div');
-      ph.className = 'slot-placeholder';
-      ph.textContent = 'Cover photo';
-      slot.appendChild(ph);
+      const coverPhoto = (window.specialPhotos.cover || [])[0];
+      if (coverPhoto) {
+        const img = document.createElement('img');
+        img.className = 'slot-photo';
+        img.src = coverPhoto.url;
+        slot.appendChild(img);
+      } else {
+        const ph = document.createElement('div');
+        ph.className = 'slot-placeholder';
+        ph.textContent = 'Cover photo';
+        slot.appendChild(ph);
+      }
+      canvas.appendChild(slot);
     }
-    canvas.appendChild(slot);
 
     // Captions — editable, styled identically to the staff engine. Coords are
     // with-bleed; applyCoverCaptionLayout converts to canvas px.
@@ -1593,6 +1621,17 @@
         overlay.alt = '';
         overlay.decoding = 'async';
         canvas.appendChild(overlay);
+      }
+
+      // ── TEMP map stub (chunk-022 blocked on Kseniia's SVG re-export) ──
+      // Mirrors the staff engine: the Wander FP1 left map page isn't wired yet,
+      // so show a clear placeholder instead of a blank cream page. Remove when
+      // the map render lands. Keep in sync with template-engine.html.
+      if (variant.mapCanvas) {
+        const stub = document.createElement('div');
+        stub.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#9a8f7e;font-family:system-ui,sans-serif;font-size:13px;line-height:1.6;padding:24px;z-index:1;';
+        stub.innerHTML = 'Travel map<br><span style="font-size:11px;opacity:0.7;">preview pending — pins render once<br>the region maps are finalised</span>';
+        canvas.appendChild(stub);
       }
 
       variant.slots.forEach((slotDef, slotIdx) => {

@@ -68,6 +68,31 @@
       src: url('../../assets/fonts/FirstTimeWriting!.ttf') format('truetype');
       font-weight: 400; font-style: normal; font-display: swap;
     }
+    @font-face {
+      font-family: 'Cormorant Garamond';
+      src: url('../../assets/fonts/CormorantGaramond-Light.ttf') format('truetype');
+      font-weight: 300; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Cormorant Garamond';
+      src: url('../../assets/fonts/CormorantGaramond-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Cormorant Garamond';
+      src: url('../../assets/fonts/CormorantGaramond-Medium.ttf') format('truetype');
+      font-weight: 500; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Cormorant Garamond';
+      src: url('../../assets/fonts/CormorantGaramond-SemiBold.ttf') format('truetype');
+      font-weight: 600; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Cormorant Garamond';
+      src: url('../../assets/fonts/CormorantGaramond-Bold.ttf') format('truetype');
+      font-weight: 700; font-style: normal; font-display: swap;
+    }
     :root {
       --bg:        #fafaf8;
       --surface:   #f3efe9;
@@ -739,25 +764,11 @@
 
   <div class="config-divider"></div>
 
-  <div class="config-group">
+  <!-- Functional-page checkboxes are generated from the active template's data
+       (buildLocalTemplateUI). Map pages are excluded until chunk-022 lands. -->
+  <div class="config-group" id="fp-config-group">
     <span class="config-label">Functional pages</span>
-    <div class="fp-group">
-      <label class="fp-checkbox-item">
-        <input type="checkbox" name="fp" value="FP1" /> Birthday wishes
-      </label>
-      <label class="fp-checkbox-item">
-        <input type="checkbox" name="fp" value="FP2" /> Funny words
-      </label>
-      <label class="fp-checkbox-item">
-        <input type="checkbox" name="fp" value="FP3" /> Favourite toy
-      </label>
-      <label class="fp-checkbox-item">
-        <input type="checkbox" name="fp" value="FP4" /> First steps
-      </label>
-      <label class="fp-checkbox-item">
-        <input type="checkbox" name="fp" value="FP5" /> Art gallery
-      </label>
-    </div>
+    <div class="fp-group" id="fp-group"></div>
   </div>
 
   <input type="file" id="photo-file-input" accept=".jpg,.jpeg,.heic,.heif" multiple hidden />
@@ -772,6 +783,12 @@
 
   <!-- Local mode controls -->
   <div id="local-mode-controls" style="display:flex;align-items:center;gap:8px;">
+    <!-- TEMP tester: pick which template to render with local photos. Order mode
+         derives the template from the loaded order instead. -->
+    <select class="config-select" id="template-select" title="Template (local testing)">
+      <option value="Scribble">Scribble</option>
+      <option value="Wander">Wander</option>
+    </select>
     <button class="config-export-btn" id="export-state-btn">Export State</button>
     <button class="config-upload-btn" id="upload-btn">+ Add Photos</button>
     <div class="config-photo-hint" id="config-photo-hint"></div>
@@ -1616,31 +1633,36 @@
     };
     canvas.appendChild(svgImg);
 
-    // Photo slot (center-based coords from CSV)
-    const slotDef = coverDef.slots[0];
+    // Photo slot (center-based coords from CSV). Only some templates have a cover
+    // photo — Wander's cover is free-text only (cover.slots === []), so skip the
+    // slot entirely when absent. Without this guard renderCover throws and the whole
+    // book (spreads included) fails to render.
     const COVER_BLEED_MM = 18;  // cover CSV coords include 18mm bleed on each side
-    const slotW   = slotDef.wMm * SCALE;
-    const slotH   = slotDef.hMm * SCALE;
-    const slotL   = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2;
-    const slotT   = (slotDef.yMm - COVER_BLEED_MM) * SCALE - slotH / 2;
+    const slotDef = coverDef.slots[0];
+    if (slotDef) {
+      const slotW   = slotDef.wMm * SCALE;
+      const slotH   = slotDef.hMm * SCALE;
+      const slotL   = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2;
+      const slotT   = (slotDef.yMm - COVER_BLEED_MM) * SCALE - slotH / 2;
 
-    const slot = document.createElement('div');
-    slot.className = 'photo-slot';
-    slot.style.cssText = `left:${slotL}px;top:${slotT}px;width:${slotW}px;height:${slotH}px;z-index:1;`;
+      const slot = document.createElement('div');
+      slot.className = 'photo-slot';
+      slot.style.cssText = `left:${slotL}px;top:${slotT}px;width:${slotW}px;height:${slotH}px;z-index:1;`;
 
-    const coverPhoto = (window.specialPhotos.cover || [])[0];
-    if (coverPhoto) {
-      const img = document.createElement('img');
-      img.className = 'slot-photo';
-      img.src = coverPhoto.url;
-      slot.appendChild(img);
-    } else {
-      const ph = document.createElement('div');
-      ph.className = 'slot-placeholder';
-      ph.textContent = 'Cover photo';
-      slot.appendChild(ph);
+      const coverPhoto = (window.specialPhotos.cover || [])[0];
+      if (coverPhoto) {
+        const img = document.createElement('img');
+        img.className = 'slot-photo';
+        img.src = coverPhoto.url;
+        slot.appendChild(img);
+      } else {
+        const ph = document.createElement('div');
+        ph.className = 'slot-placeholder';
+        ph.textContent = 'Cover photo';
+        slot.appendChild(ph);
+      }
+      canvas.appendChild(slot);
     }
-    canvas.appendChild(slot);
 
     // Captions — coords are with-bleed (18mm); subtract before converting to canvas px
     const savedCoverCaps = window.bookCaptions['cover'] || {};
@@ -1717,6 +1739,7 @@
   const COVER_FONTS = [
     { label: 'NT Somic',          value: 'NT Somic',          styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
     { label: 'EB Garamond',       value: 'EB Garamond',       styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Semi-Bold', weight: 600, italic: false }] },
+    { label: 'Cormorant Garamond', value: 'Cormorant Garamond', styles: [{ label: 'Light', weight: 300, italic: false }, { label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }, { label: 'Semi-Bold', weight: 600, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
     { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }], funnyWordsOnly: true },
   ];
 
@@ -2209,6 +2232,18 @@
           overlay.style.outline = '3px solid #e05252';
         };
         canvas.appendChild(overlay);
+      }
+
+      // ── TEMP map stub (chunk-022 blocked on Kseniia's SVG re-export) ──
+      // The Wander FP1 left page is the regional map + pins. That render is not
+      // wired yet (map-render.js exists + is smoke-tested, but the region SVGs
+      // need re-exporting and coordinates re-deriving). Until then, show a clear
+      // placeholder so the page isn't a confusing blank. Remove when wiring the map.
+      if (variant.mapCanvas) {
+        const stub = document.createElement('div');
+        stub.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#9a8f7e;font-family:system-ui,sans-serif;font-size:13px;line-height:1.6;padding:24px;z-index:1;';
+        stub.innerHTML = 'Travel map<br><span style="font-size:11px;opacity:0.7;">preview pending — pins render once<br>the region maps are finalised</span>';
+        canvas.appendChild(stub);
       }
 
       // Render photo slots
@@ -3328,15 +3363,17 @@
       Array.from(document.querySelectorAll('input[name="fp"]:checked')).map(cb => cb.value)
     );
     const panel = document.getElementById('special-panel');
-    // Cover zone always visible; FP zones shown per selection
-    const hasFP  = checked.has('FP1') || checked.has('FP3') || checked.has('FP4') || checked.has('FP5');
-    const needPanel = true; // cover zone is always present
-    panel.classList.toggle('visible', needPanel);
-    document.documentElement.style.setProperty('--special-h', needPanel ? '68px' : '0px');
-    document.getElementById('special-zone-cover').style.display = 'flex';
+    // Cover zone shown only when the active template has a cover photo slot
+    // (Scribble does; Wander's cover is free-text only).
+    const hasCoverPhoto = (getActiveTemplateData().cover?.slots || []).length > 0;
     ['FP1', 'FP3', 'FP4', 'FP5'].forEach(fp => {
       document.getElementById('special-zone-' + fp).style.display = checked.has(fp) ? 'flex' : 'none';
     });
+    document.getElementById('special-zone-cover').style.display = hasCoverPhoto ? 'flex' : 'none';
+    // Panel is needed if the cover photo zone or any FP zone is showing.
+    const needPanel = hasCoverPhoto || checked.has('FP1') || checked.has('FP3') || checked.has('FP4') || checked.has('FP5');
+    panel.classList.toggle('visible', needPanel);
+    document.documentElement.style.setProperty('--special-h', needPanel ? '68px' : '0px');
   }
 
   /* ── Photo count hint ── */
@@ -3388,13 +3425,46 @@
     }
   }
 
-  document.querySelectorAll('input[name="fp"]').forEach(cb => {
-    cb.addEventListener('change', () => {
-      updateSpecialPanel();
-      updatePhotoHint();
-      if (window.photoPool.length) renderBook();
+  /* ── Build local-mode UI from the active template's data (TEMP tester) ──
+     Generates the functional-page checkboxes from the template's functional
+     spreads (skipping map pages, not yet wired). The cover-photo zone visibility
+     is handled in updateSpecialPanel based on whether the cover has a photo slot. */
+  function buildLocalTemplateUI() {
+    const data  = getActiveTemplateData();
+    const group = document.getElementById('fp-group');
+    group.innerHTML = '';
+    const fps = Object.values(data.spreads || {})
+      .filter(s => s.type === 'functional' && !s.mapPage);
+    fps.forEach(fp => {
+      const label = document.createElement('label');
+      label.className = 'fp-checkbox-item';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.name = 'fp'; cb.value = fp.id;
+      cb.addEventListener('change', () => {
+        updateSpecialPanel();
+        updatePhotoHint();
+        if (window.photoPool.length) renderBook();
+      });
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(' ' + (fp.label || fp.id)));
+      group.appendChild(label);
     });
+    // Hide the whole group when the template has no (non-map) functional pages.
+    document.getElementById('fp-config-group').style.display = fps.length ? '' : 'none';
+  }
+
+  document.getElementById('template-select').addEventListener('change', e => {
+    setActiveTemplate(e.target.value);
+    // Reset per-template state so the previous template's special photos/captions
+    // don't leak into the new render.
+    window.specialPhotos = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
+    buildLocalTemplateUI();
+    updateSpecialPanel();
+    updatePhotoHint();
+    if (window.photoPool.length) renderBook();
   });
+
+  buildLocalTemplateUI(); // initial (default Scribble)
 
 
   /* ═══════════════════════════════════════════
@@ -3624,6 +3694,8 @@
         }
       }
       setActiveTemplate(order.templateName);
+      buildLocalTemplateUI(); // rebuild FP checkboxes for THIS order's template
+                              // (the local selector may have left a different set)
       await loadOrderIntoEngine(order);
       status.className = 'order-status';
       status.textContent = '';
