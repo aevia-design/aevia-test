@@ -35,6 +35,9 @@ node qa/staff-customer-chain.mjs
 | `probe-photos.mjs` | Read-only. Loads a public customer-preview token, waits generously, reports real photo-load state. Tells "product bug" from "screenshot timing". | no | template-agnostic |
 | `verify-completeness.mjs` | Read-only. Confirms `checkBookComplete` is wired and a known-complete book evaluates as complete. | no | template-agnostic |
 | `inspect-shapes.mjs` | Read-only. Dumps `customerBookAssignments` placed/null counts + DOM slot state for a token. Diagnoses empty-render / corrupted-fixture cases. | no | template-agnostic |
+| `map-smoke.mjs` | Screenshots all 6 Wander region maps (`qa/map-smoke.html`) with every pin via `map-render.js`. Verifies the region SVGs render + pins land. Artefacts → `sessions/qa-runs/map-smoke/`. | no | **Wander map** |
+| `order-map-preview.mjs` | Drives the Wander order form to the FP1 country-select and verifies the real region map + pins render in the order preview. | no | **Wander map** |
+| `map-tester.html` | Interactive (not a script — open `http://localhost:8080/qa/map-tester`): pick region, toggle countries, centre/tip anchor toggle. For eyeballing pin calibration. | no | **Wander map** |
 
 The read-only probes hardcode a sample token URL — override with
 `$env:QA_PREVIEW_URL` (or edit the literal in `inspect-shapes.mjs`).

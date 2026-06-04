@@ -344,10 +344,10 @@ _Goal: Staff tool accessible remotely; full 9-template catalogue ready for launc
 
 **Type:** feature
 **Component:** Staff engine + Customer preview + PDF export + Order form
-**Status:** pending
+**Status:** in-progress (S32: SVGs verified, coords synced, **order-form leg DONE** — real map+pins in `order.html`. Shared render in `assets/js/map-render.js`. **Remaining:** book render on engine + customer-preview + PDF — all 3 still on the S28 stub. Render bleed-fit: region SVGs carry 3mm bleed in viewBox, see LEARNINGS 2026-06-04.)
 **Size:** L
 **Depends on:** chunk-020
-**Files:** `pages/staff/template-engine.html`, `pages/customer-preview.html`, `scripts/export-pdf.js`, `pages/order.html`, `functions/`
+**Files:** `pages/staff/template-engine.html`, `pages/customer-preview.html`, `scripts/export-pdf.js`, `pages/order.html`, `assets/js/map-render.js`, `functions/`
 
 **Description:** New functional-page type reused across the Travel collection: a regional map (left) with location pins, and a staff-formatted itinerary (right). Customer selects a country (or several in one region); the region map auto-loads; a pin drops at each country's coordinates; staff format the customer's raw route into the itinerary panel. No photo upload on this page. Full design + data contract in `docs/briefs/wander-template.md` (Phase 3 + open decisions).
 

@@ -1,17 +1,28 @@
 # Session Status
-_Last updated: 2026-06-04 (session 31)_
+_Last updated: 2026-06-04 (session 32)_
 
 ## Status
+**Session 32 (2026-06-04) — chunk-022 (Travel map): re-uploaded region SVGs smoke-tested + the real map wired into the ORDER FORM. Map coordinates re-synced from the CSV. Committed + PUSHED (`ec6960a`). 85/85 tests; order-form map preview + all 6 regions browser-verified, 0 JS errors.**
+
+**What shipped:** (1) Re-uploaded region SVGs verified — all 6 maps render, pins land on countries (smoke test `qa/map-smoke.mjs`). Diagnosed edge-drift as a **bleed-viewBox** issue, not coordinates: region maps carry 3 mm bleed in their viewBox (`0 0 583.937` = 206 mm), so they must be rendered **bleed-fit** (overlay sized to 206 mm, offset −3 mm), NOT content-fit — see LEARNINGS 2026-06-04. (2) **`mapCoordinates` re-synced** from `Map_Coordinates_upd.csv` (with-bleed columns) — 69 stale coords corrected, 0 mismatches across 183 countries. The CSV is now **semicolon-delimited** (EU Excel export); the sync auto-detects the delimiter. (3) **Order-form map integrated** (`order.html` `renderRegionMap()`): replaced the region-name placeholder with the real region map + pins via shared `map-render.js`, live as the customer adds countries. Centre-anchored (Evgeny's choice). (4) New interactive tester `qa/map-tester.html` (pick region, toggle countries, anchor toggle).
+
+**⚠ Map render still on the S28 STUB in the BOOK** (engine + customer-preview + PDF) — only the order form draws the real map. A real Wander order's FP1 page is still blank-with-stub in those 3 surfaces. **Full Wander flow is NOT yet testable on live** (order form is, book render isn't). See `sessions/2026-06-04-s32.md`.
+
+### ▶ NEXT SESSION (Session 33) — chunk-022 book-render leg
+1. **Wire the real map into the book** — replace the stub at `template-engine.html:2257` (the `variant.mapCanvas` block) + the mirrored block in `customer-preview.html` + `scripts/export-pdf.js`. Reuse `map-render.js`. **Render bleed-fit** (206 mm overlay, −3 mm offset) — the region SVGs are NOT content-framed (LEARNINGS 2026-06-04). Read the FP1 selection from the order payload: `fpTexts.fp1 = {region, countries, itinerary}` (an **object**). Mirror engine↔customer per the engine-parity rule; PDF must reproduce map + pins identically.
+2. **Right page = itinerary** — render the `textPanel` (Cormorant 18 pt Light) over `FP 01 Map Right.svg` from `fpTexts.fp1.itinerary`, staff-editable.
+3. **Then mint + run a real Wander order** engine → customer → PDF (cover + SP0–SP6 + FP1 map). First true end-to-end Wander order.
+4. When all 3 surfaces render + a real order passes → **tell Evgeny the full Wander flow is live to test.**
+
+### Previous: Session 31
 **Session 31 (2026-06-04) — Wander order flow wired end-to-end; `order.html` made template-aware. Committed + PUSHED (`9182309`). 85/85 tests; both order forms browser-verified.** First dropped a proposed engine "de-hardcoding" as YAGNI (constants, not assumptions — see memory `project_dehardcoding_dropped`).
 
 **What shipped:** (1) `order.html` no longer hardwired to Scribble — resolves the active template via `TEMPLATE_REGISTRY`/`templateData()` (the 4th surface the chunk-020 seam missed). (2) Cover section **data-driven**: photo zone only if `cover.slots` non-empty (Wander = free-text, no cover photo); caption fields from `cover.captions` (`label`/`placeholder`/`maxLength`). (3) `wander.html` rebuilt onto the Scribble product-page pattern (real Travel-map FP1 addon, photo counter, correct `addons/addon_inputs/addon_slugs` param contract — was a dummy placeholder). (4) **FP1 country-select UI**: region-grouped multi-select, `sameRegionOnly` enforcement, itinerary text, labelled region placeholder; payload `fpTexts.fp1 = {region, countries, itinerary}`. (5) Cover-caption copy enriched from new CSV columns, **hand-synced** into both data files (no CSV→JS generator), Scribble form copy restored.
 
 **⚠ Map render still blocked** on Kseniia's region SVGs (chunk-022) — the order form captures country+itinerary now; engine/customer/PDF map page shows the S28 stub. Only blocked piece of a real Wander order. **A real Wander order has NOT yet been run engine→customer→PDF** (order form + parity browser-verified only). See `sessions/2026-06-04-s31.md`.
 
-### ▶ NEXT SESSION (Session 32)
-1. **Mint + run a real Wander order** through engine → customer preview → PDF (cover + SP0–SP6; map = stub). Confirms no crash on a free-text cover + 0-photo functional page from a real order payload. `fpTexts.fp1` is an **object** — staff side reads `{region, countries, itinerary}`.
-2. **chunk-022 (map page)** — still blocked on Kseniia's corrected region SVGs. When they land: render `maps[region]` SVG + drop pins from `mapCoordinates`, swap the order-form placeholder for the real region image.
-3. **(carried, unverified)** Browser-verify Session 30 features — original photo filenames (needs a fresh upload) + approve→pay `Pay now · €70` (AEV-023 unpaid €70 / AEV-027 paid). Flagged but deferred.
+### Carried (unverified, deferred since S30)
+- Browser-verify Session 30 features — original photo filenames (needs a fresh upload) + approve→pay `Pay now · €70` (AEV-023 unpaid €70 / AEV-027 paid). Flagged but deferred.
 
 ### Status (previous: Session 30)
 **Session 30 (2026-06-04) — built + shipped 2 approved features: original photo filenames (staff-visible) + approve→pay flow fix. Committed (`896dd78`) and PUSHED to main; Cloud Functions deployed + verified live. 85/85 tests.** First confirmed S29 was already fully shipped (STATUS was stale — `d83eb94` was committed/pushed + `getPdfUrl` deployed).

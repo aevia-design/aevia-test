@@ -1,3 +1,25 @@
+## 2026-06-04 — Wander region maps carry bleed IN the viewBox (render bleed-fit)
+
+Unlike Scribble spreads + the Wander cover (content-only viewBox, `0 0 566.93` = 200mm),
+the Wander **region map** SVGs (`FP 01 Map Left (*).svg`) are exported with 3mm bleed baked
+into the viewBox: `0 0 583.937 583.937` (= 206mm at 72dpi). N.America is a raster export
+(`0 0 4096 4096`, 206mm). The Right map (`FP 01 Map Right.svg`, `566.93`) is content-only.
+
+**Consequence:** if a region map is sized to the 200mm content canvas (width:100%), the
+206mm art is squashed → map at ~2.91 px/mm while pins are at 3 px/mm. Pins agree only at
+centre and drift OUTWARD at the edges (≤~3mm). Symptom: edge-country pins (Iceland, Spain,
+Turkey, Greenland…) sit off the landmass toward the canvas edge.
+
+**Fix (used in `order.html` `renderRegionMap()`):** render the map overlay **bleed-fit** —
+`width = height = (pageSize + 2·bleed)·scale` (206mm), offset `left = top = −bleed·scale`
+(−3mm). The canvas clips the bleed. Then map art and pins share one scale (3 px/mm) and pins
+land. `map-render.js` pin math already subtracts bleed for a content canvas — no pin change
+needed. **When wiring the book render (engine/customer-preview/PDF), do the same; do NOT
+content-fit region maps.** (Alternative would be asset-side: reframe the region viewBoxes to
+content like the cover fix — not done; bleed-fit rendering chosen instead.)
+
+Pin anchor convention: **centre** (coord = pin middle, not the teardrop tip).
+
 ## 2026-05-22 — Print provider PDF requirements (SUPERSEDED by 2026-05-27)
 
 **Content pages:** Each book page exported as its own PDF page (single pages, not spread pairs).
