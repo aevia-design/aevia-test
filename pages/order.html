@@ -190,6 +190,7 @@
   </style>
 <script src="../assets/Template_Scribble/scribble-data.js"></script>
 <script src="../assets/Template_Wander/wander-data.js"></script>
+<script src="../assets/js/map-render.js"></script>
 </head>
 <body>
 
@@ -775,7 +776,7 @@ function initFPSections() {
 // ─────────────────────────────────────────────────────────────────
 // FP1 country-select (Wander travel map page)
 // State: window._fpCountries[slug] = { region, countries: [] }
-// Region maps are placeholders until chunk-022 ships real region SVGs.
+// renderRegionMap() draws the real region map + pins (chunk-022) via map-render.js.
 // ─────────────────────────────────────────────────────────────────
 window._fpCountries = window._fpCountries || {};
 const REGION_LABELS = { 'EU': 'Europe', 'Asia': 'Asia', 'Africa': 'Africa', 'N.America': 'North America', 'S.America': 'South America', 'Oceania': 'Oceania' };
@@ -859,12 +860,43 @@ function renderRegionMap(slug) {
   if (!el) return;
   if (!state || !state.region) { el.innerHTML = ''; return; }
   const label = REGION_LABELS[state.region] || state.region;
-  // Placeholder region map — real region SVGs land with chunk-022; swap then.
+
+  const data    = templateData();
+  const fp1     = data?.spreads?.FP1;
+  const coords  = data?.mapCoordinates || {};
+  const svgPath = window.MapRender ? MapRender.resolveMapSvg(state.region, fp1) : null;
+
+  // Real region map + pins (shared map-render.js, same coords the book uses).
+  // Falls back to a labelled box if the map module/asset is unavailable.
+  if (!fp1 || !svgPath) {
+    el.innerHTML = `
+      <div style="position:relative;width:100%;aspect-ratio:2 / 1;border:1px solid var(--border);border-radius:6px;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+        <span style="font-family:var(--serif);font-size:22px;color:var(--muted);letter-spacing:0.04em;">${label}</span>
+        <span style="position:absolute;bottom:8px;right:12px;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);">Region map</span>
+      </div>`;
+    return;
+  }
+
+  // Square preview at the book's coordinate system: canvas = 200mm × scale.
+  // Region SVGs carry 3mm bleed in their viewBox, so the overlay is sized to
+  // 206mm and offset −3mm (the bleed is clipped by the canvas). Sized to the
+  // column width (capped) so it stays crisp without overflowing.
+  const ASSET_BASE = '../assets/Template_Wander/';
+  const W = Math.min(el.clientWidth || 360, 420);
+  const scale = W / (data.pageSize || 200);
+  const bleed = data.bleed != null ? data.bleed : 3;
+
   el.innerHTML = `
-    <div style="position:relative;width:100%;aspect-ratio:2 / 1;border:1px solid var(--border);border-radius:6px;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;">
-      <span style="font-family:var(--serif);font-size:22px;color:var(--muted);letter-spacing:0.04em;">${label}</span>
-      <span style="position:absolute;bottom:8px;right:12px;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);">Region map</span>
-    </div>`;
+    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Your map · ${label}</div>
+    <div id="map-canvas-${slug}" style="position:relative;width:${W}px;height:${W}px;border:1px solid var(--border);border-radius:6px;background:#f2ede3;overflow:hidden;"></div>`;
+
+  const canvas = document.getElementById(`map-canvas-${slug}`);
+  const overlay = document.createElement('img');
+  overlay.src = ASSET_BASE + svgPath;
+  overlay.alt = '';
+  overlay.style.cssText = `position:absolute;left:${-bleed * scale}px;top:${-bleed * scale}px;width:${(200 + bleed * 2) * scale}px;height:${(200 + bleed * 2) * scale}px;z-index:2;`;
+  canvas.appendChild(overlay);
+  MapRender.placeMapPins(canvas, state.countries, fp1, coords, { scale, bleedMm: bleed, assetBase: ASSET_BASE });
 }
 
 function initSpecialDragDrop() {

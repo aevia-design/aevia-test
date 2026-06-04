@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!-- chunk-022 map smoke: renders one region map the way the engine does
+     (200mm content canvas, SVG sized to fill) + drops every pin for that region.
+     Lets us eyeball whether the re-uploaded region SVGs are content-framed and
+     whether pins land on their countries. ?region=EU (default EU). -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Wander map smoke</title>
+  <style>
+    body { margin:0; background:#777; font-family:system-ui,sans-serif; }
+    /* 200mm content @ scale 3 = 600px, exactly like the engine page-canvas */
+    #canvas { position:relative; width:600px; height:600px; background:#f2ede3;
+              margin:20px; outline:1px solid #000; }
+    .svg-overlay { position:absolute; inset:0; width:100%; height:100%; z-index:2; }
+    #label { color:#fff; margin:20px; font-size:14px; }
+  </style>
+</head>
+<body>
+  <div id="label">…</div>
+  <div id="canvas"></div>
+
+  <script src="../assets/Template_Wander/wander-data.js"></script>
+  <script src="../assets/js/map-render.js"></script>
+  <script>
+    const ASSET_BASE = '../assets/Template_Wander/';
+    const region = new URLSearchParams(location.search).get('region') || 'EU';
+    const data   = window.WANDER_DATA;
+    const fp1    = data.spreads.FP1;
+    const coords = data.mapCoordinates;
+
+    // every country in this region
+    const countries = Object.keys(coords).filter(c => coords[c].region === region);
+
+    const canvas = document.getElementById('canvas');
+    const svgPath = MapRender.resolveMapSvg(region, fp1);
+
+    const overlay = document.createElement('img');
+    overlay.className = 'svg-overlay';
+    overlay.src = ASSET_BASE + svgPath;
+    overlay.onerror = () => { document.getElementById('label').textContent = 'SVG FAILED: ' + svgPath; };
+    overlay.onload  = () => { window.__svgLoaded = true; };
+    canvas.appendChild(overlay);
+
+    const placed = MapRender.placeMapPins(canvas, countries, fp1, coords, {
+      scale: 3, bleedMm: 3, assetBase: ASSET_BASE,
+    });
+
+    document.getElementById('label').textContent =
+      `region=${region}  map=${svgPath}  countries=${countries.length}  pins=${placed}`;
+    window.__pinsPlaced = placed;
+  </script>
+</body>
+</html>

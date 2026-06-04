@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<!-- chunk-022 INTERACTIVE map tester. Pick a region, toggle countries on/off,
+     watch pins drop live. Renders exactly like the engine (200mm content canvas,
+     SVG sized to fill, pins via map-render.js). For eyeballing pin calibration.
+     Open at: http://localhost:8080/qa/map-tester   (run `npx serve . -p 8080`) -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Wander map tester</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:system-ui,sans-serif; background:#3a3a3a; color:#eee;
+           display:flex; gap:24px; padding:24px; align-items:flex-start; }
+    /* 200mm content @ scale 3 = 600px — identical to the engine page-canvas */
+    #canvas { position:relative; width:600px; height:600px; background:#f2ede3;
+              outline:1px solid #000; flex:0 0 auto; }
+    /* Region maps are exported WITH 3mm bleed in the viewBox (206mm = 618px @ scale3).
+       Size the overlay to the bleed box, offset -9px, so map art and pins share one
+       scale (3px/mm). The 600px content canvas clips the bleed — as it should. */
+    .svg-overlay { position:absolute; left:-9px; top:-9px; width:618px; height:618px; z-index:2; }
+    #panel { width:300px; }
+    h1 { font-size:16px; margin:0 0 12px; }
+    select, button { font-size:14px; padding:6px 8px; }
+    .row { margin-bottom:12px; }
+    #countries { max-height:62vh; overflow:auto; border:1px solid #555; padding:8px;
+                 border-radius:6px; background:#2b2b2b; }
+    label.c { display:flex; align-items:center; gap:8px; padding:2px 0; font-size:13px;
+              cursor:pointer; }
+    label.c .xy { margin-left:auto; opacity:.5; font-variant-numeric:tabular-nums; }
+    .muted { opacity:.6; font-size:12px; }
+    #count { font-weight:600; }
+  </style>
+</head>
+<body>
+  <div id="canvas"></div>
+
+  <div id="panel">
+    <h1>Wander map tester</h1>
+    <div class="row">
+      Region:
+      <select id="region"></select>
+      <button id="all">All</button>
+      <button id="none">None</button>
+    </div>
+    <div class="row">
+      Pin anchor:
+      <select id="anchor">
+        <option value="center">centre (coord = pin middle)</option>
+        <option value="tip">tip (coord = pin point)</option>
+      </select>
+    </div>
+    <div class="row muted">Pins: <span id="count">0</span> &nbsp;·&nbsp; tick a country to drop its pin</div>
+    <div id="countries"></div>
+  </div>
+
+  <script src="../assets/Template_Wander/wander-data.js"></script>
+  <script src="../assets/js/map-render.js"></script>
+  <script>
+    const ASSET_BASE = '../assets/Template_Wander/';
+    const data   = window.WANDER_DATA;
+    const fp1    = data.spreads.FP1;
+    const coords = data.mapCoordinates;
+    const canvas = document.getElementById('canvas');
+    const regionSel = document.getElementById('region');
+    const list   = document.getElementById('countries');
+    const countEl = document.getElementById('count');
+
+    // distinct regions, in map order
+    const regions = [];
+    Object.values(coords).forEach(c => { if (!regions.includes(c.region)) regions.push(c.region); });
+    regions.forEach(r => regionSel.add(new Option(r, r)));
+
+    function countriesIn(region) {
+      return Object.keys(coords).filter(c => coords[c].region === region).sort();
+    }
+
+    function selectedCountries() {
+      return [...list.querySelectorAll('input:checked')].map(i => i.value);
+    }
+
+    // redraw the map + pins for whatever is currently ticked
+    function render() {
+      const region = regionSel.value;
+      canvas.innerHTML = '';
+      const overlay = document.createElement('img');
+      overlay.className = 'svg-overlay';
+      overlay.src = ASSET_BASE + MapRender.resolveMapSvg(region, fp1);
+      canvas.appendChild(overlay);
+      const placed = MapRender.placeMapPins(canvas, selectedCountries(), fp1, coords,
+        { scale: 3, bleedMm: 3, assetBase: ASSET_BASE });
+      // map-render.js centre-anchors; for the tip view, drop each pin by half its
+      // height so the teardrop point (not its middle) sits on the coordinate.
+      if (document.getElementById('anchor').value === 'tip') {
+        canvas.querySelectorAll('.map-pin').forEach(img => {
+          img.style.top = (parseFloat(img.style.top) - parseFloat(img.style.height) / 2) + 'px';
+        });
+      }
+      countEl.textContent = placed;
+    }
+
+    // rebuild the country checklist when the region changes
+    function buildList() {
+      const region = regionSel.value;
+      list.innerHTML = '';
+      countriesIn(region).forEach(name => {
+        const c = coords[name];
+        const lab = document.createElement('label');
+        lab.className = 'c';
+        lab.innerHTML = `<input type="checkbox" value="${name}" checked>
+                         <span>${name}</span>
+                         <span class="xy">${c.xMm},${c.yMm}</span>`;
+        lab.querySelector('input').addEventListener('change', render);
+        list.appendChild(lab);
+      });
+      render();
+    }
+
+    document.getElementById('all').onclick  = () => { list.querySelectorAll('input').forEach(i => i.checked = true);  render(); };
+    document.getElementById('none').onclick = () => { list.querySelectorAll('input').forEach(i => i.checked = false); render(); };
+    regionSel.addEventListener('change', buildList);
+    document.getElementById('anchor').addEventListener('change', render);
+    buildList();
+  </script>
+</body>
+</html>
