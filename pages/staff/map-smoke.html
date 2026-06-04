@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wander map — smoke test (chunk-022)</title>
+
+<!-- Template data + the shared map-render helper (same files the engine uses) -->
+<script src="../../assets/Template_Wander/wander-data.js"></script>
+<script src="../../assets/js/map-render.js"></script>
+
+<style>
+  /* Itinerary font — same static Cormorant the Wander template uses */
+  @font-face { font-family:'Cormorant Garamond'; font-weight:300; src:url('../../assets/fonts/CormorantGaramond-Light.ttf') format('truetype'); }
+  @font-face { font-family:'Cormorant Garamond'; font-weight:400; src:url('../../assets/fonts/CormorantGaramond-Regular.ttf') format('truetype'); }
+  @font-face { font-family:'Cormorant Garamond'; font-weight:500; src:url('../../assets/fonts/CormorantGaramond-Medium.ttf') format('truetype'); }
+  @font-face { font-family:'Cormorant Garamond'; font-weight:700; src:url('../../assets/fonts/CormorantGaramond-Bold.ttf') format('truetype'); }
+
+  :root { --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#f4f2ee; color:#1a1a1a; font-family:var(--sans); font-size:14px; }
+  header { padding:14px 22px; border-bottom:1px solid #e2ddd4; background:#fff; }
+  header h1 { margin:0; font-size:16px; font-weight:600; }
+  header p { margin:4px 0 0; color:#8a7f74; font-size:12px; }
+  .wrap { display:flex; gap:24px; padding:22px; align-items:flex-start; flex-wrap:wrap; }
+
+  /* Controls panel */
+  .controls { width:300px; flex-shrink:0; background:#fff; border:1px solid #e2ddd4; border-radius:8px; padding:16px; }
+  .controls h2 { font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:#8a7f74; margin:0 0 10px; }
+  .region-group { margin-bottom:12px; }
+  .region-group > .rg-label { font-size:11px; font-weight:600; color:#5a5249; margin-bottom:5px; }
+  .country-list { display:flex; flex-wrap:wrap; gap:4px 10px; max-height:150px; overflow:auto; padding:6px; border:1px solid #eee; border-radius:5px; }
+  .country-list label { display:flex; align-items:center; gap:4px; font-size:12px; width:46%; cursor:pointer; }
+  textarea { width:100%; min-height:110px; border:1px solid #ddd; border-radius:5px; padding:8px; font-family:var(--sans); font-size:13px; resize:vertical; }
+  button.render { margin-top:12px; width:100%; padding:10px; border:none; border-radius:6px; background:#262262; color:#fff; font-size:13px; cursor:pointer; }
+  button.render:hover { background:#1a1747; }
+  .status { margin-top:10px; font-size:12px; min-height:18px; }
+  .status.warn { color:#b8860b; }
+  .status.err  { color:#c0392b; }
+  .status.ok   { color:#3a7a3a; }
+
+  /* Spread — mirrors the engine: two 600×600 content-area canvases side by side */
+  .spread { display:flex; gap:2px; background:#cfc8bc; padding:2px; border-radius:4px; }
+  .page-canvas { position:relative; width:600px; height:600px; background:#f2ede3; overflow:hidden; flex-shrink:0; }
+  .page-canvas .svg-overlay { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:2; }
+  .map-pin { z-index:4; }
+  /* Itinerary panel — same maths/typography as the engine's .fp-text-panel */
+  .fp-text-panel { position:absolute; z-index:3; outline:none; white-space:pre-wrap; word-break:normal; overflow-wrap:break-word; }
+  .scale-note { font-size:11px; color:#8a7f74; margin-top:8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Wander map — smoke test</h1>
+  <p>Standalone harness for chunk-022. Pick countries + type a route → renders the FP1 spread via <code>assets/js/map-render.js</code> (the same helper the engine will call). No Firebase, no order.</p>
+</header>
+
+<div class="wrap">
+  <div class="controls">
+    <h2>1 · Countries</h2>
+    <div id="country-picker"></div>
+
+    <h2 style="margin-top:16px">2 · Itinerary</h2>
+    <textarea id="itinerary" placeholder="Vienna&#10;Hallstatt&#10;Salzburg&#10;Innsbruck"></textarea>
+
+    <button class="render" id="render-btn">Render spread</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div>
+    <div class="spread">
+      <div class="page-canvas" id="left-canvas"></div>
+      <div class="page-canvas" id="right-canvas"></div>
+    </div>
+    <div class="scale-note">Left = region map + pins · Right = itinerary panel. Canvas is 600×600px (200mm × 3px/mm), content-area only — matching the engine.</div>
+  </div>
+</div>
+
+<script>
+  const WANDER   = window.WANDER_DATA;
+  const FP1      = WANDER.spreads.FP1;
+  const COORDS   = WANDER.mapCoordinates;
+  const ASSET    = '../../assets/Template_Wander/';
+  const SCALE    = 3;
+  const BLEED_MM = 3;
+
+  // ── Build the country picker, grouped by region ──
+  (function buildPicker() {
+    const byRegion = {};
+    Object.entries(COORDS).forEach(([name, c]) => {
+      (byRegion[c.region] = byRegion[c.region] || []).push(name);
+    });
+    const host = document.getElementById('country-picker');
+    Object.keys(byRegion).forEach((region) => {
+      const grp = document.createElement('div');
+      grp.className = 'region-group';
+      grp.innerHTML = `<div class="rg-label">${region}</div>`;
+      const list = document.createElement('div');
+      list.className = 'country-list';
+      byRegion[region].sort().forEach((name) => {
+        const lab = document.createElement('label');
+        lab.innerHTML = `<input type="checkbox" value="${name}"> ${name}`;
+        list.appendChild(lab);
+      });
+      grp.appendChild(list);
+      host.appendChild(grp);
+    });
+  })();
+
+  function selectedCountries() {
+    return [...document.querySelectorAll('#country-picker input:checked')].map((el) => el.value);
+  }
+
+  function setStatus(msg, cls) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status ' + (cls || '');
+  }
+
+  // ── Render the itinerary text panel — mirrors the engine's .fp-text-panel maths ──
+  function renderItinerary(canvasEl, text) {
+    const cap = FP1.pages.right.default.textPanel.caption;
+    const w = cap.wMm * SCALE, h = cap.hMm * SCALE;
+    const panel = document.createElement('div');
+    panel.className = 'fp-text-panel';
+    panel.style.left      = ((cap.xMm - BLEED_MM) * SCALE - w / 2) + 'px';
+    panel.style.top       = ((cap.yMm - BLEED_MM) * SCALE - h / 2) + 'px';
+    panel.style.width     = w + 'px';
+    panel.style.height    = h + 'px';
+    panel.style.textAlign = cap.halign || 'center';
+    panel.style.fontFamily = `'${cap.font}', var(--sans)`;
+    panel.style.fontSize   = cap.sizePt + 'pt';
+    panel.style.lineHeight = cap.lineSpacing;
+    panel.style.letterSpacing = cap.letterSpacing + 'em';
+    panel.style.color = cap.color;
+    panel.style.fontWeight = cap.style === 'light' ? 300 : cap.style === 'bold' ? 700 : cap.style === 'medium' ? 500 : 400;
+    if (cap.valign === 'center') { panel.style.display='flex'; panel.style.flexDirection='column'; panel.style.justifyContent='center'; }
+    panel.textContent = text;
+    canvasEl.appendChild(panel);
+  }
+
+  document.getElementById('render-btn').addEventListener('click', () => {
+    const left  = document.getElementById('left-canvas');
+    const right = document.getElementById('right-canvas');
+    left.innerHTML = '';
+    right.innerHTML = '';
+
+    const countries = selectedCountries();
+    const { region, crossRegion, unknown } = MapRender.pickRegion(countries, COORDS);
+
+    if (!countries.length) { setStatus('Select at least one country.', 'warn'); return; }
+    if (crossRegion) {
+      setStatus(`Cross-region selection (${region} + others) — the order form will block this. Showing ${region} only.`, 'warn');
+    }
+
+    // Left page background = region map SVG, set at render time from maps[region]
+    const svgPath = MapRender.resolveMapSvg(region, FP1);
+    if (svgPath) {
+      const img = document.createElement('img');
+      img.className = 'svg-overlay';
+      img.src = ASSET + svgPath;
+      img.onerror = () => setStatus('Map SVG failed to load: ' + img.src, 'err');
+      left.appendChild(img);
+    }
+
+    // Pins on the left map
+    const placed = MapRender.placeMapPins(left, countries, FP1, COORDS, { scale: SCALE, bleedMm: BLEED_MM, assetBase: ASSET });
+
+    // Right page background + itinerary panel
+    const rImg = document.createElement('img');
+    rImg.className = 'svg-overlay';
+    rImg.src = ASSET + FP1.pages.right.default.svg;
+    right.appendChild(rImg);
+    renderItinerary(right, document.getElementById('itinerary').value);
+
+    if (!crossRegion) {
+      const extra = unknown.length ? ` (${unknown.length} unknown name${unknown.length>1?'s':''} skipped)` : '';
+      setStatus(`Rendered ${region}: ${placed} pin${placed!==1?'s':''} placed${extra}.`, 'ok');
+    }
+  });
+</script>
+</body>
+</html>
