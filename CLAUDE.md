@@ -17,6 +17,11 @@ Read these in order before doing anything:
 4. `sessions/<latest>.md` — recent decisions and watch-outs
 5. `docs/decisions/` — ADRs for key architectural choices
 
+## Session end
+Whenever you run **checkpoint** or **handover**, end your reply by telling the user
+which session just completed, e.g. "✅ Session 27 logged — start the next with
+'Session 28'." The session number comes from the latest `sessions/` log / STATUS.md.
+
 ---
 
 ## Key references
