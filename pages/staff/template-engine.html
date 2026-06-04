@@ -2270,6 +2270,9 @@
         let regularPoolIdx = null;   // pool index for regular photos (null for special) — used for the placement-warning badge
         if (slotDef.pool === 'special' || slotDef.pool === 'artwork') {
           isSpecialSlot = true;
+          // Record this position so checkBookComplete() doesn't count its (intentional)
+          // null assignment as an empty slot. Mirrors customer-preview.html.
+          (window._specialSlots = window._specialSlots || []).push(`${spreadIndex}:${side}:${slotIdx}`);
           const spKey = spreadId; // e.g. 'FP3', 'FP4', 'FP5'
           const spArr = window.specialPhotos[spKey] || [];
           // Artwork spreads (FP5) place one photo per PAGE — left = artwork 0,
@@ -3022,6 +3025,11 @@
     // customer-preview.html). renderSpread() pushes a {spread, side} per editable
     // text panel; the save-time completeness check requires exactly those.
     window._requiredCaptions = [];
+
+    // Reset special/artwork slot positions (mirrors customer-preview.html). Their
+    // bookAssignments entry is intentionally null (photo comes from specialPhotos), so
+    // checkBookComplete must not count them as empty. renderSpread() pushes one key each.
+    window._specialSlots = [];
 
     const pool = window.photoPool;
     if (!pool.length) {
@@ -4018,6 +4026,7 @@
       photoPool:        window.photoPool,
       requiredCaptions: window._requiredCaptions,
       bookCaptions:     window.bookCaptions,
+      specialSlots:     window._specialSlots,
     });
 
     if (!completeness.complete) {

@@ -12,24 +12,36 @@
 //      shows the user — requiredCaptions lists exactly those; captions the layout never
 //      asks for are ignored)
 //
+// Special/artwork slots (FP pages) are intentionally null in bookAssignments — their
+// photo comes from specialPhotos at order time, not the pool — so they must NOT count
+// as empty. The render records their positions in specialSlots; we skip those here.
+//
 // Inputs (all optional; missing → treated as empty):
 //   bookAssignments  { [spread]: { left:[idx|null...], right:[idx|null...] } }
 //   photoPool        [ { name, duplicate? } ]   — indices match the slot values above
 //   requiredCaptions [ { spread, side } ]       — where an editable caption box is shown
 //   bookCaptions     { [spread]: { [side]: { textPanel: 'text' } } }
+//   specialSlots     [ "spread:side:slotIdx" ]  — slots filled from specialPhotos, not the pool
 //
 // Returns { complete: boolean, reasons: string[] }.
 
-function checkBookComplete({ bookAssignments = {}, photoPool = [], requiredCaptions = [], bookCaptions = {} } = {}) {
+function checkBookComplete({ bookAssignments = {}, photoPool = [], requiredCaptions = [], bookCaptions = {}, specialSlots = [] } = {}) {
   const reasons = [];
+  const specialSet = new Set(specialSlots || []);
 
   // 1. Empty slots + collect which pool indices are placed (for the unplaced check).
+  //    A null in a special/artwork slot is expected (photo comes from specialPhotos), so skip it.
   let emptySlots = 0;
   const placed = new Set();
-  Object.values(bookAssignments || {}).forEach(asgn => {
-    [...((asgn && asgn.left) || []), ...((asgn && asgn.right) || [])].forEach(idx => {
-      if (idx === null || idx === undefined) emptySlots++;
-      else placed.add(idx);
+  Object.entries(bookAssignments || {}).forEach(([spread, asgn]) => {
+    ['left', 'right'].forEach(side => {
+      ((asgn && asgn[side]) || []).forEach((idx, slotIdx) => {
+        if (idx === null || idx === undefined) {
+          if (!specialSet.has(`${spread}:${side}:${slotIdx}`)) emptySlots++;
+        } else {
+          placed.add(idx);
+        }
+      });
     });
   });
 

@@ -657,7 +657,7 @@ exports.getPdfUrl = functions
       const { Storage } = require('@google-cloud/storage');
       const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
       const bucket = storage.bucket('aevia-uploads.firebasestorage.app');
-      const gcsPath = `${folderName}/pdfs/${type}.pdf`;
+      const gcsPath = `${folderName}/pdfs/${orderNumber}_${type}.pdf`;
 
       // Check if file exists
       const [exists] = await bucket.file(gcsPath).exists();

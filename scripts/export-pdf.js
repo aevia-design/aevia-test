@@ -1086,7 +1086,7 @@ async function main() {
 
     if (orderNumber) {
       // Order mode: GCS is the system of record — upload directly, keep no local copy.
-      await uploadAndSignPdf(pdfBytes, `${folderName}/pdfs/preview.pdf`, 'preview.pdf');
+      await uploadAndSignPdf(pdfBytes, `${folderName}/pdfs/${orderNumber}_preview.pdf`, `${orderNumber}_preview.pdf`);
     } else {
       // Local (--photos) mode: write to disk for manual inspection.
       const outPath = path.join(outDir, 'preview.pdf');
@@ -1116,7 +1116,7 @@ async function main() {
         }
 
         const mergedBytes = await mergedDoc.save();
-        await uploadAndSignPdf(mergedBytes, `${folderName}/pdfs/print.pdf`, 'print.pdf');
+        await uploadAndSignPdf(mergedBytes, `${folderName}/pdfs/${orderNumber}_print.pdf`, `${orderNumber}_print.pdf`);
       }
     }
   }

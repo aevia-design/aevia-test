@@ -22,7 +22,24 @@
       "Bash(curl -sL \"https://api.github.com/repos/google/fonts/contents/ofl/cormorantgaramond\")",
       "Bash(node -e ' *)",
       "Bash(git log *)",
-      "Bash(git rev-list *)"
+      "Bash(git rev-list *)",
+      "Bash(git merge *)",
+      "Bash(git stash *)",
+      "Bash(git rm *)",
+      "Bash(git reset *)",
+      "Bash(node --check scripts/export-pdf.js)",
+      "Bash(npm test *)",
+      "Bash(cd \"assets/Template_Wander\" && echo \"=== folder tree ===\" && find . -maxdepth 2 -type d && echo \"\" && echo \"=== FP Spread 1 files ===\" && ls -la \"FP Spread 1/\" 2>/dev/null && echo \"\" && echo \"=== Special Files \\(pin\\) ===\" && ls -la \"FP Spread 1 - Special Files/\" 2>/dev/null && echo \"\" && echo \"=== fonts ===\" && ls -la ../fonts/ 2>/dev/null | grep -i cormorant)",
+      "Read(//c/Users/evgmy/**)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\); console.log\\('jest:', !!\\(p.devDependencies&&p.devDependencies.jest\\)||!!\\(p.dependencies&&p.dependencies.jest\\)\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts\\)\\); console.log\\('jest dep:', \\(p.devDependencies||{}\\).jest||\\(p.dependencies||{}\\).jest\\)\")",
+      "Bash(curl -s -o /dev/null -w \"clean URL HTTP %{http_code}\\\\n\" \"http://localhost:8081/pages/staff/map-smoke\")",
+      "Bash(curl -s -o /dev/null -w \"helper HTTP %{http_code}\\\\n\" \"http://localhost:8081/assets/js/map-render.js\")",
+      "Bash(curl -s -o /dev/null -w \"EU map HTTP %{http_code}\\\\n\" \"http://localhost:8081/assets/Template_Wander/FP%20Spread%201/FP%2001%20Map%20Left%20\\(EU\\).svg\")",
+      "Bash(pkill -f \"serve . -p 8081\")",
+      "Bash(grep -n \"FONT_FILE_MAP\\\\|_\\\\${\\\\|style\\\\b\\\\|\\\\.style\\\\|toLowerCase\" scripts/export-pdf.js)",
+      "Bash(pkill -f \"serve . -p 8080\")",
+      "Bash(rm -f qa/_seqshot.mjs qa/_seqcheck.mjs)"
     ]
   },
   "hooks": {

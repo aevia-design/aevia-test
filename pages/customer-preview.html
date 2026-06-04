@@ -818,6 +818,8 @@
   window.specialPhotos      = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
   window.bookAssignments    = {};
   window.bookCaptions       = {};
+  // Shown when a customer tries to move/remove/replace a Story-page photo (fixed at order time).
+  const SPECIAL_LOCK_MSG = 'This photo was chosen for your Story page when you ordered, so it can’t be moved here. Contact us if you’d like to change it.';
   window.spreadCaptionStyles = {};
   window.heartCrop          = {};   // { photoName: { x, y } } — staff-set object-position % for the heart slot (read-only here)
   window.orderData          = null;
@@ -1327,6 +1329,7 @@
     // mirroring template-engine.html. Without this guard renderCover throws.
     const slotDef = coverDef.slots[0];
     if (slotDef) {
+      const COVER_BLEED_MM = 18;  // cover CSV coords include 18mm bleed on each side
       const slotW = slotDef.wMm * SCALE;
       const slotH = slotDef.hMm * SCALE;
       const slotL = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2;
@@ -1410,6 +1413,12 @@
     // renderSpread() below pushes a {spread, side} wherever it shows an editable text
     // panel — checkBookComplete() uses this to require exactly those captions.
     window._requiredCaptions = [];
+
+    // Reset the list of special/artwork slots (Story pages). Their bookAssignments entry
+    // is intentionally null (photo comes from specialPhotos, provided at order time), so
+    // checkBookComplete must NOT count them as empty. renderSpread() pushes one
+    // "spread:side:slotIdx" key per special slot below.
+    window._specialSlots = [];
 
     // Render the physical cover first
     const coverRow = renderCover();
@@ -1551,7 +1560,7 @@
     header.appendChild(title);
     const typeTag = document.createElement('div');
     typeTag.className = 'spread-type-tag' + (spreadId.startsWith('FP') ? ' fp' : '');
-    typeTag.textContent = spreadId.startsWith('FP') ? 'Functional' : 'Standard';
+    typeTag.textContent = spreadId.startsWith('FP') ? 'Story page' : 'Standard';
     header.appendChild(typeTag);
     row.appendChild(header);
 
@@ -1639,6 +1648,9 @@
         let isSpecialSlot = false;
         if (slotDef.pool === 'special' || slotDef.pool === 'artwork') {
           isSpecialSlot = true;
+          // Record this position so checkBookComplete() doesn't count its (intentional)
+          // null assignment as an empty slot. Mirrors the staff engine.
+          (window._specialSlots = window._specialSlots || []).push(`${spreadIndex}:${side}:${slotIdx}`);
           const spArr = window.specialPhotos[spreadId] || [];
           // Artwork spreads (FP5): left page = artwork 0, right page = artwork 1.
           // Each page has one slot (slotIdx 0), so index by side, not slotIdx.
@@ -1682,19 +1694,19 @@
             img.style.objectPosition = hc.x + '% ' + hc.y + '%';
           }
           slotEl.appendChild(img);
-          slotEl.draggable = true;
-          slotEl.addEventListener('dragstart', e => {
-            e.stopPropagation();
-            window._dragType = 'slot';
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', JSON.stringify({
-              type: 'slot', spreadIndex, side, slotIdx
-            }));
-            slotEl.classList.add('dragging');
-          });
-          slotEl.addEventListener('dragend', () => { window._dragType = null; slotEl.classList.remove('dragging'); });
-          // Double-click returns the photo to the unplaced sidebar (pool photos only).
           if (!isSpecialSlot) {
+            slotEl.draggable = true;
+            slotEl.addEventListener('dragstart', e => {
+              e.stopPropagation();
+              window._dragType = 'slot';
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', JSON.stringify({
+                type: 'slot', spreadIndex, side, slotIdx
+              }));
+              slotEl.classList.add('dragging');
+            });
+            slotEl.addEventListener('dragend', () => { window._dragType = null; slotEl.classList.remove('dragging'); });
+            // Double-click returns the photo to the unplaced sidebar (pool photos only).
             slotEl.addEventListener('dblclick', () => {
               const asgn = window.bookAssignments[spreadIndex];
               if (!asgn || !asgn[side]) return;
@@ -1702,6 +1714,11 @@
               rerenderSpread(spreadIndex);
               renderPhotoSidebar();
             });
+          } else {
+            // Story-page photos are fixed — chosen at order time, not from the rearrangeable
+            // pool. Customers can't move, remove, or replace them here. Explain on interaction.
+            slotEl.style.cursor = 'not-allowed';
+            slotEl.addEventListener('dblclick', () => showToast(SPECIAL_LOCK_MSG));
           }
         } else {
           const ph = document.createElement('div');
@@ -1710,17 +1727,23 @@
           slotEl.appendChild(ph);
         }
 
-        slotEl.addEventListener('dragover', e => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          slotEl.classList.add('drag-over');
-        });
-        slotEl.addEventListener('dragleave', () => slotEl.classList.remove('drag-over'));
-        slotEl.addEventListener('drop', e => {
-          e.preventDefault();
-          slotEl.classList.remove('drag-over');
-          handleSlotDrop(e, spreadIndex, side, slotIdx);
-        });
+        if (!isSpecialSlot) {
+          slotEl.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            slotEl.classList.add('drag-over');
+          });
+          slotEl.addEventListener('dragleave', () => slotEl.classList.remove('drag-over'));
+          slotEl.addEventListener('drop', e => {
+            e.preventDefault();
+            slotEl.classList.remove('drag-over');
+            handleSlotDrop(e, spreadIndex, side, slotIdx);
+          });
+        } else {
+          // Story-page slots reject drops — the photo is fixed. Show why, don't place.
+          slotEl.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'none'; });
+          slotEl.addEventListener('drop', e => { e.preventDefault(); showToast(SPECIAL_LOCK_MSG); });
+        }
 
         canvas.appendChild(slotEl);
 
@@ -2341,6 +2364,7 @@
       photoPool:        window.photoPool,
       requiredCaptions: window._requiredCaptions,
       bookCaptions:     window.bookCaptions,
+      specialSlots:     window._specialSlots,
     });
     if (!completeness.complete) {
       showToast('Your book isn’t ready to approve yet — ' + completeness.reasons.join(', ') +

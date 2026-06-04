@@ -105,6 +105,43 @@ describe('checkBookComplete — required captions', () => {
   });
 });
 
+// ── special-page slots (FP / Story pages) ──────────────────────────────────────
+// A special slot's bookAssignments entry is intentionally null — its photo comes from
+// specialPhotos at order time, not the rearrangeable pool. The render records each
+// position in specialSlots; checkBookComplete must NOT count those nulls as empty.
+describe('checkBookComplete — special-page slots', () => {
+  test('a null in a special slot does NOT count as empty when listed in specialSlots', () => {
+    const b = fullBook();
+    b.bookAssignments[1].right = [null];          // FP1-style special slot, photo from specialPhotos
+    b.photoPool = pool(3);                        // only indices 0,1,2 are pool photos (all placed)
+    b.specialSlots = ['1:right:0'];
+    const res = checkBookComplete(b);
+    expect(res.complete).toBe(true);
+    expect(res.reasons).toEqual([]);
+  });
+
+  test('a null NOT listed in specialSlots still counts as empty (regular slot)', () => {
+    const b = fullBook();
+    b.bookAssignments[1].right = [null];
+    b.photoPool = pool(3);                        // indices 0,1,2 placed → null is the only problem
+    b.specialSlots = ['0:left:0'];                // some other slot is special; this null is real
+    const res = checkBookComplete(b);
+    expect(res.complete).toBe(false);
+    expect(res.reasons.some(r => /empty photo slot/i.test(r))).toBe(true);
+  });
+
+  test('special slots do not affect the unplaced-photo check', () => {
+    const b = fullBook();
+    b.bookAssignments[1].right = [null];
+    b.specialSlots = ['1:right:0'];
+    b.photoPool = pool(5);                        // index 4 genuinely unplaced
+    const res = checkBookComplete(b);
+    expect(res.complete).toBe(false);
+    expect(res.reasons.some(r => /unplaced/i.test(r))).toBe(true);
+    expect(res.reasons.some(r => /empty photo slot/i.test(r))).toBe(false);
+  });
+});
+
 // ── multiple problems ─────────────────────────────────────────────────────────
 describe('checkBookComplete — multiple problems', () => {
   test('reports every category of problem at once', () => {
