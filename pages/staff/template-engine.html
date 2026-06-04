@@ -623,6 +623,22 @@
       background: #e8dfd0;
       z-index: 1;
     }
+    /* Placement-warning badge: small, top-right, intentionally subtle so it flags
+       without distracting from the layout. Staff-only (engine, not customer). */
+    .placement-warn-badge {
+      position: absolute;
+      top: 5px; right: 5px;
+      width: 17px; height: 17px;
+      border-radius: 50%;
+      background: rgba(201, 138, 42, 0.85);
+      color: #fff;
+      font-size: 10px; line-height: 17px;
+      text-align: center;
+      z-index: 4;
+      pointer-events: auto;
+      cursor: help;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
     .photo-slot img.slot-photo {
       width: 100%; height: 100%;
       object-fit: cover;
@@ -2251,6 +2267,7 @@
         // Resolve photo — special/artwork pools pull from window.specialPhotos, not the main pool
         let photo = null;
         let isSpecialSlot = false;
+        let regularPoolIdx = null;   // pool index for regular photos (null for special) — used for the placement-warning badge
         if (slotDef.pool === 'special' || slotDef.pool === 'artwork') {
           isSpecialSlot = true;
           const spKey = spreadId; // e.g. 'FP3', 'FP4', 'FP5'
@@ -2263,6 +2280,7 @@
           photo = spArr[photoIdx] || null;
         } else {
           const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
+          regularPoolIdx = poolIdx;
           photo = poolIdx !== null ? window.photoPool[poolIdx] : null;
         }
 
@@ -2300,6 +2318,17 @@
             slotEl.title = 'Failed to load: ' + photo.name;
           };
           slotEl.appendChild(img);
+
+          // Placement-warning badge (staff-only): logPlacementAudit (run just before
+          // this loop) flags photos that landed out of date order. Mark them on the
+          // book so staff see WHERE without reading the log. Not in customer-preview.
+          if (regularPoolIdx !== null && window._placementWarnPoolIdx && window._placementWarnPoolIdx.has(regularPoolIdx)) {
+            const badge = document.createElement('div');
+            badge.className = 'placement-warn-badge';
+            badge.textContent = '⚠';
+            badge.title = 'Out of date order — a later photo sits before this one. Review for a swap.';
+            slotEl.appendChild(badge);
+          }
 
           // Heart-mask slot: apply saved crop offset and let staff drag the photo to
           // reposition it inside the heart (so the heart's pinched top/bottom never
@@ -2896,49 +2925,39 @@
     const anyNumbered = pool.some(p => typeof filenameNumber === 'function' && filenameNumber(p.name) !== null);
     const sortMethod = allDated ? 'EXIF date' : anyNumbered ? 'filename number' : 'upload order';
 
-    dbLog(`── PLACEMENT AUDIT — sort: ${sortMethod} · ${r} photo(s) ──`, 'info');
-
+    // Collect the photos that landed out of date order. The detail (which photo,
+    // which spread) is shown ON THE BOOK as a ⚠ badge — see _placementWarnPoolIdx
+    // consumed in renderSpread — so the log only needs a one-line summary.
+    window._placementWarnPoolIdx = new Set();
     let prevRank = -1, breaks = 0;
+    const warnSpreads = [];   // 1-based spread numbers that have a flagged photo
+
     sequence.forEach((spreadId, si) => {
       const spreadDef = getActiveTemplateData().spreads[spreadId];
       if (!spreadDef) return;
       const asgn = window.bookAssignments[si] || { left: [], right: [] };
-      const label = `Spread ${String(si + 1).padStart(2, '0')}  ${spreadId.padEnd(4)}`;
-
-      // Special pages: show but don't order-check (they use special pools).
-      if (spreadId.startsWith('FP')) {
-        const hasRegular = ['left', 'right'].some(s => (asgn[s] || []).some(x => x !== null && x !== undefined));
-        if (!hasRegular) { dbLog(`${label}  ${spreadDef.label || 'special'} · special page`, 'muted'); return; }
-      }
-
-      const parts = [];
       let spreadHasBreak = false;
       ['left', 'right'].forEach(side => {
-        const sideTag = side === 'left' ? 'L' : 'R';
-        (asgn[side] || []).forEach((idx, slot) => {
+        (asgn[side] || []).forEach(idx => {
           if (idx === null || idx === undefined) return;
-          const p = pool[idx] || {};
-          const name = (p.name || '?').split('/').pop();
-          const o = (p.orientation || '?').charAt(0).toUpperCase();
-          let tag = `${sideTag}${slot + 1} ${name} (${o})`;
           const rk = rank[idx];
-          // Only flag BACKWARD moves: a photo placed after a higher-ranked one
-          // (a genuine inversion worth a swap). Forward skips are almost always
-          // benign — the skipped photo was already used earlier, or sits on a
-          // later page — and flagging them buries the real inversions in noise.
+          // Only flag BACKWARD moves: a photo placed after a higher-ranked (later)
+          // one — a genuine inversion worth a swap. Forward skips are benign.
           if (rk !== undefined && prevRank !== -1 && rk < prevRank) {
             breaks++; spreadHasBreak = true;
-            tag += `  ⚠ back ${rk - prevRank}`;
+            window._placementWarnPoolIdx.add(idx);
           }
           if (rk !== undefined) prevRank = rk;
-          parts.push(tag);
         });
       });
-      if (parts.length) dbLog(`${label}  ${parts.join('   ')}`, spreadHasBreak ? 'warn' : 'muted');
+      if (spreadHasBreak) warnSpreads.push(si + 1);
     });
 
-    if (breaks) dbLog(`Placement audit: ${breaks} out-of-order placement(s) — ⚠ a photo sits after a later one (usually because a single-slot page took the leftover after a multi-slot page filled first). Review those for swaps.`, 'warn');
-    else dbLog('Placement audit: photos placed in perfect chronological order ✓', 'info');
+    if (breaks) {
+      dbLog(`Sequencing: ${r} photos in date order, ${breaks} nudged out of order (spread${warnSpreads.length > 1 ? 's' : ''} ${warnSpreads.join(', ')}) — marked ⚠ on the book; review for swaps.`, 'warn');
+    } else {
+      dbLog(`Sequencing: all ${r} photos in date order ✓`, 'info');
+    }
   }
 
   /* ═══════════════════════════════════════════
