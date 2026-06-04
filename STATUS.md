@@ -1,7 +1,19 @@
 # Session Status
-_Last updated: 2026-06-04 (session 30)_
+_Last updated: 2026-06-04 (session 31)_
 
 ## Status
+**Session 31 (2026-06-04) — Wander order flow wired end-to-end; `order.html` made template-aware. Committed + PUSHED (`9182309`). 85/85 tests; both order forms browser-verified.** First dropped a proposed engine "de-hardcoding" as YAGNI (constants, not assumptions — see memory `project_dehardcoding_dropped`).
+
+**What shipped:** (1) `order.html` no longer hardwired to Scribble — resolves the active template via `TEMPLATE_REGISTRY`/`templateData()` (the 4th surface the chunk-020 seam missed). (2) Cover section **data-driven**: photo zone only if `cover.slots` non-empty (Wander = free-text, no cover photo); caption fields from `cover.captions` (`label`/`placeholder`/`maxLength`). (3) `wander.html` rebuilt onto the Scribble product-page pattern (real Travel-map FP1 addon, photo counter, correct `addons/addon_inputs/addon_slugs` param contract — was a dummy placeholder). (4) **FP1 country-select UI**: region-grouped multi-select, `sameRegionOnly` enforcement, itinerary text, labelled region placeholder; payload `fpTexts.fp1 = {region, countries, itinerary}`. (5) Cover-caption copy enriched from new CSV columns, **hand-synced** into both data files (no CSV→JS generator), Scribble form copy restored.
+
+**⚠ Map render still blocked** on Kseniia's region SVGs (chunk-022) — the order form captures country+itinerary now; engine/customer/PDF map page shows the S28 stub. Only blocked piece of a real Wander order. **A real Wander order has NOT yet been run engine→customer→PDF** (order form + parity browser-verified only). See `sessions/2026-06-04-s31.md`.
+
+### ▶ NEXT SESSION (Session 32)
+1. **Mint + run a real Wander order** through engine → customer preview → PDF (cover + SP0–SP6; map = stub). Confirms no crash on a free-text cover + 0-photo functional page from a real order payload. `fpTexts.fp1` is an **object** — staff side reads `{region, countries, itinerary}`.
+2. **chunk-022 (map page)** — still blocked on Kseniia's corrected region SVGs. When they land: render `maps[region]` SVG + drop pins from `mapCoordinates`, swap the order-form placeholder for the real region image.
+3. **(carried, unverified)** Browser-verify Session 30 features — original photo filenames (needs a fresh upload) + approve→pay `Pay now · €70` (AEV-023 unpaid €70 / AEV-027 paid). Flagged but deferred.
+
+### Status (previous: Session 30)
 **Session 30 (2026-06-04) — built + shipped 2 approved features: original photo filenames (staff-visible) + approve→pay flow fix. Committed (`896dd78`) and PUSHED to main; Cloud Functions deployed + verified live. 85/85 tests.** First confirmed S29 was already fully shipped (STATUS was stale — `d83eb94` was committed/pushed + `getPdfUrl` deployed).
 
 **Feature #1 — original photo filenames (Option B):** staff see each pool photo by the customer's **original filename**; chronological sort fallback uses those numbers; customer side **hides** filenames. `upload.js` persists `photoManifest.poolOriginalNames[]` (parallel to `pool[]`); `getOrder` returns it; `comparePhotos` (shared, tested) sorts by `displayName||name`; staff engine attaches `displayName` on order load + shows it in the sidebar. Internal key `photo_NNN` untouched → save/load zero-risk. Legacy orders fall back to `photo_NNN`. **Real names only appear on a fresh upload — not yet seen in browser.**
@@ -11,11 +23,11 @@ _Last updated: 2026-06-04 (session 30)_
 ### ⚠ CARRIED-FORWARD UNVERIFIED (Session 30 features — shipped + deployed, NOT browser-verified)
 Both S30 features (original photo filenames; approve→pay flow / `Pay now · €70`) are live on `main` but were **never confirmed working in a browser**. S31 chose to push on Wander instead; these still need a visual pass before being trusted. See items 1–2 below.
 
-### ▶ NEXT SESSION (Session 31)
-1. **Visual-verify Feature #2** on AEV-023 (approved, unpaid, €70 — token in S30 log): expect `Pay now · €70`, stepper `✓ Review ✓ Approve **Pay**`, forward copy. AEV-027 (paid): all-done stepper + "Payment received". (AEV-023 is a corrupted *book* fixture but action-bar UI is status-driven → still valid.)
-2. **Verify Feature #1 with a fresh upload** — only way to see real `IMG_xxxx` names staff-side + sort by them. Old orders only prove the fallback (`poolOriginalNames:[]`, confirmed).
-3. **De-hardcoding → template contract** (Evgeny's architecture ask): engine still hardcodes Scribble-shaped values (cover canvas `1227×600` in CSS, gradient fallbacks, bleed). Data file = single source of truth; migrate one value at a time, Scribble-parity-gated. See memory `project_adding_templates` + `project_bleed_model`.
-4. **chunk-022 (map page)** — still blocked on Kseniia's corrected region SVGs. **Finish chunk-010** — wire Wander product page end-to-end.
+### Session 30 follow-ups (status after S31)
+1. **Visual-verify Feature #2** on AEV-023 (approved, unpaid, €70 — token in S30 log): expect `Pay now · €70`, stepper `✓ Review ✓ Approve **Pay**`, forward copy. AEV-027 (paid): all-done stepper + "Payment received". — _still unverified (carried to S32)._
+2. **Verify Feature #1 with a fresh upload** — only way to see real `IMG_xxxx` names staff-side. — _still unverified (carried to S32)._
+3. ~~De-hardcoding → template contract~~ — **DROPPED S31 as YAGNI** (constants, not assumptions; see memory `project_dehardcoding_dropped`).
+4. ~~Finish chunk-010 — wire Wander product page end-to-end~~ — **DONE S31** (order flow wired; map render still blocked on chunk-022 SVGs).
 
 ### Session 26 status
 **Session 26 (2026-06-03) — chunk-020 (multi-template engine seam) BUILT + VERIFIED + committed (`374af3d`, not pushed).** The staff engine, customer-preview, and `export-pdf.js` now resolve template data + asset base from a `TEMPLATES` **registry** keyed by the order's `templateName` (lowercased), instead of being hardwired to `SCRIBBLE_DATA`. Adding a template = one registry entry per the 3 surfaces; unknown/missing names fall back to Scribble. **Real bug caught:** product pages send a capitalised name (`'Scribble'`/`'Wander'`) — the registry lowercases before lookup, so Wander orders won't silently render as Scribble (the literal-match version would have). Verified Scribble renders byte-identically on staff engine + customer-preview in browser; 73/73 tests. PDF leg deferred. Convention saved to memory `project_template_seam.md`. **Session also recovered a stale-checkout git mess** (local `main` was 6 behind origin/main with a leftover settings.local.json conflict) by fast-forwarding to S25 — nothing lost.

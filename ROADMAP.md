@@ -370,7 +370,7 @@ _Goal: Staff tool accessible remotely; full 9-template catalogue ready for launc
 
 **Type:** feature
 **Component:** Template data + product page
-**Status:** in-progress (S28: Cormorant registered on all 3 surfaces + picker; Wander renders end-to-end in the staff engine via the local template selector; cover bleed fixed. Remaining: wire the Wander product page for a real order + PDF; map page (chunk-022) still blocked)
+**Status:** in-progress (S28: Cormorant registered on all 3 surfaces + picker; Wander renders in the staff engine via the local selector; cover bleed fixed. S31: **order flow wired end-to-end** — `order.html` made template-aware [TEMPLATE_REGISTRY/templateData], cover section data-driven from `cover.slots`/`cover.captions`, `wander.html` rebuilt onto the Scribble pattern, FP1 country-select + itinerary + region placeholder built; cover-caption copy synced from CSV. See `docs/briefs/wander-order-flow.md`. **Remaining:** run a real Wander order engine→customer→PDF; map render (chunk-022) still blocked on Kseniia's region SVGs)
 **Size:** M
 **Depends on:** chunk-020, chunk-022
 **Files:** `assets/Template_Wander/`, `pages/<wander>.html`, `pages/staff/template-engine.html`, `pages/customer-preview.html`, `scripts/export-pdf.js`
