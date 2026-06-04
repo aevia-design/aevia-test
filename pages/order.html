@@ -189,6 +189,7 @@
     .photo-thumb img { cursor:zoom-in; }
   </style>
 <script src="../assets/Template_Scribble/scribble-data.js"></script>
+<script src="../assets/Template_Wander/wander-data.js"></script>
 </head>
 <body>
 
@@ -303,52 +304,8 @@
     <!-- Compact summary bar -->
     <div class="step2-bar" id="step2-bar"></div>
 
-    <!-- Cover photo -->
-    <div class="upload-section">
-      <div class="upload-label">Required</div>
-      <div class="upload-heading">Cover photo</div>
-      <div class="upload-hint">One photo for the cover. Pick something that sets the mood.</div>
-
-      <div class="drop-zone" id="dz-cover">
-        <input type="file" accept=".jpg,.jpeg,.png,.heic" onchange="handleCoverFile(this.files[0])" />
-        <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <div class="dz-text"><strong>Choose photo</strong> or drag here</div>
-        <div class="dz-formats">JPG · PNG · HEIC</div>
-      </div>
-
-      <div class="single-preview" id="cover-preview">
-        <div class="single-preview-inner" id="cover-preview-inner">
-          <!-- filled by JS -->
-        </div>
-        <div class="single-preview-name" id="cover-preview-name"></div>
-      </div>
-
-      <!-- Cover text captions -->
-      <div style="margin-top:20px;">
-        <div class="upload-label">Cover text</div>
-        <div class="upload-hint" style="margin-bottom:14px;">Optional — appears printed on your book cover and spine.</div>
-        <div class="field-row" style="margin-bottom:10px;">
-          <div class="field" style="margin:0;">
-            <label for="cover-front-year" style="font-size:11px;color:var(--muted);">Front — year</label>
-            <input type="text" id="cover-front-year" placeholder="2026" maxlength="20" />
-          </div>
-          <div class="field" style="margin:0;">
-            <label for="cover-front-name" style="font-size:11px;color:var(--muted);">Front — album name</label>
-            <input type="text" id="cover-front-name" placeholder="Our sweet Ann" maxlength="60" />
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field" style="margin:0;">
-            <label for="cover-spine-name" style="font-size:11px;color:var(--muted);">Spine — name</label>
-            <input type="text" id="cover-spine-name" placeholder="Ann" maxlength="20" />
-          </div>
-          <div class="field" style="margin:0;">
-            <label for="cover-spine-year" style="font-size:11px;color:var(--muted);">Spine — year</label>
-            <input type="text" id="cover-spine-year" placeholder="2026" maxlength="10" />
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Cover section — rendered from the active template's cover data (photo zone + caption fields) -->
+    <div class="upload-section" id="cover-section"><!-- filled by renderCoverSection() --></div>
 
     <!-- FP sections (photo + text per functional page, injected in goToStep2) -->
     <div id="fp-sections"></div>
@@ -495,6 +452,17 @@ const ORDER = {
   backUrl:    params.get('back')     || 'collections.html',
 };
 
+// ── Template registry: pick the active template's data by the `template` param.
+// Unknown / missing names fall back to Scribble (mirrors the chunk-020 engine seam).
+const TEMPLATE_REGISTRY = {
+  scribble: () => window.SCRIBBLE_DATA,
+  wander:   () => window.WANDER_DATA,
+};
+function templateData() {
+  const key = (ORDER.template || '').toLowerCase();
+  return (TEMPLATE_REGISTRY[key] || TEMPLATE_REGISTRY.scribble)();
+}
+
 const addonNames   = paramList('addons');
 const addonInputs  = paramList('addon_inputs');
 const addonSlugs   = paramList('addon_slugs');
@@ -522,8 +490,66 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   document.getElementById('step1').style.display = 'block';
   initSummary();
+  renderCoverSection();
   initDragDrop();
 });
+
+// Render the cover section from the active template's cover data.
+// Photo zone appears only if the cover declares photo slots; caption fields
+// are built from cover.captions (key/label/placeholder). IDs preserved so
+// handleCoverFile + drag-drop keep working: dz-cover, cover-preview, etc.
+function coverHasPhoto() {
+  return (templateData()?.cover?.slots || []).length > 0;
+}
+
+function renderCoverSection() {
+  const cover = templateData()?.cover || {};
+  const captions = cover.captions || [];
+  const el = document.getElementById('cover-section');
+  if (!el) return;
+
+  let html = '';
+
+  if (coverHasPhoto()) {
+    html += `
+      <div class="upload-label">Required</div>
+      <div class="upload-heading">Cover photo</div>
+      <div class="upload-hint">One photo for the cover. Pick something that sets the mood.</div>
+      <div class="drop-zone" id="dz-cover">
+        <input type="file" accept=".jpg,.jpeg,.png,.heic" onchange="handleCoverFile(this.files[0])" />
+        <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="dz-text"><strong>Choose photo</strong> or drag here</div>
+        <div class="dz-formats">JPG · PNG · HEIC</div>
+      </div>
+      <div class="single-preview" id="cover-preview">
+        <div class="single-preview-inner" id="cover-preview-inner"></div>
+        <div class="single-preview-name" id="cover-preview-name"></div>
+      </div>`;
+  }
+
+  if (captions.length) {
+    html += `
+      <div style="margin-top:${coverHasPhoto() ? '20px' : '0'};">
+        <div class="upload-label">Cover text</div>
+        <div class="upload-hint" style="margin-bottom:14px;">Optional — appears printed on your book cover and spine.</div>`;
+    // Two caption fields per row.
+    for (let i = 0; i < captions.length; i += 2) {
+      const pair = captions.slice(i, i + 2);
+      html += `<div class="field-row" style="margin-bottom:10px;">`;
+      pair.forEach(cap => {
+        html += `
+          <div class="field" style="margin:0;">
+            <label for="cover-cap-${cap.key}" style="font-size:11px;color:var(--muted);">${cap.label || cap.key}</label>
+            <input type="text" id="cover-cap-${cap.key}" placeholder="${cap.placeholder || ''}"${cap.maxLength ? ` maxlength="${cap.maxLength}"` : ''} />
+          </div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+
+  el.innerHTML = html;
+}
 
 function initSummary() {
   document.getElementById('sum-category').textContent = ORDER.category;
@@ -573,7 +599,7 @@ function updateStep2Bar() {
 // Returns orderFormMeta from SCRIBBLE_DATA for a given addon slug (e.g. 'fp2' → FP2)
 function getFpMeta(slug) {
   const key = slug.toUpperCase();
-  return window.SCRIBBLE_DATA?.spreads?.[key]?.orderFormMeta || null;
+  return templateData()?.spreads?.[key]?.orderFormMeta || null;
 }
 
 function addWordRow(slug, maxWords) {
@@ -653,7 +679,7 @@ function initFPSections() {
 
   ORDER.addons.filter(a => !cancelledAddons.has(a.slug)).forEach(addon => {
     const fpKey    = addon.slug.toUpperCase(); // 'fp1' → 'FP1'
-    const fpData   = window.SCRIBBLE_DATA?.spreads?.[fpKey];
+    const fpData   = templateData()?.spreads?.[fpKey];
     const photoMeta = fpData?.orderFormPhoto;
     const textMeta  = fpData?.orderFormMeta;
     const wrapId   = `addon-wrap-${addon.slug}`;
@@ -700,10 +726,14 @@ function initFPSections() {
     // ── Text / caption field
     if (textMeta) {
       html += `<div style="margin-top:${photoMeta ? '22px' : '0'};">`;
-      html += `<div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${textMeta.textPrompt || 'Notes'}</div>`;
-      html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${textMeta.hint || ''}</div>`;
+      if (!textMeta.countrySelect) {
+        html += `<div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${textMeta.textPrompt || 'Notes'}</div>`;
+        html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${textMeta.hint || ''}</div>`;
+      }
 
-      if (textMeta.funnyWords) {
+      if (textMeta.countrySelect) {
+        html += renderCountrySelect(addon.slug, textMeta);
+      } else if (textMeta.funnyWords) {
         const maxWords = textMeta.maxWords || 10;
         const minWords = textMeta.minWords || 3;
         const rows3 = [1,2,3].map(i => `
@@ -740,6 +770,101 @@ function initFPSections() {
     section.innerHTML = html;
     container.appendChild(section);
   });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// FP1 country-select (Wander travel map page)
+// State: window._fpCountries[slug] = { region, countries: [] }
+// Region maps are placeholders until chunk-022 ships real region SVGs.
+// ─────────────────────────────────────────────────────────────────
+window._fpCountries = window._fpCountries || {};
+const REGION_LABELS = { 'EU': 'Europe', 'Asia': 'Asia', 'Africa': 'Africa', 'N.America': 'North America', 'S.America': 'South America', 'Oceania': 'Oceania' };
+
+function renderCountrySelect(slug, meta) {
+  const coords = templateData()?.mapCoordinates || {};
+  const byRegion = {};
+  Object.keys(coords).forEach(name => {
+    const r = coords[name].region;
+    (byRegion[r] = byRegion[r] || []).push(name);
+  });
+  let opts = '<option value="">Add a country…</option>';
+  Object.keys(byRegion).forEach(r => {
+    opts += `<optgroup label="${REGION_LABELS[r] || r}">`;
+    byRegion[r].sort().forEach(name => { opts += `<option value="${name}">${name}</option>`; });
+    opts += `</optgroup>`;
+  });
+  const inputStyle = 'background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;';
+  return `
+    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Countries visited</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">Select every country on this trip. They must all be in the same region — the map covers one region at a time.</div>
+    <select id="country-add-${slug}" onchange="addCountry('${slug}', this.value); this.value='';" style="${inputStyle}width:100%;">${opts}</select>
+    <div id="country-tags-${slug}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;"></div>
+    <div id="country-err-${slug}" style="display:none;font-size:12px;color:#b4413c;margin-top:8px;line-height:1.5;"></div>
+    <div id="region-map-${slug}" style="margin-top:16px;"></div>
+    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin:22px 0 6px;">${meta.textPrompt || 'Your route'}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${meta.hint || ''}</div>
+    <textarea id="addon-text-${slug}" placeholder="${meta.placeholder || ''}" rows="3" style="width:100%;${inputStyle}resize:vertical;"></textarea>
+  `;
+}
+
+function addCountry(slug, name) {
+  if (!name) return;
+  const coords = templateData()?.mapCoordinates || {};
+  const region = coords[name]?.region;
+  if (!region) return;
+  const state = window._fpCountries[slug] || { region: null, countries: [] };
+  const errEl = document.getElementById(`country-err-${slug}`);
+  if (state.countries.includes(name)) return;
+  if (state.region && region !== state.region) {
+    if (errEl) {
+      errEl.textContent = `${name} is in ${REGION_LABELS[region] || region}, but your trip is in ${REGION_LABELS[state.region] || state.region}. One region per map — remove the current countries first to switch regions.`;
+      errEl.style.display = 'block';
+    }
+    return;
+  }
+  if (errEl) errEl.style.display = 'none';
+  state.region = region;
+  state.countries.push(name);
+  window._fpCountries[slug] = state;
+  renderCountryTags(slug);
+  renderRegionMap(slug);
+}
+
+function removeCountry(slug, name) {
+  const state = window._fpCountries[slug];
+  if (!state) return;
+  state.countries = state.countries.filter(c => c !== name);
+  if (!state.countries.length) state.region = null;
+  window._fpCountries[slug] = state;
+  renderCountryTags(slug);
+  renderRegionMap(slug);
+  const errEl = document.getElementById(`country-err-${slug}`);
+  if (errEl) errEl.style.display = 'none';
+}
+
+function renderCountryTags(slug) {
+  const state = window._fpCountries[slug] || { countries: [] };
+  const el = document.getElementById(`country-tags-${slug}`);
+  if (!el) return;
+  el.innerHTML = state.countries.map(name => `
+    <span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:13px;color:var(--text);">
+      ${name}
+      <button type="button" onclick="removeCountry('${slug}','${name.replace(/'/g, "\\'")}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;padding:0;">×</button>
+    </span>`).join('');
+}
+
+function renderRegionMap(slug) {
+  const state = window._fpCountries[slug];
+  const el = document.getElementById(`region-map-${slug}`);
+  if (!el) return;
+  if (!state || !state.region) { el.innerHTML = ''; return; }
+  const label = REGION_LABELS[state.region] || state.region;
+  // Placeholder region map — real region SVGs land with chunk-022; swap then.
+  el.innerHTML = `
+    <div style="position:relative;width:100%;aspect-ratio:2 / 1;border:1px solid var(--border);border-radius:6px;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+      <span style="font-family:var(--serif);font-size:22px;color:var(--muted);letter-spacing:0.04em;">${label}</span>
+      <span style="position:absolute;bottom:8px;right:12px;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);">Region map</span>
+    </div>`;
 }
 
 function initSpecialDragDrop() {
@@ -1221,8 +1346,8 @@ async function submitOrder() {
   const errEl  = document.getElementById('err-step2');
   const btn    = document.getElementById('submit-btn');
 
-  // Validate cover photo
-  if (!coverFile) {
+  // Validate cover photo — only required for templates whose cover has a photo slot
+  if (coverHasPhoto() && !coverFile) {
     errEl.textContent = 'Please upload a cover photo before submitting.';
     errEl.style.display = 'block';
     errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1244,7 +1369,7 @@ async function submitOrder() {
   for (const addon of ORDER.addons) {
     if (cancelledAddons.has(addon.slug)) continue;
     const fpKey    = addon.slug.toUpperCase();
-    const fpData   = window.SCRIBBLE_DATA?.spreads?.[fpKey];
+    const fpData   = templateData()?.spreads?.[fpKey];
     const photoMeta = fpData?.orderFormPhoto;
     const textMeta  = fpData?.orderFormMeta;
 
@@ -1264,7 +1389,22 @@ async function submitOrder() {
     }
 
     // Validate text field
-    if (textMeta && textMeta.funnyWords) {
+    if (textMeta && textMeta.countrySelect) {
+      const state = window._fpCountries[addon.slug];
+      if (!state || !state.countries.length) {
+        errEl.textContent = `Please select at least one country for "${addon.name}", or remove this page.`;
+        errEl.style.display = 'block';
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      const itinerary = (document.getElementById(`addon-text-${addon.slug}`) || {}).value || '';
+      if (!itinerary.trim()) {
+        errEl.textContent = `Please add your route for "${addon.name}", or remove this page.`;
+        errEl.style.display = 'block';
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    } else if (textMeta && textMeta.funnyWords) {
       const wordList = document.getElementById(`fp-word-list-${addon.slug}`);
       const filled = wordList
         ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
@@ -1304,13 +1444,13 @@ async function submitOrder() {
   const email        = document.getElementById('inp-email').value.trim();
   const albumNotes   = document.getElementById('album-notes').value.trim();
 
-  // Cover captions — only include keys the customer actually filled in
-  const coverCaptionsRaw = {
-    year:      document.getElementById('cover-front-year').value.trim(),
-    name:      document.getElementById('cover-front-name').value.trim(),
-    spineName: document.getElementById('cover-spine-name').value.trim(),
-    spineYear: document.getElementById('cover-spine-year').value.trim(),
-  };
+  // Cover captions — keyed by the template's cover.captions; keep only filled-in keys
+  const coverCaptionDefs = templateData()?.cover?.captions || [];
+  const coverCaptionsRaw = {};
+  coverCaptionDefs.forEach(cap => {
+    const input = document.getElementById(`cover-cap-${cap.key}`);
+    coverCaptionsRaw[cap.key] = input ? input.value.trim() : '';
+  });
   const coverCaptions = Object.fromEntries(Object.entries(coverCaptionsRaw).filter(([, v]) => v));
   const hasCoverCaptions = Object.keys(coverCaptions).length > 0;
 
@@ -1320,10 +1460,17 @@ async function submitOrder() {
   const addonNoteLines = [];
   activeAddons.forEach(a => {
     const fpKey   = a.slug.toUpperCase();
-    const fpData  = window.SCRIBBLE_DATA?.spreads?.[fpKey];
+    const fpData  = templateData()?.spreads?.[fpKey];
     const textMeta = fpData?.orderFormMeta;
     if (!textMeta) return;
-    if (textMeta.funnyWords) {
+    if (textMeta.countrySelect) {
+      const state = window._fpCountries[a.slug] || { region: null, countries: [] };
+      const itinerary = (document.getElementById(`addon-text-${a.slug}`) || {}).value?.trim() || '';
+      if (state.countries.length || itinerary) {
+        fpTexts[a.slug] = { region: state.region, countries: state.countries, itinerary };
+        addonNoteLines.push(`${a.name}: ${state.countries.join(', ')}${itinerary ? ` — ${itinerary}` : ''}`);
+      }
+    } else if (textMeta.funnyWords) {
       const wordList = document.getElementById(`fp-word-list-${a.slug}`);
       const words = wordList
         ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
@@ -1351,14 +1498,16 @@ async function submitOrder() {
   const fileObjects = [];
   const filesMeta   = [];
 
-  // Cover
-  fileObjects.push(coverFile);
-  filesMeta.push({ name: coverFile.name, type: mimeType(coverFile), fileType: 'cover' });
+  // Cover (only if this template uses a cover photo)
+  if (coverFile) {
+    fileObjects.push(coverFile);
+    filesMeta.push({ name: coverFile.name, type: mimeType(coverFile), fileType: 'cover' });
+  }
 
   // Special page photos (skip cancelled); FP5 has 2 slots (fp5-0, fp5-1)
   activeAddons.forEach(a => {
     const fpKey    = a.slug.toUpperCase();
-    const fpData   = window.SCRIBBLE_DATA?.spreads?.[fpKey];
+    const fpData   = templateData()?.spreads?.[fpKey];
     const photoMeta = fpData?.orderFormPhoto;
     if (!photoMeta) return;
     const count = photoMeta.count || 1;
@@ -1529,7 +1678,7 @@ function showSuccess(orderNumber, email) {
 // Assumes H orientation throughout (best estimate without seeing photos)
 // ─────────────────────────────────────────────────────────────────
 function calcPhotoTarget(pageCount, selectedFPs) {
-  const DATA = window.SCRIBBLE_DATA;
+  const DATA = templateData();
   if (!DATA) return 0;
 
   // Build sequence: SP0 + standard spreads (SP1–SP6 cycling) + FPs interspersed

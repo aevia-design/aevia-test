@@ -22,6 +22,8 @@
     .chip{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 22px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;min-width:108px;background:var(--white);transition:border-color 0.15s,background 0.15s;user-select:none;}.chip:hover{border-color:var(--text);}.chip.on{border-color:var(--text);background:var(--text);color:var(--white);}
     .chip-label{font-size:12px;font-weight:500;letter-spacing:0.03em;}.chip-price{font-family:var(--serif);font-size:15px;}
     .addons{margin-bottom:30px;}.addon{display:flex;align-items:flex-start;gap:14px;padding:15px;border:1.5px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--white);cursor:pointer;transition:border-color 0.15s;}.addon:hover{border-color:#c4a882;}.addon.on{border-color:var(--text);box-shadow:inset 0 0 0 0.5px var(--text);}
+    .addon-preview{width:88px;height:72px;flex-shrink:0;border-radius:3px;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;}.addon-preview img{width:100%;height:100%;object-fit:cover;}
+    .photo-count{font-size:13px;color:var(--muted);line-height:1.6;padding:12px 14px;background:var(--surface);border-radius:4px;margin-bottom:24px;}
     .chk{width:20px;height:20px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:background 0.15s,border-color 0.15s;}.addon.on .chk{background:var(--text);border-color:var(--text);}.chk svg{display:none;}.addon.on .chk svg{display:block;}
     .addon-body{flex:1;}.addon-name{font-size:13px;font-weight:600;margin-bottom:3px;}.addon-desc{font-size:12px;color:var(--muted);line-height:1.5;}
     .addon-cost{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:3px 9px;border-radius:100px;flex-shrink:0;align-self:center;}
@@ -66,18 +68,18 @@
       </div>
     </div>
     <div class="addons">
-      <div class="section-label">Optional add-ons</div>
-      <div class="addon" onclick="xtra(this)">
+      <div class="section-label">Optional spreads — all free</div>
+
+      <div class="addon" onclick="xtra(this)" data-fp="FP1" data-photos="0">
+        <div class="addon-preview">
+          <svg width="40" height="40" viewBox="0 0 28 28" fill="none"><path d="M5 8l6-2 6 2 6-2v14l-6 2-6-2-6 2V8z" stroke="#c4a882" stroke-width="1.4" stroke-linejoin="round"/><path d="M11 6v14M17 8v14" stroke="#c4a882" stroke-width="1.4"/><circle cx="14" cy="12" r="2" stroke="#c4a882" stroke-width="1.4"/></svg>
+        </div>
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body"><div class="addon-name">Route map spread</div><div class="addon-desc">A custom illustrated map of your journey on a full spread</div></div>
-        <div class="addon-cost">Included</div>
-      </div>
-      <div class="addon" onclick="xtra(this)">
-        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body"><div class="addon-name">Caption overlays</div><div class="addon-desc">Location names and dates printed directly over your images</div></div>
-        <div class="addon-cost">Included</div>
+        <div class="addon-body"><div class="addon-name">Travel map &amp; itinerary</div><div class="addon-desc">Share which country (or countries) you travelled to and add a short itinerary — we illustrate your route on a dedicated map spread.</div></div>
+        <div class="addon-cost">Free</div>
       </div>
     </div>
+    <div class="photo-count" id="photo-count">Your 40-page book will need approximately 38–48 photos in total.</div>
     <div class="price-row"><span class="price-sym">€</span><span class="price-val" id="price">60</span><span class="price-note">incl. design &amp; printing</span></div>
     <button class="cta" onclick="goToOrder()">Create your book</button>
     <p class="cta-note">You approve before we print. No charge until you're happy.</p>
@@ -99,17 +101,43 @@
   <div class="foot-base"><span>© 2026 Aevia. All rights reserved.</span><span>Terms of service</span></div>
 </footer>
 <script>
-  function pick(el,p){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');document.getElementById('price').textContent=p;}
-  function xtra(card){card.classList.toggle('on');card.querySelector('.addon-cost').textContent=card.classList.contains('on')?'Added \u2713':'Included';}
+  const BASE_PHOTOS = { '40': [38, 48], '80': [76, 92] };
+
+  function updatePhotoCount() {
+    const pages = document.querySelector('.chip.on .chip-label').textContent.replace(' pages', '');
+    const [lo, hi] = BASE_PHOTOS[pages] || [38, 48];
+    let extra = 0;
+    document.querySelectorAll('.addon.on').forEach(a => { extra += parseInt(a.dataset.photos || 0); });
+    document.getElementById('photo-count').textContent =
+      'Your ' + pages + '-page book will need approximately ' + (lo + extra) + '\u2013' + (hi + extra) + ' photos in total.';
+  }
+
+  function pick(el,p){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');document.getElementById('price').textContent=p;updatePhotoCount();}
+  function xtra(card){card.classList.toggle('on');card.querySelector('.addon-cost').textContent=card.classList.contains('on')?'Added \u2713':'Free';updatePhotoCount();}
+
+  // FP slug/input-type metadata (mirrors Scribble's contract; order.html reads orderFormMeta from wander-data.js)
+  const FP_META = {
+    FP1: { name: 'Travel map & itinerary', inputType: 'map', slug: 'fp1' },
+  };
+
   function goToOrder() {
     const price = document.getElementById('price').textContent;
     const selectedChip = document.querySelector('.chip.on');
     const pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
-    const addonNames = [];
-    document.querySelectorAll('.addon.on').forEach(a => addonNames.push(a.querySelector('.addon-name').textContent));
-    const params = new URLSearchParams({ template: 'Wander', category: 'adventures', pages, price: price, backUrl: 'wander.html' });
-    addonNames.forEach(n => params.append('addonName', n));
-    window.location.href = 'order.html?' + params.toString();
+    const selected = [];
+    document.querySelectorAll('.addon.on').forEach(a => {
+      const meta = FP_META[a.dataset.fp];
+      if (meta) selected.push(meta);
+    });
+    const urlParams = new URLSearchParams({
+      template: 'Wander', category: 'adventures', pages, price, back: 'wander.html',
+    });
+    if (selected.length) {
+      urlParams.set('addons',       selected.map(m => m.name).join(','));
+      urlParams.set('addon_inputs', selected.map(m => m.inputType).join(','));
+      urlParams.set('addon_slugs',  selected.map(m => m.slug).join(','));
+    }
+    window.location.href = 'order.html?' + urlParams.toString();
   }
   function acc(btn){const item=btn.closest('.acc-item');const open=item.classList.contains('open');document.querySelectorAll('.acc-item').forEach(i=>i.classList.remove('open'));if(!open)item.classList.add('open');}
   const nav=document.querySelector('.nav');window.addEventListener('scroll',()=>{nav.style.background=window.scrollY>80?'rgba(250,250,248,0.97)':'rgba(250,250,248,0.92)';});

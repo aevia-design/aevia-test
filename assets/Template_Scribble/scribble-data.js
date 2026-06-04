@@ -15,10 +15,10 @@ window.SCRIBBLE_DATA = {
       { xMm: 327, yMm: 118, wMm: 140, hMm: 100, pool: 'cover' }
     ],
     captions: [
-      { key: 'year', xMm: 327, yMm: 43, wMm: 180, font: 'EB Garamond', sizePt: 33, align: 'center', color: '#493955', label: 'Year' },
-      { key: 'name', xMm: 327, yMm: 193, wMm: 180, font: 'NT Somic', sizePt: 28, align: 'center', color: '#493955', label: 'Name' },
-      { key: 'spineName', xMm: 222, yMm: 158, wMm: 130, font: 'NT Somic', sizePt: 16, color: '#493955', rotate: 270, label: 'Name (spine)' },
-      { key: 'spineYear', xMm: 222, yMm: 78, wMm: 70, font: 'EB Garamond', sizePt: 16, color: '#493955', rotate: 270, label: 'Year (spine)' },
+      { key: 'year', xMm: 327, yMm: 43, wMm: 180, font: 'EB Garamond', sizePt: 33, align: 'center', color: '#493955', label: 'Front — year', placeholder: '2026', maxLength: 10 },
+      { key: 'name', xMm: 327, yMm: 193, wMm: 180, font: 'NT Somic', sizePt: 28, align: 'center', color: '#493955', label: 'Front — album name', placeholder: 'Our sweet Ann', maxLength: 60 },
+      { key: 'spineName', xMm: 222, yMm: 158, wMm: 130, font: 'NT Somic', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — name', placeholder: 'Ann', maxLength: 20 },
+      { key: 'spineYear', xMm: 222, yMm: 78, wMm: 70, font: 'EB Garamond', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — year', placeholder: '2026', maxLength: 10 },
     ]
   },
 

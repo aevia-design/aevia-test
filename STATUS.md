@@ -8,6 +8,9 @@ _Last updated: 2026-06-04 (session 30)_
 
 **Feature #2 — approve→pay flow:** (a) Review→Approve→Pay progress cue; (b) forward post-approve copy *"one last step: complete payment…"* (was terminal "we'll be in touch"); (c) "we'll be in touch" now only post-payment; (d) Pay button shows order price (`Pay now · €70`) — `getOrder` now returns `price`. All in `customer-preview.html` + one field in `index.js`. ⚠ **Cost source-of-truth split:** button shows order-time `price`; Stripe charges fixed `STRIPE_PRICE_ID` — match today, could diverge if Stripe price changes. See `sessions/2026-06-04-s30.md`.
 
+### ⚠ CARRIED-FORWARD UNVERIFIED (Session 30 features — shipped + deployed, NOT browser-verified)
+Both S30 features (original photo filenames; approve→pay flow / `Pay now · €70`) are live on `main` but were **never confirmed working in a browser**. S31 chose to push on Wander instead; these still need a visual pass before being trusted. See items 1–2 below.
+
 ### ▶ NEXT SESSION (Session 31)
 1. **Visual-verify Feature #2** on AEV-023 (approved, unpaid, €70 — token in S30 log): expect `Pay now · €70`, stepper `✓ Review ✓ Approve **Pay**`, forward copy. AEV-027 (paid): all-done stepper + "Payment received". (AEV-023 is a corrupted *book* fixture but action-bar UI is status-driven → still valid.)
 2. **Verify Feature #1 with a fresh upload** — only way to see real `IMG_xxxx` names staff-side + sort by them. Old orders only prove the fallback (`poolOriginalNames:[]`, confirmed).

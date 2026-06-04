@@ -27,8 +27,8 @@ window.WANDER_DATA = {
     // Wander cover text is FREE TEXT (no fixed name/year fields like Scribble) — staff type
     // whatever suits the trip, e.g. "Dolomites, 2025". `placeholder` is just a suggestion.
     captions: [
-      { key: 'front', xMm: 379, yMm: 200, wMm: 65, hMm: 5, font: 'Cormorant Garamond', sizePt: 18, align: 'right', color: '#3E2A55', label: 'Cover text', placeholder: 'e.g. Dolomites, 2025' },
-      { key: 'spine', xMm: 222, yMm: 158, wMm: 65, hMm: 5, font: 'Cormorant Garamond', sizePt: 16, align: 'left',  color: '#3E2A55', rotate: 270, label: 'Spine text', placeholder: 'e.g. Dolomites, 2025' },
+      { key: 'front', xMm: 379, yMm: 200, wMm: 65, hMm: 5, font: 'Cormorant Garamond', sizePt: 18, align: 'right', color: '#3E2A55', label: 'Front — album name', placeholder: 'Dolomites, 2026', maxLength: 30 },
+      { key: 'spine', xMm: 222, yMm: 158, wMm: 65, hMm: 5, font: 'Cormorant Garamond', sizePt: 16, align: 'left',  color: '#3E2A55', rotate: 270, label: 'Spine — album name', placeholder: 'Dolomites, 2026', maxLength: 30 },
     ]
   },
 
