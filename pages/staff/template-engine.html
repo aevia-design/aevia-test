@@ -1286,7 +1286,10 @@
 
     dbLog('  ✓ ' + orientation.toUpperCase() + '  ' + w + '×' + h + (exifOrientation !== 1 ? ' [EXIF orient=' + exifOrientation + ']' : '') + (lowRes ? '  ⚠ LOW RES' : ''), orientation === 'vertical' ? 'info' : 'muted');
 
-    return { file, url: objectURL, date, name: file.name, w, h, orientation, lowRes };
+    // name = stable internal key (storedName basename, e.g. photo_001) used for save/load.
+    // displayName = what staff see + sort by; defaults to the file's own name (correct for
+    // local uploads), overridden with the customer's original filename on order load.
+    return { file, url: objectURL, date, name: file.name, displayName: file.name, w, h, orientation, lowRes };
   }
 
 
@@ -1429,9 +1432,9 @@
     merged.sort(comparePhotos);
 
     const hasAllExif = merged.every(p => p.date);
-    const sortMethod = hasAllExif ? 'EXIF date' : merged.some(p => filenameNumber(p.name) !== null) ? 'filename number' : 'upload order';
+    const sortMethod = hasAllExif ? 'EXIF date' : merged.some(p => filenameNumber(p.displayName || p.name) !== null) ? 'filename number' : 'upload order';
     dbLog('Sort method: ' + sortMethod, hasAllExif ? 'info' : 'warn');
-    dbLog('Final order: ' + merged.map((p, i) => (i + 1) + '. ' + p.name + ' [' + p.orientation.charAt(0).toUpperCase() + ']').join('  '), 'info');
+    dbLog('Final order: ' + merged.map((p, i) => (i + 1) + '. ' + (p.displayName || p.name) + ' [' + p.orientation.charAt(0).toUpperCase() + ']').join('  '), 'info');
 
     window.photoPool = merged;
     window.bookAssignments = {};
@@ -1462,7 +1465,8 @@
     thumb.className = 'photo-thumb unassigned';
     thumb.dataset.index = i;
     thumb.dataset.orient = orient;
-    thumb.title = photo.name;
+    const label = photo.displayName || photo.name;
+    thumb.title = label;
     thumb.draggable = true;
     thumb.addEventListener('dragstart', e => {
       window._dragType = 'strip';
@@ -1474,13 +1478,13 @@
 
     const img = document.createElement('img');
     img.src = photo.url;
-    img.alt = photo.name;
+    img.alt = label;
     img.draggable = false;
     thumb.appendChild(img);
 
     const nameEl = document.createElement('div');
     nameEl.className = 'thumb-name';
-    nameEl.textContent = photo.name.replace(/\.[^.]+$/, '');
+    nameEl.textContent = label.replace(/\.[^.]+$/, '');
     thumb.appendChild(nameEl);
 
     if (photo.lowRes) {
@@ -1495,7 +1499,7 @@
       badge.className = 'dup-badge';
       badge.textContent = 'Duplicate';
       thumb.appendChild(badge);
-      thumb.title = photo.name + ' — duplicate, will not be placed';
+      thumb.title = label + ' — duplicate, will not be placed';
       thumb.draggable = false;
       thumb.style.opacity = '0.6';
     }
@@ -2925,7 +2929,7 @@
     pool.forEach((p, i) => { if (!p.duplicate) { rank[i] = r++; } });
 
     const allDated = pool.filter(p => !p.duplicate).every(p => p.date);
-    const anyNumbered = pool.some(p => typeof filenameNumber === 'function' && filenameNumber(p.name) !== null);
+    const anyNumbered = pool.some(p => typeof filenameNumber === 'function' && filenameNumber(p.displayName || p.name) !== null);
     const sortMethod = allDated ? 'EXIF date' : anyNumbered ? 'filename number' : 'upload order';
 
     // Collect the photos that landed out of date order. The detail (which photo,
@@ -3869,22 +3873,22 @@
         return f;
       }));
 
-      // Process sequentially (HEIC WASM has shared state)
+      // Process sequentially (HEIC WASM has shared state). poolOriginalNames runs
+      // parallel to poolUrls/poolFiles, so index i carries this photo's original
+      // filename → displayName (staff-visible + sort key). Falls back to the internal
+      // key for legacy orders uploaded before original names were persisted.
+      const poolOriginalNames = (names.poolOriginalNames || []);
       const newPhotos = [];
       for (let i = 0; i < poolFiles.length; i++) {
         const prog = document.getElementById('load-progress');
         if (prog) prog.textContent = `Processing ${i + 1} / ${poolFiles.length}`;
         const result = await processOneFile(poolFiles[i]);
-        if (result) newPhotos.push(result);
+        if (result) {
+          result.displayName = poolOriginalNames[i] || result.name;
+          newPhotos.push(result);
+        }
       }
-      newPhotos.sort((a, b) => {
-        if (a.date && b.date) return new Date(a.date) - new Date(b.date);
-        if (a.date && !b.date) return -1;
-        if (!a.date && b.date) return 1;
-        const na = filenameNumber(a.name), nb = filenameNumber(b.name);
-        if (na !== null && nb !== null) return na - nb;
-        return 0;
-      });
+      newPhotos.sort(comparePhotos);
       window.photoPool = newPhotos;
     }
 

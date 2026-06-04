@@ -117,6 +117,21 @@ describe('comparePhotos', () => {
     expect(comparePhotos(photo('alpha.jpg'), photo('beta.jpg'))).toBe(0);
   });
 
+  test('displayName (original filename) overrides name for the number fallback', () => {
+    // On order load name=photo_NNN (storedName basename); displayName=original.
+    // Sort should follow the original filename numbers, not the storedName order.
+    const a = { name: 'photo_002.jpg', displayName: 'IMG_0010.jpg' };
+    const b = { name: 'photo_001.jpg', displayName: 'IMG_0020.jpg' };
+    expect(comparePhotos(a, b)).toBeLessThan(0);   // 0010 before 0020
+    expect(comparePhotos(b, a)).toBeGreaterThan(0);
+  });
+
+  test('falls back to name when displayName absent (local upload / legacy order)', () => {
+    const a = photo('IMG_0010.jpg');  // no displayName
+    const b = photo('IMG_0020.jpg');
+    expect(comparePhotos(a, b)).toBeLessThan(0);
+  });
+
   test('sorting an array: date → filename number → no-number last', () => {
     const pool = [
       photo('IMG_0030.jpg'),

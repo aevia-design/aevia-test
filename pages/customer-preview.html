@@ -161,12 +161,9 @@
       background: #d04040; color: #fff;
       font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: 700;
     }
-    .photo-thumb .thumb-name {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      background: rgba(0,0,0,0.45); color: #fff;
-      font-size: 9px; padding: 3px 5px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
+    /* Customer side hides internal photo filenames (photo_001 etc.) — they're
+       meaningless to customers and the original names are staff-only metadata. */
+    .photo-thumb .thumb-name { display: none; }
 
     /* ── MAIN CONTENT AREA ── */
     .page-body {
@@ -532,6 +529,18 @@
       z-index: 85;
     }
     .submit-bar.hidden { display: none; }
+    /* Review → Approve → Pay progress cue: reassures the customer that approval
+       is a step, not the finish line, so they don't abandon before paying. */
+    .flow-steps {
+      margin-right: auto; display: flex; align-items: center; gap: 8px;
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .flow-step { color: var(--muted); transition: color 0.2s ease; }
+    .flow-step.done    { color: var(--text); }
+    .flow-step.done::before { content: '✓ '; }
+    .flow-step.current { color: var(--text); font-weight: 600; }
+    .flow-sep { color: var(--border); }
     .submit-btn {
       background: var(--text);
       color: var(--white);
@@ -702,8 +711,15 @@
 
 <!-- ── ACTION BAR ── -->
 <div class="submit-bar" id="submit-bar">
-  <span id="approved-notice" style="display:none;font-size:13px;color:var(--muted);letter-spacing:0.02em;">
-    ✓ This book has been approved — it can no longer be edited. We'll be in touch soon.
+  <div class="flow-steps" id="flow-steps">
+    <span class="flow-step done">Review</span>
+    <span class="flow-sep">→</span>
+    <span class="flow-step current" id="step-approve">Approve</span>
+    <span class="flow-sep">→</span>
+    <span class="flow-step" id="step-pay">Pay</span>
+  </div>
+  <span id="approved-notice" style="display:none;font-size:13px;color:var(--text);letter-spacing:0.02em;">
+    ✓ Design approved &amp; locked — one last step: complete payment to send your book to print.
   </span>
   <span id="payment-success-notice" style="display:none;font-size:13px;color:var(--muted);letter-spacing:0.02em;">
     ✓ Payment received — we'll be in touch soon!
@@ -2317,15 +2333,39 @@
       if (notice)    { notice.style.display = 'none'; }
       if (payNotice) { payNotice.style.display = ''; }
       if (payBtn)    { payBtn.style.display = 'none'; }
+      setFlowStep('done');
       if (params.get('payment') === 'success') {
         setTimeout(() => showToast('Payment received — we\'ll be in touch soon!'), 500);
       }
     } else if (status === 'approved') {
-      // Approved but not yet paid — show pay button
+      // Approved but not yet paid — show pay button + forward "one last step" copy
       if (notice)  { notice.style.display = ''; }
-      if (payBtn)  { payBtn.style.display = ''; }
+      if (payBtn)  { payBtn.style.display = ''; setPayButtonLabel(); }
+      setFlowStep('pay');
     } else {
       if (notice)  { notice.style.display = ''; }
+    }
+  }
+
+  // Pay button shows the order price (captured at order time) so the customer knows
+  // exactly what they're paying before leaving for Stripe. Falls back to "Pay now".
+  function setPayButtonLabel() {
+    const payBtn = document.getElementById('pay-btn');
+    const price  = window.orderData && window.orderData.price;
+    if (payBtn) payBtn.textContent = price ? `Pay now · €${price}` : 'Pay now';
+  }
+
+  // Advance the Review → Approve → Pay cue. stage: 'pay' (approved, paying) or 'done' (paid).
+  function setFlowStep(stage) {
+    const approve = document.getElementById('step-approve');
+    const pay     = document.getElementById('step-pay');
+    if (!approve || !pay) return;
+    if (stage === 'done') {
+      approve.className = 'flow-step done';
+      pay.className     = 'flow-step done';
+    } else if (stage === 'pay') {
+      approve.className = 'flow-step done';
+      pay.className     = 'flow-step current';
     }
   }
 
@@ -2350,7 +2390,7 @@
     } catch (err) {
       showToast('Could not start payment: ' + err.message, 'warn');
       btn.disabled = false;
-      btn.innerHTML = 'Pay now';
+      setPayButtonLabel();
     }
   });
 

@@ -163,6 +163,7 @@ exports.getOrder = functions
         customerName:         order.customerName,
         email:                order.email || null,
         status:               order.status || null,
+        price:                order.price || null,
         pageCount:            order.pageCount,
         fpSelections:         order.fpSelections || [],
         fpTexts:              order.fpTexts || {},
@@ -182,9 +183,10 @@ exports.getOrder = functions
         customerCoverCaptionStyles: order.customerCoverCaptionStyles || null,
         signedUrls,
         storedNames: {
-          cover:   manifest.cover   || null,
-          special: manifest.special || {},
-          pool:    manifest.pool    || [],
+          cover:            manifest.cover            || null,
+          special:          manifest.special          || {},
+          pool:             manifest.pool             || [],
+          poolOriginalNames: manifest.poolOriginalNames || [],
         },
       });
     } catch (err) {

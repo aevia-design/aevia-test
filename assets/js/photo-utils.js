@@ -13,11 +13,14 @@ function filenameNumber(name) {
 }
 
 // Comparator for sorting photos: EXIF date → filename number → stable (0)
+// The filename-number fallback uses displayName (the customer's original
+// filename, e.g. IMG_2156) when present, falling back to the internal
+// storedName key (photo_001) for locally-uploaded or legacy orders.
 function comparePhotos(a, b) {
   if (a.date && b.date) return new Date(a.date) - new Date(b.date);
   if (a.date && !b.date) return -1;
   if (!a.date && b.date) return 1;
-  const na = filenameNumber(a.name), nb = filenameNumber(b.name);
+  const na = filenameNumber(a.displayName || a.name), nb = filenameNumber(b.displayName || b.name);
   if (na !== null && nb !== null) return na - nb;
   if (na !== null) return -1;
   if (nb !== null) return 1;

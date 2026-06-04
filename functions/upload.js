@@ -125,7 +125,11 @@ async function handler(req, res) {
     const uploadUrls  = await limitedConcurrent(tasks, 10);
 
     // Build photoManifest: records which GCS path belongs to which category
-    const photoManifest = { cover: null, special: {}, pool: [] };
+    // poolOriginalNames runs parallel to pool[] (same order/length): it keeps the
+    // customer's original filename (e.g. IMG_2156.jpg) for each pool photo so staff
+    // can recognise photos and the chronological sort can fall back to those numbers.
+    // The stored key (photo_001) stays the stable internal identifier for save/load.
+    const photoManifest = { cover: null, special: {}, pool: [], poolOriginalNames: [] };
     uploadUrls.forEach(u => {
       const fileInfo = fileList[u.slot - 1];
       if (!fileInfo) return;
@@ -137,6 +141,7 @@ async function handler(req, res) {
         photoManifest.special[slug].push(u.storedName);
       } else {
         photoManifest.pool.push(u.storedName);
+        photoManifest.poolOriginalNames.push(u.originalName || null);
       }
     });
 
