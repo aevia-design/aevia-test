@@ -370,7 +370,7 @@ _Goal: Staff tool accessible remotely; full 9-template catalogue ready for launc
 
 **Type:** feature
 **Component:** Template data + product page
-**Status:** in-progress (data file + fonts done, session 25)
+**Status:** in-progress (S28: Cormorant registered on all 3 surfaces + picker; Wander renders end-to-end in the staff engine via the local template selector; cover bleed fixed. Remaining: wire the Wander product page for a real order + PDF; map page (chunk-022) still blocked)
 **Size:** M
 **Depends on:** chunk-020, chunk-022
 **Files:** `assets/Template_Wander/`, `pages/<wander>.html`, `pages/staff/template-engine.html`, `pages/customer-preview.html`, `scripts/export-pdf.js`
