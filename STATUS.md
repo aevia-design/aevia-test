@@ -1,8 +1,20 @@
 # Session Status
-_Last updated: 2026-06-05 (session 35)_
+_Last updated: 2026-06-05 (session 36)_
 
 ## Status
-**Session 35 (2026-06-05) — order-form polish + map render fix. All shipped + PUSHED to `main` (Cloudflare auto-deploys). ⚠ Evgeny has NOT yet tested the latest map fix (commit `72ff941`) — it was Claude-verified headlessly only.**
+**Session 36 (2026-06-05) — re-exported EU region map; settled the framing debate with `/systematic-debugging`. Committed + PUSHED (`0c92717`) to `main` (Cloudflare auto-deploys). ⚠ Even framing confirmed by Evgeny in the ORDER FORM ONLY — staff engine + customer preview NOT yet visually checked.**
+
+**What happened:** Evgeny was still unhappy with map framing after S35, re-exported `FP 01 Map Left (EU).png`. Instead of more pixel-guessing (the S35 time-sink), measured the live order-form DOM geometry (`qa/inspect-map-dom.mjs`): PNG is square 4056², bleed even ~2.85 mm all edges, **clip symmetric to 0.02 px (L 2.78 / R 2.80 / T 2.78 / B 2.80)** — proving our trim was already even. The re-export itself fixed his concern; he confirmed **"now it's good"** in the order form. Pushed the new PNG + the diagnostic script.
+
+### ▶ NEXT SESSION (Session 37)
+0. **Evgeny: visually check the map in the STAFF ENGINE + CUSTOMER PREVIEW.** Even framing was confirmed in the order form ONLY. Both other surfaces read the same single `wander-data.js` map entry + identical clip math, so they *should* match — but unconfirmed by eye. Load a Wander order with EU FP1 in the engine and on a customer preview link; confirm the map frame looks the same as the order form.
+1. customer-preview + PDF map render are still **code-complete but never E2E-tested with a real order** (carried from S33).
+2. Optionally delete the moot `docs/briefs/wander-map-reexport-spec.md` and tell Kseniia to stop re-exporting.
+3. Parked: bug #5 fetch-retry (not reproduced); TO-DO #67 rich-text caption editor (partial bold / Ctrl+B) = whole dedicated session.
+4. Diagnostic `qa/inspect-map-dom.mjs` exists — run it from REPO ROOT (writes to `sessions/qa-runs/`); running from `qa/` makes a stray `qa/sessions/`.
+
+### Previous: Session 35
+**Session 35 (2026-06-05) — order-form polish + map render fix. All shipped + PUSHED to `main`.**
 
 **What shipped (live on `main`):**
 1. **Structured itinerary lines (#2)** — Wander itinerary is now line-by-line (3 default, "+ Add a line" capped at 7, example placeholders). Submit joins lines with `\n` into the existing `itinerary` string → no downstream changes. (`order.html`)
