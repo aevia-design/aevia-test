@@ -976,12 +976,20 @@ function renderRegionMap(slug) {
     <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">Rough preview — staff will format the final layout before you approve.</div>`;
 
   const canvas = document.getElementById(`map-canvas-${slug}`);
+  // Base the scale on the canvas's true INNER width (clientWidth excludes the 1px
+  // border under box-sizing:border-box). Using the outer Wp left the bleed crop
+  // ~2px heavier on the right/bottom — a small but visible asymmetry.
+  const innerW  = canvas.clientWidth || Wp;
+  const sIn     = innerW / (data.pageSize || 200);
   const overlay = document.createElement('img');
   overlay.src = ASSET_BASE + svgPath;
   overlay.alt = '';
-  overlay.style.cssText = `position:absolute;left:${-bleed * scale}px;top:${-bleed * scale}px;width:${(200 + bleed * 2) * scale}px;height:${(200 + bleed * 2) * scale}px;z-index:2;`;
+  // max-width:none defeats the global `img { max-width:100% }` rule, which would
+  // otherwise clamp the bleed-expanded overlay width to the canvas, breaking the
+  // aspect ratio and the symmetric 3mm bleed crop (shifted/cut frame).
+  overlay.style.cssText = `position:absolute;left:${-bleed * sIn}px;top:${-bleed * sIn}px;width:${(200 + bleed * 2) * sIn}px;height:${(200 + bleed * 2) * sIn}px;max-width:none;max-height:none;z-index:2;`;
   canvas.appendChild(overlay);
-  MapRender.placeMapPins(canvas, state.countries, fp1, coords, { scale, bleedMm: bleed, assetBase: ASSET_BASE });
+  MapRender.placeMapPins(canvas, state.countries, fp1, coords, { scale: sIn, bleedMm: bleed, assetBase: ASSET_BASE });
 }
 
 // Itinerary lines as HTML for the right-page text panel (one line per row).

@@ -2286,6 +2286,10 @@
           mapImg.style.top    = (-BLEED_MM * SCALE) + 'px';
           mapImg.style.width  = ((200 + BLEED_MM * 2) * SCALE) + 'px';
           mapImg.style.height = ((200 + BLEED_MM * 2) * SCALE) + 'px';
+          // Defeat the global `img { max-width:100% }`, which would clamp the
+          // bleed-expanded width to the canvas and break the symmetric bleed crop.
+          mapImg.style.maxWidth = 'none';
+          mapImg.style.maxHeight = 'none';
           mapImg.onerror = () => { console.warn('Map SVG failed to load:', mapImg.src); mapImg.style.outline = '3px solid #e05252'; };
           canvas.appendChild(mapImg);
           MapRender.placeMapPins(canvas, sel.countries || [], spreadDef, coords, { scale: SCALE, bleedMm: BLEED_MM, assetBase: SVG_BASE });
