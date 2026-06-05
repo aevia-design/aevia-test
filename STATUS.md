@@ -1,7 +1,23 @@
 # Session Status
-_Last updated: 2026-06-04 (session 33)_
+_Last updated: 2026-06-05 (session 35)_
 
 ## Status
+**Session 35 (2026-06-05) — order-form polish + map render fix. All shipped + PUSHED to `main` (Cloudflare auto-deploys). ⚠ Evgeny has NOT yet tested the latest map fix (commit `72ff941`) — it was Claude-verified headlessly only.**
+
+**What shipped (live on `main`):**
+1. **Structured itinerary lines (#2)** — Wander itinerary is now line-by-line (3 default, "+ Add a line" capped at 7, example placeholders). Submit joins lines with `\n` into the existing `itinerary` string → no downstream changes. (`order.html`)
+2. **Realistic FP1 spread preview (#3)** — order form now shows the real two-page spread: region map (left) + actual right-page SVG with route text in the engine's exact text-panel position (Cormorant Garamond, navy, centred). Added Cormorant `@font-face` to order.html.
+3. **Region maps SVG → PNG** — all 6 `maps{}` entries flipped to PNG. Clean swap (resolver returns path verbatim; PDF `sharp` auto-detects). Deleted the 6 now-unused left-map SVGs.
+4. **Cloudflare deploy unblocked** — deploys had failed SILENTLY since S32: `FP 01 Map Left (N.America).svg` was 26.5 MB > Cloudflare's 25 MiB per-file limit, so the site was frozen on S31 for ~18h. Deleting the SVGs fixed it. (memory: `project_cloudflare_file_limit`)
+5. **Map "shifted/cut frame" ROOT CAUSE = our CSS, not the artwork** — global `img { max-width:100% }` clamped the bleed-expanded map overlay's width but not its height → square PNG rendered non-square, breaking the symmetric 3 mm crop. Fixed with `max-width/height:none` on the map overlay in **all 3 surfaces** (order/engine/preview); order.html also scales off canvas `clientWidth` (excludes 1px border) → crop overhang now equal on all 4 edges (measured 2.78/2.78/2.80/2.80). Kseniia's maps were fine — `docs/briefs/wander-map-reexport-spec.md` is now MOOT.
+
+### ▶ NEXT SESSION (Session 36)
+0. **Evgeny: test the latest map fix (`72ff941`) on live.** Hard-refresh the Wander order form, add EU countries, confirm the map frame is even on all sides (this is the one thing not yet eyeball-confirmed by Evgeny). Then check the staff engine + customer preview map render too (same fix, mirrored, but unrun with a real order).
+1. customer-preview + PDF map render are still **code-complete but never E2E-tested with a real order** (carried from S33).
+2. Optionally delete the moot `docs/briefs/wander-map-reexport-spec.md` and tell Kseniia to stop re-exporting.
+3. Parked: bug #5 fetch-retry (not reproduced); TO-DO #67 rich-text caption editor (partial bold / Ctrl+B) = whole dedicated session.
+
+### Previous: Session 33
 **Session 33 (2026-06-04) — chunk-022 (Travel map): wired the real map into the BOOK across all 3 render surfaces (staff engine, customer-preview, PDF), replacing the S28 stub. Fixed 2 latent Wander bugs. 85/85 tests. ⚠ NOTHING browser-tested by Evgeny yet — only the staff-engine render was Claude-verified headlessly. NOT committed, NOT pushed → live still shows the stub.**
 
 **What changed (all LOCAL, uncommitted):** (1) **Map wired into the book** — replaced the `variant.mapCanvas` stub in `template-engine.html` (~line 2262) + the mirror in `customer-preview.html` with the real region SVG + pins via shared `map-render.js` (now actually `<script>`-included in both — was comment-only before). Added the map render to `scripts/export-pdf.js renderPage()`. FP1 selection read from `window._wanderMap = {region, countries}`, set from `order.fpTexts.fp1` BEFORE `renderBook`; PDF reads new `state.mapSelection` from book-state.json. (2) **`fpTexts.fp1` object handling** — engine now extracts `value.itinerary` for the text panel (was `[object Object]`) and persists the panel to its ACTUAL side (Wander itinerary = RIGHT page; Scribble = left) via `panel.closest('.page-canvas').dataset.side`. (3) **Bug: `exportBookState()` hardcoded `template:'scribble'`** → every Wander PDF would silently load Scribble data. Fixed via `_activeTemplateKey`. So no Wander PDF before today was ever valid. (4) **Local-dev fix** — `npx serve` drops the `?template=` query on its clean-URL 301 redirect → order form showed "Choose a template first". Use `python -m http.server 8080` (literal serve, keeps query; needs `.html` on every URL). Added `serve.json` (`cleanUrls:false`) as the serve alternative.
