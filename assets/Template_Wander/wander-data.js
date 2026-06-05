@@ -3,7 +3,7 @@
  * between templates by the order's template name. SVG paths are relative to
  * assets/Template_Wander/ (NOTE: no `Spreads/` subfolder — unlike Scribble).
  *
- * Fonts: Cormorant Garamond (Light/Regular/SemiBold/Bold) + NT Somic (SP0).
+ * Fonts: Cormorant Garamond (Light/Regular/SemiBold/Bold) throughout.
  * Geometry for SP0–SP6 is identical to Scribble; colours/fonts differ per the
  * Wander CSVs (Wander_sizing_full.csv, Wander_Template_Sizing_Cover.csv).
  */
@@ -28,7 +28,7 @@ window.WANDER_DATA = {
     // whatever suits the trip, e.g. "Dolomites, 2025". `placeholder` is just a suggestion.
     captions: [
       { key: 'front', xMm: 379, yMm: 200, wMm: 65, hMm: 5, font: 'Cormorant Garamond', sizePt: 18, align: 'right', color: '#3E2A55', label: 'Front — album name', placeholder: 'Dolomites, 2026', maxLength: 30 },
-      { key: 'spine', xMm: 222, yMm: 158, wMm: 65, hMm: 5, font: 'Cormorant Garamond', sizePt: 16, align: 'left',  color: '#3E2A55', rotate: 270, label: 'Spine — album name', placeholder: 'Dolomites, 2026', maxLength: 30 },
+      { key: 'spine', xMm: 222.5, yMm: 158, wMm: 65, hMm: 5, font: 'Cormorant Garamond', sizePt: 18, align: 'left',  color: '#3E2A55', rotate: 270, label: 'Spine — album name', placeholder: 'Dolomites, 2026', maxLength: 30 },
     ]
   },
 
@@ -55,14 +55,14 @@ window.WANDER_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 0/SP 06 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 0/SP 06 V Right.svg',
             slots: [
-              { slot: 1, x: 85, y: 100, xBleed: 88, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 173, yMm: 43, wMm: 40, hMm: 40, halign: 'left', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 85, y: 100, xBleed: 88, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 173, yMm: 43, wMm: 40, hMm: 40, halign: 'left', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
         },
@@ -77,14 +77,14 @@ window.WANDER_DATA = {
             bgColor: '#eee5d8',
             svg: 'SP Spread 1/SP 01 H Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 16, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
           V: {
             bgColor: '#eee5d8',
             svg: 'SP Spread 1/SP 01 V Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 90, xBleed: 98, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 98, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 16, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 95, y: 90, xBleed: 98, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 98, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
         },
@@ -175,14 +175,14 @@ window.WANDER_DATA = {
             bgColor: '#f4f7f6',
             svg: 'SP Spread 3/SP 06 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 16, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
           V: {
             bgColor: '#f4f7f6',
             svg: 'SP Spread 3/SP 06 V Right.svg',
             slots: [
-              { slot: 1, x: 85, y: 100, xBleed: 88, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 173, yMm: 43, wMm: 40, hMm: 40, halign: 'left', valign: 'top', font: 'Cormorant Garamond', sizePt: 16, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 85, y: 100, xBleed: 88, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 173, yMm: 43, wMm: 40, hMm: 40, halign: 'left', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
         },
@@ -215,14 +215,14 @@ window.WANDER_DATA = {
             bgColor: '#d8eaf0',
             svg: 'SP Spread 4/SP 08 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 16, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
           V: {
             bgColor: '#d8eaf0',
             svg: 'SP Spread 4/SP 08 V Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 90, xBleed: 108, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 16, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 105, y: 90, xBleed: 108, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
         },
@@ -255,14 +255,14 @@ window.WANDER_DATA = {
             bgColor: '#f4f7f6',
             svg: 'SP Spread 5/SP 10 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 130, xBleed: 108, yBleed: 133, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 66.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 16, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 105, y: 130, xBleed: 108, yBleed: 133, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 66.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
           V: {
             bgColor: '#f4f7f6',
             svg: 'SP Spread 5/SP 10 V Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 110, xBleed: 108, yBleed: 113, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 21.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 16, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 105, y: 110, xBleed: 108, yBleed: 113, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 21.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
         },
@@ -277,14 +277,14 @@ window.WANDER_DATA = {
             bgColor: '#f4f7f6',
             svg: 'SP Spread 6/SP 11 H Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 16, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
           V: {
             bgColor: '#f4f7f6',
             svg: 'SP Spread 6/SP 11 V Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 90, xBleed: 98, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 98, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 16, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 95, y: 90, xBleed: 98, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 98, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
         },
@@ -293,14 +293,14 @@ window.WANDER_DATA = {
             bgColor: '#f4f7f6',
             svg: 'SP Spread 6/SP 12 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 16, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
           V: {
             bgColor: '#f4f7f6',
             svg: 'SP Spread 6/SP 12 V Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 90, xBleed: 108, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 16, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 105, y: 90, xBleed: 108, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
         },
