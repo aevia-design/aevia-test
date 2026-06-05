@@ -8,6 +8,7 @@
   <script src="../assets/Template_Wander/wander-data.js"></script>
   <script src="../assets/js/photo-utils.js"></script>
   <script src="../assets/js/book-completeness.js"></script>
+  <script src="../assets/js/map-render.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <style>
     @font-face {
@@ -963,6 +964,14 @@
       window.orderData = await resp.json();
       setActiveTemplate(window.orderData.templateName);
 
+      // Wander FP1 map selection (region + countries) for the Travel-map page.
+      // fpTexts.fp1 is an object {region, countries, itinerary}; the map render
+      // reads region + countries. Mirrors the staff engine. Set before renderBook.
+      const _fp1 = (window.orderData.fpTexts || {}).fp1;
+      window._wanderMap = (_fp1 && typeof _fp1 === 'object' && !Array.isArray(_fp1))
+        ? { region: _fp1.region, countries: _fp1.countries || [] }
+        : null;
+
       // Lock the page to view-only once the order is approved or paid — a customer
       // reopening the link can browse their book but cannot edit or re-approve.
       window._readOnly = (window.orderData.status === 'approved' || window.orderData.status === 'paid');
@@ -1535,6 +1544,8 @@
     thumb.addEventListener('dragend', () => { window._dragType = null; thumb.classList.remove('dragging'); });
 
     const img = document.createElement('img');
+    img.loading = 'lazy';      // defer off-screen thumbnails so scrolling stays smooth
+    img.decoding = 'async';    // decode off the main thread (no quality change — timing only)
     img.src = photo.url;
     img.alt = photo.name;
     img.draggable = false;
@@ -1648,15 +1659,34 @@
         canvas.appendChild(overlay);
       }
 
-      // ── TEMP map stub (chunk-022 blocked on Kseniia's SVG re-export) ──
-      // Mirrors the staff engine: the Wander FP1 left map page isn't wired yet,
-      // so show a clear placeholder instead of a blank cream page. Remove when
-      // the map render lands. Keep in sync with template-engine.html.
+      // ── Wander FP1 Travel map (chunk-022) ──
+      // Mirrors the staff engine: regional map SVG + one pin per selected country.
+      // Selection read from window._wanderMap (set from order.fpTexts.fp1). Region
+      // SVGs carry 3mm bleed → render bleed-fit (206mm overlay, −3mm offset).
+      // Shared map-render.js places the pins. Keep in sync with template-engine.html.
       if (variant.mapCanvas) {
-        const stub = document.createElement('div');
-        stub.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#9a8f7e;font-family:system-ui,sans-serif;font-size:13px;line-height:1.6;padding:24px;z-index:1;';
-        stub.innerHTML = 'Travel map<br><span style="font-size:11px;opacity:0.7;">preview pending — pins render once<br>the region maps are finalised</span>';
-        canvas.appendChild(stub);
+        const sel    = window._wanderMap || {};
+        const coords = getActiveTemplateData().mapCoordinates || {};
+        const svgPath = window.MapRender ? MapRender.resolveMapSvg(sel.region, spreadDef) : null;
+        if (svgPath) {
+          const mapImg = document.createElement('img');
+          mapImg.className = 'svg-overlay';
+          mapImg.src = SVG_BASE + svgPath;
+          mapImg.alt = '';
+          mapImg.decoding = 'async';
+          mapImg.style.position = 'absolute';
+          mapImg.style.left   = (-BLEED_MM * SCALE) + 'px';
+          mapImg.style.top    = (-BLEED_MM * SCALE) + 'px';
+          mapImg.style.width  = ((200 + BLEED_MM * 2) * SCALE) + 'px';
+          mapImg.style.height = ((200 + BLEED_MM * 2) * SCALE) + 'px';
+          canvas.appendChild(mapImg);
+          MapRender.placeMapPins(canvas, sel.countries || [], spreadDef, coords, { scale: SCALE, bleedMm: BLEED_MM, assetBase: SVG_BASE });
+        } else {
+          const stub = document.createElement('div');
+          stub.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#9a8f7e;font-family:system-ui,sans-serif;font-size:13px;line-height:1.6;padding:24px;z-index:1;';
+          stub.innerHTML = 'Travel map<br><span style="font-size:11px;opacity:0.7;">no region selected</span>';
+          canvas.appendChild(stub);
+        }
       }
 
       variant.slots.forEach((slotDef, slotIdx) => {

@@ -8,6 +8,7 @@
   <script src="../../assets/Template_Wander/wander-data.js"></script>
   <script src="../../assets/js/photo-utils.js"></script>
   <script src="../../assets/js/book-completeness.js"></script>
+  <script src="../../assets/js/map-render.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <style>
     /* ── Staff login gate ── */
@@ -1089,6 +1090,7 @@
   };
 
   let _activeTemplateData = window.SCRIBBLE_DATA; // default
+  let _activeTemplateKey  = 'scribble';           // resolved registry key (for export)
   let SVG_BASE = TEMPLATES.scribble.svgBase;      // default
 
   function getActiveTemplateData() {
@@ -1097,8 +1099,10 @@
 
   function setActiveTemplate(templateName) {
     const key = String(templateName || '').toLowerCase();
-    const t = (TEMPLATES[key] && TEMPLATES[key].data()) ? TEMPLATES[key] : TEMPLATES.scribble;
+    const useKey = (TEMPLATES[key] && TEMPLATES[key].data()) ? key : 'scribble';
+    const t = TEMPLATES[useKey];
     _activeTemplateData = t.data();
+    _activeTemplateKey  = useKey;
     SVG_BASE = t.svgBase;
   }
 
@@ -1345,7 +1349,7 @@
 
     const state = {
       schemaVersion: 3,
-      template: 'scribble',
+      template: _activeTemplateKey,   // was hardcoded 'scribble' — broke Wander PDFs
       pageCount: parseInt(document.getElementById('page-count-select').value, 10),
       sequence: seq,
       assignments,
@@ -1355,6 +1359,9 @@
       coverCaptionStyles: window.coverCaptionStyles || {},
       spreadCaptionStyles: window.spreadCaptionStyles || {},
       heartCrop: window.heartCrop || {},
+      // Wander FP1 Travel-map selection (region + countries). The PDF draws the
+      // region SVG + pins from this; null/absent for non-map templates.
+      mapSelection: window._wanderMap || null,
     };
 
     // Check if in Order mode (staff tool with loaded order)
@@ -1477,6 +1484,8 @@
     thumb.addEventListener('dragend', () => { window._dragType = null; thumb.classList.remove('dragging'); });
 
     const img = document.createElement('img');
+    img.loading = 'lazy';      // defer off-screen thumbnails so scrolling stays smooth
+    img.decoding = 'async';    // decode off the main thread (no quality change — timing only)
     img.src = photo.url;
     img.alt = label;
     img.draggable = false;
@@ -2254,16 +2263,39 @@
         canvas.appendChild(overlay);
       }
 
-      // ── TEMP map stub (chunk-022 blocked on Kseniia's SVG re-export) ──
-      // The Wander FP1 left page is the regional map + pins. That render is not
-      // wired yet (map-render.js exists + is smoke-tested, but the region SVGs
-      // need re-exporting and coordinates re-deriving). Until then, show a clear
-      // placeholder so the page isn't a confusing blank. Remove when wiring the map.
+      // ── Wander FP1 Travel map (chunk-022) ──
+      // The left page is a regional map SVG + one pin per selected country. The
+      // selection (region + countries) is read from window._wanderMap, set from
+      // the order's fpTexts.fp1 in loadOrderIntoEngine before renderBook. Region
+      // SVGs carry 3mm bleed in their viewBox → render bleed-fit (206mm overlay,
+      // −3mm offset), mirroring the order form's renderRegionMap(). Shared
+      // map-render.js places the pins (centre-anchored, with-bleed coords).
       if (variant.mapCanvas) {
-        const stub = document.createElement('div');
-        stub.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#9a8f7e;font-family:system-ui,sans-serif;font-size:13px;line-height:1.6;padding:24px;z-index:1;';
-        stub.innerHTML = 'Travel map<br><span style="font-size:11px;opacity:0.7;">preview pending — pins render once<br>the region maps are finalised</span>';
-        canvas.appendChild(stub);
+        const sel    = window._wanderMap || {};
+        const coords = getActiveTemplateData().mapCoordinates || {};
+        const svgPath = window.MapRender ? MapRender.resolveMapSvg(sel.region, spreadDef) : null;
+        if (svgPath) {
+          const mapImg = document.createElement('img');
+          mapImg.className = 'svg-overlay';
+          mapImg.src = SVG_BASE + svgPath;
+          mapImg.alt = '';
+          mapImg.decoding = 'async';
+          // Bleed-fit: overlay = (content + 2·bleed)·scale, offset −bleed·scale.
+          mapImg.style.position = 'absolute';
+          mapImg.style.left   = (-BLEED_MM * SCALE) + 'px';
+          mapImg.style.top    = (-BLEED_MM * SCALE) + 'px';
+          mapImg.style.width  = ((200 + BLEED_MM * 2) * SCALE) + 'px';
+          mapImg.style.height = ((200 + BLEED_MM * 2) * SCALE) + 'px';
+          mapImg.onerror = () => { console.warn('Map SVG failed to load:', mapImg.src); mapImg.style.outline = '3px solid #e05252'; };
+          canvas.appendChild(mapImg);
+          MapRender.placeMapPins(canvas, sel.countries || [], spreadDef, coords, { scale: SCALE, bleedMm: BLEED_MM, assetBase: SVG_BASE });
+        } else {
+          // No region selected yet (or map module missing) — clear placeholder.
+          const stub = document.createElement('div');
+          stub.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#9a8f7e;font-family:system-ui,sans-serif;font-size:13px;line-height:1.6;padding:24px;z-index:1;';
+          stub.innerHTML = 'Travel map<br><span style="font-size:11px;opacity:0.7;">no region selected</span>';
+          canvas.appendChild(stub);
+        }
       }
 
       // Render photo slots
@@ -3042,8 +3074,12 @@
     }
 
     const pageCount  = parseInt(document.getElementById('page-count-select').value);
-    const selectedFPs = Array.from(document.querySelectorAll('input[name="fp"]:checked'))
+    const checkedFPs = Array.from(document.querySelectorAll('input[name="fp"]:checked'))
                              .map(cb => cb.value);
+    // Prepend order-only functional pages (e.g. Wander FP1 map) that have no
+    // checkbox but belong to the loaded order (set in loadOrderIntoEngine).
+    const orderOnlyFPs = (window._orderOnlyFPs || []).filter(id => !checkedFPs.includes(id));
+    const selectedFPs = [...orderOnlyFPs, ...checkedFPs];
 
     const rs = window._restoreState;
     const sequence = (rs && rs.sequence && rs.sequence.length) ? rs.sequence : buildBookSequence(pageCount, selectedFPs);
@@ -3489,6 +3525,7 @@
     // Reset per-template state so the previous template's special photos/captions
     // don't leak into the new render.
     window.specialPhotos = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
+    window._orderOnlyFPs = []; // clear order-only map pages when switching template
     buildLocalTemplateUI();
     updateSpecialPanel();
     updatePhotoHint();
@@ -3670,6 +3707,7 @@
 
   function setEngineMode(mode) {
     const isOrder = mode === 'order';
+    if (!isOrder) window._orderOnlyFPs = []; // order-only map pages don't apply in Local mode
     document.getElementById('mode-local-btn').classList.toggle('active', !isOrder);
     document.getElementById('mode-order-btn').classList.toggle('active', isOrder);
     document.getElementById('local-mode-controls').style.display = isOrder ? 'none' : 'flex';
@@ -3770,7 +3808,12 @@
     const fpLabels = { FP1: 'Birthday wishes', FP2: 'Funny words', FP3: 'Favourite toy', FP4: 'First steps', FP5: 'Art gallery captions' };
     Object.entries(fpTexts).forEach(([key, val]) => {
       const label = fpLabels[key.toUpperCase()] || key;
-      const display = Array.isArray(val) ? val.join(', ') : val;
+      let display;
+      if (Array.isArray(val)) display = val.join(', ');
+      else if (val && typeof val === 'object') {
+        // FP1 map: {region, countries, itinerary}
+        display = [(val.countries || []).join(', '), val.itinerary].filter(Boolean).join(' — ');
+      } else display = val;
       addRow(label, display);
     });
 
@@ -3790,6 +3833,15 @@
     window.captionState     = {};
     window.specialPhotos    = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
 
+    // Wander FP1 map selection (region + countries). fpTexts.fp1 is an OBJECT
+    // {region, countries, itinerary} — the map render (renderBook) reads region
+    // + countries; the itinerary string feeds the right-page text panel below.
+    // Set before renderBook so the map paints on first render (both paths).
+    const _fp1 = (order.fpTexts || {}).fp1;
+    window._wanderMap = (_fp1 && typeof _fp1 === 'object' && !Array.isArray(_fp1))
+      ? { region: _fp1.region, countries: _fp1.countries || [] }
+      : null;
+
     // 2. Set page count
     const pcSelect = document.getElementById('page-count-select');
     if (order.pageCount) pcSelect.value = String(order.pageCount);
@@ -3797,6 +3849,16 @@
     // 3. Set FP checkboxes (without triggering renderBook yet)
     document.querySelectorAll('input[name="fp"]').forEach(cb => {
       cb.checked = (order.fpSelections || []).includes(cb.value);
+    });
+    // Order-only functional pages (e.g. Wander FP1 map) have NO local checkbox —
+    // buildLocalTemplateUI excludes mapPage spreads. The sequence is otherwise
+    // built purely from checked boxes, so without this the map page would never
+    // enter the book (it'd be replaced by a standard photo spread). Capture them
+    // from the order's fpSelections so renderBook can inject them.
+    const _tplSpreads = getActiveTemplateData().spreads || {};
+    window._orderOnlyFPs = (order.fpSelections || []).filter(id => {
+      const sp = _tplSpreads[id];
+      return sp && sp.type === 'functional' && sp.mapPage;
     });
     updateSpecialPanel();
 
@@ -3941,7 +4003,11 @@
       const spreadIndex = seq.indexOf(fpKey);
       if (spreadIndex === -1) return;
 
-      const text = Array.isArray(value) ? value.join('\n') : (value || '');
+      // fpTexts.fp1 is an object {region, countries, itinerary}; other FPs are
+      // strings/arrays. The text panel shows the itinerary for the map page.
+      const text = Array.isArray(value)
+        ? value.join('\n')
+        : (value && typeof value === 'object' ? (value.itinerary || '') : (value || ''));
       if (!text) return;
 
       // Find the rendered text panel in the DOM
@@ -3949,10 +4015,13 @@
       const panel = row && row.querySelector('.fp-text-panel');
       if (panel) {
         panel.textContent = text;
-        // Persist to bookCaptions so export + re-renders pick it up
+        // Persist to bookCaptions under the panel's ACTUAL side — Scribble FP1/FP2
+        // put the panel on the left page, Wander FP1 (itinerary) on the right.
+        // Reading the side from the DOM keeps both correct on re-render/export.
+        const panelSide = panel.closest('.page-canvas')?.dataset.side || 'left';
         if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
-        if (!window.bookCaptions[spreadIndex].left) window.bookCaptions[spreadIndex].left = {};
-        window.bookCaptions[spreadIndex].left['textPanel'] = text;
+        if (!window.bookCaptions[spreadIndex][panelSide]) window.bookCaptions[spreadIndex][panelSide] = {};
+        window.bookCaptions[spreadIndex][panelSide]['textPanel'] = text;
       }
     });
 

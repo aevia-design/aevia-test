@@ -161,6 +161,7 @@ exports.getOrder = functions
       return res.status(200).json({
         orderNumber:          order.orderNumber,
         customerName:         order.customerName,
+        templateName:         order.templateName || null,
         email:                order.email || null,
         status:               order.status || null,
         price:                order.price || null,

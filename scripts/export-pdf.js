@@ -402,6 +402,61 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
     }
   }
 
+  // ── Wander FP1 Travel map (chunk-022) ────────────────────────────────────────
+  // The left map page draws a regional SVG + one pin per selected country. The
+  // selection lives in state.mapSelection {region, countries} (written by the
+  // engine's Export). Region SVGs are ALREADY bleed-framed (viewBox = 206mm), so
+  // — unlike content SVGs above — they are NOT viewBox-expanded: resize straight
+  // to FULL_PX at origin. Pin coords are with-bleed mm measured from the canvas
+  // (bleed) edge, so they map directly to FULL_PX (no bleed subtraction; the
+  // browser subtracts bleed only because its canvas origin is the content edge).
+  if (pageDef.mapCanvas) {
+    const sel       = state.mapSelection || {};
+    const spreadDef = DATA.spreads[spreadId] || {};
+    const region    = sel.region;
+    const mapPath   = region && spreadDef.maps ? spreadDef.maps[region] : null;
+    if (mapPath) {
+      const mapSvgPath = path.join(ASSET_BASE, mapPath);
+      if (fs.existsSync(mapSvgPath)) {
+        try {
+          const mapBuffer = await sharp(fs.readFileSync(mapSvgPath))
+            .resize(FULL_PX, FULL_PX, { fit: 'fill' })
+            .png()
+            .toBuffer();
+          composites.push({ input: mapBuffer, left: 0, top: 0 });
+        } catch (e) {
+          console.warn(`  ⚠ Map SVG failed (${path.basename(mapPath)}): ${e.message}`);
+        }
+      } else {
+        console.warn(`  ⚠ Map SVG not found: ${mapPath}`);
+      }
+
+      // Pins — one per selected country in the drawn region.
+      const pin    = spreadDef.pin || {};
+      const coords = DATA.mapCoordinates || {};
+      const pinW   = Math.round((pin.wMm || 12) * MM_TO_PX);
+      const pinH   = Math.round((pin.hMm || 23) * MM_TO_PX);
+      if (pin.png) {
+        const pinPath = path.join(ASSET_BASE, pin.png);
+        if (fs.existsSync(pinPath)) {
+          const pinBuffer = await sharp(fs.readFileSync(pinPath))
+            .resize(pinW, pinH, { fit: 'fill' })
+            .png()
+            .toBuffer();
+          for (const name of (sel.countries || [])) {
+            const c = coords[name];
+            if (!c || c.region !== region) continue;
+            const left = Math.round(c.xMm * MM_TO_PX - pinW / 2);
+            const top  = Math.round(c.yMm * MM_TO_PX - pinH / 2);
+            composites.push({ input: pinBuffer, left, top });
+          }
+        } else {
+          console.warn(`  ⚠ Map pin not found: ${pin.png}`);
+        }
+      }
+    }
+  }
+
   // Composite everything and return PNG buffer
   const buf = await canvas.composite(composites).toBuffer();
   return buf;
