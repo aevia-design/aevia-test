@@ -33,11 +33,19 @@ const stripHtml = s => {
     .trim();
   // Warn if unrecognised tags remain (e.g. <span style="...">) so new tag types
   // are caught at export time rather than silently discarding formatting.
-  const naive = s.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/ /g, ' ').trim();
+  const naive = s
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<div>/gi, '\n').replace(/<\/div>/gi, '')
+    .replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/ /g, ' ').trim();
   if (stripped !== naive) {
     console.warn('stripHtml: unhandled HTML tags detected — check caption formatting:', s.slice(0, 120));
   }
-  return stripped;
+  // Collapse whitespace per line to match how the browser renders the contenteditable:
+  // runs of spaces/tabs become one space and each line is trimmed. Without this, a
+  // trailing space (typically an NBSP inserted before a manual line break, normalised to
+  // a space above) inflates the measured line width in the PDF word-wrap and spuriously
+  // wraps a line that fits on one line on screen. Newlines are preserved as line breaks.
+  return stripped.split('\n').map(l => l.replace(/[ \t]+/g, ' ').trim()).join('\n');
 };
 
 // ── CLI args ──────────────────────────────────────────────────────────────────
@@ -171,6 +179,55 @@ function expandSvgViewBox(svgStr, bleedUnits) {
     const nh = (h + bleedUnits * 2).toFixed(4);
     return `viewBox="${nx} ${ny} ${nw} ${nh}"`;
   });
+}
+
+// Some Wander overlay SVGs embed full-resolution rasters (one <image> per design
+// element) drawn at a tiny scale — e.g. a 2508px PNG placed at scale(.02), occupying
+// only ~215px on the printed page (~12× over-resolution). The base64 for these blows
+// past libxml2's ~10MB-per-node limit, so sharp/librsvg refuses to parse the SVG and
+// the entire overlay silently drops from the PDF (browsers have no such limit, so the
+// staff/customer engines render it fine). This downsamples each embedded raster to ~2×
+// its on-page display size (already beyond what 300dpi print can resolve, so lossless)
+// so the file drops below the limit and renders normally. Gated on `thresholdBytes`:
+// the live Scribble template's largest SVG is 5.5MB, so it is never touched. Any per-
+// image failure leaves that image untouched; a whole-file failure returns the original.
+async function shrinkOversizedSvg(svgStr, canvasPx, thresholdBytes = 8 * 1024 * 1024) {
+  try {
+    if (svgStr.length <= thresholdBytes) return svgStr;
+    const tags = svgStr.match(/<image\b[^>]*>/gi);
+    if (!tags) return svgStr;
+    const vbM = svgStr.match(/viewBox="([^"]+)"/i);
+    const viewBoxW = vbM ? Number(vbM[1].trim().split(/[\s,]+/)[2]) : 0;
+    let out = svgStr;
+    for (const tag of tags) {
+      try {
+        const hrefM = tag.match(/(?:xlink:href|href)="data:image\/(png|jpe?g);base64,([^"]+)"/i);
+        if (!hrefM) continue;
+        const fmt = hrefM[1].toLowerCase().startsWith('jp') ? 'jpeg' : 'png';
+        const b64 = hrefM[2];
+        const intrinsicW = Number((tag.match(/\bwidth="([\d.]+)"/) || [])[1]) || 0;
+        // Effective horizontal scale from scale(a) or matrix(a,…); default 1 (full size).
+        // A negative-first scale (e.g. a horizontal flip, scale(-.06 .06)) won't match and
+        // defaults to 1 → the image is treated as full-size and skipped below: fail-safe.
+        const tr = (tag.match(/transform="([^"]+)"/i) || [])[1] || '';
+        const sM = tr.match(/scale\(\s*([\d.]+)/i);
+        const mM = tr.match(/matrix\(\s*([\d.eE+-]+)/i);
+        const scale = sM ? Number(sM[1]) : (mM ? Number(mM[1]) : 1);
+        const displayPx = (intrinsicW && viewBoxW)
+          ? (intrinsicW * scale / viewBoxW) * canvasPx : canvasPx;
+        const targetPx = Math.max(1, Math.min(intrinsicW || canvasPx, Math.ceil(displayPx * 2)));
+        if (intrinsicW && targetPx >= intrinsicW) continue; // already at/below target
+        const inBuf  = Buffer.from(b64, 'base64');
+        const pipe   = sharp(inBuf).resize(targetPx, null, { withoutEnlargement: true });
+        const outBuf = fmt === 'jpeg'
+          ? await pipe.jpeg({ quality: 90 }).toBuffer()
+          : await pipe.png().toBuffer();
+        if (outBuf.length >= inBuf.length) continue; // no size gain — keep original
+        out = out.replace(b64, outBuf.toString('base64'));
+      } catch { /* leave this embedded image untouched */ }
+    }
+    return out;
+  } catch { return svgStr; }
 }
 
 // SVG user units per mm at 72 dpi (SVG default).
@@ -388,7 +445,8 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
     if (fs.existsSync(svgPath)) {
       try {
         const svgStr     = fs.readFileSync(svgPath, 'utf8');
-        const svgExpanded = expandSvgViewBox(svgStr, SPREAD_SVG_BLEED_UNITS);
+        const svgShrunk  = await shrinkOversizedSvg(svgStr, FULL_PX);
+        const svgExpanded = expandSvgViewBox(svgShrunk, SPREAD_SVG_BLEED_UNITS);
         const svgBuffer  = await sharp(Buffer.from(svgExpanded))
           .resize(FULL_PX, FULL_PX, { fit: 'fill' })
           .png()
@@ -503,7 +561,12 @@ async function embedAllFonts(pdfDoc) {
 // for ligature glyphs in the PDF W array, causing visible gaps mid-word. The bulletproof workaround
 // is to draw each character as its own drawText call — fontkit can't form a ligature across separate
 // calls (no shaping context). Tradeoff: loses pair kerning, but barely perceptible at body sizes.
-const LIGATURE_FONTS = new Set(['EB Garamond']);
+// Cormorant Garamond has the same fontkit GSUB bug and needs the same workaround.
+const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond']);
+// EB Garamond additionally suppresses letter-spacing in the char-by-char path; the shaping
+// context loss caused irregular gaps when spacing was also applied. Cormorant Garamond keeps
+// its defined letter-spacing because the -0.02em tightening is aesthetically required.
+const SUPPRESS_LETTER_SPACING_FONTS = new Set(['EB Garamond']);
 
 // Measure a string's rendered width by summing per-character widths (no ligature shaping).
 function measureNoLig(font, text, sizePt, charSpacing) {
@@ -606,7 +669,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
 
     const sizePt        = (ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 16;
     const lineSpacingPt = sizePt * ((ov.lineSpacing !== undefined ? ov.lineSpacing : capDef.lineSpacing) || 1.28);
-    const charSpacing   = LIGATURE_FONTS.has(fontName) ? 0
+    const charSpacing   = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0
       : ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
 
     const lines = String(text).split('\n').filter(l => l.trim());
@@ -679,7 +742,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
         ? ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 20) * MM_TO_PT
         : ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 16) * PANEL_PT_SCALE;
       const lineSpacingPt = sizePt * ((ov.lineSpacing !== undefined ? ov.lineSpacing : capDef.lineSpacing) || 1.28);
-      const charSpacing   = LIGATURE_FONTS.has(fontName) ? 0
+      const charSpacing   = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0
       : ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
       // xMm/yMm are CENTER coords (with-bleed mm). Convert to pdf-lib box origin (bottom-left).
       const boxWidthPt  = capDef.wMm * MM_TO_PT;
@@ -791,7 +854,8 @@ async function renderCoverImage(coverDef, coverPhotoName) {
     if (fs.existsSync(svgPath)) {
       try {
         const svgStr      = fs.readFileSync(svgPath, 'utf8');
-        const svgExpanded = expandSvgViewBox(svgStr, COVER_SVG_BLEED_UNITS);
+        const svgShrunk   = await shrinkOversizedSvg(svgStr, COVER_FULL_W_PX);
+        const svgExpanded = expandSvgViewBox(svgShrunk, COVER_SVG_BLEED_UNITS);
         const svgBuffer   = await sharp(Buffer.from(svgExpanded))
           .resize(COVER_FULL_W_PX, COVER_FULL_H_PX, { fit: 'fill' })
           .png().toBuffer();
@@ -837,7 +901,7 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
 
     const sizePt      = ov.sizePt || capDef.sizePt || 20;
     const lineSpacing = sizePt * (ov.lineSpacing || 1.28);
-    const charSpacing = LIGATURE_FONTS.has(fontName) ? 0 : ((ov.letterSpacing || 0)) * sizePt;
+    const charSpacing = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0 : ((ov.letterSpacing || 0)) * sizePt;
     const color       = resolveColor(ov.color || capDef.color);
     const lines = text.split('\n').filter(l => l.trim());
 
