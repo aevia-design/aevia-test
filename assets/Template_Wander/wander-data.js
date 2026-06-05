@@ -321,12 +321,12 @@ window.WANDER_DATA = {
       pin: { png: 'FP Spread 1 - Special Files/GEO PIN.png', wMm: 12, hMm: 23, anchor: 'center' },
       // region code (from mapCoordinates) → left-page map SVG
       maps: {
-        'EU':         'FP Spread 1/FP 01 Map Left (EU).svg',
-        'Asia':       'FP Spread 1/FP 01 Map Left (Asia).svg',
-        'Africa':     'FP Spread 1/FP 01 Map Left (Africa).svg',
-        'N.America':  'FP Spread 1/FP 01 Map Left (N.America).svg',
-        'S.America':  'FP Spread 1/FP 01 Map Left (S.America).svg',
-        'Oceania':    'FP Spread 1/FP 01 Map Left (Oceania).svg',
+        'EU':         'FP Spread 1/FP 01 Map Left (EU).png',
+        'Asia':       'FP Spread 1/FP 01 Map Left (Asia).png',
+        'Africa':     'FP Spread 1/FP 01 Map Left (Africa).png',
+        'N.America':  'FP Spread 1/FP 01 Map Left (N.America).png',
+        'S.America':  'FP Spread 1/FP 01 Map Left (S.America).png',
+        'Oceania':    'FP Spread 1/FP 01 Map Left (Oceania).png',
       },
       pages: {
         left: {

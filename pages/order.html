@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Create your book — Aevia</title>
   <style>
+    /* Cormorant Garamond — used in the Wander FP1 spread preview to match the engine's itinerary page */
+    @font-face { font-family: 'Cormorant Garamond'; src: url('../assets/fonts/CormorantGaramond-Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
+    @font-face { font-family: 'Cormorant Garamond'; src: url('../assets/fonts/CormorantGaramond-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
     :root {
       --bg: #fafaf8; --surface: #f3efe9; --border: #e4dfd8;
       --text: #1a1a1a; --muted: #7d7570; --accent-dk: #a8895f;
@@ -621,6 +624,44 @@ function addWordRow(slug, maxWords) {
   }
 }
 
+// Wander itinerary — one route line per row (mirrors addWordRow, capped at maxRows).
+function addItinRow(slug, maxRows) {
+  const list = document.getElementById(`itin-list-${slug}`);
+  if (!list) return;
+  const count = list.children.length;
+  if (count >= maxRows) return;
+  const idx = count + 1;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+  row.innerHTML = `
+    <span style="min-width:22px;font-size:13px;color:var(--muted);text-align:right;">${idx}.</span>
+    <input type="text" class="itin-line" placeholder="e.g. Day ${idx}: …" oninput="updateItinPreview('${slug}')"
+      style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;" />`;
+  list.appendChild(row);
+  if (list.children.length >= maxRows) {
+    document.getElementById(`itin-add-btn-${slug}`).style.display = 'none';
+  }
+}
+
+// Read the filled itinerary lines for a slug, in order, trimmed (empties dropped).
+function getItinLines(slug) {
+  const list = document.getElementById(`itin-list-${slug}`);
+  if (!list) return [];
+  return Array.from(list.querySelectorAll('input.itin-line')).map(i => i.value.trim()).filter(Boolean);
+}
+
+function escHtml(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+// Live-update only the itinerary (right) page of the spread preview, so typing
+// doesn't reload the map image. Falls back to a full render if the page isn't shown.
+function updateItinPreview(slug) {
+  const panel = document.getElementById(`itin-text-${slug}`);
+  if (!panel) { renderRegionMap(slug); return; }
+  panel.innerHTML = itinLinesHtml(slug);
+}
+
 function initAddonFields() {
   const container = document.getElementById('addon-fields');
   ORDER.addons.filter(a => a.inputType === 'text').forEach(addon => {
@@ -795,6 +836,13 @@ function renderCountrySelect(slug, meta) {
     opts += `</optgroup>`;
   });
   const inputStyle = 'background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;';
+  const itinExamples = ['Day 1: Arrival in Rome, rest', 'Days 2–4: Hiking in the Dolomites', 'Days 5–6: Florence — art & food'];
+  const itinRows = itinExamples.map((ex, i) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="min-width:22px;font-size:13px;color:var(--muted);text-align:right;">${i + 1}.</span>
+      <input type="text" class="itin-line" placeholder="e.g. ${ex}" oninput="updateItinPreview('${slug}')"
+        style="flex:1;${inputStyle}" />
+    </div>`).join('');
   return `
     <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Countries visited</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">Select every country on this trip. They must all be in the same region — the map covers one region at a time.</div>
@@ -803,8 +851,11 @@ function renderCountrySelect(slug, meta) {
     <div id="country-err-${slug}" style="display:none;font-size:12px;color:#b4413c;margin-top:8px;line-height:1.5;"></div>
     <div id="region-map-${slug}" style="margin-top:16px;"></div>
     <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin:22px 0 6px;">${meta.textPrompt || 'Your route'}</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${meta.hint || ''}</div>
-    <textarea id="addon-text-${slug}" placeholder="${meta.placeholder || ''}" rows="3" style="width:100%;${inputStyle}resize:vertical;"></textarea>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${meta.hint || 'List your route one stop per line — staff will set the final styling.'}</div>
+    <div id="itin-list-${slug}">${itinRows}</div>
+    <button type="button" id="itin-add-btn-${slug}" onclick="addItinRow('${slug}',7)"
+      style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;font-family:var(--sans);color:var(--muted);cursor:pointer;margin-top:2px;">+ Add a line</button>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px;">Up to 7 lines.</div>
   `;
 }
 
@@ -877,18 +928,52 @@ function renderRegionMap(slug) {
     return;
   }
 
-  // Square preview at the book's coordinate system: canvas = 200mm × scale.
-  // Region SVGs carry 3mm bleed in their viewBox, so the overlay is sized to
-  // 206mm and offset −3mm (the bleed is clipped by the canvas). Sized to the
-  // column width (capped) so it stays crisp without overflowing.
+  // Rough spread preview: the two real Wander FP1 pages side by side — region map
+  // on the left, the actual itinerary page (its own SVG background + the route text
+  // dropped into the engine's text-panel position) on the right. Mirrors how the
+  // staff engine renders this spread; only the final staff typesetting is missing.
   const ASSET_BASE = '../assets/Template_Wander/';
-  const W = Math.min(el.clientWidth || 360, 420);
-  const scale = W / (data.pageSize || 200);
+  const colW  = Math.min(el.clientWidth || 360, 520);
+  const Wp    = Math.max(140, Math.floor((colW - 10) / 2)); // each page square, 10px gutter
+  const scale = Wp / (data.pageSize || 200);
   const bleed = data.bleed != null ? data.bleed : 3;
 
+  // Right page = FP1's right-page def: background SVG + a centred text panel.
+  // Geometry comes straight from wander-data (with-bleed mm, panel CENTRE), so the
+  // preview stays in sync with the engine/print. Font size is scaled to this preview
+  // from the engine's 600px page canvas so the text looks proportionally identical.
+  const rightDef  = fp1?.pages?.right?.default || {};
+  const rightSvg  = rightDef.svg;
+  const tp        = rightDef.textPanel?.caption;
+  const ENGINE_CANVAS_PX = (data.pageSize || 200) * 3; // engine page-canvas px (3px/mm)
+  let panelStyle = '', rightBg = '';
+  if (tp) {
+    const panelW   = tp.wMm * scale;
+    const panelH   = tp.hMm * scale;
+    const panelL   = (tp.xMm - bleed) * scale - panelW / 2;
+    const panelT   = (tp.yMm - bleed) * scale - panelH / 2;
+    const fontPx   = (tp.sizePt * (96 / 72) * Wp / ENGINE_CANVAS_PX).toFixed(1);
+    const weight   = tp.style === 'light' ? 300 : 400;
+    panelStyle = `position:absolute;left:${panelL}px;top:${panelT}px;width:${panelW}px;height:${panelH}px;`
+      + `display:flex;flex-direction:column;justify-content:${tp.valign === 'center' ? 'center' : 'flex-start'};`
+      + `text-align:${tp.halign || 'center'};font-family:'Cormorant Garamond',var(--serif);font-weight:${weight};`
+      + `font-size:${fontPx}px;line-height:${tp.lineSpacing || 1.28};letter-spacing:${tp.letterSpacing || 0}em;`
+      + `color:${tp.color || '#12264b'};z-index:1;overflow:hidden;`;
+  }
+  if (rightSvg) rightBg = `<img src="${ASSET_BASE}${rightSvg}" alt="" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;" />`;
+
+  const itinTextHtml = itinLinesHtml(slug);
+
   el.innerHTML = `
-    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Your map · ${label}</div>
-    <div id="map-canvas-${slug}" style="position:relative;width:${W}px;height:${W}px;border:1px solid var(--border);border-radius:6px;background:#f2ede3;overflow:hidden;"></div>`;
+    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Spread preview · ${label}</div>
+    <div style="display:flex;gap:10px;align-items:flex-start;">
+      <div id="map-canvas-${slug}" style="position:relative;width:${Wp}px;height:${Wp}px;border:1px solid var(--border);border-radius:6px 0 0 6px;background:#f2ede3;overflow:hidden;flex:0 0 auto;"></div>
+      <div style="position:relative;width:${Wp}px;height:${Wp}px;border:1px solid var(--border);border-radius:0 6px 6px 0;background:#f2ede3;overflow:hidden;flex:0 0 auto;">
+        ${rightBg}
+        <div id="itin-text-${slug}" style="${panelStyle}">${itinTextHtml}</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">Rough preview — staff will format the final layout before you approve.</div>`;
 
   const canvas = document.getElementById(`map-canvas-${slug}`);
   const overlay = document.createElement('img');
@@ -897,6 +982,14 @@ function renderRegionMap(slug) {
   overlay.style.cssText = `position:absolute;left:${-bleed * scale}px;top:${-bleed * scale}px;width:${(200 + bleed * 2) * scale}px;height:${(200 + bleed * 2) * scale}px;z-index:2;`;
   canvas.appendChild(overlay);
   MapRender.placeMapPins(canvas, state.countries, fp1, coords, { scale, bleedMm: bleed, assetBase: ASSET_BASE });
+}
+
+// Itinerary lines as HTML for the right-page text panel (one line per row).
+function itinLinesHtml(slug) {
+  const itin = getItinLines(slug);
+  return itin.length
+    ? itin.map(l => `<div>${escHtml(l)}</div>`).join('')
+    : `<div style="opacity:0.45;font-style:italic;">Your route will appear here…</div>`;
 }
 
 function initSpecialDragDrop() {
@@ -1429,9 +1522,8 @@ async function submitOrder() {
         errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
-      const itinerary = (document.getElementById(`addon-text-${addon.slug}`) || {}).value || '';
-      if (!itinerary.trim()) {
-        errEl.textContent = `Please add your route for "${addon.name}", or remove this page.`;
+      if (!getItinLines(addon.slug).length) {
+        errEl.textContent = `Please add at least one route line for "${addon.name}", or remove this page.`;
         errEl.style.display = 'block';
         errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
@@ -1497,10 +1589,10 @@ async function submitOrder() {
     if (!textMeta) return;
     if (textMeta.countrySelect) {
       const state = window._fpCountries[a.slug] || { region: null, countries: [] };
-      const itinerary = (document.getElementById(`addon-text-${a.slug}`) || {}).value?.trim() || '';
+      const itinerary = getItinLines(a.slug).join('\n');
       if (state.countries.length || itinerary) {
         fpTexts[a.slug] = { region: state.region, countries: state.countries, itinerary };
-        addonNoteLines.push(`${a.name}: ${state.countries.join(', ')}${itinerary ? ` — ${itinerary}` : ''}`);
+        addonNoteLines.push(`${a.name}: ${state.countries.join(', ')}${itinerary ? ` — ${itinerary.replace(/\n/g, '; ')}` : ''}`);
       }
     } else if (textMeta.funnyWords) {
       const wordList = document.getElementById(`fp-word-list-${a.slug}`);
