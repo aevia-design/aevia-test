@@ -1,17 +1,20 @@
 # Session Status
-_Last updated: 2026-06-05 (session 36)_
+_Last updated: 2026-06-05 (session 37)_
 
 ## Status
-**Session 36 (2026-06-05) — re-exported EU region map; settled the framing debate with `/systematic-debugging`. Committed + PUSHED (`0c92717`) to `main` (Cloudflare auto-deploys). ⚠ Even framing confirmed by Evgeny in the ORDER FORM ONLY — staff engine + customer preview NOT yet visually checked.**
+**Session 37 (2026-06-05) — (a) confirmed the EU map now renders correctly in the STAFF ENGINE (the earlier "off" look was a stale browser cache of the same-filename re-export — hard-refresh fixed it); (b) synced Wander caption font/size edits from the CSVs into `wander-data.js`. Both CSVs + `wander-data.js` committed + PUSHED (`e9e2029`) to `main`. 85/85 tests.**
 
-**What happened:** Evgeny was still unhappy with map framing after S35, re-exported `FP 01 Map Left (EU).png`. Instead of more pixel-guessing (the S35 time-sink), measured the live order-form DOM geometry (`qa/inspect-map-dom.mjs`): PNG is square 4056², bleed even ~2.85 mm all edges, **clip symmetric to 0.02 px (L 2.78 / R 2.80 / T 2.78 / B 2.80)** — proving our trim was already even. The re-export itself fixed his concern; he confirmed **"now it's good"** in the order form. Pushed the new PNG + the diagnostic script.
+**What happened:**
+1. **Map framing on staff engine — RESOLVED (was a cache artefact).** An old order's FP1 map looked "off" in the engine vs a new order in the order form. Verified the code paths are identical (same PNG asset, same bleed-fit math; engine canvas is a clean 600px, no border → no asymmetry). Root cause = stale cached PNG from the S36 same-filename re-export; **hard-refresh (Ctrl+Shift+R)** fixed it and Evgeny confirmed the engine now matches. Order age does NOT affect framing (orders store only region+countries; geometry/asset resolve fresh from code).
+2. **CSV → `wander-data.js` caption sync.** Hand-synced (no generator): SP0 H+V `NT Somic/16pt/medium` → `Cormorant Garamond/18pt/bold`; all 12 standard-spread captions `16pt → 18pt`; cover spine `xMm 222 → 222.5` + `16pt → 18pt`. SP0 no longer uses NT Somic anywhere.
 
-### ▶ NEXT SESSION (Session 37)
-0. **Evgeny: visually check the map in the STAFF ENGINE + CUSTOMER PREVIEW.** Even framing was confirmed in the order form ONLY. Both other surfaces read the same single `wander-data.js` map entry + identical clip math, so they *should* match — but unconfirmed by eye. Load a Wander order with EU FP1 in the engine and on a customer preview link; confirm the map frame looks the same as the order form.
-1. customer-preview + PDF map render are still **code-complete but never E2E-tested with a real order** (carried from S33).
-2. Optionally delete the moot `docs/briefs/wander-map-reexport-spec.md` and tell Kseniia to stop re-exporting.
+### ▶ NEXT SESSION (Session 38)
+0. **Evgeny: eyeball the new 18pt captions** across a Wander book in the staff engine (and ideally a customer preview + PDF) — the sizes/SP0 font just changed and are live but not yet visually reviewed on the actual book pages.
+1. **Customer preview map render is still NOT visually checked** (only the staff engine was confirmed in S37). Customer-preview + PDF map render also still **never E2E-tested with a real order** (carried from S33).
+2. Optionally delete the moot `docs/briefs/wander-map-reexport-spec.md` (untracked) and tell Kseniia to stop re-exporting.
 3. Parked: bug #5 fetch-retry (not reproduced); TO-DO #67 rich-text caption editor (partial bold / Ctrl+B) = whole dedicated session.
 4. Diagnostic `qa/inspect-map-dom.mjs` exists — run it from REPO ROOT (writes to `sessions/qa-runs/`); running from `qa/` makes a stray `qa/sessions/`.
+5. **Asset-cache gotcha:** re-exporting any asset under the SAME filename serves the cached old image in open tabs — hard-refresh before judging any render.
 
 ### Previous: Session 35
 **Session 35 (2026-06-05) — order-form polish + map render fix. All shipped + PUSHED to `main`.**
