@@ -151,6 +151,35 @@ async function handler(req, res) {
       `https://console.cloud.google.com/storage/browser/` +
       `${BUCKET_NAME}/${encodeURIComponent(folderName)}`;
 
+    // ─ CHUNK 4 PART A: Write Firestore order doc FIRST (before any emails) ─
+    // Status is 'uploading' until confirmUpload is called; uploadComplete flag
+    // prevents double-emails on retry. Store the normalised email (Chunk 1 sends it trimmed+lowercased).
+    const db = admin.firestore();
+    await db.collection('orders').doc(orderNumber).set({
+      orderNumber,
+      customerName,
+      email,
+      templateName,
+      pageCount,
+      price: price || null,
+      specialRequests: specialRequests || null,
+      photoNotes: photoNotes || null,
+      fpTexts: fpTexts || null,
+      fpSelections: fpSelections && fpSelections.length ? fpSelections : null,
+      photoCount: photoCount || null,
+      fileCount: fileList.length,
+      folderName,
+      photoManifest,
+      folderLink,
+      status: 'uploading',
+      uploadComplete: false,
+      token,
+      previewToken: null,
+      coverCaptions: coverCaptions || null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // ─ Send ONLY the STAFF email (customer email moves to confirmUpload) ─
     const transporter = createTransporter();
 
     await transporter.sendMail({
@@ -187,10 +216,107 @@ async function handler(req, res) {
       `,
     });
 
+    // Save order-details.txt to GCS so staff can read it in the bucket browser
+    const detailLines = [
+      `Order:     ${orderNumber}`,
+      `Customer:  ${customerName}`,
+      `Email:     ${email}`,
+      `Template:  ${templateName}`,
+      `Pages:     ${pageCount}`,
+      `Photos:    ${fileList.length}`,
+      `Submitted: ${new Date().toISOString()}`,
+    ];
+    if (photoNotes)      detailLines.push(``, `About this album:`, photoNotes);
+    if (specialRequests) detailLines.push(``, `Special requests:`, specialRequests);
+    if (fpSelections && fpSelections.length) {
+      detailLines.push(``, `Add-ons: ${fpSelections.join(', ')}`);
+    }
+    if (fpTexts && Object.keys(fpTexts).length) {
+      detailLines.push(``, `Add-on notes:`);
+      Object.entries(fpTexts).forEach(([key, val]) => {
+        const display = Array.isArray(val) ? val.join(', ') : val;
+        detailLines.push(`  ${key}: ${display}`);
+      });
+    }
+    await bucket.file(`${folderName}/order-details.txt`)
+      .save(detailLines.join('\n'), { contentType: 'text/plain; charset=utf-8' });
+
+    // ─ CHUNK 4 PART A: Return response with token (Chunk 5 needs it) ─
+    return res.status(200).json({
+      success: true,
+      orderNumber,
+      folderName,
+      totalSlots,
+      uploadUrls,
+      expiresAt: expiresAt.toISOString(),
+      token,
+    });
+
+  } catch (err) {
+    console.error('[createUploadSession] Error:', err);
+    return res.status(500).json({
+      error: 'Server error — please try again or contact support.',
+      detail: err.message,
+    });
+  }
+}
+
+exports.createUploadSessionHandler = (req, res) => cors(req, res, () => handler(req, res));
+
+// ─── CHUNK 4 PART B: confirmUpload Cloud Function ───────────────────────────────
+// Input: { orderNumber, token }
+// Auth: validate token against stored token; reject mismatch with 403
+// Action: set status='new', uploadComplete=true; send customer confirmation email
+// Idempotent: if uploadComplete already true, return 200 without re-sending
+async function confirmUploadHandler(req, res) {
+  if (req.method === 'OPTIONS') return res.status(204).send('');
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { orderNumber, token } = req.body;
+
+    if (!orderNumber || !token) {
+      return res.status(400).json({ error: 'orderNumber and token are required' });
+    }
+
+    const db = admin.firestore();
+    const doc = await db.collection('orders').doc(orderNumber).get();
+
+    // Auth: order must exist and token must match
+    if (!doc.exists) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+
+    const order = doc.data();
+    if (order.token !== token) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+
+    // Idempotency: if uploadComplete is already true, return 200 without re-sending
+    if (order.uploadComplete === true) {
+      return res.status(200).json({ success: true });
+    }
+
+    // Update order: status → 'new', uploadComplete → true
+    await db.collection('orders').doc(orderNumber).update({
+      status: 'new',
+      uploadComplete: true,
+    });
+
+    // Send customer confirmation email (template moved from createUploadSession)
+    const transporter = createTransporter();
+    const customerName = order.customerName;
+    const customerEmail = order.email;
+    const templateName = order.templateName;
+    const pageCount = order.pageCount;
+    const price = order.price;
+
     await transporter.sendMail({
       from:     `"Aevia" <${process.env.EMAIL_USER}>`,
       replyTo:  'xenia@aevia.at',
-      to:       email,
+      to:       customerEmail,
       subject:  `Your Aevia order ${orderNumber} is confirmed`,
       html: `
         <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;color:#333;background:#ffffff">
@@ -246,67 +372,9 @@ async function handler(req, res) {
       `,
     });
 
-    // Save order-details.txt to GCS so staff can read it in the bucket browser
-    const detailLines = [
-      `Order:     ${orderNumber}`,
-      `Customer:  ${customerName}`,
-      `Email:     ${email}`,
-      `Template:  ${templateName}`,
-      `Pages:     ${pageCount}`,
-      `Photos:    ${fileList.length}`,
-      `Submitted: ${new Date().toISOString()}`,
-    ];
-    if (photoNotes)      detailLines.push(``, `About this album:`, photoNotes);
-    if (specialRequests) detailLines.push(``, `Special requests:`, specialRequests);
-    if (fpSelections && fpSelections.length) {
-      detailLines.push(``, `Add-ons: ${fpSelections.join(', ')}`);
-    }
-    if (fpTexts && Object.keys(fpTexts).length) {
-      detailLines.push(``, `Add-on notes:`);
-      Object.entries(fpTexts).forEach(([key, val]) => {
-        const display = Array.isArray(val) ? val.join(', ') : val;
-        detailLines.push(`  ${key}: ${display}`);
-      });
-    }
-    await bucket.file(`${folderName}/order-details.txt`)
-      .save(detailLines.join('\n'), { contentType: 'text/plain; charset=utf-8' });
-
-    // Save order to Firestore
-    const db = admin.firestore();
-    await db.collection('orders').doc(orderNumber).set({
-      orderNumber,
-      customerName,
-      email,
-      templateName,
-      pageCount,
-      price: price || null,
-      specialRequests: specialRequests || null,
-      photoNotes: photoNotes || null,
-      fpTexts: fpTexts || null,
-      fpSelections: fpSelections && fpSelections.length ? fpSelections : null,
-      photoCount: photoCount || null,
-      fileCount: fileList.length,
-      folderName,
-      photoManifest,
-      folderLink,
-      status: 'new',
-      token,
-      previewToken: null,
-      coverCaptions: coverCaptions || null,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    return res.status(200).json({
-      success: true,
-      orderNumber,
-      folderName,
-      totalSlots,
-      uploadUrls,
-      expiresAt: expiresAt.toISOString(),
-    });
-
+    return res.status(200).json({ success: true });
   } catch (err) {
-    console.error('[createUploadSession] Error:', err);
+    console.error('[confirmUpload] Error:', err);
     return res.status(500).json({
       error: 'Server error — please try again or contact support.',
       detail: err.message,
@@ -314,4 +382,4 @@ async function handler(req, res) {
   }
 }
 
-exports.createUploadSessionHandler = (req, res) => cors(req, res, () => handler(req, res));
+exports.confirmUploadHandler = (req, res) => cors(req, res, () => confirmUploadHandler(req, res));

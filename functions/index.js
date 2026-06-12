@@ -1,7 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { createUploadSessionHandler } = require('./upload');
+const { createUploadSessionHandler, confirmUploadHandler } = require('./upload');
 
 admin.initializeApp();
 
@@ -36,6 +36,12 @@ exports.createUploadSession = functions
   .region('europe-west1')
   .runWith({ timeoutSeconds: 120, memory: '256MB' })
   .https.onRequest(createUploadSessionHandler);
+
+// ── CHUNK 4 PART B: Confirm uploads complete, flip status to 'new', send customer email ──
+exports.confirmUpload = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(confirmUploadHandler);
 
 // ── Caption generator ────────────────────────────────────────────────────────
 // Accepts multipart/form-data: image (JPEG blob) + collection + note (optional)
