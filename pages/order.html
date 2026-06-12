@@ -1573,8 +1573,17 @@ async function submitOrder() {
 
   // Collect form data
   const customerName = document.getElementById('inp-name').value.trim();
-  const email        = document.getElementById('inp-email').value.trim();
+  const email        = document.getElementById('inp-email').value.trim().toLowerCase();
   const albumNotes   = document.getElementById('album-notes').value.trim();
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    errEl.textContent = 'Please enter a valid email address so we can send your confirmation.';
+    errEl.style.display = 'block';
+    errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
 
   // Cover captions — keyed by the template's cover.captions; keep only filled-in keys
   const coverCaptionDefs = templateData()?.cover?.captions || [];
@@ -1796,7 +1805,7 @@ function showSuccess(orderNumber, email) {
   document.getElementById('success-order-num').textContent   = 'Order ' + orderNumber;
   document.getElementById('success-template-name').textContent = ORDER.template;
   document.getElementById('success-sub').innerHTML =
-    `We've sent a confirmation to <strong>${email}</strong>. Our team will start designing and send you a preview within 48 hours.`;
+    `Confirmation sent to <strong>${email}</strong> — if that's not right, reply to us within 24h. Our team will start designing and send you a preview within 48 hours.`;
 
   document.getElementById('success-screen').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
