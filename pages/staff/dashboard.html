@@ -116,6 +116,7 @@
       display: inline-block; font-size: 10px; letter-spacing: 0.08em;
       text-transform: uppercase; padding: 3px 9px; border-radius: 100px; font-weight: 500;
     }
+    .badge-uploading    { background: #fff7ed; color: #9a3412; }
     .badge-new          { background: #e8f0fe; color: #1a56db; }
     .badge-designing    { background: #fef3c7; color: #92400e; }
     .badge-needs_info   { background: #ffe4e6; color: #9f1239; }
@@ -249,6 +250,7 @@
   <!-- Filters -->
   <div class="filters">
     <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-btn" onclick="setFilter('uploading', this)">Uploading</button>
     <button class="filter-btn" onclick="setFilter('new', this)">New</button>
     <button class="filter-btn" onclick="setFilter('designing', this)">Designing</button>
     <button class="filter-btn" onclick="setFilter('needs_info', this)">Needs info</button>
@@ -393,6 +395,7 @@
     let newCount = 0, activeCount = 0, needsCount = 0, doneCount = 0;
     allOrders.forEach(o => {
       if (o.status === 'new')           newCount++;
+      else if (o.status === 'uploading') activeCount++;
       else if (o.status === 'needs_info') needsCount++;
       else if (IN_PROGRESS.includes(o.status)) activeCount++;
       else if (o.status === 'delivered') doneCount++;
@@ -433,7 +436,7 @@
         return `<span>${statusLabel(h.status)}${ts ? ' · ' + ts : ''}</span>`;
       }).join('');
 
-      const allStatuses = ['new','designing','needs_info','review_sent','approved','paid','sent_to_print','printing','in_delivery','delivered'];
+      const allStatuses = ['uploading','new','designing','needs_info','review_sent','approved','paid','sent_to_print','printing','in_delivery','delivered'];
 
       const previewUrl = o.previewToken
         ? `https://aevia-test.pages.dev/pages/customer-preview.html?token=${esc(o.previewToken)}`
@@ -687,6 +690,7 @@
 
   function statusLabel(s) {
     const labels = {
+      uploading:     'Uploading…',
       new:           'New',
       designing:     'Designing',
       needs_info:    'Needs info',

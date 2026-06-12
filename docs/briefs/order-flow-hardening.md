@@ -118,6 +118,23 @@ Six chunks, ordered. Each is independently shippable, has its own acceptance cri
 
 ---
 
+## Chunk 4b — Dashboard: recognise the new `uploading` status (DONE)
+
+**Type:** staff UI · **File:** `pages/staff/dashboard.html` · **Size:** S · **Status:** done
+
+**Problem:** Chunk 4 makes orders start at `status: 'uploading'`. The dashboard's status vocabulary (badges, filters, counters, the status dropdown, `statusLabel`) had no `uploading` entry, so a mid-upload order would render with an unstyled badge, miss every filter except "All", show a misleading dropdown state, and go uncounted.
+
+**Done (5 surgical edits):**
+1. Added `.badge-uploading` CSS (amber tone).
+2. Added an "Uploading" filter button — lets staff find orders stuck mid-upload (abandoned/partial uploads — the exact case Chunk 4's `uploading` state now surfaces).
+3. Counter: `uploading` folded into `activeCount` so the order isn't silently uncounted.
+4. Prepended `'uploading'` to the `allStatuses` dropdown list so the current state displays correctly (and staff can manually advance a stuck order).
+5. Added `uploading: 'Uploading…'` to `statusLabel`.
+
+**Why a filter, not just a badge:** an order sitting in `uploading` past a few minutes = an abandoned/partial upload. The dedicated filter turns Chunk 4's new state into an actionable staff signal (chase the customer) rather than invisible debt.
+
+---
+
 ## Chunk 5 — Frontend: call confirmUpload after photos land (activates Chunk 4)
 
 **Type:** client wiring · **File:** `pages/order.html` (`submitOrder`, after the upload loop succeeds, ~`:1769-1771`) · **Size:** S
