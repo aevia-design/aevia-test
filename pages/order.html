@@ -1729,6 +1729,14 @@ async function submitOrder() {
     const uploadStartTime = Date.now();
     const timeEl = document.getElementById('upload-time-remaining');
 
+    // Add reassurance for large orders. Fold it into the rotating humourLines so it
+    // recurs — the humourTimer would otherwise overwrite a one-off message within ~4s.
+    if (total > 50) {
+      const bigOrderNote = 'Large orders can take a few minutes — please keep this tab open.';
+      humourLines.push(bigOrderNote);
+      overlaySub.textContent = bigOrderNote;
+    }
+
     function fmtBytes(b) {
       if (b >= 1e9) return (b / 1e9).toFixed(2) + ' GB';
       if (b >= 1e6) return Math.round(b / 1e6) + ' MB';
@@ -1765,14 +1773,41 @@ async function submitOrder() {
     async function worker() {
       while (nextIndex < total) {
         const i = nextIndex++;
-        await fetch(uploadUrls[i].url, {
-          method:  'PUT',
-          body:    fileObjects[i],
-          headers: { 'Content-Type': uploadUrls[i].contentType },
-        });
-        uploadedBytes += fileObjects[i].size || 0;
-        uploadedCount++;
-        updateProgress();
+        let success = false;
+        const maxRetries = 3;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            const putRes = await fetch(uploadUrls[i].url, {
+              method:  'PUT',
+              body:    fileObjects[i],
+              headers: { 'Content-Type': uploadUrls[i].contentType },
+            });
+
+            if (!putRes.ok) {
+              if (attempt < maxRetries) {
+                // Retry with short backoff (100ms * attempt)
+                await new Promise(r => setTimeout(r, 100 * attempt));
+                continue;
+              } else {
+                throw new Error(`Upload failed with status ${putRes.status}`);
+              }
+            }
+
+            success = true;
+            break;
+          } catch (e) {
+            if (attempt === maxRetries) throw e;
+            // Retry with short backoff
+            await new Promise(r => setTimeout(r, 100 * attempt));
+          }
+        }
+
+        if (success) {
+          uploadedBytes += fileObjects[i].size || 0;
+          uploadedCount++;
+          updateProgress();
+        }
       }
     }
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, total) }, worker));
