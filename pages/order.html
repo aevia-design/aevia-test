@@ -409,6 +409,7 @@
 // Config
 // ─────────────────────────────────────────────────────────────────
 const FUNCTION_URL = 'https://europe-west1-aevia-uploads.cloudfunctions.net/createUploadSession';
+const CONFIRM_URL = 'https://europe-west1-aevia-uploads.cloudfunctions.net/confirmUpload';
 
 const ALBUM_NOTE_PLACEHOLDERS = {
   kids:        "e.g. Ann's first year — born 14 March 2023. We'd love to see the early mornings, first smiles, and bath time chaos.",
@@ -1728,7 +1729,7 @@ async function submitOrder() {
     }
 
     const data = await res.json();
-    const { orderNumber, uploadUrls } = data;
+    const { orderNumber, uploadUrls, token } = data;
 
     // Step 2: upload files to signed URLs — 5 concurrent
     const total = fileObjects.length;
@@ -1826,6 +1827,20 @@ async function submitOrder() {
 
     // Disarm upload in-flight flag on success (Chunk 3: beforeunload guard)
     uploadInFlight = false;
+
+    // Chunk 5: call confirmUpload to finalize the order and trigger customer email.
+    // Wrap in its own try/catch so a confirmUpload failure doesn't block the success screen
+    // (photos already uploaded successfully; a missing customer email is recoverable).
+    try {
+      await fetch(CONFIRM_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderNumber, token }),
+      });
+    } catch (err) {
+      // Log but don't throw — success screen must still show
+      console.warn('confirmUpload failed (order details recorded; customer email may be delayed):', err);
+    }
 
     clearInterval(humourTimer);
     overlayFill.style.width = '100%';
