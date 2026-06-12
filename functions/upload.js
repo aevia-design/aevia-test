@@ -290,7 +290,9 @@ async function confirmUploadHandler(req, res) {
     }
 
     const order = doc.data();
-    if (order.token !== token) {
+    // Defensive: require a stored non-empty string token and an exact match.
+    // Guards against a falsy/missing stored token ever satisfying the comparison.
+    if (!order.token || typeof order.token !== 'string' || order.token !== token) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
 
