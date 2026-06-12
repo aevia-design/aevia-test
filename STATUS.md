@@ -1,20 +1,42 @@
 # Session Status
-_Last updated: 2026-06-05 (session 37)_
+_Last updated: 2026-06-05 (session 39)_
 
 ## Status
-**Session 37 (2026-06-05) — (a) confirmed the EU map now renders correctly in the STAFF ENGINE (the earlier "off" look was a stale browser cache of the same-filename re-export — hard-refresh fixed it); (b) synced Wander caption font/size edits from the CSVs into `wander-data.js`. Both CSVs + `wander-data.js` committed + PUSHED (`e9e2029`) to `main`. 85/85 tests.**
+**Session 39 (2026-06-05) — UX polish + price unification. Three customer-facing fixes done, NOT yet committed/pushed. Investigated upload fragility → logged TO-DO #68 (High).**
+
+**What changed (all LOCAL, uncommitted):**
+1. **Customer-preview loading copy** — "Loading your book preview…" → "Your book is loading…"; rotating line "Your book is nearly ready." → "Almost ready…" (no trailing dots, per Evgeny).
+2. **Hide editing chrome during load** — photo sidebar, edit-hint, submit-bar (Save/Approve), preview-controls, and the nav Edit/Preview toggle are all hidden on load; new `showBookChrome()` reveals them together only after `renderBook()` succeeds. Error path stays clean.
+3. **Unified prices across all 10 product pages** — 40p = **€70**, 80p = **€100** (was a mix: €60/70 for 40p, €100/120 for 80p). **Wander was showing €60 while its Stripe SKU is €70 — now consistent.** New `assets/js/prices.js` (`BOOK_PRICES={p40:70,p80:100}`) is the shared source of truth, included `<script defer>` in every product page; it rewrites chip labels + default display on load. The chip `onclick="pick(this,NN)"` values were ALSO hand-edited (that number is what flows to Stripe — prices.js only syncs display text).
+
+### ▶ NEXT SESSION (Session 40)
+1. **Commit + push S39 changes** — `customer-preview.html`, all 10 product pages (`scribble/wonder/sprout/bloom/wander/horizon/terrain/radiance/devotion/vows.html`), new `assets/js/prices.js`, `TO-DOS.md`. Local-only, not yet on live. Cloudflare auto-deploys `main`.
+2. **Verify S39 in browser before/after deploy** — (a) open a Wander customer-preview link: confirm loading screen is clean (no sidebar/buttons until book renders) and copy reads right; (b) hard-refresh each product page: confirm 40p=€70 / 80p=€100 everywhere and the price flows correctly into order.html → Stripe.
+3. **TO-DO #68 (High) — upload fragility** — Evgeny's S39 question. Cheapest-first fix: (a) `beforeunload` guard while uploads in flight; (b) check PUT `res.ok` + retry (also fixes a standalone silent-failure bug); (c) server-side `uploadComplete` flag so dashboard shows partial orders. See TO-DOS.md #68 for full root-cause.
+4. Parked: bug #5 fetch-retry (not reproduced); TO-DO #67 rich-text caption editor = whole dedicated session.
+
+### ⚠ OPEN WATCH-OUT (new, S39)
+- **`assets/js/prices.js` display-sync vs HTML onclick must stay in agreement.** prices.js only rewrites the visible price *text*; the `onclick="pick(this,NN)"` number in each chip is what actually flows to order.html → Stripe. Change one, change both. bloom.html uses the `pick('a',this,NN)` signature. The Stripe SKU price (`STRIPE_PRICE_ID` in `functions/.env`) is independent — editing prices.js does NOT change what Stripe charges.
+
+### Previous: Session 38
+**Session 38 (2026-06-05) — Wander end-to-end FULLY VERIFIED (staff engine ✓, customer preview ✓, payment ✓, PDF ✓). Fixed 4 PDF export bugs in `scripts/export-pdf.js`. Committed + pushed (S39 confirmed by Evgeny).**
 
 **What happened:**
-1. **Map framing on staff engine — RESOLVED (was a cache artefact).** An old order's FP1 map looked "off" in the engine vs a new order in the order form. Verified the code paths are identical (same PNG asset, same bleed-fit math; engine canvas is a clean 600px, no border → no asymmetry). Root cause = stale cached PNG from the S36 same-filename re-export; **hard-refresh (Ctrl+Shift+R)** fixed it and Evgeny confirmed the engine now matches. Order age does NOT affect framing (orders store only region+countries; geometry/asset resolve fresh from code).
-2. **CSV → `wander-data.js` caption sync.** Hand-synced (no generator): SP0 H+V `NT Somic/16pt/medium` → `Cormorant Garamond/18pt/bold`; all 12 standard-spread captions `16pt → 18pt`; cover spine `xMm 222 → 222.5` + `16pt → 18pt`. SP0 no longer uses NT Somic anywhere.
+1. **Wander E2E — all surfaces confirmed.** Staff engine, customer preview, and payment all work. PDF also now works after the fixes below.
+2. **PDF: oversized SVG overlays** — SP04 and SP10 right-page overlays silently dropped from PDF. Root cause: those SVGs embed 11–17 MB of base64 rasters, exceeding libxml2's ~10 MB XML node limit. Fixed with `shrinkOversizedSvg()` helper (downsamples embedded rasters to ~2× on-page display size before passing to sharp; gated at >8 MB so Scribble is never touched).
+3. **PDF: caption line-wrap mismatch** — Windows contenteditable stores line breaks as `\r` + `<div>`. After HTML stripping, `\r` lingered as a trailing character, inflating the measured line width and causing extra wraps vs the engine. Fixed: `stripHtml()` now does per-line `.trim()` + whitespace collapse at the return value.
+4. **PDF: Cormorant Garamond fontkit GSUB ligature bug** — same bug as EB Garamond (S27): fontkit incorrectly stores ligature glyph advance widths, causing visible gaps. Fixed: added `'Cormorant Garamond'` to `LIGATURE_FONTS` (char-by-char draw path). Split concern: new `SUPPRESS_LETTER_SPACING_FONTS` set keeps EB Garamond at charSpacing=0; Cormorant Garamond keeps its `-0.02em` letter spacing.
+5. **PDF: `stripHtml` false-positive warning** — fixed naive comparison to mirror the same `<br>`/`<div>` → newline handling as the real strip, so captions with manual line breaks no longer fire a spurious warning.
 
-### ▶ NEXT SESSION (Session 38)
-0. **Evgeny: eyeball the new 18pt captions** across a Wander book in the staff engine (and ideally a customer preview + PDF) — the sizes/SP0 font just changed and are live but not yet visually reviewed on the actual book pages.
-1. **Customer preview map render is still NOT visually checked** (only the staff engine was confirmed in S37). Customer-preview + PDF map render also still **never E2E-tested with a real order** (carried from S33).
-2. Optionally delete the moot `docs/briefs/wander-map-reexport-spec.md` (untracked) and tell Kseniia to stop re-exporting.
-3. Parked: bug #5 fetch-retry (not reproduced); TO-DO #67 rich-text caption editor (partial bold / Ctrl+B) = whole dedicated session.
-4. Diagnostic `qa/inspect-map-dom.mjs` exists — run it from REPO ROOT (writes to `sessions/qa-runs/`); running from `qa/` makes a stray `qa/sessions/`.
-5. **Asset-cache gotcha:** re-exporting any asset under the SAME filename serves the cached old image in open tabs — hard-refresh before judging any render.
+### ▶ NEXT SESSION (Session 39)
+1. **Commit + push `scripts/export-pdf.js`** (4 PDF fixes from S38). Confirmed working by Evgeny on AEV-029.
+2. **Delete `docs/briefs/wander-map-reexport-spec.md`** (untracked, now moot — S35 proved the maps were fine; the bug was CSS then a cache artefact). Tell Kseniia to stop re-exporting.
+3. **Wander is now fully live and end-to-end verified.** Next feature work TBD.
+4. Parked: bug #5 fetch-retry (not reproduced); TO-DO #67 rich-text caption editor (partial bold / Ctrl+B) = whole dedicated session.
+
+### ⚠ OPEN WATCH-OUT (new, S38)
+- **Every new font added to the project must be tested for the fontkit GSUB ligature bug.** Symptom: engine renders correctly, PDF has a gap at a specific character position. Diagnosis: add the font to `LIGATURE_FONTS`; if the gap disappears it was the bug. Do NOT add to `SUPPRESS_LETTER_SPACING_FONTS` unless the font explicitly needs zero letter-spacing (only EB Garamond does). See memory `project_pdf_font_rules.md`.
+- **SVG overlays >8 MB silently drop from PDF** — `shrinkOversizedSvg()` handles it, but only safe when embedded `<image>` elements carry their OWN transform (no parent `<g transform>`). Verify with grep before assuming the fix applies.
 
 ### Previous: Session 35
 **Session 35 (2026-06-05) — order-form polish + map render fix. All shipped + PUSHED to `main`.**

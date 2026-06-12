@@ -659,7 +659,7 @@
     <span class="nav-logo-text" style="display:none;">aevia</span>
   </a>
   <div class="nav-center">
-    <div class="mode-toggle">
+    <div class="mode-toggle" id="mode-toggle" style="visibility:hidden">
       <button class="mode-toggle-btn active" id="mode-edit-btn">Edit</button>
       <button class="mode-toggle-btn" id="mode-preview-btn">Preview</button>
     </div>
@@ -667,7 +667,7 @@
 </nav>
 
 <!-- ── PHOTO SIDEBAR ── -->
-<div class="photo-sidebar" id="photo-sidebar">
+<div class="photo-sidebar" id="photo-sidebar" style="display:none">
   <div class="sidebar-total" id="sidebar-total">0 photos</div>
   <div class="sidebar-section-header unplaced">
     Unplaced <span class="sidebar-count" id="sidebar-unplaced-count">0</span>
@@ -681,7 +681,7 @@
 
 <!-- ── MAIN CONTENT ── -->
 <div class="page-body" id="page-body">
-  <div class="edit-hint">
+  <div class="edit-hint" id="edit-hint" style="display:none">
     <strong>Drag</strong> a photo to swap it with another &nbsp;·&nbsp;
     <strong>Double-click</strong> a photo to return it to the sidebar &nbsp;·&nbsp;
     <strong>Click</strong> any caption to edit the text &nbsp;·&nbsp;
@@ -692,7 +692,7 @@
     <div id="book-canvas">
       <div class="canvas-placeholder">
         <div class="canvas-placeholder-icon">⏳</div>
-        <h3>Loading your book preview…</h3>
+        <h3>Your book is loading…</h3>
         <p id="load-humour" style="margin-top:6px;transition:opacity 0.4s ease;min-height:1.4em;">Assembling your spreads…</p>
         <div id="load-progress-track" style="width:240px;height:6px;background:#eee;border-radius:3px;margin-top:14px;overflow:hidden;">
           <div id="load-progress-bar" style="width:0%;height:100%;background:var(--text);transition:width 0.3s ease;"></div>
@@ -704,14 +704,14 @@
 </div>
 
 <!-- ── PREVIEW MODE CONTROLS ── -->
-<div class="preview-controls" id="preview-controls">
+<div class="preview-controls" id="preview-controls" style="display:none">
   <button class="preview-arrow" id="preview-prev" aria-label="Previous spread">←</button>
   <div class="preview-dots" id="preview-dots"></div>
   <button class="preview-arrow" id="preview-next" aria-label="Next spread">→</button>
 </div>
 
 <!-- ── ACTION BAR ── -->
-<div class="submit-bar" id="submit-bar">
+<div class="submit-bar" id="submit-bar" style="display:none">
   <div class="flow-steps" id="flow-steps">
     <span class="flow-step done">Review</span>
     <span class="flow-sep">→</span>
@@ -1011,6 +1011,7 @@
       window.heartCrop = od.staffHeartCrop || {};
       stopLoadHumour();
       renderBook();
+      showBookChrome();
       if (window._readOnly) lockForApproval();
     } catch (err) {
       stopLoadHumour();
@@ -1028,7 +1029,7 @@
       'Assembling your spreads…',
       'Placing your photos…',
       'Setting your captions…',
-      'Your book is nearly ready.',
+      'Almost ready…',
     ];
     const el = document.getElementById('load-humour');
     if (!el) return;
@@ -1042,6 +1043,14 @@
   }
   function stopLoadHumour() {
     if (_loadHumourTimer) { clearInterval(_loadHumourTimer); _loadHumourTimer = null; }
+  }
+
+  function showBookChrome() {
+    ['photo-sidebar', 'edit-hint', 'submit-bar', 'preview-controls'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.style.display = '';
+    });
+    const toggle = document.getElementById('mode-toggle');
+    if (toggle) toggle.style.visibility = '';
   }
 
   async function loadPhotos() {

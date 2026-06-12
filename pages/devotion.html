@@ -89,6 +89,7 @@
     .foot-base { max-width: 1160px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
   </style>
   <link rel="stylesheet" href="../assets/css/mobile.css">
+  <script defer src="../assets/js/prices.js"></script>
 </head>
 <body>
 <nav class="nav">
@@ -131,7 +132,7 @@
     <div class="page-toggle">
       <div class="section-label">Pages</div>
       <div class="chips">
-        <div class="chip on" onclick="pick(this,60)"><span class="chip-label">40 pages</span><span class="chip-price">€ 60</span></div>
+        <div class="chip on" onclick="pick(this,70)"><span class="chip-label">40 pages</span><span class="chip-price">€ 70</span></div>
         <div class="chip" onclick="pick(this,100)"><span class="chip-label">80 pages</span><span class="chip-price">€ 100</span></div>
       </div>
     </div>
@@ -149,7 +150,7 @@
       </div>
     </div>
     <div class="price-row">
-      <span class="price-sym">€</span><span class="price-val" id="price">60</span>
+      <span class="price-sym">€</span><span class="price-val" id="price">70</span>
       <span class="price-note">incl. design &amp; printing</span>
     </div>
     <button class="cta" onclick="goToOrder()">Create your book</button>
