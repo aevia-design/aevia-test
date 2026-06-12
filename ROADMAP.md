@@ -129,7 +129,7 @@ _Goal: Staff can send a customer a link; customer can view, make minor edits, an
 
 **Type:** feature
 **Component:** Customer preview engine + Firebase backend
-**Status:** pending
+**Status:** ✅ done
 **Size:** M
 **Depends on:** chunk-003
 **Files:** `pages/customer-preview.html`, `functions/index.js`
@@ -344,7 +344,7 @@ _Goal: Staff tool accessible remotely; full 9-template catalogue ready for launc
 
 **Type:** feature
 **Component:** Staff engine + Customer preview + PDF export + Order form
-**Status:** in-progress (S32: SVGs verified, coords synced, **order-form leg DONE** — real map+pins in `order.html`. Shared render in `assets/js/map-render.js`. **Remaining:** book render on engine + customer-preview + PDF — all 3 still on the S28 stub. Render bleed-fit: region SVGs carry 3mm bleed in viewBox, see LEARNINGS 2026-06-04.)
+**Status:** ✅ done (S38: Wander confirmed E2E — book render on engine + customer-preview + PDF all live, map+pins render across all surfaces, payment completed. Render bleed-fit: region SVGs carry 3mm bleed in viewBox, see LEARNINGS 2026-06-04.)
 **Size:** L
 **Depends on:** chunk-020
 **Files:** `pages/staff/template-engine.html`, `pages/customer-preview.html`, `scripts/export-pdf.js`, `pages/order.html`, `assets/js/map-render.js`, `functions/`
@@ -370,7 +370,9 @@ _Goal: Staff tool accessible remotely; full 9-template catalogue ready for launc
 
 **Type:** feature
 **Component:** Template data + product page
-**Status:** in-progress (S28: Cormorant registered on all 3 surfaces + picker; Wander renders in the staff engine via the local selector; cover bleed fixed. S31: **order flow wired end-to-end** — `order.html` made template-aware [TEMPLATE_REGISTRY/templateData], cover section data-driven from `cover.slots`/`cover.captions`, `wander.html` rebuilt onto the Scribble pattern, FP1 country-select + itinerary + region placeholder built; cover-caption copy synced from CSV. See `docs/briefs/wander-order-flow.md`. **Remaining:** run a real Wander order engine→customer→PDF; map render (chunk-022) still blocked on Kseniia's region SVGs)
+**Status:** ✅ done (S38: Wander confirmed live end-to-end — real order rendered engine→customer→PDF, payment completed. Cormorant registered on all 3 surfaces + picker; cover bleed fixed; order flow template-aware [TEMPLATE_REGISTRY/templateData]; map render via chunk-022. Four one-time PDF-font/SVG bugs fixed in S37–S38 [oversized-SVG downsample, \r caption wrap, Cormorant ligature, stripHtml warning]. See `docs/briefs/wander-order-flow.md`.)
+
+**Real-world data point:** Wander (the first second-template) took ~1.5 days end-to-end, but most of that was one-time infrastructure debugging (PDF font ligatures, oversized-SVG limits, caption-wrap edge cases) that templates 3–9 inherit for free. With chunks 020/022 paid and those bugs fixed, each remaining template (011–017) should be well under a day once Kseniia's artwork arrives — the cheap "CSV → data file → SVGs → product page" chunk originally assumed.
 **Size:** M
 **Depends on:** chunk-020, chunk-022
 **Files:** `assets/Template_Wander/`, `pages/<wander>.html`, `pages/staff/template-engine.html`, `pages/customer-preview.html`, `scripts/export-pdf.js`
