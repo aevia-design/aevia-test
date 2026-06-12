@@ -483,6 +483,7 @@ ORDER.addons = addonNames.map((name, i) => ({
 let coverFile = null;
 const specialFiles = {}; // { slug: File }
 let mainFiles = [];      // File[]
+let uploadInFlight = false;
 
 // ─────────────────────────────────────────────────────────────────
 // Init
@@ -496,6 +497,14 @@ document.addEventListener('DOMContentLoaded', () => {
   initSummary();
   renderCoverSection();
   initDragDrop();
+});
+
+// Register beforeunload listener to prevent navigation during upload (Chunk 3)
+window.addEventListener('beforeunload', (e) => {
+  if (uploadInFlight) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
 });
 
 // Render the cover section from the active template's cover data.
@@ -1767,6 +1776,9 @@ async function submitOrder() {
 
     updateProgress();
 
+    // Set upload in-flight flag (Chunk 3: beforeunload guard)
+    uploadInFlight = true;
+
     // Worker pool: 5 slots in parallel
     const CONCURRENCY = 5;
     let nextIndex = 0;
@@ -1812,6 +1824,9 @@ async function submitOrder() {
     }
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, total) }, worker));
 
+    // Disarm upload in-flight flag on success (Chunk 3: beforeunload guard)
+    uploadInFlight = false;
+
     clearInterval(humourTimer);
     overlayFill.style.width = '100%';
     overlaySub.textContent = 'Done!';
@@ -1825,6 +1840,8 @@ async function submitOrder() {
 
   } catch (err) {
     clearInterval(humourTimer);
+    // Disarm upload in-flight flag on error (Chunk 3: beforeunload guard)
+    uploadInFlight = false;
     btn.disabled = false;
     overlay.classList.remove('active');
     errEl.textContent = err.message || 'Something went wrong. Please try again or email us at xenia@aevia.at.';
