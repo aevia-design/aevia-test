@@ -1109,7 +1109,18 @@ async function handleCoverFile(file) {
       inner.innerHTML = `<div class="file-icon"><span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;">Converting…</span></div>`;
       preview.style.display = 'block';
       const converted = await convertHeic(file);
-      if (converted) displayBlob = converted;
+      if (converted) {
+        displayBlob = converted;
+      } else {
+        // Conversion failed — show reassurance tile (original HEIC still uploads)
+        inner.innerHTML = `<div class="file-icon" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;text-align:center;">Preview unavailable<br/>your photo is still included</span>
+        </div>`;
+        inner.appendChild(removeBtn);
+        document.getElementById('cover-preview-name').textContent = file.name;
+        preview.style.display = 'block';
+        return;
+      }
       inner.innerHTML = '';
     }
     const objUrl = URL.createObjectURL(displayBlob);
@@ -1125,8 +1136,8 @@ async function handleCoverFile(file) {
     checker.onload = () => {
       const minDim = Math.min(checker.naturalWidth, checker.naturalHeight);
       const badge = document.createElement('div');
-      badge.className = minDim < 1500 ? 'low-res-badge' : 'res-ok-badge';
-      badge.textContent = minDim < 1500 ? 'LOW RES' : '✓ OK';
+      badge.className = minDim < 1575 ? 'low-res-badge' : 'res-ok-badge';
+      badge.textContent = minDim < 1575 ? 'LOW RES' : '✓ OK';
       inner.appendChild(badge);
     };
     checker.src = objUrl;
@@ -1171,7 +1182,18 @@ async function handleSpecialFile(slug, file) {
       inner.innerHTML = `<div class="file-icon"><span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;">Converting…</span></div>`;
       preview.style.display = 'block';
       const converted = await convertHeic(file);
-      if (converted) displayBlob = converted;
+      if (converted) {
+        displayBlob = converted;
+      } else {
+        // Conversion failed — show reassurance tile (original HEIC still uploads)
+        inner.innerHTML = `<div class="file-icon" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;text-align:center;">Preview unavailable<br/>your photo is still included</span>
+        </div>`;
+        inner.appendChild(btn);
+        document.getElementById(`special-preview-name-${slug}`).textContent = file.name;
+        preview.style.display = 'block';
+        return;
+      }
       inner.innerHTML = '';
     }
     const objUrl = URL.createObjectURL(displayBlob);
@@ -1189,8 +1211,8 @@ async function handleSpecialFile(slug, file) {
       checker.onload = () => {
         const minDim = Math.min(checker.naturalWidth, checker.naturalHeight);
         const badge = document.createElement('div');
-        badge.className = minDim < 1500 ? 'low-res-badge' : 'res-ok-badge';
-        badge.textContent = minDim < 1500 ? 'LOW RES' : '✓ OK';
+        badge.className = minDim < 1575 ? 'low-res-badge' : 'res-ok-badge';
+        badge.textContent = minDim < 1575 ? 'LOW RES' : '✓ OK';
         inner.appendChild(badge);
       };
       checker.src = objUrl;
@@ -1266,6 +1288,9 @@ async function processAndAddFile(f) {
       f._objUrl = URL.createObjectURL(blob);
       await checkResolution(f);
       await generateAndApplyThumb(f);
+    } else {
+      // Conversion failed — flag so the tile reassures (original HEIC still uploads)
+      f._previewFailed = true;
     }
     refreshThumbBadge(f);
     updatePhotoStatusBar();
@@ -1294,7 +1319,7 @@ function checkResolution(f) {
   return new Promise(resolve => {
     const checker = new Image();
     checker.onload = () => {
-      if (Math.min(checker.naturalWidth, checker.naturalHeight) < 1500) f._lowRes = true;
+      if (Math.min(checker.naturalWidth, checker.naturalHeight) < 1575) f._lowRes = true;
       resolve();
     };
     checker.onerror = resolve;
@@ -1359,6 +1384,15 @@ function refreshThumbBadge(f) {
 
   // Replace badge
   thumb.querySelector('.converting-badge, .low-res-badge, .res-ok-badge')?.remove();
+  if (f._previewFailed) {
+    // HEIC conversion failed — calm note; the original photo still uploads.
+    const note = document.createElement('div');
+    note.className = 'converting-badge';
+    note.textContent = 'No preview';
+    note.title = 'Preview unavailable — your photo is still included';
+    thumb.insertBefore(note, thumb.querySelector('.photo-thumb-remove'));
+    return;
+  }
   if (!f._converting && (f._lowRes !== undefined)) {
     const badge = document.createElement('div');
     badge.className = f._lowRes ? 'low-res-badge' : 'res-ok-badge';
@@ -1444,7 +1478,7 @@ function updatePhotoStatusBar() {
       if (diff > 0) countText += ` · Add ${diff} more photo${diff !== 1 ? 's' : ''}`;
       else if (diff < 0) countText += ` · Remove ${Math.abs(diff)} photo${Math.abs(diff) !== 1 ? 's' : ''}`;
     }
-    if (lowResCount > 0) countText += ` · ${lowResCount} may be too low-resolution for print (shortest side under 1500px)`;
+    if (lowResCount > 0) countText += ` · ${lowResCount} may be too low-resolution for print (shortest side under ~1575px — may print soft, especially if used large)`;
     countEl.textContent = countText;
     countEl.className = 'photo-count' + (lowResCount > 0 ? ' low-res-note' : '');
     countEl.style.display = 'block';
