@@ -1,7 +1,32 @@
 # Session Status
-_Last updated: 2026-06-05 (session 39)_
+_Last updated: 2026-06-13 (session 40)_
 
 ## Status
+**Session 40 (2026-06-12 → verified 2026-06-13) — ORDER-FLOW HARDENING shipped to prod + verified live. TO-DO #68 resolved (and expanded). 6 chunks + dashboard, deployed backend-first, confirmed on a real Wander order.**
+
+**What shipped (live on `main` + Firebase):** the order-intake flow no longer "lies" (announced success before it was real). Diagnosis in `docs/briefs/order-flow-failure-map.md`; plan in `docs/briefs/order-flow-hardening.md`.
+1. **Ch1** — `order.html` validates + **lowercases** the customer email; success screen states the address + "if that's not right, reply within 24h". (Note: `goToStep2()` already format-checked email; Ch1's real new value is normalisation + the success catch.)
+2. **Ch2** — upload worker now checks each PUT `res.ok`, retries ≤3×, and only counts confirmed uploads → the success screen can't show on a failed upload. + large-order "keep this tab open" reassurance (folded into the rotating line so it recurs).
+3. **Ch3** — `beforeunload` guard while uploads are in flight (armed before the worker pool; disarmed on success AND catch).
+4. **Ch4 (backend)** — `createUploadSession` writes Firestore FIRST (status `uploading`, `uploadComplete:false`) and sends only the STAFF email; new **`confirmUpload`** Cloud Function sends the CUSTOMER email + flips status→`new` (idempotent, 403 on bad token). Returns `token` for the frontend.
+5. **Ch4b** — dashboard recognises `uploading` (amber badge + "Uploading" filter to surface stuck/abandoned uploads).
+6. **Ch5** — `order.html` calls `confirmUpload` after all photos land — happy path only; a failed/aborted upload never sends the customer email.
+7. **Ch6** — HEIC-conversion failure shows "preview unavailable, still included" (cover + special + main grid); low-res threshold 1500→**1575px** (verified 200 DPI on a 200mm page) with placement-honest copy. FP5 art exemption intact; warning, never a block.
+
+**Verified LIVE (2026-06-13, real Wander order):** customer email arrives only AFTER upload completes (not at submit); aborting mid-upload (tab close/reload → "Leave site?") leaves the order stuck at `Uploading` with NO confirmation email. Both work as designed. Tier-1 mocked browser test `qa/order-hardening-mock.mjs` is green (12/12).
+
+### ▶ NEXT SESSION (Session 41)
+1. **Clean up live test orders** (TO-DO #60) — the real Wander order(s) from this session's live verification, incl. the deliberately-aborted one stuck at `Uploading`. Delete from Firestore.
+2. **Pick the next priority** (was the post-#68 plan): **#64** (Save vs Export footgun, ~30 min) OR a pre-launch blocker — **#47** (mobile responsiveness, home + order form — High) / **#56** (post-payment customer email) / **#58** (configurator photo-count promise vs real requirement).
+3. **Customer my-orders dashboard** (`ideas.md`) — committed direction, build *after* this; its data foundation (`uploading→new` status, email-as-owner) now exists. Needs its own brief + an ADR extending 0003 when started.
+4. Parked: TO-DO #67 rich-text caption editor = whole dedicated session.
+
+### ⚠ OPEN WATCH-OUT (new, S40)
+- **Ch4 backend unit tests are house-style** (`tests/chunk-4-order-flow.test.js` mirrors the logic inline; it does NOT invoke the real handlers — same pattern as `getOrder.test.js`). "97 pass" proves the spec'd logic, NOT the handlers. Real backend verification = Firebase emulator or a live order.
+- **Deploy ordering for any future change to this flow: backend first** (`firebase deploy --only functions`), THEN merge frontend to `main`. The two are deployed by different systems (Firebase vs Cloudflare); a gap where the new frontend calls a missing `confirmUpload` is swallowed by Ch5's try/catch but skips the customer email.
+- **Status vocabulary now includes `uploading`** — kept customer-readable on purpose (future my-orders dashboard will display it). Any new dashboard/status code must tolerate it.
+
+### Previous: Session 39
 **Session 39 (2026-06-05) — UX polish + price unification. Three customer-facing fixes done, NOT yet committed/pushed. Investigated upload fragility → logged TO-DO #68 (High).**
 
 **What changed (all LOCAL, uncommitted):**
