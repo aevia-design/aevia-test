@@ -1,7 +1,26 @@
 # Session Status
-_Last updated: 2026-06-15 (session 41)_
+_Last updated: 2026-06-15 (session 42)_
 
 ## Status
+**Session 42 (2026-06-15) — COVER PHOTO ORIENTATION + pre-submit confirmation shipped to `main` (`3102591`). Roadmap reviewed (core complete; remaining items blocked or P1). One ideation captured. Groundwork laid for data-driven cover clip shapes (#73), held until the new template's SVGs land.**
+
+**What shipped (live on `main` + Cloudflare; `pages/order.html` + `scribble-data.js`):**
+1. **Cover orientation hint** — cover slot gains an `orientation` field (Scribble = `landscape`), piped from the existing CSV `Orientation` column into an orientation-aware upload hint.
+2. **Non-blocking orientation warning** — amber ⚠ box when an uploaded cover photo fights the frame (e.g. vertical photo on a landscape cover); it will be cropped. Customer can still proceed.
+3. **Pre-submit confirmation modal** ("Before we start") — lists soft issues (wrong-orientation cover + low-res photo count) with **Go back / Submit anyway**. Low-res count spans cover + special + main grid but **excludes FP5 art gallery** (scanned art is intentionally low-res). Happy path (no issues) = no modal.
+- Verified: 97/97 tests; browser-confirmed all paths (warning renders, modal fires/cancels/proceeds, hi-res landscape no modal, zero console errors). Self-reviewed via /reviewing-code (fixed em-dash stop-slop misses).
+
+**Groundwork committed, NOT built (TO-DO #73):** Evgeny added a `Photo shape` column across all 4 template CSVs (heart = `custom`, else `rectangle`/blank). #73 = generalise the hardcoded heart clip-path into a data-driven `clipShape` field across all 3 surfaces. **Held until the new "Little Annette" template SVGs arrive** so it can be tested against a real second shape (building against only the working heart = regression risk).
+
+**Also:** `ideas.md` — logged the single multi-tab template workbook idea (fixes CSV schema drift; parked until ~6–7 more templates stabilise the column set).
+
+### ▶ NEXT SESSION (Session 43)
+1. **When Xenia's "Little Annette" CSV + SVGs land → build TO-DO #73** (data-driven cover `clipShape` + wire the new template). Tell Xenia: fill `Orientation = landscape`; deliver cover SVG with the photo-opening silhouette as its own vector layer + the decorative frame as its own layer (don't put the clip path in a CSV cell). Heart precedent: `template-engine.html:2348` (hardcoded today), mirror across engine + customer-preview + export-pdf.
+2. **Confirm Bug #3** (customer slot-drag → empty slot) on a fresh, non-approved order — still outstanding from S41.
+3. **Or pick a pre-launch priority:** #58 (configurator photo-count promise vs real requirement), #56 (post-payment customer email), #44 (book language EN/DE).
+4. Parked: #64 (Save/Export footgun), #40 (Capacitor app — web is sufficient), #67 rich-text caption editor.
+
+### Previous: Session 41
 **Session 41 (2026-06-15) — MOBILE RESPONSIVENESS (#47) shipped + verified on a real iPhone; 4 follow-on bugs found via E2E and all fixed. Strategic question settled: web flow is sufficient, no app needed.**
 
 **What shipped (live on `main` + Cloudflare; PDF fix is CLI-only):**
@@ -12,12 +31,6 @@ _Last updated: 2026-06-15 (session 41)_
 5. **Bug #1 — price inconsistency.** home/collections showed stale €60/€120; wired both to `prices.js` (`BOOK_PRICES`) so they can't drift. Commit `c38a5aa`.
 6. **Bug #2 — mobile-gate placeholder.** Gate returned before the order fetch → showed literal "Order preview". Now fetches the order number from the token and shows the real reference. Commit `c38a5aa`.
 7. **Housekeeping:** `LINKS.md` (quick links, local + live), permission allowlist broadened in `.claude/settings.local.json` (dev/qa/read-only-git commands no longer prompt; push/deploy still gated).
-
-### ▶ NEXT SESSION (Session 42)
-1. **Confirm Bug #3** (slot→empty-slot drag) on a fresh, non-approved order — only outstanding verification from S41.
-2. **Pick the next pre-launch priority:** **#58** (configurator photo-count promise vs real requirement — customer is told one number, blocked at another), **#56** (post-payment customer email), **#44** (book language EN/DE), or website copy (#14/#15). Mobile is no longer a blocker.
-3. **Optional content polish:** mobile layout is functional but website content isn't final — Evgeny may tweak later (not urgent).
-4. Parked: **#64** (Save/Export footgun — discussed S41, deferred as not worth a session; Export button stays), **#40** (Capacitor app — parked, EXIF works on web), TO-DO #67 rich-text caption editor.
 
 ### ⚠ OPEN WATCH-OUT (new, S41)
 - **`assets/css/mobile.css` is shared across home + 10 product pages + order.html (customer-facing only).** The staff engine / customer-preview / dashboard are deliberately desktop-only (PRD lines 33/91/163) and must NOT link it. New customer-facing pages should link it; new product-page layouts that don't use the `.zone`/`.panel`/`.product-title` pattern will need their own rules.
