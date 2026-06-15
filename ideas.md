@@ -34,3 +34,27 @@ Captured ideas, most recent at the bottom. Status: Captured | Exploring | Commit
 **Status:** Committed — build after `order-flow-hardening` chunks. Needs its own brief + likely an ADR superseding/extending 0003 when started.
 
 ---
+
+## 2026-06-15 — Single multi-tab workbook as template-data source of truth (replace N loose CSVs)
+
+**Context:** Surfaced in a /ideating session (Session 42). Each template is authored as its own CSV (`scribble`, `wander`, …), which Claude hand-converts to a `*-data.js` file the engine reads. Nothing hurts day-to-day (Xenia fills the CSVs, conversion works), but Evgeny flagged that the loose-CSV-per-template setup "lives a bit weird."
+
+**Real problem (not what it first looked like):** Not storage and not editing-prettiness — it's **schema drift across files.** Add a column to one template's CSV (new caption field, new page type) and you must *manually remember* to add it to every other template's CSV, with nothing flagging when one falls behind. With 2 templates it's mild; across 9 it's a real consistency hazard. Separate files also can't be seen side by side — which is exactly what Excel tabs give for free.
+
+**Core concept:** Consolidate the N CSVs into **one workbook, one tab per template, shared column-header row** (the header row *becomes* the canonical schema — gaps visible at a glance). A **single converter script** reads the workbook and emits all `*-data.js` files in one run, replacing the per-file CSV→JS step. Adding a column = edit the header once, fill the tabs, re-run.
+
+**Key insights:**
+- **It's NOT a database and NOT a live data store.** Evgeny explicitly doesn't want a runtime store — the engine should keep reading static JS from git (instant, versioned, diffable). The spreadsheet is just a friendlier *authoring front-end*; git stays the stable store.
+- **Excel already does the wanted thing** (multi-tab, propagate a new column across tabs). The gap is only that the workbook isn't currently the *source of truth* — it's a staging area whose output gets scattered into separate CSVs.
+- **One real fork — who owns the master workbook?** Solo-ish → an `.xlsx` is fine. If Evgeny + Xenia both edit live → Google Sheets (avoid emailing versions). Today Xenia fills CSVs and hands them over, so this needs deciding at build time, not now.
+- **Aligns with the prior YAGNI call** (`project_dehardcoding_dropped`): no premature infrastructure; this is consolidation, not abstraction.
+
+**Timing (Evgeny's call):** **Defer until ~6–7 more templates are added for launch.** The column set is still moving; once it stabilises across the fuller catalogue, build the shared workbook + converter then. Premature now = consolidating a schema that's still changing.
+
+**Effort when built:** one converter script (a few hours) + the discipline that the workbook, not the loose CSVs, is the master.
+
+**Related to:** chunks 011–017 (template digitisation — the additions that will settle the schema); `project_template_seam` / `project_adding_templates` (the per-template add flow this would streamline); `project_dehardcoding_dropped` (the YAGNI precedent).
+
+**Status:** Parked — revisit after ~6–7 templates added (column set stabilises).
+
+---

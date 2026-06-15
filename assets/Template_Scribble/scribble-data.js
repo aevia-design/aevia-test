@@ -12,7 +12,7 @@ window.SCRIBBLE_DATA = {
       front: { xMm: 209, wMm: 200, bgColor: '#f8ead9' },
     },
     slots: [
-      { xMm: 327, yMm: 118, wMm: 140, hMm: 100, pool: 'cover' }
+      { xMm: 327, yMm: 118, wMm: 140, hMm: 100, pool: 'cover', orientation: 'landscape' }
     ],
     captions: [
       { key: 'year', xMm: 327, yMm: 43, wMm: 180, font: 'EB Garamond', sizePt: 33, align: 'center', color: '#493955', label: 'Front — year', placeholder: '2026', maxLength: 10 },

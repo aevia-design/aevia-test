@@ -176,6 +176,8 @@
     .footer-min { border-top: 1px solid var(--border); padding: 28px 56px; text-align: center; font-size: 11px; color: var(--muted); margin-top: 48px; }
 
     /* ── Resolution warning badge ── */
+    .cover-orientation-warn { display:flex;gap:10px;align-items:flex-start;max-width:520px;margin:16px 0 4px;padding:12px 14px;background:#fdf1e3;border:1px solid #e0a96d;border-left:3px solid #c8791f;border-radius:4px;font-size:13px;line-height:1.55;color:#7a4410; }
+    .cover-orientation-warn .warn-ico { flex:none;font-size:15px;line-height:1.4; }
     .low-res-badge { position:absolute;bottom:0;left:0;right:0;background:rgba(170,50,20,0.88);color:#fff;font-size:9px;text-align:center;padding:3px 2px;letter-spacing:0.06em;font-weight:600; }
     .res-ok-badge  { position:absolute;bottom:0;left:0;right:0;background:rgba(34,110,60,0.82);color:#fff;font-size:9px;text-align:center;padding:3px 2px;letter-spacing:0.06em;font-weight:600; }
     .low-res-note { font-size:12px;color:#8b3a2e;margin-top:10px; }
@@ -190,6 +192,20 @@
     .lightbox-close { position:absolute;top:20px;right:24px;color:#fff;font-size:28px;line-height:1;cursor:pointer;opacity:0.7; }
     .lightbox-close:hover { opacity:1; }
     .photo-thumb img { cursor:zoom-in; }
+
+    /* ── Pre-submit confirmation modal ── */
+    .confirm-modal { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;align-items:center;justify-content:center;padding:24px; }
+    .confirm-modal.open { display:flex; }
+    .confirm-card { background:var(--white);max-width:460px;width:100%;border-radius:6px;padding:30px 30px 26px;box-shadow:0 12px 48px rgba(0,0,0,0.28); }
+    .confirm-card h3 { font-family:var(--serif);font-size:22px;font-weight:400;margin:0 0 14px; }
+    .confirm-card ul { margin:0 0 8px;padding:0;list-style:none; }
+    .confirm-card li { display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--border);font-size:13.5px;line-height:1.55;color:var(--text); }
+    .confirm-card li:last-child { border-bottom:1px solid var(--border); }
+    .confirm-card li .warn-ico { flex:none;font-size:15px;color:#c8791f; }
+    .confirm-sub { font-size:13px;color:var(--muted);line-height:1.6;margin:16px 0 22px; }
+    .confirm-actions { display:flex;gap:12px;justify-content:flex-end; }
+    .confirm-actions button { font-family:var(--sans);font-size:13.5px;padding:11px 20px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:var(--white);color:var(--text); }
+    .confirm-actions .confirm-proceed { background:var(--text);color:var(--white);border-color:var(--text); }
   </style>
 <link rel="stylesheet" href="../assets/css/mobile.css">
 <script src="../assets/Template_Scribble/scribble-data.js"></script>
@@ -517,6 +533,34 @@ function coverHasPhoto() {
   return (templateData()?.cover?.slots || []).length > 0;
 }
 
+// Cover upload hint, orientation-aware. The cover slot may declare
+// orientation ('landscape'/'horizontal' or 'portrait'/'vertical'); if it does,
+// tell the customer which way round to pick so it fills the frame. Falls back
+// to the generic line when no orientation is set.
+function coverPhotoHint(slot) {
+  const o = (slot?.orientation || '').toLowerCase();
+  if (o === 'landscape' || o === 'horizontal')
+    return 'One photo for the cover. Choose a <strong>landscape (horizontal)</strong> photo so it fills the frame, and pick something that sets the mood.';
+  if (o === 'portrait' || o === 'vertical')
+    return 'One photo for the cover. Choose a <strong>portrait (vertical)</strong> photo so it fills the frame, and pick something that sets the mood.';
+  return 'One photo for the cover. Pick something that sets the mood.';
+}
+
+// Non-blocking orientation warning. Returns the message to show when the
+// uploaded photo's shape fights the cover frame, or '' when they match (or no
+// orientation is declared). The customer can still submit either way.
+function coverOrientationWarning(slotOrientation, w, h) {
+  const o = (slotOrientation || '').toLowerCase();
+  if (!w || !h) return '';
+  const photoIsPortrait = h > w;
+  const photoIsLandscape = w > h;
+  if ((o === 'landscape' || o === 'horizontal') && photoIsPortrait)
+    return 'This photo is vertical. For the best result, upload a horizontal photo. Otherwise we\'ll crop it to fit the cover.';
+  if ((o === 'portrait' || o === 'vertical') && photoIsLandscape)
+    return 'This photo is horizontal. For the best result, upload a vertical photo. Otherwise we\'ll crop it to fit the cover.';
+  return '';
+}
+
 function renderCoverSection() {
   const cover = templateData()?.cover || {};
   const captions = cover.captions || [];
@@ -529,7 +573,7 @@ function renderCoverSection() {
     html += `
       <div class="upload-label">Required</div>
       <div class="upload-heading">Cover photo</div>
-      <div class="upload-hint">One photo for the cover. Pick something that sets the mood.</div>
+      <div class="upload-hint">${coverPhotoHint(cover.slots[0])}</div>
       <div class="drop-zone" id="dz-cover">
         <input type="file" accept=".jpg,.jpeg,.png,.heic" onchange="handleCoverFile(this.files[0])" />
         <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -539,7 +583,8 @@ function renderCoverSection() {
       <div class="single-preview" id="cover-preview">
         <div class="single-preview-inner" id="cover-preview-inner"></div>
         <div class="single-preview-name" id="cover-preview-name"></div>
-      </div>`;
+      </div>
+      <div class="cover-orientation-warn" id="cover-orientation-warn" style="display:none;"></div>`;
   }
 
   if (captions.length) {
@@ -1089,6 +1134,8 @@ async function handleCoverFile(file) {
   if (!file) return;
   coverFile = file;
   document.getElementById('dz-cover').style.display = 'none';
+  const warnEl = document.getElementById('cover-orientation-warn');
+  if (warnEl) { warnEl.style.display = 'none'; warnEl.textContent = ''; }
 
   const preview = document.getElementById('cover-preview');
   const inner   = document.getElementById('cover-preview-inner');
@@ -1100,6 +1147,7 @@ async function handleCoverFile(file) {
   removeBtn.onclick = () => {
     coverFile = null;
     preview.style.display = 'none';
+    if (warnEl) { warnEl.style.display = 'none'; warnEl.textContent = ''; }
     document.getElementById('dz-cover').style.display = '';
   };
 
@@ -1136,10 +1184,21 @@ async function handleCoverFile(file) {
     const checker = new Image();
     checker.onload = () => {
       const minDim = Math.min(checker.naturalWidth, checker.naturalHeight);
+      const isLow = minDim < 1575;
+      file._lowRes = isLow;
       const badge = document.createElement('div');
-      badge.className = minDim < 1575 ? 'low-res-badge' : 'res-ok-badge';
-      badge.textContent = minDim < 1575 ? 'LOW RES' : '✓ OK';
+      badge.className = isLow ? 'low-res-badge' : 'res-ok-badge';
+      badge.textContent = isLow ? 'LOW RES' : '✓ OK';
       inner.appendChild(badge);
+
+      // Non-blocking orientation nudge against the cover slot's declared shape.
+      const slotOrient = templateData()?.cover?.slots?.[0]?.orientation;
+      const msg = coverOrientationWarning(slotOrient, checker.naturalWidth, checker.naturalHeight);
+      file._orientationMismatch = !!msg;
+      if (warnEl && msg) {
+        warnEl.innerHTML = `<span class="warn-ico">⚠</span><span>${msg}</span>`;
+        warnEl.style.display = 'flex';
+      }
     };
     checker.src = objUrl;
   } else {
@@ -1211,9 +1270,11 @@ async function handleSpecialFile(slug, file) {
       const checker = new Image();
       checker.onload = () => {
         const minDim = Math.min(checker.naturalWidth, checker.naturalHeight);
+        const isLow = minDim < 1575;
+        file._lowRes = isLow;
         const badge = document.createElement('div');
-        badge.className = minDim < 1575 ? 'low-res-badge' : 'res-ok-badge';
-        badge.textContent = minDim < 1575 ? 'LOW RES' : '✓ OK';
+        badge.className = isLow ? 'low-res-badge' : 'res-ok-badge';
+        badge.textContent = isLow ? 'LOW RES' : '✓ OK';
         inner.appendChild(badge);
       };
       checker.src = objUrl;
@@ -1630,6 +1691,11 @@ async function submitOrder() {
     return;
   }
 
+  // Soft confirmation — wrong-orientation cover and/or low-res photos.
+  // Non-blocking: the customer can proceed or go back. Nothing to flag = no modal.
+  const proceed = await preSubmitConfirm();
+  if (!proceed) return;
+
   // Cover captions — keyed by the template's cover.captions; keep only filled-in keys
   const coverCaptionDefs = templateData()?.cover?.captions || [];
   const coverCaptionsRaw = {};
@@ -2013,11 +2079,67 @@ function openLightbox(src) {
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
 }
+
+// ── Pre-submit confirmation ───────────────────────────────────────
+// Builds the list of soft issues (wrong-orientation cover, low-res photos)
+// and asks the customer to confirm. Returns a Promise<boolean>: true =
+// proceed, false = go back. Resolves true immediately when there's nothing
+// to flag, so the happy path is untouched. Low-res for FP5 art gallery is
+// never flagged (those files never get _lowRes set).
+function collectSubmitWarnings() {
+  const issues = [];
+  if (coverHasPhoto() && coverFile && coverFile._orientationMismatch)
+    issues.push('Your cover photo is the wrong orientation for this template, so it will be cropped to fit.');
+
+  let lowRes = 0;
+  if (coverFile && coverFile._lowRes) lowRes++;
+  Object.values(specialFiles || {}).forEach(f => { if (f && f._lowRes) lowRes++; });
+  (mainFiles || []).forEach(f => { if (f && f._lowRes) lowRes++; });
+  if (lowRes > 0)
+    issues.push(`${lowRes} photo${lowRes === 1 ? ' is' : 's are'} lower resolution than we recommend, so ${lowRes === 1 ? 'it' : 'they'} may print soft, especially if used large.`);
+
+  return issues;
+}
+
+function preSubmitConfirm() {
+  const issues = collectSubmitWarnings();
+  if (!issues.length) return Promise.resolve(true);
+
+  const modal = document.getElementById('confirm-modal');
+  const list  = document.getElementById('confirm-list');
+  list.innerHTML = issues.map(t => `<li><span class="warn-ico">⚠</span><span>${t}</span></li>`).join('');
+  modal.classList.add('open');
+
+  return new Promise(resolve => {
+    const proceed = document.getElementById('confirm-proceed');
+    const back    = document.getElementById('confirm-back');
+    const done = (val) => {
+      modal.classList.remove('open');
+      proceed.onclick = null; back.onclick = null;
+      resolve(val);
+    };
+    proceed.onclick = () => done(true);
+    back.onclick    = () => done(false);
+  });
+}
 </script>
 
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <span class="lightbox-close" onclick="closeLightbox()">×</span>
   <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()" />
+</div>
+
+<!-- Pre-submit confirmation (orientation / low-res) -->
+<div class="confirm-modal" id="confirm-modal">
+  <div class="confirm-card">
+    <h3>Before we start</h3>
+    <ul id="confirm-list"></ul>
+    <div class="confirm-sub">You can submit as is, or go back and swap these photos. Once you submit, our team begins designing your book.</div>
+    <div class="confirm-actions">
+      <button type="button" id="confirm-back">Go back</button>
+      <button type="button" class="confirm-proceed" id="confirm-proceed">Submit anyway</button>
+    </div>
+  </div>
 </div>
 
 <!-- Upload progress overlay -->
