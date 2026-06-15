@@ -548,6 +548,10 @@ const FONT_FILE_MAP = {
   'Cormorant Garamond_medium':   'CormorantGaramond-Medium.ttf',
   'Cormorant Garamond_semibold': 'CormorantGaramond-SemiBold.ttf',
   'Cormorant Garamond_bold':     'CormorantGaramond-Bold.ttf',
+  'Twinkle Star_regular':        'TwinkleStar-Regular.ttf',
+  'Baskervville_regular':        'Baskervville-Regular.ttf',
+  'Baskervville_italic':         'Baskervville-Italic.ttf',
+  'Baskervville_mediumitalic':   'Baskervville-MediumItalic.ttf',
 };
 
 // Pre-embed all fonts into a PDFDocument; returns a lookup map
