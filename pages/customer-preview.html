@@ -1746,6 +1746,10 @@
           img.className = 'slot-photo';
           img.src = photo.url;
           img.alt = photo.name;
+          // <img> is natively draggable — leaving it on hijacks the slot's own
+          // dragstart with a native image drag (no JSON payload), so slot→slot
+          // moves silently fail. Disable it so the slotEl drag handler fires.
+          img.draggable = false;
           // Heart-mask slot: apply the staff-set crop offset (read-only — crop is part of
           // our layout, not customer-editable). Mirrors the staff engine's render-apply.
           if (slotDef.heartClip) {

@@ -301,6 +301,15 @@ async function loadPhoto(name) {
     if (!fs.existsSync(p)) return null;
     buf = fs.readFileSync(p);
   }
+  // iPhone photos record orientation as an EXIF flag instead of rotating the
+  // pixels. The browser auto-applies it (engine/customer preview look upright)
+  // but sharp ignores it unless we call .rotate() with no args. Bake the
+  // orientation into the pixels here so every downstream sharp() call — slot
+  // render, cover, heart-crop math, orientation detection — sees an upright
+  // image that matches the preview. No-op for photos without an EXIF flag
+  // (e.g. laptop uploads), so existing orders are unaffected.
+  try { buf = await sharp(buf).rotate().toBuffer(); }
+  catch (e) { /* non-image or sharp failure — fall back to the raw buffer */ }
   photoCache.set(name, buf);
   return buf;
 }
