@@ -1,7 +1,30 @@
 # Session Status
-_Last updated: 2026-06-13 (session 40)_
+_Last updated: 2026-06-15 (session 41)_
 
 ## Status
+**Session 41 (2026-06-15) — MOBILE RESPONSIVENESS (#47) shipped + verified on a real iPhone; 4 follow-on bugs found via E2E and all fixed. Strategic question settled: web flow is sufficient, no app needed.**
+
+**What shipped (live on `main` + Cloudflare; PDF fix is CLI-only):**
+1. **#47 Axis A — mobile layout.** Root cause: `order.html` never linked the shared `assets/css/mobile.css`, and product-page stacking rules only matched the `#la` wrapper (7 of 10 product pages lack it). Fix = one `<link>` + broadened selectors (`assets/css/mobile.css`, `pages/order.html`). All 10 product pages + home + order steps 1–2 now reflow to device width (iPhone 13 + Pixel 7), hamburger functional. Independently code-reviewed (accept). New audit tools `qa/mobile-audit.mjs` (live) + `qa/full-audit.mjs` (local, all pages). Commit `9992b66`.
+2. **#47 Axis B — EXIF / web-vs-app DECISION.** Evgeny ran a real iPhone Safari order: upload easy, **EXIF dates survived, engine auto-sorted correctly.** → **Aevia stays web-only; the Capacitor app (TO-DO #40) stays parked.** Do not re-litigate unless a new need emerges.
+3. **Bug #4 (critical) — PDF rotated iPhone photos.** EXIF-orientation: iPhone photos store orientation 6 (rotate 90° CW) as a flag; browser preview applies it but `sharp` didn't → sideways prints. Fixed with `.rotate()` baked into `loadPhoto()` in `scripts/export-pdf.js` (single chokepoint). Proven on AEV-032 (dims flip 5712×4284→4284×5712); regenerated PDF confirmed by Evgeny. Commit `6bc871b`.
+4. **Bug #3 (critical) — customer slot-drag broke.** Slot `<img>` lacked `draggable=false` → native image drag hijacked the slot dragstart. Fixed by mirroring the staff engine's pattern (`pages/customer-preview.html`). Commit `6bc871b`. ⚠ **Needs browser confirm on a fresh (non-approved) order.**
+5. **Bug #1 — price inconsistency.** home/collections showed stale €60/€120; wired both to `prices.js` (`BOOK_PRICES`) so they can't drift. Commit `c38a5aa`.
+6. **Bug #2 — mobile-gate placeholder.** Gate returned before the order fetch → showed literal "Order preview". Now fetches the order number from the token and shows the real reference. Commit `c38a5aa`.
+7. **Housekeeping:** `LINKS.md` (quick links, local + live), permission allowlist broadened in `.claude/settings.local.json` (dev/qa/read-only-git commands no longer prompt; push/deploy still gated).
+
+### ▶ NEXT SESSION (Session 42)
+1. **Confirm Bug #3** (slot→empty-slot drag) on a fresh, non-approved order — only outstanding verification from S41.
+2. **Pick the next pre-launch priority:** **#58** (configurator photo-count promise vs real requirement — customer is told one number, blocked at another), **#56** (post-payment customer email), **#44** (book language EN/DE), or website copy (#14/#15). Mobile is no longer a blocker.
+3. **Optional content polish:** mobile layout is functional but website content isn't final — Evgeny may tweak later (not urgent).
+4. Parked: **#64** (Save/Export footgun — discussed S41, deferred as not worth a session; Export button stays), **#40** (Capacitor app — parked, EXIF works on web), TO-DO #67 rich-text caption editor.
+
+### ⚠ OPEN WATCH-OUT (new, S41)
+- **`assets/css/mobile.css` is shared across home + 10 product pages + order.html (customer-facing only).** The staff engine / customer-preview / dashboard are deliberately desktop-only (PRD lines 33/91/163) and must NOT link it. New customer-facing pages should link it; new product-page layouts that don't use the `.zone`/`.panel`/`.product-title` pattern will need their own rules.
+- **`export-pdf.js loadPhoto()` now auto-orients via `.rotate()`** — every photo passes through it upright. If you add a new photo-read path, route it through `loadPhoto` (don't read GCS/disk directly) or you'll reintroduce the EXIF-rotation bug.
+- **Pricing single source of truth = `assets/js/prices.js` (`BOOK_PRICES`).** Product pages, home, and collections all read it. Changing a price = edit `prices.js` + the product-page chip `onclick` values + the Stripe SKU (`STRIPE_PRICE_ID`). home/collections auto-follow.
+
+### Previous: Session 40
 **Session 40 (2026-06-12 → verified 2026-06-13) — ORDER-FLOW HARDENING shipped to prod + verified live. TO-DO #68 resolved (and expanded). 6 chunks + dashboard, deployed backend-first, confirmed on a real Wander order.**
 
 **What shipped (live on `main` + Firebase):** the order-intake flow no longer "lies" (announced success before it was real). Diagnosis in `docs/briefs/order-flow-failure-map.md`; plan in `docs/briefs/order-flow-hardening.md`.

@@ -1,5 +1,10 @@
 # Brief: Mobile Responsiveness — Customer Order Flow (#47)
 
+> ## ✅ OUTCOME (Session 41, 2026-06-15) — BOTH AXES RESOLVED
+> - **Axis A (layout): SHIPPED.** Root cause was that `order.html` never linked the shared `assets/css/mobile.css` and the product-page stacking rules only matched the `#la` wrapper (7 of 10 pages lack it). Fixed with one `<link>` + broadened selectors. All 10 product pages + home + order steps 1–2 reflow to device width on iPhone 13 + Pixel 7 (audit 8/8 then all-pages), hamburger functional, independently code-reviewed (accept). Commits `9992b66` (+ review polish).
+> - **Axis B (EXIF / web-vs-app): RESOLVED → STAY WEB-ONLY.** Evgeny ran a real iPhone Safari order: upload was easy, **EXIF dates survived and the engine auto-sorted correctly**. Decision: the mobile browser flow is sufficient; **the Capacitor app (TO-DO #40) stays parked** — do not promote unless a future need emerges.
+> - **Bugs surfaced by the E2E test (all fixed Session 41):** PDF rotated iPhone photos (EXIF-orientation, fixed in `export-pdf.js`); customer slot-drag broke (fixed in `customer-preview.html`); home/collections price inconsistency (wired to `prices.js`); mobile-gate placeholder reference (now shows the real order number). See STATUS.md / session log.
+
 **Created:** 2026-06-15 (Session 41)
 **Objective:** Make the customer-facing pages (home, product pages, order flow) lay out correctly and natively on phone-width screens, and determine — by real-device test — whether a mobile *browser* upload preserves EXIF well enough to keep Aevia web-only or whether the Capacitor app (#40) must be promoted.
 **Audience:** Developer (Claude in a later build session) for Axis A; Evgeny for the Axis B real-device test.
