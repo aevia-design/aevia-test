@@ -1,24 +1,28 @@
 # Session Status
-_Last updated: 2026-06-15 (session 42)_
+_Last updated: 2026-06-15 (session 43)_
 
 ## Status
-**Session 42 (2026-06-15) — COVER PHOTO ORIENTATION + pre-submit confirmation shipped to `main` (`3102591`). Roadmap reviewed (core complete; remaining items blocked or P1). One ideation captured. Groundwork laid for data-driven cover clip shapes (#73), held until the new template's SVGs land.**
+**Session 43 (2026-06-15) — NEWBORN template (#4) build STARTED on branch `newborn-template` (NOT on `main`). Stages 1–2 of a 7-stage plan DONE + verified + committed. Paused at a clean boundary; Stage 3 (engine render + custom cover clip + zodiac) starts fresh next session.**
 
-**What shipped (live on `main` + Cloudflare; `pages/order.html` + `scribble-data.js`):**
-1. **Cover orientation hint** — cover slot gains an `orientation` field (Scribble = `landscape`), piped from the existing CSV `Orientation` column into an orientation-aware upload hint.
-2. **Non-blocking orientation warning** — amber ⚠ box when an uploaded cover photo fights the frame (e.g. vertical photo on a landscape cover); it will be cropped. Customer can still proceed.
-3. **Pre-submit confirmation modal** ("Before we start") — lists soft issues (wrong-orientation cover + low-res photo count) with **Go back / Submit anyway**. Low-res count spans cover + special + main grid but **excludes FP5 art gallery** (scanned art is intentionally low-res). Happy path (no issues) = no modal.
-- Verified: 97/97 tests; browser-confirmed all paths (warning renders, modal fires/cancels/proceeds, hi-res landscape no modal, zero console errors). Self-reviewed via /reviewing-code (fixed em-dash stop-slop misses).
+**Context:** "Little Annette" is actually the **Newborn** template. Xenia delivered `assets/Template_Newborn/` (CSVs + SVGs). Square 200×200mm book. It will land on the **Bloom** product page — Bloom is being **renamed to Newborn EVERYWHERE incl. the URL** (`bloom.html→newborn.html`) + Stripe wiring (Stage 6). All work is isolated on the branch; do NOT merge to `main` until Evgeny approves locally (Cloudflare auto-deploys `main`).
 
-**Groundwork committed, NOT built (TO-DO #73):** Evgeny added a `Photo shape` column across all 4 template CSVs (heart = `custom`, else `rectangle`/blank). #73 = generalise the hardcoded heart clip-path into a data-driven `clipShape` field across all 3 surfaces. **Held until the new "Little Annette" template SVGs arrive** so it can be tested against a real second shape (building against only the working heart = regression risk).
+**Planning artefacts:** brief `docs/briefs/newborn-template.md`; full session log `sessions/2026-06-15-s43.md` (read this first next session — it holds the Stage-3 render gaps).
 
-**Also:** `ideas.md` — logged the single multi-tab template workbook idea (fixes CSV schema drift; parked until ~6–7 more templates stabilise the column set).
+**What's DONE + committed on `newborn-template`:**
+1. **Stage 1 — `assets/Template_Newborn/newborn-data.js`** (`468cfb6`). Parses clean; all 30 page SVGs + 26 zodiac files resolve. SP0–SP6 geometry = Wander's; caption positions from the Newborn CSV. Custom cover clip path stored at `cover.clipShapes.coverFrame` (raw `d` + bbox + pxPerMm 2.835). Two functional pages modelled: `FPintro` (text-only fields) + `FPlabour` (left photo+customer caption / right photo+AI caption + zodiac overlay).
+2. **Stage 2 — fonts** (`34dff26`). Twinkle Star + Baskervville (static 400/400-italic/500-italic, instanced from the now-variable Google font). @font-face in engine + customer-preview, font-picker entries, PDF FONT_MAP keys. Browser-verified all 4 faces render (matches the cover mockup).
 
-### ▶ NEXT SESSION (Session 43)
-1. **When Xenia's "Little Annette" CSV + SVGs land → build TO-DO #73** (data-driven cover `clipShape` + wire the new template). Tell Xenia: fill `Orientation = landscape`; deliver cover SVG with the photo-opening silhouette as its own vector layer + the decorative frame as its own layer (don't put the clip path in a CSV cell). Heart precedent: `template-engine.html:2348` (hardcoded today), mirror across engine + customer-preview + export-pdf.
-2. **Confirm Bug #3** (customer slot-drag → empty slot) on a fresh, non-approved order — still outstanding from S41.
-3. **Or pick a pre-launch priority:** #58 (configurator photo-count promise vs real requirement), #56 (post-payment customer email), #44 (book language EN/DE).
-4. Parked: #64 (Save/Export footgun), #40 (Capacitor app — web is sufficient), #67 rich-text caption editor.
+**3 NEW mechanics vs prior templates:** (a) custom scalloped **cover photo clip** (realises #73 — generalise hardcoded heart), (b) **zodiac constellation overlay** on Labour-right (12 signs + None, customer-picked at order time), (c) **two cover fonts**.
+
+### ▶ NEXT SESSION (Session 44) — resume at Stage 3
+**Read `sessions/2026-06-15-s43.md` first** (esp. the "Stage-3 render gaps" block), then `docs/briefs/newborn-template.md`. Confirm you are on branch `newborn-template`.
+1. **Stage 3 — registry + engine render.** Add `newborn` registry entry in all 3 surfaces; render SP0–SP6 + cover + functional pages. Generalise hardcoded `heartClip` (`template-engine.html:2348`) → data-driven `clipShape`, then wire the custom cover clip (translate the path into the slot's local space + scale; cover slot is BOUNDED, unlike the full-canvas heart). Add zodiac overlay render + new `specialPhotos` key `labour`. Make cover-caption render honour data `italic`/`weight` (subtitle bug). **HARD GATE: Scribble + Wander + heart still render byte-identically.**
+2. Stage 4 order form (cover caps + Intro fields + Labour caption + zodiac select). Stage 5 customer-preview parity + PDF (check fontkit ligature bug on Baskervville/Twinkle Star). Stage 6 Bloom→Newborn rename. Stage 7 E2E + merge to `main` after Evgeny approves.
+
+### Previous: Session 42
+**Session 42 (2026-06-15) — COVER PHOTO ORIENTATION + pre-submit confirmation shipped to `main` (`3102591`). Roadmap reviewed (core complete; remaining items blocked or P1). One ideation captured. Groundwork laid for data-driven cover clip shapes (#73).**
+
+**What shipped (live on `main`; `pages/order.html` + `scribble-data.js`):** (1) cover orientation hint from CSV `Orientation`; (2) non-blocking amber orientation warning on wrong-orientation cover photo; (3) pre-submit "Before we start" modal listing soft issues (wrong-orientation cover + low-res count, excl. FP5 art) with Go back / Submit anyway. 97/97 tests; browser-verified. **#73 groundwork:** `Photo shape` column added across the 4 template CSVs — now being realised in the Newborn build (S43). **ideas.md:** multi-tab template workbook idea (parked).
 
 ### Previous: Session 41
 **Session 41 (2026-06-15) — MOBILE RESPONSIVENESS (#47) shipped + verified on a real iPhone; 4 follow-on bugs found via E2E and all fixed. Strategic question settled: web flow is sufficient, no app needed.**
