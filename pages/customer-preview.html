@@ -920,8 +920,23 @@
     if (window.innerWidth < 900) {
       const mobileGate = document.getElementById('mobile-gate');
       mobileGate.classList.add('visible');
-      const ref = window.orderData?.orderNumber || window.orderData?.orderRef || 'Order preview';
-      document.getElementById('mobile-gate-ref').textContent = 'Your order reference: ' + ref;
+      // The order isn't loaded yet on this branch (we return before the main
+      // fetch below), so fetch just the order number from the token to show a
+      // real reference. If it can't be resolved, show nothing rather than a
+      // confusing "Order preview" placeholder.
+      const refEl = document.getElementById('mobile-gate-ref');
+      const gateToken = new URLSearchParams(location.search).get('token');
+      let orderRef = '';
+      if (gateToken) {
+        try {
+          const gr = await fetch(GET_ORDER_ENDPOINT, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: gateToken }),
+          });
+          if (gr.ok) { const od = await gr.json(); orderRef = od.orderNumber || od.orderRef || ''; }
+        } catch (_) { /* best-effort — leave the reference blank */ }
+      }
+      refEl.textContent = orderRef ? ('Your order reference: ' + orderRef) : '';
       return;
     }
 

@@ -692,7 +692,15 @@
 </footer>
 
 
+<script src="../assets/js/prices.js"></script>
 <script>
+  /* ── Collection "From €" labels — single source of truth (prices.js) ──
+     Every template's entry price is the 40-page price; keep these in sync
+     with BOOK_PRICES so home never drifts from the product pages. */
+  document.querySelectorAll('.collection-price').forEach(el => {
+    el.textContent = 'From € ' + BOOK_PRICES.p40;
+  });
+
   /* ── Hero slider ── */
   const slides = document.querySelectorAll('.hero-slide');
   const headlines = document.querySelectorAll('.hero-headline');
