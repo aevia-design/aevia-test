@@ -151,13 +151,19 @@
   .crumb     { padding: 13px 20px; }
   .acc-wrap  { padding: 0 20px; }
 
-  /* Layout A — sticky split → single column */
+  /* Product pages — sticky split (gallery + panel) → single column */
+  /* Target both #la and non-#la cases for complete coverage. !important is
+     required because the desktop #la .zone rule (specificity 1,1,0) outranks
+     the bare .zone selector (0,1,0) on pages that use the #la wrapper. */
+  .zone,
   #la .zone {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
     gap: 40px;
     padding: 40px 20px;
   }
+  .panel,
   #la .panel { position: static; }
+  .product-title,
   #la .product-title { font-size: 36px; }
 
   /* Chips (page count selector) — allow wrapping */
