@@ -58,3 +58,15 @@ Captured ideas, most recent at the bottom. Status: Captured | Exploring | Commit
 **Status:** Parked — revisit after ~6–7 templates added (column set stabilises).
 
 ---
+
+## 2026-06-15 — Step-based order form UX (all templates)
+
+**Context:** Raised by Evgeny during the Newborn build (S43). Today the order form is one long scrollable screen: cover photo + captions, then special pages, then the main photo pool, all stacked. It works but feels like "a long ass scrollable list," not premium.
+
+**Idea:** Break the order form into discrete **steps** with progress + checkmarks, e.g. **Step 1 — Your cover** (photo + captions) → ✓ → **Step 2 — Your special pages** → ✓ → **Step 3 — Your photos** (main pool) → submit. Cleaner, more guided, more premium-feeling; lets us validate each step before advancing.
+
+**Scope note:** Applies to ALL templates, not just Newborn — it's a refactor of the shared `order.html` flow. Should be designed once and applied across Scribble/Wander/Newborn/etc. Not part of the Newborn build; a standalone UX task.
+
+**Related to:** `pages/order.html` (template-aware order flow); the optional special-page preview idea (would slot naturally into Step 2).
+
+**Status:** Captured — standalone task, schedule after Newborn lands.

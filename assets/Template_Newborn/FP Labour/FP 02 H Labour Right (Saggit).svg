@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" viewBox="0 0 566.929 566.929">
+  <g id="b" data-name="FP 02 H Labour Right (Saggit)">
+    <g id="c" data-name="Saggit">
+      <line x1="89.772" y1="169.277" x2="102.178" y2="165.969" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="46.519" y1="119.967" x2="52.353" y2="142.014" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="49.436" y1="110.613" x2="64.961" y2="100.081" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="63.151" y1="35.979" x2="83.533" y2="53.968" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="90.977" y1="62.823" x2="99.444" y2="78.979" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="89.94" y1="174.231" x2="97.595" y2="179.079" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="58.347" y1="151.908" x2="79.597" y2="168.248" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="115.924" y1="100.404" x2="98.88" y2="114.071" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="144.006" y1="88.544" x2="125.985" y2="95.412" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="156.756" y1="124.57" x2="153.534" y2="146.209" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="177.338" y1="123.131" x2="164.273" y2="121.186" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="158.825" y1="167.565" x2="154.968" y2="160.137" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="156.756" y1="113.295" x2="151.086" y2="91.446" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="97.543" y1="53.968" x2="92.878" y2="56.45" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="80.653" y1="100.081" x2="74.251" y2="98.443" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="90.57" y1="111.12" x2="88.503" y2="107.023" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="116.295" y1="94.694" x2="109.078" y2="88.535" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="90.977" y1="98.239" x2="98.426" y2="90.483" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="170.818" y1="61.316" x2="153.446" y2="81.923" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <g id="d" data-name="Star">
+        <polygon points="156.34 147.529 163.408 145.413 158.534 151.433 162.677 153.806 157.863 156.306 160.405 161.138 154.583 160.288 152.619 166.915 149.947 161.857 145.839 165.614 145.726 160.414 139.016 161.539 143.532 156.51 139.389 154.137 144.203 151.637 142.599 146.942 147.483 147.655 148.113 141.345 152.119 146.086 157.328 141.323 156.34 147.529" fill="#21386e"/>
+        <polygon points="158.825 148.473 155.674 152.376 158.058 153.856 155.254 155.403 157.164 158.912 153.215 157.873 152.319 162.168 150.336 158.845 147.866 160.988 147.716 157.945 143.513 159.032 146.357 155.519 143.973 154.039 146.777 152.492 145.128 149.041 148.816 150.022 149.505 145.667 151.695 149.051 155.01 146.174 154.315 149.95 158.825 148.473" fill="#fff"/>
+      </g>
+      <g id="e" data-name="Star">
+        <polygon points="108.3 78.853 115.368 76.738 110.494 82.757 114.638 85.131 109.823 87.631 112.366 92.463 106.543 91.613 104.58 98.239 101.908 93.182 97.799 96.938 97.687 91.739 90.977 92.864 95.493 87.835 91.35 85.462 96.164 82.961 94.56 78.266 99.444 78.979 100.073 72.669 104.08 77.41 109.289 72.647 108.3 78.853" fill="#21386e"/>
+        <polygon points="110.786 79.798 107.635 83.701 110.019 85.18 107.215 86.727 109.124 90.236 105.176 89.198 104.279 93.492 102.297 90.169 99.827 92.312 99.677 89.27 95.474 90.357 98.317 86.843 95.934 85.364 98.737 83.817 97.089 80.366 100.776 81.346 101.466 76.991 103.656 80.375 106.971 77.499 106.275 81.275 110.786 79.798" fill="#fff"/>
+      </g>
+      <g>
+        <ellipse cx="160.913" cy="173.008" rx="5.798" ry="5.832" transform="translate(-26.862 29.602) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="163.726" y1="178.112" x2="158.825" y2="167.565" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="121.168" cy="98.37" rx="5.798" ry="5.832" transform="translate(-14.849 21.834) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="115.924" y1="100.404" x2="125.985" y2="95.412" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="86.177" cy="101.565" rx="5.798" ry="5.832" transform="translate(-15.888 15.981) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="88.798" y1="106.769" x2="80.377" y2="99.615" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="68.951" cy="95.863" rx="5.798" ry="5.832" transform="translate(-15.173 12.995) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="64.961" y1="100.081" x2="74.251" y2="98.239" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="45.044" cy="114.202" rx="5.798" ry="5.832" transform="translate(-18.607 9.228) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="46.519" y1="119.967" x2="49.876" y2="110.167" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="54.186" cy="147.847" rx="5.798" ry="5.832" transform="translate(-24.148 11.25) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="58.347" y1="151.908" x2="52.353" y2="142.014" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="84.344" cy="171.71" rx="5.798" ry="5.832" transform="translate(-27.739 16.675) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="89.94" y1="174.231" x2="79.597" y2="168.248" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="107.836" cy="164.747" rx="5.798" ry="5.832" transform="translate(-26.229 20.536) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="102.314" y1="165.877" x2="113.472" y2="163.49" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="103.117" cy="181.509" rx="5.798" ry="5.832" transform="translate(-29.122 19.98) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="107.893" y1="184.821" x2="97.595" y2="179.079" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="182.715" cy="124.96" rx="5.798" ry="5.832" transform="translate(-18.45 32.589) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="177.096" y1="123.503" x2="188.127" y2="126.284" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="93.428" cy="116.445" rx="5.798" ry="5.832" transform="translate(-18.292 17.416) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="90.032" y1="111.474" x2="98.88" y2="114.071" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="158.825" cy="119.128" rx="5.798" ry="5.832" transform="translate(-17.809 28.479) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="157.157" y1="124.703" x2="156.919" y2="113.495" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="174.663" cy="56.842" rx="5.798" ry="5.832" transform="translate(-7.082 30.257) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="170.818" y1="61.316" x2="178.094" y2="52.455" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="149.313" cy="86.219" rx="5.798" ry="5.832" transform="translate(-12.397 26.404) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="153.224" y1="81.923" x2="144.006" y2="88.544" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="103.036" cy="52.153" rx="5.798" ry="5.832" transform="translate(-7.317 18.116) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="108.064" y1="49.266" x2="97.756" y2="54.011" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="58.986" cy="31.922" rx="5.798" ry="5.832" transform="translate(-4.537 10.4) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="54.713" y1="27.974" x2="63.151" y2="35.979" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="87.628" cy="58.099" rx="5.798" ry="5.832" transform="translate(-8.54 15.603) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="83.332" y1="53.571" x2="90.977" y2="62.823" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+    </g>
+  </g>
+</svg>

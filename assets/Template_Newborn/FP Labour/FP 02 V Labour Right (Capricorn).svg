@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" viewBox="0 0 566.929 566.929">
+  <g id="c" data-name="FP 02 V Labour Right (Capricorn)">
+    <g id="d" data-name="Capricorn">
+      <line x1="450.074" y1="531.183" x2="408.583" y2="517.605" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="434.072" y1="476.696" x2="479.996" y2="458.771" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="422.416" y1="478.179" x2="406.923" y2="480.373" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="398.474" y1="511.449" x2="370.055" y2="488.298" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="395.087" y1="480.535" x2="371.626" y2="482.438" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="489.716" y1="448.726" x2="491.096" y2="442.545" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="485.334" y1="463.832" x2="457.762" y2="527.484" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <g id="e" data-name="Star">
+        <polygon points="491.624 448.875 498.386 445.569 494.482 452.44 499.047 454.139 494.617 457.457 497.981 461.897 491.979 462.01 491.105 469.007 487.574 464.361 484.064 468.826 483.085 463.611 476.518 465.86 480.227 460.047 475.662 458.347 480.092 455.029 477.696 450.571 482.73 450.476 482.314 444.02 487.135 448.125 491.586 442.464 491.624 448.875" fill="#21386e"/>
+        <polygon points="494.282 449.412 491.761 453.865 494.406 454.958 491.841 456.981 494.347 460.195 490.2 459.807 490.012 464.279 487.464 461.264 485.334 463.832 484.677 460.795 480.628 462.588 482.905 458.579 480.259 457.486 482.824 455.463 480.591 452.263 484.465 452.636 484.435 448.138 487.202 451.18 490.06 447.733 489.988 451.649 494.282 449.412" fill="#fff"/>
+      </g>
+      <g id="f" data-name="Star">
+        <polygon points="367.331 476.978 374.093 473.672 370.189 480.542 374.754 482.241 370.325 485.559 373.688 490 367.686 490.113 366.812 497.109 363.281 492.463 359.771 496.928 358.792 491.713 352.226 493.962 355.935 488.149 351.369 486.45 355.799 483.132 353.403 478.673 358.438 478.578 358.021 472.122 362.842 476.227 367.293 470.567 367.331 476.978" fill="#21386e"/>
+        <polygon points="369.99 477.514 367.468 481.967 370.114 483.06 367.549 485.084 370.055 488.298 365.908 487.91 365.72 492.381 363.171 489.366 361.042 491.935 360.385 488.897 356.335 490.691 358.612 486.681 355.967 485.589 358.532 483.565 356.298 480.366 360.173 480.739 360.142 476.241 362.909 479.282 365.767 475.835 365.696 479.752 369.99 477.514" fill="#fff"/>
+      </g>
+      <g>
+        <ellipse cx="455.689" cy="533.441" rx="5.915" ry="5.95" transform="translate(-149.42 178.4) rotate(-19.093)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="449.944" y1="532.007" x2="457.762" y2="527.881" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="403.145" cy="515.119" rx="5.915" ry="5.95" transform="translate(-146.318 160.205) rotate(-19.093)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="408.583" y1="517.605" x2="398.151" y2="511.185" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="492.212" cy="436.892" rx="5.915" ry="5.95" transform="translate(-115.83 185.035) rotate(-19.093)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="493.588" y1="431.114" x2="491.096" y2="442.545" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="428.245" cy="477.16" rx="5.915" ry="5.95" transform="translate(-132.521 166.326) rotate(-19.093)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="422.416" y1="478.179" x2="434.072" y2="476.696" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="401.005" cy="480.454" rx="5.915" ry="5.95" transform="translate(-135.097 157.598) rotate(-19.093)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="395.087" y1="480.535" x2="407.166" y2="480.535" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+    </g>
+  </g>
+</svg>

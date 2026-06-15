@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" viewBox="0 0 566.929 566.929">
+  <g id="c" data-name="FP 02 V Labour Right (Cancer)">
+    <g id="d" data-name="Cancer">
+      <line x1="441.419" y1="422.971" x2="449.689" y2="379.605" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="393.937" y1="490.716" x2="426.007" y2="459.951" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="433.125" y1="447.473" x2="438.198" y2="433.792" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="459.367" y1="528.773" x2="434.086" y2="461.503" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <g id="e" data-name="Star">
+        <polygon points="433.125 447.473 438.33 442.583 436.702 449.883 441.306 450.128 438.217 454.371 442.494 457.428 437.091 459.224 438.242 465.783 433.756 462.587 431.817 467.606 429.483 463.177 424.162 467.058 425.907 460.767 421.302 460.522 424.392 456.279 420.985 452.932 425.517 451.426 423.348 445.719 428.853 448.063 431.311 441.7 433.125 447.473" fill="#21386e"/>
+        <polygon points="435.681 447.207 434.633 451.937 437.332 452.176 435.572 454.725 438.732 456.918 434.87 457.738 435.941 461.825 432.797 459.824 431.582 462.742 430.143 460.187 426.975 462.948 427.924 458.688 425.225 458.448 426.986 455.899 424.076 453.643 427.688 452.886 426.411 448.836 429.761 450.8 431.392 446.884 432.414 450.437 435.681 447.207" fill="#fff"/>
+      </g>
+      <g>
+        <circle cx="439.953" cy="428.455" r="5.613" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="438.27" y1="433.735" x2="441.311" y2="422.987" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <circle cx="451.215" cy="374.202" r="5.613" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="449.532" y1="379.482" x2="452.573" y2="368.733" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <circle cx="461.209" cy="533.939" r="5.613" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="462.725" y1="539.269" x2="459.317" y2="528.631" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <circle cx="390.143" cy="494.882" r="5.613" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="386.153" y1="498.727" x2="393.937" y2="490.716" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+    </g>
+  </g>
+</svg>

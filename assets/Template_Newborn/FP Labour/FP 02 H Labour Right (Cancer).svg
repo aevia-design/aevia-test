@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" viewBox="0 0 566.929 566.929">
+  <g id="b" data-name="FP 02 H Labour Right (Cancer)">
+    <g id="c" data-name="Cancer">
+      <line x1="104.871" y1="90.488" x2="113.142" y2="47.122" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="57.39" y1="158.233" x2="89.46" y2="127.468" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="96.578" y1="114.99" x2="101.651" y2="101.309" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="122.82" y1="196.29" x2="97.538" y2="129.02" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <g id="d" data-name="Star">
+        <polygon points="96.578 114.99 101.782 110.1 100.154 117.4 104.759 117.645 101.669 121.888 105.947 124.945 100.544 126.741 101.695 133.3 97.208 130.104 95.269 135.123 92.936 130.694 87.615 134.576 89.359 128.284 84.755 128.039 87.844 123.796 84.438 120.449 88.97 118.943 86.801 113.236 92.305 115.58 94.764 109.217 96.578 114.99" fill="#21386e"/>
+        <polygon points="99.134 114.725 98.086 119.454 100.785 119.693 99.024 122.242 102.185 124.435 98.323 125.255 99.393 129.342 96.249 127.341 95.034 130.259 93.596 127.704 90.427 130.465 91.377 126.205 88.678 125.965 90.439 123.416 87.529 121.16 91.14 120.403 89.864 116.353 93.214 118.317 94.844 114.401 95.867 117.954 99.134 114.725" fill="#fff"/>
+      </g>
+      <g>
+        <circle cx="103.406" cy="95.973" r="5.613" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="101.723" y1="101.252" x2="104.764" y2="90.504" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <circle cx="114.667" cy="41.719" r="5.613" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="112.984" y1="46.999" x2="116.025" y2="36.25" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <circle cx="124.661" cy="201.456" r="5.613" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="126.178" y1="206.786" x2="122.77" y2="196.148" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <circle cx="53.596" cy="162.399" r="5.613" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="49.605" y1="166.244" x2="57.39" y2="158.233" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+    </g>
+  </g>
+</svg>
