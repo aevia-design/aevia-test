@@ -25,6 +25,7 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 ---
 
 ## Key references
+- Quick links (local + live URLs): `LINKS.md`
 - Product requirements: `PRD.md`
 - Architecture + codemap: `ARCHITECTURE.md`
 - Implementation roadmap: `ROADMAP.md`
