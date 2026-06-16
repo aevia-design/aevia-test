@@ -3964,7 +3964,7 @@
 
     // FP-specific texts
     const fpTexts  = order.fpTexts  || {};
-    const fpLabels = { FP1: 'Birthday wishes', FP2: 'Funny words', FP3: 'Favourite toy', FP4: 'First steps', FP5: 'Art gallery captions' };
+    const fpLabels = { FP1: 'Birthday wishes', FP2: 'Funny words', FP3: 'Favourite toy', FP4: 'First steps', FP5: 'Art gallery captions', FPINTRO: 'Intro details', FPLABOUR: 'Labour caption', ZODIAC: 'Star sign' };
     Object.entries(fpTexts).forEach(([key, val]) => {
       const label = fpLabels[key.toUpperCase()] || key;
       let display;
@@ -3982,6 +3982,15 @@
     }
 
     panel.classList.add('visible');
+  }
+
+  // Resolve an fpTexts key to the active template's actual spread id,
+  // case-insensitively. Scribble/Wander keys map straight ('fp1'→'FP1');
+  // Newborn's are mixed-case ('fplabour'→'FPlabour','fpintro'→'FPintro').
+  function resolveFpKey(slug) {
+    const spreads = getActiveTemplateData()?.spreads || {};
+    const lower = String(slug || '').toLowerCase();
+    return Object.keys(spreads).find(k => k.toLowerCase() === lower) || String(slug || '').toUpperCase();
   }
 
   async function loadOrderIntoEngine(order) {
@@ -4164,7 +4173,7 @@
     const fpTexts = order.fpTexts || {};
     const seq     = window._bookSequence || [];
     Object.entries(fpTexts).forEach(([slug, value]) => {
-      const fpKey = slug.toUpperCase(); // 'fp1' → 'FP1'
+      const fpKey = resolveFpKey(slug); // 'fp1'→'FP1', 'fplabour'→'FPlabour'
       const spreadIndex = seq.indexOf(fpKey);
       if (spreadIndex === -1) return;
 
@@ -4192,7 +4201,7 @@
 
     // 7b. Pre-fill slot captions for FP spreads without a textPanel (FP3, FP4, FP5)
     Object.entries(fpTexts).forEach(([slug, value]) => {
-      const fpKey     = slug.toUpperCase();
+      const fpKey     = resolveFpKey(slug);
       const spreadDef = getActiveTemplateData()?.spreads?.[fpKey];
       if (!spreadDef?.orderFormMeta) return;
 
@@ -4223,11 +4232,22 @@
           window.bookCaptions[spreadIndex][capSide][Number(el.dataset.slotIdx)] = text;
         });
       } else {
-        // Single-caption FP (FP3 Favourite toy, FP4 First steps): fill first allowed slot
+        // Single-caption FP (FP3 Favourite toy, FP4 First steps, Newborn Labour):
+        // fill the customer's caption slot. Target a side whose caption is NOT
+        // AI-generated, so the customer's text never clobbers Labour's AI-written
+        // right page. FP3/FP4 resolve to 'left' as before; falls back to the first
+        // allowed slot if no side qualifies.
         const text = (values[0] || '').trim();
         if (!text) return;
+        const custSide = ['left', 'right'].find(side => {
+          const pd = spreadDef.pages?.[side];
+          if (!pd) return false;
+          const v = pd.H || pd.default || Object.values(pd)[0] || {};
+          return (v.slots || []).some(s => s.caption?.allowed && !s.caption.aiGenerated);
+        }) || '';
+        const sideSel = custSide ? `[data-side="${custSide}"]` : '';
         const el = document.querySelector(
-          `.slot-caption[data-spread-index="${spreadIndex}"]:not(.fp-text-panel)`
+          `.slot-caption[data-spread-index="${spreadIndex}"]${sideSel}:not(.fp-text-panel)`
         );
         if (!el) return;
         el.innerHTML = text;

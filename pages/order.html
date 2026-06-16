@@ -210,6 +210,7 @@
 <link rel="stylesheet" href="../assets/css/mobile.css">
 <script src="../assets/Template_Scribble/scribble-data.js"></script>
 <script src="../assets/Template_Wander/wander-data.js"></script>
+<script src="../assets/Template_Newborn/newborn-data.js"></script>
 <script src="../assets/js/map-render.js"></script>
 </head>
 <body>
@@ -479,10 +480,21 @@ const ORDER = {
 const TEMPLATE_REGISTRY = {
   scribble: () => window.SCRIBBLE_DATA,
   wander:   () => window.WANDER_DATA,
+  newborn:  () => window.NEWBORN_DATA,
 };
 function templateData() {
   const key = (ORDER.template || '').toLowerCase();
   return (TEMPLATE_REGISTRY[key] || TEMPLATE_REGISTRY.scribble)();
+}
+
+// Resolve an addon slug to its actual functional-spread key, case-insensitively.
+// Scribble/Wander slugs map straight ('fp1' → 'FP1'); Newborn's functional keys
+// are mixed-case ('fpintro' → 'FPintro', 'fplabour' → 'FPlabour') so a plain
+// .toUpperCase() would miss them. Falls back to the uppercased slug.
+function fpKeyForSlug(slug) {
+  const spreads = templateData()?.spreads || {};
+  const lower = String(slug || '').toLowerCase();
+  return Object.keys(spreads).find(k => k.toLowerCase() === lower) || String(slug || '').toUpperCase();
 }
 
 const addonNames   = paramList('addons');
@@ -646,7 +658,7 @@ function cancelAddon(slug, wrapId) {
 function updateStep2Bar() {
   const activeFPs = ORDER.addons
     .filter(a => !cancelledAddons.has(a.slug))
-    .map(a => a.slug.toUpperCase());
+    .map(a => fpKeyForSlug(a.slug));
   const targetPhotos = calcPhotoTarget(parseInt(ORDER.pages), activeFPs);
   window._photoCountTarget = targetPhotos;
   document.getElementById('photo-count-min').textContent  = targetPhotos;
@@ -658,8 +670,7 @@ function updateStep2Bar() {
 
 // Returns orderFormMeta from SCRIBBLE_DATA for a given addon slug (e.g. 'fp2' → FP2)
 function getFpMeta(slug) {
-  const key = slug.toUpperCase();
-  return templateData()?.spreads?.[key]?.orderFormMeta || null;
+  return templateData()?.spreads?.[fpKeyForSlug(slug)]?.orderFormMeta || null;
 }
 
 function addWordRow(slug, maxWords) {
@@ -708,6 +719,22 @@ function getItinLines(slug) {
 
 function escHtml(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+// Compose the Newborn intro block from the labelled fields. Empty fields are
+// dropped so partial input still reads cleanly. Staff can edit the final
+// wording in the engine (this is a starting point, like the Wander itinerary).
+//   name                       → line 1
+//   "Born {dob} at {time}"     → line 2 (each part optional)
+//   "{weight} · {length}"      → line 3 (each part optional)
+function composeIntroBlock(v) {
+  const lines = [];
+  if (v.name) lines.push(v.name);
+  const born = [v.dob, v.time].filter(Boolean);
+  if (born.length) lines.push('Born ' + born.join(' at '));
+  const measures = [v.weight, v.length].filter(Boolean);
+  if (measures.length) lines.push(measures.join(' · '));
+  return lines.join('\n');
 }
 
 // Live-update only the itinerary (right) page of the spread preview, so typing
@@ -776,7 +803,7 @@ function initFPSections() {
   container.innerHTML = '';
 
   ORDER.addons.filter(a => !cancelledAddons.has(a.slug)).forEach(addon => {
-    const fpKey    = addon.slug.toUpperCase(); // 'fp1' → 'FP1'
+    const fpKey    = fpKeyForSlug(addon.slug); // 'fp1'→'FP1', 'fplabour'→'FPlabour'
     const fpData   = templateData()?.spreads?.[fpKey];
     const photoMeta = fpData?.orderFormPhoto;
     const textMeta  = fpData?.orderFormMeta;
@@ -824,13 +851,18 @@ function initFPSections() {
     // ── Text / caption field
     if (textMeta) {
       html += `<div style="margin-top:${photoMeta ? '22px' : '0'};">`;
-      if (!textMeta.countrySelect) {
+      // Intro fields and the country-select render their own intro copy below.
+      if (!textMeta.countrySelect && !textMeta.introFields) {
         html += `<div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${textMeta.textPrompt || 'Notes'}</div>`;
         html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${textMeta.hint || ''}</div>`;
       }
 
-      if (textMeta.countrySelect) {
+      if (textMeta.introFields) {
+        html += renderIntroFields(addon.slug, textMeta);
+      } else if (textMeta.countrySelect) {
         html += renderCountrySelect(addon.slug, textMeta);
+      } else if (textMeta.zodiacSelect || textMeta.leftCaption) {
+        html += renderLabourFields(addon.slug, textMeta, fpData);
       } else if (textMeta.funnyWords) {
         const maxWords = textMeta.maxWords || 10;
         const minWords = textMeta.minWords || 3;
@@ -877,6 +909,61 @@ function initFPSections() {
 // ─────────────────────────────────────────────────────────────────
 window._fpCountries = window._fpCountries || {};
 const REGION_LABELS = { 'EU': 'Europe', 'Asia': 'Asia', 'Africa': 'Africa', 'N.America': 'North America', 'S.America': 'South America', 'Oceania': 'Oceania' };
+
+// ─────────────────────────────────────────────────────────────────
+// Intro fields (Newborn FPintro): labelled inputs (name/DOB/time/weight/length)
+// the engine composes into the centred intro block. One <input> per field,
+// id="intro-<slug>-<key>". Collected in submitOrder → composeIntroBlock().
+// ─────────────────────────────────────────────────────────────────
+function renderIntroFields(slug, meta) {
+  const inputStyle = 'width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;';
+  const fields = meta.fields || [];
+  let rows = '';
+  for (let i = 0; i < fields.length; i += 2) {
+    const pair = fields.slice(i, i + 2);
+    rows += `<div class="field-row" style="margin-bottom:14px;">`;
+    pair.forEach(f => {
+      rows += `
+        <div>
+          <label for="intro-${slug}-${f.key}" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">${escHtml(f.label)}</label>
+          <input type="text" id="intro-${slug}-${f.key}" placeholder="${escHtml(f.placeholder || '')}" style="${inputStyle}" />
+        </div>`;
+    });
+    rows += `</div>`;
+  }
+  return `
+    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Intro details</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.55;">${escHtml(meta.hint || '')}</div>
+    ${rows}`;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Labour fields (Newborn FPlabour): left-page caption + zodiac select.
+// The right-page caption is AI-generated (not collected here). The zodiac
+// picks the right-page constellation overlay. id="labour-cap-<slug>",
+// id="zodiac-<slug>". Collected in submitOrder.
+// ─────────────────────────────────────────────────────────────────
+function renderLabourFields(slug, meta, fpData) {
+  const inputStyle = 'width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;';
+  let html = '';
+  if (meta.leftCaption) {
+    const lc = meta.leftCaption;
+    html += `
+      <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${escHtml(lc.label || 'Caption')}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">A short line for the left page — we'll write the facing page for you.</div>
+      <textarea id="labour-cap-${slug}" placeholder="${escHtml(lc.placeholder || '')}" rows="2"
+        style="${inputStyle}resize:vertical;margin-bottom:22px;"></textarea>`;
+  }
+  const signs = fpData?.zodiac?.signs || [];
+  if (meta.zodiacSelect && signs.length) {
+    const opts = signs.map(s => `<option value="${escHtml(s)}">${s === 'None' ? 'No constellation' : escHtml(s)}</option>`).join('');
+    html += `
+      <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Star sign</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">We'll print your baby's zodiac constellation on the facing page. Choose "No constellation" to leave it off.</div>
+      <select id="zodiac-${slug}" style="${inputStyle}">${opts}</select>`;
+  }
+  return html;
+}
 
 function renderCountrySelect(slug, meta) {
   const coords = templateData()?.mapCoordinates || {};
@@ -1106,7 +1193,7 @@ function goToStep2() {
   // Photo count — mirrors engine's buildBookSequence + slot counting
   const activeFPs = ORDER.addons
     .filter(a => !cancelledAddons.has(a.slug))
-    .map(a => a.slug.toUpperCase()); // e.g. ['FP1','FP3']
+    .map(a => fpKeyForSlug(a.slug)); // e.g. ['FP1','FP3'] or ['FPintro','FPlabour']
   const targetPhotos = calcPhotoTarget(parseInt(ORDER.pages), activeFPs);
   window._photoCountTarget = targetPhotos;
   document.getElementById('photo-count-min').textContent  = targetPhotos;
@@ -1607,7 +1694,7 @@ async function submitOrder() {
   // Validate active FP sections using SCRIBBLE_DATA
   for (const addon of ORDER.addons) {
     if (cancelledAddons.has(addon.slug)) continue;
-    const fpKey    = addon.slug.toUpperCase();
+    const fpKey    = fpKeyForSlug(addon.slug);
     const fpData   = templateData()?.spreads?.[fpKey];
     const photoMeta = fpData?.orderFormPhoto;
     const textMeta  = fpData?.orderFormMeta;
@@ -1628,7 +1715,28 @@ async function submitOrder() {
     }
 
     // Validate text field
-    if (textMeta && textMeta.countrySelect) {
+    if (textMeta && textMeta.introFields) {
+      // Require the baby's name (first field); the rest are optional.
+      const firstKey = (textMeta.fields && textMeta.fields[0]?.key) || 'name';
+      const nameVal = (document.getElementById(`intro-${addon.slug}-${firstKey}`) || {}).value?.trim() || '';
+      if (!nameVal) {
+        errEl.textContent = `Please add the baby's name for "${addon.name}", or remove this page.`;
+        errEl.style.display = 'block';
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    } else if (textMeta && (textMeta.leftCaption || textMeta.zodiacSelect)) {
+      // Labour: require the left-page caption (zodiac is optional, defaults to None).
+      if (textMeta.leftCaption) {
+        const cap = (document.getElementById(`labour-cap-${addon.slug}`) || {}).value?.trim() || '';
+        if (!cap) {
+          errEl.textContent = `Please add the left-page caption for "${addon.name}", or remove this page.`;
+          errEl.style.display = 'block';
+          errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+      }
+    } else if (textMeta && textMeta.countrySelect) {
       const state = window._fpCountries[addon.slug];
       if (!state || !state.countries.length) {
         errEl.textContent = `Please select at least one country for "${addon.name}", or remove this page.`;
@@ -1710,12 +1818,32 @@ async function submitOrder() {
   const activeAddons = ORDER.addons.filter(a => !cancelledAddons.has(a.slug));
   const fpTexts = {};
   const addonNoteLines = [];
+  let zodiacSign = null;
   activeAddons.forEach(a => {
-    const fpKey   = a.slug.toUpperCase();
+    const fpKey   = fpKeyForSlug(a.slug);
     const fpData  = templateData()?.spreads?.[fpKey];
     const textMeta = fpData?.orderFormMeta;
     if (!textMeta) return;
-    if (textMeta.countrySelect) {
+    if (textMeta.introFields) {
+      const vals = {};
+      (textMeta.fields || []).forEach(f => {
+        vals[f.key] = (document.getElementById(`intro-${a.slug}-${f.key}`) || {}).value?.trim() || '';
+      });
+      const block = composeIntroBlock(vals);
+      if (block) {
+        fpTexts[a.slug] = block;
+        addonNoteLines.push(`${a.name}: ${block.replace(/\n/g, ' · ')}`);
+      }
+    } else if (textMeta.leftCaption || textMeta.zodiacSelect) {
+      if (textMeta.leftCaption) {
+        const cap = (document.getElementById(`labour-cap-${a.slug}`) || {}).value?.trim() || '';
+        if (cap) { fpTexts[a.slug] = cap; addonNoteLines.push(`${a.name}: ${cap}`); }
+      }
+      if (textMeta.zodiacSelect) {
+        zodiacSign = (document.getElementById(`zodiac-${a.slug}`) || {}).value || 'None';
+        if (zodiacSign && zodiacSign !== 'None') addonNoteLines.push(`${a.name} — star sign: ${zodiacSign}`);
+      }
+    } else if (textMeta.countrySelect) {
       const state = window._fpCountries[a.slug] || { region: null, countries: [] };
       const itinerary = getItinLines(a.slug).join('\n');
       if (state.countries.length || itinerary) {
@@ -1741,6 +1869,11 @@ async function submitOrder() {
     }
   });
 
+  // Zodiac travels through fpTexts.zodiac — the engine reads order.zodiacSign OR
+  // order.fpTexts.zodiac, so this needs no backend change (createUploadSession
+  // already persists fpTexts verbatim).
+  if (zodiacSign) fpTexts.zodiac = zodiacSign;
+
   const fullSpecialReq = [
     activeAddons.length ? `Add-ons selected: ${activeAddons.map(a => a.name).join(', ')}` : null,
     addonNoteLines.length ? addonNoteLines.join('\n') : null,
@@ -1758,7 +1891,7 @@ async function submitOrder() {
 
   // Special page photos (skip cancelled); FP5 has 2 slots (fp5-0, fp5-1)
   activeAddons.forEach(a => {
-    const fpKey    = a.slug.toUpperCase();
+    const fpKey    = fpKeyForSlug(a.slug);
     const fpData   = templateData()?.spreads?.[fpKey];
     const photoMeta = fpData?.orderFormPhoto;
     if (!photoMeta) return;
@@ -1819,7 +1952,7 @@ async function submitOrder() {
         specialRequests: fullSpecialReq,
         fpTexts:         Object.keys(fpTexts).length ? fpTexts : null,
         coverCaptions:   hasCoverCaptions ? coverCaptions : null,
-        fpSelections:    activeAddons.map(a => a.slug.toUpperCase()),
+        fpSelections:    activeAddons.map(a => fpKeyForSlug(a.slug)),
         photoCount:      mainFiles.length,
       }),
     });
@@ -1990,22 +2123,26 @@ function calcPhotoTarget(pageCount, selectedFPs) {
   const DATA = templateData();
   if (!DATA) return 0;
 
-  // Build sequence: SP0 + standard spreads (SP1–SP6 cycling) + FPs interspersed
+  // Build sequence — mirror buildBookSequence: an FP with replacesFirstSpread
+  // (Newborn Intro) OPENS the book in place of SP0 rather than being inserted in
+  // the body, so it isn't counted as a body FP.
+  const firstOverride = selectedFPs.find(id => DATA.spreads?.[id]?.replacesFirstSpread);
+  const bodyFPs       = selectedFPs.filter(id => id !== firstOverride);
   const totalSpreads  = pageCount / 2;
   const remaining     = totalSpreads - 1;
-  const standardCount = remaining - selectedFPs.length;
+  const standardCount = remaining - bodyFPs.length;
   const stdIds = ['SP1','SP2','SP3','SP4','SP5','SP6'];
   const standards = [];
   for (let i = 0; i < standardCount; i++) standards.push(stdIds[i % stdIds.length]);
 
-  const fpCount   = selectedFPs.length;
-  const positions = selectedFPs.map((_, i) =>
+  const fpCount   = bodyFPs.length;
+  const positions = bodyFPs.map((_, i) =>
     Math.round((i + 1) * (standards.length + 1) / (fpCount + 1))
   );
   for (let i = fpCount - 1; i >= 0; i--) {
-    standards.splice(positions[i], 0, selectedFPs[i]);
+    standards.splice(positions[i], 0, bodyFPs[i]);
   }
-  const sequence = ['SP0', ...standards];
+  const sequence = [firstOverride || 'SP0', ...standards];
 
   // Count regular photo slots assuming H variant (fallback to first available)
   let regularSlots = 0;

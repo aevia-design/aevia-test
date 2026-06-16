@@ -57,7 +57,7 @@ window.NEWBORN_DATA = {
     captions: [
       { key: 'name',     xMm: 327, yMm: 175, wMm: 115, hMm: 20, font: 'Twinkle Star', sizePt: 60, align: 'center', color: '#c0d5ee', label: 'Front — name', placeholder: 'Nico', maxLength: 24 },
       { key: 'subtitle', xMm: 327, yMm: 193, wMm: 100, hMm: 12, font: 'Baskervville', sizePt: 17, align: 'center', color: '#c0d5ee', italic: true, weight: 500, label: 'Front — subtitle / date', placeholder: 'Your First Months', maxLength: 40 },
-      { key: 'spine',    xMm: 222, yMm: 118, wMm: 45,  hMm: 8,  font: 'Twinkle Star', sizePt: 20, align: 'center', color: '#21386e', rotate: 270, label: 'Spine — name / phrase', placeholder: 'Our Nico', maxLength: 24 },
+      { key: 'spine',    xMm: 222.5, yMm: 118, wMm: 45,  hMm: 8,  font: 'Twinkle Star', sizePt: 20, align: 'center', color: '#21386e', rotate: 270, label: 'Spine — name / phrase', placeholder: 'Our Nico', maxLength: 24 },
     ]
   },
 
