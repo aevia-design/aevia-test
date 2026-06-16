@@ -337,9 +337,24 @@ function getPageDef(sidePages, variant) {
 }
 
 // Render one page (left or right) as a PNG buffer
-async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos) {
-  const { bgColor, svg, slots } = pageDef;
+async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos, variantKey) {
+  const { bgColor, slots } = pageDef;
+  let svg = pageDef.svg;
   const col = hexToSharpColor(bgColor || '#ffffff');
+
+  // ── Newborn zodiac overlay (Labour-right) ──────────────────────────────────
+  // The Labour right page has no fixed base SVG (svg:null); its overlay IS the
+  // chosen zodiac constellation, resolved from the data's zodiac.path(orientation,
+  // sign). 'None' resolves to the empty (None) SVG. Sign comes from state.zodiacSign.
+  // The engine appends it with the same .svg-overlay class + default positioning as
+  // a normal spread base SVG, so it flows through the identical content-SVG path below.
+  if (pageDef.zodiacOverlay) {
+    const spreadDef = DATA.spreads[spreadId] || {};
+    if (spreadDef.zodiac) {
+      const sign = state.zodiacSign || 'None';
+      svg = spreadDef.zodiac.path(variantKey || 'H', sign);
+    }
+  }
 
   // Start with a solid-color canvas (this IS the bleed on all sides)
   let canvas = sharp({
@@ -577,7 +592,11 @@ async function embedAllFonts(pdfDoc) {
 // is to draw each character as its own drawText call — fontkit can't form a ligature across separate
 // calls (no shaping context). Tradeoff: loses pair kerning, but barely perceptible at body sizes.
 // Cormorant Garamond has the same fontkit GSUB bug and needs the same workaround.
-const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond']);
+// Baskervville (Newborn body/caption font) + Twinkle Star (Newborn cover display)
+// both expose a `liga` GSUB feature and form ligatures (fi/fl/ffi collapse), the same
+// profile that triggered the bug on EB Garamond + Cormorant. Added pre-emptively so
+// Newborn print can't ship with mid-word gaps; confirm visually at E2E (Stage 7).
+const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star']);
 // EB Garamond additionally suppresses letter-spacing in the char-by-char path; the shaping
 // context loss caused irregular gaps when spacing was also applied. Cormorant Garamond keeps
 // its defined letter-spacing because the -0.02em tightening is aesthetically required.
@@ -847,11 +866,34 @@ async function renderCoverImage(coverDef, coverPhotoName) {
       const sh = Math.round(slot.hMm * MM_TO_PX);
       const sx = Math.round((slot.xMm - slot.wMm / 2) * MM_TO_PX);
       const sy = Math.round((slot.yMm - slot.hMm / 2) * MM_TO_PX);
+      // Custom photo silhouette (data-driven clip, e.g. Newborn's scalloped frame).
+      // The path lives in cover-SVG space (clipDef.pxPerMm, trim-origin, NO bleed).
+      // Mirror the engine's translate(-slotL,-slotT) scale(f): here the PDF canvas
+      // origin is the bleed edge and sx/sy are bleed-origin, so map a path point P to
+      // slot-local px = P*g + COVER_BLEED_PX − sx, where g = MM_TO_PX / clipDef.pxPerMm.
+      const clipDef = slot.clipShape && coverDef.clipShapes
+        ? coverDef.clipShapes[slot.clipShape] : null;
       try {
         const photoBuffer = await sharp(photoData)
           .resize(sw, sh, { fit: 'cover', position: 'centre' })
           .png().toBuffer();
-        composites.push({ input: photoBuffer, left: sx, top: sy });
+        if (clipDef) {
+          const g  = MM_TO_PX / clipDef.pxPerMm;
+          const tx = COVER_BLEED_PX - sx;
+          const ty = COVER_BLEED_PX - sy;
+          const maskSvg = Buffer.from(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${sw}" height="${sh}">` +
+            `<path transform="translate(${tx.toFixed(2)},${ty.toFixed(2)}) scale(${g.toFixed(5)})" d="${clipDef.d}" fill="white"/>` +
+            `</svg>`
+          );
+          const maskBuffer = await sharp(maskSvg).resize(sw, sh).png().toBuffer();
+          const maskedBuffer = await sharp(photoBuffer)
+            .composite([{ input: maskBuffer, blend: 'dest-in' }])
+            .png().toBuffer();
+          composites.push({ input: maskedBuffer, left: sx, top: sy });
+        } else {
+          composites.push({ input: photoBuffer, left: sx, top: sy });
+        }
       } catch (e) {
         console.warn(`  ⚠ Cover photo failed: ${e.message}`);
       }
@@ -906,10 +948,16 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
       console.warn('cover caption override schema mismatch (weight should be numeric):', ov);
     }
     const fontName = ov.font || capDef.font || 'NT Somic';
-    const style    = ov.weight >= 700 ? 'bold'
-                   : ov.weight >= 600 ? 'semibold'
-                   : ov.weight >= 500 ? 'medium'
-                   : ov.italic        ? 'italic'
+    // Default weight/italic from the caption's own styling (capDef), not a hardcoded
+    // 400/non-italic — so e.g. the Newborn Baskervville subtitle is italic 500 (→
+    // mediumitalic) by default. User overrides (ov.*) still win. Mirrors the engine.
+    const capWeight = ov.weight !== undefined ? ov.weight : (capDef.weight !== undefined ? capDef.weight : 400);
+    const capItalic = ov.italic !== undefined ? ov.italic : (capDef.italic || false);
+    const style    = (capItalic && capWeight >= 500 && capWeight < 600) ? 'mediumitalic'
+                   : capWeight >= 700 ? 'bold'
+                   : capWeight >= 600 ? 'semibold'
+                   : capWeight >= 500 ? 'medium'
+                   : capItalic        ? 'italic'
                    :                    'regular';
     const font = lookupFont(fontMap, fontName, style);
     if (!font) { console.warn(`  ⚠ Cover caption font not found: ${fontName}`); continue; }
@@ -1159,7 +1207,7 @@ async function main() {
         const label = `page-${String(pageNum).padStart(3, '0')}.pdf`;
         process.stdout.write(`  [${si+1}/${state.sequence.length}] ${spreadId} left (${leftVariant})… `);
         try {
-          const buf = await renderPage(spreadId, 'left', leftDef, leftArr, specialPhotos);
+          const buf = await renderPage(spreadId, 'left', leftDef, leftArr, specialPhotos, leftVariant);
           const capFn = (pg, fm) => drawCaptions(pg, fm, leftDef, String(si), 'left', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles);
           if (isPrint) { await writePrintPage(label, buf, capFn); }
           else         { await addPreviewPage(buf, capFn); }
@@ -1188,7 +1236,7 @@ async function main() {
       const label = `page-${String(pageNum).padStart(3, '0')}.pdf`;
       process.stdout.write(`  [${si+1}/${state.sequence.length}] ${spreadId} right (${rightVariant})… `);
       try {
-        const buf = await renderPage(spreadId, 'right', rightDef, rightArr, specialPhotos);
+        const buf = await renderPage(spreadId, 'right', rightDef, rightArr, specialPhotos, rightVariant);
         const capFn = (pg, fm) => drawCaptions(pg, fm, rightDef, String(si), 'right', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles);
         if (isPrint) { await writePrintPage(label, buf, capFn); }
         else         { await addPreviewPage(buf, capFn); }

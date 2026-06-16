@@ -1,0 +1,16 @@
+Intro Page Text:
+
+On [May 15th] at [6:09 a.m.],
+you came into the world.
+
+Mommy and Daddy were waiting for you,
+and when we finally met you,
+we both had tears of happiness.
+
+You weighed [3.28 kg] and were [53 cm] long.
+
+Our sweet little [boy].
+
+______________________________
+Required fields from customer:
+[Date], [Time], [Weight], [Length], [Gender]

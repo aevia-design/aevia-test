@@ -1,0 +1,59 @@
+Left Page Default Text:
+
+Welcome to this world, [Nico]!
+
+Left page required fields from customer: [Name]
+
+
+Right Page Default Texts for each Zodiac:
+
+Taurus: "Grow strong and steady. 
+May you carry quiet strength
+and a kind heart wherever life takes you."
+
+Aries: "Grow brave and bright.
+May your fearless heart be guided
+by wonder, warmth, and love."
+
+Gemini: "Grow curious and bright.
+May your lively heart find joy
+in every story life brings."
+
+Cancer: "Grow gentle and loving.
+May your heart feel safe
+and bring warmth wherever you go."
+
+Leo: "Grow proud and radiant.
+May your brave heart shine with kindness wherever life takes you."
+
+Virgo: "Shine softly and wisely.
+May your caring heart bring light
+to every small detail of life."
+
+Libra: "Shine gently and sweetly.
+May your peaceful heart find balance
+in every beautiful moment."
+
+Scorpio: "Grow deep and brave.
+May your passionate heart be guided
+by courage, love, and light."
+
+Saggitarius: "Shine brave and joyful.
+May your curious spirit find light
+in every path you take."
+
+Capricorn: "Shine strong and steady.
+May your gentle strength carry you
+through every step of life."
+
+Aquarius: "Grow bright and original.
+May your open heart dream freely
+and bring light to the world."
+
+Pisces: "Grow gentle and dreamy.
+May your tender heart carry wonder
+and kindness wherever you go."
+
+None: "Grow bright and gentle.
+May your heart be filled with wonder
+and love wherever life takes you."

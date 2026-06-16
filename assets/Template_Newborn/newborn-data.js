@@ -55,7 +55,7 @@ window.NEWBORN_DATA = {
     // (Twinkle Star, rotated). `italic`/`weight` carry the CSV's intended default styling
     // (cover-caption render must honour these — Stage-3 fix).
     captions: [
-      { key: 'name',     xMm: 327, yMm: 175, wMm: 115, hMm: 20, font: 'Twinkle Star', sizePt: 60, align: 'center', color: '#c0d5ee', label: 'Front — name', placeholder: 'Nico', maxLength: 24 },
+      { key: 'name',     xMm: 327, yMm: 175, wMm: 115, hMm: 20, font: 'Twinkle Star', sizePt: 44, align: 'center', color: '#c0d5ee', label: 'Front — name', placeholder: 'Nico', maxLength: 24 },
       { key: 'subtitle', xMm: 327, yMm: 193, wMm: 100, hMm: 12, font: 'Baskervville', sizePt: 17, align: 'center', color: '#c0d5ee', italic: true, weight: 500, label: 'Front — subtitle / date', placeholder: 'Your First Months', maxLength: 40 },
       { key: 'spine',    xMm: 222.5, yMm: 118, wMm: 45,  hMm: 8,  font: 'Twinkle Star', sizePt: 20, align: 'center', color: '#21386e', rotate: 270, label: 'Spine — name / phrase', placeholder: 'Our Nico', maxLength: 24 },
     ]
@@ -221,16 +221,19 @@ window.NEWBORN_DATA = {
       replacesFirstSpread: true,
       rightOnly: true,
       orderFormPhoto: null,
+      // The customer fills these 5 fields (all required); composeIntroBlock() in
+      // order.html drops them into the fixed birth-story template. Staff can edit the
+      // composed text further in the engine. Keys map into the template by name.
       orderFormMeta: {
         introFields: true,
         fields: [
-          { key: 'name',   label: "Baby's name",  placeholder: 'Nico' },
-          { key: 'dob',    label: 'Date of birth', placeholder: '14 March 2026' },
-          { key: 'time',   label: 'Time of birth', placeholder: '08:42' },
-          { key: 'weight', label: 'Weight',        placeholder: '3.4 kg' },
-          { key: 'length', label: 'Length',        placeholder: '51 cm' },
+          { key: 'date',   label: 'Date of birth', placeholder: 'May 15th' },
+          { key: 'time',   label: 'Time of birth', placeholder: '6:09 a.m.' },
+          { key: 'weight', label: 'Weight',        placeholder: '3.28 kg' },
+          { key: 'length', label: 'Length',        placeholder: '53 cm' },
+          { key: 'gender', label: 'Gender', placeholder: 'Boy / Girl' },
         ],
-        hint: 'A few key details about your little one — we compose these onto the intro page.'
+        hint: 'A few key details about your little one — we weave these into a short birth story on the intro page.'
       },
       pages: {
         // Single page (one side). svg is the fixed Intro artwork; no orientation variants.
@@ -247,16 +250,23 @@ window.NEWBORN_DATA = {
 
     // ── FPlabour — Labour (full spread: photo + caption each side; right page also
     //    carries a zodiac constellation overlay) ─────────────────────────────────
-    // Left page  : customer photo + CUSTOMER caption (e.g. "Welcome to the world, Nico").
-    // Right page : customer photo + AI-GENERATED caption (not collected on the order
-    //              form; staff-editable) + the chosen zodiac overlay.
+    // Left page  : customer photo + CUSTOMER caption ("Welcome to this world, {name}!",
+    //              built from the name field on the order form).
+    // Right page : customer photo + a per-zodiac DEFAULT caption (zodiac.copy, pre-filled
+    //              by the engine from the chosen sign; staff-editable) + the zodiac overlay.
+    //              The slot keeps caption.aiGenerated:true purely as the "which side is the
+    //              non-customer caption" marker the engine uses to target the fill.
     // Photos are dedicated Labour uploads (pool 'labour'), not from the main grid.
     FPlabour: {
       type: 'functional', id: 'FPlabour', label: 'Labour',
       orderFormPhoto: { pool: 'labour', count: 2, label: 'Labour photos', hint: 'Two photos from the day — one for each page of the labour spread.' },
+      // Left page: collect just the baby's name; composeLabourLeft() in order.html
+      // builds "Welcome to this world, {name}!". Right page: the chosen zodiac drives
+      // both the constellation overlay AND a default caption (zodiac.copy below) that
+      // the engine pre-fills; staff can edit it afterwards.
       orderFormMeta: {
         zodiacSelect: true,
-        leftCaption: { label: 'Left-page caption', placeholder: 'Welcome to the world, Nico' },
+        leftName: { label: "Baby's name", placeholder: 'Nico' },
       },
       // Zodiac overlay assets for the RIGHT page, keyed by orientation then sign.
       // Display name → file token (note "Sagittarius" → "Saggit"). 'None' = no overlay.
@@ -267,6 +277,23 @@ window.NEWBORN_DATA = {
           if (!sign || sign === 'None') return 'FP Labour/FP 02 ' + orientation + ' Labour Right (None).svg';
           const tok = (this.fileToken[sign] || sign);
           return 'FP Labour/FP 02 ' + orientation + ' Labour Right (' + tok + ').svg';
+        },
+        // Default right-page caption per sign (staff-editable). The engine pre-fills the
+        // AI-side caption with copy[chosenSign] on fresh order load. 'None' has its own copy.
+        copy: {
+          None:        'Grow bright and gentle.\nMay your heart be filled with wonder\nand love wherever life takes you.',
+          Aries:       'Grow brave and bright.\nMay your fearless heart be guided\nby wonder, warmth, and love.',
+          Taurus:      'Grow strong and steady.\nMay you carry quiet strength\nand a kind heart wherever life takes you.',
+          Gemini:      'Grow curious and bright.\nMay your lively heart find joy\nin every story life brings.',
+          Cancer:      'Grow gentle and loving.\nMay your heart feel safe\nand bring warmth wherever you go.',
+          Leo:         'Grow proud and radiant.\nMay your brave heart shine with kindness wherever life takes you.',
+          Virgo:       'Shine softly and wisely.\nMay your caring heart bring light\nto every small detail of life.',
+          Libra:       'Shine gently and sweetly.\nMay your peaceful heart find balance\nin every beautiful moment.',
+          Scorpio:     'Grow deep and brave.\nMay your passionate heart be guided\nby courage, love, and light.',
+          Sagittarius: 'Shine brave and joyful.\nMay your curious spirit find light\nin every path you take.',
+          Capricorn:   'Shine strong and steady.\nMay your gentle strength carry you\nthrough every step of life.',
+          Aquarius:    'Grow bright and original.\nMay your open heart dream freely\nand bring light to the world.',
+          Pisces:      'Grow gentle and dreamy.\nMay your tender heart carry wonder\nand kindness wherever you go.',
         }
       },
       pages: {

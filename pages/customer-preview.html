@@ -913,11 +913,27 @@
 
   const GET_ORDER_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getOrder';
 
+  // Master font list — mirrors the staff engine's COVER_FONTS. The caption toolbars
+  // show only the subset allowed by the active template's fontPicker (templateFonts()),
+  // but .find() lookups for style pills resolve against this full list.
   const CAPTION_FONTS = [
     { label: 'NT Somic',          value: 'NT Somic',          styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
     { label: 'EB Garamond',       value: 'EB Garamond',       styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Semi-Bold', weight: 600, italic: false }] },
-    { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }] },
+    { label: 'Cormorant Garamond', value: 'Cormorant Garamond', styles: [{ label: 'Light', weight: 300, italic: false }, { label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }, { label: 'Semi-Bold', weight: 600, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
+    { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }], funnyWordsOnly: true },
+    { label: 'Twinkle Star',      value: 'Twinkle Star',      styles: [{ label: 'Regular', weight: 400, italic: false }] },
+    { label: 'Baskervville',      value: 'Baskervville',      styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Medium Italic', weight: 500, italic: true }] },
   ];
+
+  // Caption-toolbar fonts scoped to the active template's fontPicker allow-list
+  // (mirrors the engine). funnyWordsOnly fonts stay gated separately.
+  function templateFonts(includeFunnyWords) {
+    const allow = getActiveTemplateData()?.fontPicker;
+    return CAPTION_FONTS.filter(f =>
+      (!f.funnyWordsOnly || includeFunnyWords) &&
+      (!allow || allow.includes(f.value))
+    );
+  }
 
   let _tbMode       = 'spread';
   let _tbCapEl      = null;
@@ -2210,9 +2226,10 @@
 
     document.getElementById('tb-caption-label').textContent = 'Caption';
 
+    const isFunnyWordsPanel = capDef.font === 'FirstTimeWriting';
     const sel = document.getElementById('tb-font');
     sel.innerHTML = '';
-    CAPTION_FONTS.forEach(f => {
+    templateFonts(isFunnyWordsPanel).forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.value;
       opt.textContent = f.label;
@@ -2256,7 +2273,7 @@
 
     const sel = document.getElementById('tb-font');
     sel.innerHTML = '';
-    CAPTION_FONTS.forEach(f => {
+    templateFonts(false).forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.value;
       opt.textContent = f.label;

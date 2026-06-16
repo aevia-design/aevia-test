@@ -511,12 +511,21 @@ exports.createCheckoutSession = functions
       const successUrl = `${baseUrl}?token=${token || order.previewToken}&payment=success`;
       const cancelUrl = `${baseUrl}?token=${token || order.previewToken}`;
 
+      // Pick the Stripe price by book size: 80-page books use STRIPE_PRICE_ID_80,
+      // everything else the 40-page STRIPE_PRICE_ID_40 (both set in functions/.env).
+      // Server-controlled — the price is NEVER taken from the client order amount.
+      // Each var falls back to the legacy STRIPE_PRICE_ID so payment never breaks if
+      // one is unset (it just bills the legacy price until the new vars are configured).
+      const price40 = process.env.STRIPE_PRICE_ID_40 || process.env.STRIPE_PRICE_ID;
+      const price80 = process.env.STRIPE_PRICE_ID_80 || price40;
+      const priceId = (Number(order.pageCount) >= 80) ? price80 : price40;
+
       // Create Stripe Checkout Session
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
         line_items: [
           {
-            price: process.env.STRIPE_PRICE_ID,
+            price: priceId,
             quantity: 1,
           },
         ],

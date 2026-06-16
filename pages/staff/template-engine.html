@@ -1409,6 +1409,9 @@
       // Wander FP1 Travel-map selection (region + countries). The PDF draws the
       // region SVG + pins from this; null/absent for non-map templates.
       mapSelection: window._wanderMap || null,
+      // Newborn Labour-right zodiac sign. The PDF resolves the matching
+      // constellation overlay SVG from this; null/absent for non-zodiac templates.
+      zodiacSign: window._newbornZodiac || null,
     };
 
     // Check if in Order mode (staff tool with loaded order)
@@ -3597,8 +3600,42 @@
   }
   document.getElementById('zodiac-select').addEventListener('change', function () {
     window._newbornZodiac = this.value;
-    if (window.photoPool.length) renderBook();
+    if (window.photoPool.length) { renderBook(); applyZodiacDefaultCaptions(); }
   });
+
+  // Fill the AI-side caption of any spread with a zodiac.copy map from the chosen
+  // sign (window._newbornZodiac). Used on fresh order load (loadOrderIntoEngine) and
+  // by the local-tester zodiac selector. Multi-line copy → <br> (contenteditable HTML).
+  // Reads the live sequence from window._bookSequence; safe no-op for other templates.
+  function applyZodiacDefaultCaptions() {
+    const seq = window._bookSequence || [];
+    const spreads = getActiveTemplateData()?.spreads || {};
+    Object.entries(spreads).forEach(([fpKey, spreadDef]) => {
+      const copy = spreadDef?.zodiac?.copy;
+      if (!copy) return;
+      const spreadIndex = seq.indexOf(fpKey);
+      if (spreadIndex === -1) return;
+      const sign  = window._newbornZodiac || 'None';
+      const plain = copy[sign] || copy['None'] || '';
+      if (!plain) return;
+      const aiSide = ['left', 'right'].find(side => {
+        const pd = spreadDef.pages?.[side];
+        if (!pd) return false;
+        const v = pd.H || pd.default || Object.values(pd)[0] || {};
+        return (v.slots || []).some(s => s.caption?.allowed && s.caption.aiGenerated);
+      });
+      if (!aiSide) return;
+      const el = document.querySelector(
+        `.slot-caption[data-spread-index="${spreadIndex}"][data-side="${aiSide}"]:not(.fp-text-panel)`
+      );
+      if (!el) return;
+      const html = plain.replace(/\n/g, '<br>');
+      el.innerHTML = html;
+      if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+      if (!window.bookCaptions[spreadIndex][aiSide]) window.bookCaptions[spreadIndex][aiSide] = {};
+      window.bookCaptions[spreadIndex][aiSide][Number(el.dataset.slotIdx)] = html;
+    });
+  }
 
   /* ── Photo count hint ── */
   function countRequiredSlots() {
@@ -4257,6 +4294,11 @@
         window.bookCaptions[spreadIndex][capSide][Number(el.dataset.slotIdx)] = text;
       }
     });
+
+    // 7c. Newborn Labour right page: default the AI-side caption from the chosen
+    // zodiac sign. Fresh-order only — the `restoring` guard above returns early on
+    // saved state, so staff edits to this caption persist and aren't re-clobbered.
+    applyZodiacDefaultCaptions();
 
     // 8. Pre-fill cover captions from customer order form input
     if (order.coverCaptions && Object.keys(order.coverCaptions).length) {

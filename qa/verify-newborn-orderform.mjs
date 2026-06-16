@@ -36,20 +36,20 @@ await p.waitForTimeout(500);
 // Intro fields
 const introFields = await p.$$eval('[id^="intro-fpintro-"]', els => els.map(e => e.id));
 console.log('intro fields:', introFields);
-// Labour: caption + zodiac + 2 photo zones
-const labourCap = await p.$('#labour-cap-fplabour') ? 'yes' : 'NO';
+// Labour: name field + zodiac + 2 photo zones
+const labourName = await p.$('#labour-name-fplabour') ? 'yes' : 'NO';
 const zodiac    = await p.$('#zodiac-fplabour') ? 'yes' : 'NO';
 const zodiacOpts = await p.$$eval('#zodiac-fplabour option', os => os.length).catch(() => 0);
 const labourZones = await p.$$eval('[id^="dz-special-fplabour"]', els => els.length);
-console.log('labour caption:', labourCap, '| zodiac select:', zodiac, '| zodiac options:', zodiacOpts, '| labour photo zones:', labourZones);
+console.log('labour name field:', labourName, '| zodiac select:', zodiac, '| zodiac options:', zodiacOpts, '| labour photo zones:', labourZones);
 
 // Fill intro + labour to exercise composeIntroBlock + payload
-await p.fill('#intro-fpintro-name', 'Nico');
-await p.fill('#intro-fpintro-dob', '14 March 2026');
-await p.fill('#intro-fpintro-time', '08:42');
-await p.fill('#intro-fpintro-weight', '3.4 kg');
-await p.fill('#intro-fpintro-length', '51 cm');
-await p.fill('#labour-cap-fplabour', 'Welcome to the world, Nico');
+await p.fill('#intro-fpintro-date', 'May 15th');
+await p.fill('#intro-fpintro-time', '6:09 a.m.');
+await p.fill('#intro-fpintro-weight', '3.28 kg');
+await p.fill('#intro-fpintro-length', '53 cm');
+await p.fill('#intro-fpintro-gender', 'boy');
+await p.fill('#labour-name-fplabour', 'Nico');
 await p.selectOption('#zodiac-fplabour', 'Pisces');
 
 // Intercept the payload by stubbing fetch before submit, then read what would be sent.

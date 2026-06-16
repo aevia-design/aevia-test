@@ -724,17 +724,25 @@ function escHtml(s) {
 // Compose the Newborn intro block from the labelled fields. Empty fields are
 // dropped so partial input still reads cleanly. Staff can edit the final
 // wording in the engine (this is a starting point, like the Wander itinerary).
-//   name                       → line 1
-//   "Born {dob} at {time}"     → line 2 (each part optional)
-//   "{weight} · {length}"      → line 3 (each part optional)
+// Drops the customer's fields (date/time/weight/length/gender) into the fixed
+// Newborn birth-story template. All 5 are required (validated on submit), so the
+// template has no empty gaps. Staff can edit the composed text in the engine.
 function composeIntroBlock(v) {
-  const lines = [];
-  if (v.name) lines.push(v.name);
-  const born = [v.dob, v.time].filter(Boolean);
-  if (born.length) lines.push('Born ' + born.join(' at '));
-  const measures = [v.weight, v.length].filter(Boolean);
-  if (measures.length) lines.push(measures.join(' · '));
-  return lines.join('\n');
+  return `On ${v.date} at ${v.time},
+you came into the world.
+
+Mommy and Daddy were waiting for you,
+and when we finally met you,
+we both had tears of happiness.
+
+You weighed ${v.weight} and were ${v.length} long.
+
+Our sweet little ${v.gender}.`;
+}
+
+// Newborn Labour left page: a short welcome built from the baby's name.
+function composeLabourLeft(name) {
+  return `Welcome to this world, ${name}!`;
 }
 
 // Live-update only the itinerary (right) page of the spread preview, so typing
@@ -938,21 +946,21 @@ function renderIntroFields(slug, meta) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Labour fields (Newborn FPlabour): left-page caption + zodiac select.
-// The right-page caption is AI-generated (not collected here). The zodiac
-// picks the right-page constellation overlay. id="labour-cap-<slug>",
-// id="zodiac-<slug>". Collected in submitOrder.
+// Labour fields (Newborn FPlabour): baby's name (drives the left-page welcome) +
+// zodiac select. The right-page caption defaults from the chosen zodiac (engine
+// pre-fills it, staff-editable). id="labour-name-<slug>", id="zodiac-<slug>".
+// Collected in submitOrder.
 // ─────────────────────────────────────────────────────────────────
 function renderLabourFields(slug, meta, fpData) {
   const inputStyle = 'width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;';
   let html = '';
-  if (meta.leftCaption) {
-    const lc = meta.leftCaption;
+  if (meta.leftName) {
+    const ln = meta.leftName;
     html += `
-      <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${escHtml(lc.label || 'Caption')}</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">A short line for the left page — we'll write the facing page for you.</div>
-      <textarea id="labour-cap-${slug}" placeholder="${escHtml(lc.placeholder || '')}" rows="2"
-        style="${inputStyle}resize:vertical;margin-bottom:22px;"></textarea>`;
+      <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${escHtml(ln.label || "Baby's name")}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">We'll print "Welcome to this world, [your baby's name]" on the left page.</div>
+      <input type="text" id="labour-name-${slug}" placeholder="${escHtml(ln.placeholder || '')}"
+        style="${inputStyle}margin-bottom:22px;" />`;
   }
   const signs = fpData?.zodiac?.signs || [];
   if (meta.zodiacSelect && signs.length) {
@@ -1716,21 +1724,21 @@ async function submitOrder() {
 
     // Validate text field
     if (textMeta && textMeta.introFields) {
-      // Require the baby's name (first field); the rest are optional.
-      const firstKey = (textMeta.fields && textMeta.fields[0]?.key) || 'name';
-      const nameVal = (document.getElementById(`intro-${addon.slug}-${firstKey}`) || {}).value?.trim() || '';
-      if (!nameVal) {
-        errEl.textContent = `Please add the baby's name for "${addon.name}", or remove this page.`;
+      // All intro fields are required so the birth-story template has no gaps.
+      const missing = (textMeta.fields || []).find(f =>
+        !((document.getElementById(`intro-${addon.slug}-${f.key}`) || {}).value?.trim()));
+      if (missing) {
+        errEl.textContent = `Please complete all intro details (${missing.label}) for "${addon.name}", or remove this page.`;
         errEl.style.display = 'block';
         errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
-    } else if (textMeta && (textMeta.leftCaption || textMeta.zodiacSelect)) {
-      // Labour: require the left-page caption (zodiac is optional, defaults to None).
-      if (textMeta.leftCaption) {
-        const cap = (document.getElementById(`labour-cap-${addon.slug}`) || {}).value?.trim() || '';
-        if (!cap) {
-          errEl.textContent = `Please add the left-page caption for "${addon.name}", or remove this page.`;
+    } else if (textMeta && (textMeta.leftName || textMeta.zodiacSelect)) {
+      // Labour: require the baby's name (zodiac is optional, defaults to None).
+      if (textMeta.leftName) {
+        const nm = (document.getElementById(`labour-name-${addon.slug}`) || {}).value?.trim() || '';
+        if (!nm) {
+          errEl.textContent = `Please add the baby's name for "${addon.name}", or remove this page.`;
           errEl.style.display = 'block';
           errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return;
@@ -1834,10 +1842,14 @@ async function submitOrder() {
         fpTexts[a.slug] = block;
         addonNoteLines.push(`${a.name}: ${block.replace(/\n/g, ' · ')}`);
       }
-    } else if (textMeta.leftCaption || textMeta.zodiacSelect) {
-      if (textMeta.leftCaption) {
-        const cap = (document.getElementById(`labour-cap-${a.slug}`) || {}).value?.trim() || '';
-        if (cap) { fpTexts[a.slug] = cap; addonNoteLines.push(`${a.name}: ${cap}`); }
+    } else if (textMeta.leftName || textMeta.zodiacSelect) {
+      if (textMeta.leftName) {
+        const nm = (document.getElementById(`labour-name-${a.slug}`) || {}).value?.trim() || '';
+        if (nm) {
+          const cap = composeLabourLeft(nm);
+          fpTexts[a.slug] = cap;
+          addonNoteLines.push(`${a.name}: ${cap}`);
+        }
       }
       if (textMeta.zodiacSelect) {
         zodiacSign = (document.getElementById(`zodiac-${a.slug}`) || {}).value || 'None';
