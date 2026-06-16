@@ -1,30 +1,32 @@
 # Session Status
-_Last updated: 2026-06-16 (session 44)_
+_Last updated: 2026-06-16 (session 45)_
 
 ## Status
-**Session 44 (2026-06-16) — NEWBORN template (#4) Stage 3 DONE + committed (`3af559b`) on branch `newborn-template` (NOT on `main`). Registry + full engine render (cover custom clip, zodiac overlay, Labour pool, Intro-as-SP0) across staff engine + customer-preview. 8 fixes from Evgeny's eyeball. Evgeny confirmed "all works well." Next: Stage 4 order form.**
+**Session 45 (2026-06-16) — NEWBORN template (#4) Stage 4 (order form) DONE + committed (`5dd84e9`) on branch `newborn-template` (NOT on `main`). Order form drives cover captions + Intro fields + Labour caption/photos/zodiac. Independent reviewer pass (Revise→fixed). Evgeny eyeballed BOTH the order form AND the resulting engine render: "renders well." Next: Stage 5 (customer-preview fonts + PDF).**
 
 **Context:** "Little Annette" is actually the **Newborn** template. Xenia delivered `assets/Template_Newborn/` (CSVs + SVGs). Square 200×200mm book. It will land on the **Bloom** product page — Bloom is being **renamed to Newborn EVERYWHERE incl. the URL** (`bloom.html→newborn.html`) + Stripe wiring (Stage 6). All work is isolated on the branch; do NOT merge to `main` until Evgeny approves locally (Cloudflare auto-deploys `main`).
 
-**Planning artefacts:** brief `docs/briefs/newborn-template.md`; session logs `sessions/2026-06-15-s43.md` (Stages 1–2 + render gaps) + `sessions/2026-06-16-s44.md` (Stage 3 — READ THIS FIRST next session).
+**Planning artefacts:** brief `docs/briefs/newborn-template.md`; session logs `sessions/2026-06-15-s43.md` (Stages 1–2), `sessions/2026-06-16-s44.md` (Stage 3), `sessions/2026-06-16-s45.md` (Stage 4 — READ THIS FIRST next session).
 
 **What's DONE + committed on `newborn-template`:**
 1. **Stage 1 — `newborn-data.js`** (`468cfb6`). Data model: SP0–SP6, cover (custom clip path), FPintro (text), FPlabour (2 photos + zodiac).
 2. **Stage 2 — fonts** (`34dff26`). Twinkle Star + Baskervville registered (engine + customer-preview + PDF font map).
-3. **Stage 3 — registry + engine render** (`3af559b`). Registry in all 3 surfaces. Render (engine + customer-preview, mirrored): data-driven cover clip (SVG opening made transparent so butterflies layer over the photo); zodiac overlay; Labour pool (`specialPhotos.FPlabour`, template-aware `freshSpecialPhotos()`); Intro replaces SP0 when selected (`replacesFirstSpread` flag + `buildBookSequence`). **8 fixes:** cover caption colour now applied from data (was never emitted on ANY template; Scribble unchanged, Wander→#3E2A55); slot→slot drag (engine `img.draggable=false`); per-template font picker (`fontPicker` allow-list per data file); Labour-left V caption re-synced. PDF render of the new mechanics deferred to Stage 5. **Scribble + Wander render unchanged; 97/97 tests.**
+3. **Stage 3 — registry + engine render** (`3af559b`). Registry in all 3 surfaces. Cover clip, zodiac overlay, Labour pool, Intro-replaces-SP0. 8 fixes. Scribble + Wander unchanged.
+4. **Stage 4 — order form** (`5dd84e9`, `pages/order.html` + `template-engine.html` + data/CSV). Cover captions (data-driven, already worked); **Intro** 5 labelled fields → composed block (`composeIntroBlock`), Intro opens book in place of SP0; **Labour** left caption + 2 photo uploads (slug `fplabour`) + zodiac select (12+None). **Root fix:** mixed-case functional keys — new `fpKeyForSlug` (order) + `resolveFpKey` (engine) replace `slug.toUpperCase()`; fpSelections now exact-cased ids; `calcPhotoTarget` mirrors `replacesFirstSpread`. **Zodiac rides `fpTexts.zodiac` → NO backend deploy needed.** Reviewer-flagged single-caption fill now targets the non-`aiGenerated` side (protects Labour's AI right page; FP3/FP4 still left). 97/97 tests; order form + engine render verified headless (0 errors); Scribble+Wander unchanged.
 
-### ▶ NEXT SESSION (Session 45) — Stage 4: Newborn order form
-**Read `sessions/2026-06-16-s44.md` first** (Stage-3 detail + watch-outs). Confirm branch `newborn-template`.
-1. **Stage 4 — order form** (`pages/order.html`): cover captions, Intro fields (Name/DOB/Time/Weight/Length → composed Intro block, see `FPintro.orderFormMeta.fields`), Labour left caption + 2 photo uploads (slug `fplabour`), zodiac select (12 + None → `order.zodiacSign`/`fpTexts.zodiac`).
-2. **Stage 5 — customer-preview parity + PDF.** Add the new fonts to customer `CAPTION_FONTS` (+scope). PDF render of the clip + zodiac in `export-pdf.js` (only registry wired so far). **fontkit GSUB ligature check** on Baskervville + Twinkle Star (high risk). Cover-subtitle PDF needs style token `mediumitalic`.
-3. **Stage 6 — Bloom→Newborn rename** (URL + links + `template` param + Stripe). **Stage 7 — E2E + merge to `main` after Evgeny approves.**
+### ▶ NEXT SESSION (Session 46) — Stage 5: customer-preview parity + PDF
+**Read `sessions/2026-06-16-s45.md` first.** Confirm branch `newborn-template`.
+1. **Stage 5 — customer-preview parity + PDF.** Add Baskervville/Twinkle Star (+scope) to customer `CAPTION_FONTS` (currently old 3-font Scribble list). PDF render of the custom clip + zodiac overlay in `export-pdf.js` (only registry/data-load wired). **fontkit GSUB ligature check** on Baskervville + Twinkle Star (both expose `liga`; Twinkle Star is connected script — HIGH risk). PDF cover-subtitle needs style token `mediumitalic` → `Baskervville_mediumitalic`.
+2. **Stage 6 — Bloom→Newborn rename** (URL `bloom.html→newborn.html`, links, `template` param, Stripe price wiring).
+3. **Stage 7 — E2E** (order→engine→customer→PDF, real order) + merge to `main` after Evgeny approves.
 
-### ⚠ S44 watch-outs
-- **Branch only; NOT pushed/merged.** Cloudflare deploys `main`. `.claude/settings.local.json` left OUT of the commit (pre-existing).
-- **Cover SVG is edited** (`#d8eaf0`→`none`). If Xenia re-exports the cover, re-apply the transparent opening.
-- **Wander cover caption colour** will shift `#493955`→`#3E2A55` (correct CSV value) on next deploy. Subtle, intended.
-- **Customer-preview `CAPTION_FONTS`** is the old 3-font list (missing the new fonts) — Stage-5 item.
-- Confirm Labour-left V caption (`x98 y183`) is Xenia's final value.
+### ⚠ S45 watch-outs
+- **Branch only; NOT pushed/merged.** Cloudflare deploys `main`. `.claude/settings.local.json` again left OUT of the commit (pre-existing local change).
+- **Full order→engine round-trip with a REAL order NOT yet run.** Stage 4 verified: (a) order-form rendering/validation/payload headless; (b) Evgeny eyeballed the engine render via the local tester. But the engine's `resolveFpKey` applying `fpTexts.fplabour`/`fpintro` from a *real submitted order* is unit-correct yet unseen on a live payload — that's Stage 7 E2E (needs Stage 6 product page to mint an order).
+- **Intro block format is a CHOICE** (`composeIntroBlock`: name / "Born {dob} at {time}" / "{weight} · {length}", empties dropped). Staff-editable starting point, like the Wander itinerary. Revisit if Evgeny/Xenia want a different editorial layout.
+- **Customer-preview `CAPTION_FONTS`** still the old 3-font list — Stage-5 item (carried from S44).
+- **No backend `zodiacSign` field** — zodiac travels via `fpTexts.zodiac` (engine reads `order.zodiacSign || order.fpTexts.zodiac`). If a proper column is ever added it needs a Firebase deploy (affects all templates live).
+- Carried: Cover SVG is edited (`#d8eaf0`→`none`) — re-apply if Xenia re-exports the cover. Wander cover caption colour shifts `#493955`→`#3E2A55` on next deploy (intended).
 
 ### Previous: Session 42
 **Session 42 (2026-06-15) — COVER PHOTO ORIENTATION + pre-submit confirmation shipped to `main` (`3102591`). Roadmap reviewed (core complete; remaining items blocked or P1). One ideation captured. Groundwork laid for data-driven cover clip shapes (#73).**
