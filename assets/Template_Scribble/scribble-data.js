@@ -24,6 +24,9 @@ window.SCRIBBLE_DATA = {
 
   scale: 3,
   fonts: { display: 'NT Comic', body: 'EB Garamond' },
+  // Fonts offered in the caption toolbar for this template (values match COVER_FONTS
+  // in the engine). FirstTimeWriting stays gated to the funny-words panel separately.
+  fontPicker: ['NT Somic', 'EB Garamond', 'FirstTimeWriting'],
   colors: {
     plum:     '#493955',
     beige:    '#FDF1E5',

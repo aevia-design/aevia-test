@@ -91,6 +91,7 @@ let slotLeft, slotTop, slotW, slotH;
 global.window = {};
 require(path.resolve(__dirname, '../assets/Template_Scribble/scribble-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Wander/wander-data.js'));
+require(path.resolve(__dirname, '../assets/Template_Newborn/newborn-data.js'));
 DATA = global.window.SCRIBBLE_DATA; // default; will be updated in main() if needed
 
 function initializePrintConstants() {
@@ -137,6 +138,7 @@ function initializePrintConstants() {
 const TEMPLATES = {
   scribble: { data: () => global.window.SCRIBBLE_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Scribble/Spreads') },
   wander:   { data: () => global.window.WANDER_DATA,   assetBase: path.resolve(__dirname, '../assets/Template_Wander') },
+  newborn:  { data: () => global.window.NEWBORN_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Newborn') },
 };
 
 let ASSET_BASE = TEMPLATES.scribble.assetBase; // default

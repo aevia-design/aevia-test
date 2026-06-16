@@ -34,6 +34,8 @@ window.WANDER_DATA = {
 
   scale: 3,
   fonts: { display: 'Cormorant Garamond', body: 'Cormorant Garamond' },
+  // Fonts offered in the caption toolbar for this template (values match COVER_FONTS).
+  fontPicker: ['Cormorant Garamond'],
   colors: {
     navy:   '#262262',
     ink:    '#12264b',

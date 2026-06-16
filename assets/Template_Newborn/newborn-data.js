@@ -55,14 +55,17 @@ window.NEWBORN_DATA = {
     // (Twinkle Star, rotated). `italic`/`weight` carry the CSV's intended default styling
     // (cover-caption render must honour these — Stage-3 fix).
     captions: [
-      { key: 'name',     xMm: 327, yMm: 175, wMm: 115, hMm: 20, font: 'Twinkle Star', sizePt: 60, align: 'center', color: '#12264b', label: 'Front — name', placeholder: 'Nico', maxLength: 24 },
-      { key: 'subtitle', xMm: 327, yMm: 193, wMm: 100, hMm: 12, font: 'Baskervville', sizePt: 17, align: 'center', color: '#12264b', italic: true, weight: 500, label: 'Front — subtitle / date', placeholder: 'Your First Months', maxLength: 40 },
+      { key: 'name',     xMm: 327, yMm: 175, wMm: 115, hMm: 20, font: 'Twinkle Star', sizePt: 60, align: 'center', color: '#c0d5ee', label: 'Front — name', placeholder: 'Nico', maxLength: 24 },
+      { key: 'subtitle', xMm: 327, yMm: 193, wMm: 100, hMm: 12, font: 'Baskervville', sizePt: 17, align: 'center', color: '#c0d5ee', italic: true, weight: 500, label: 'Front — subtitle / date', placeholder: 'Your First Months', maxLength: 40 },
       { key: 'spine',    xMm: 222, yMm: 118, wMm: 45,  hMm: 8,  font: 'Twinkle Star', sizePt: 20, align: 'center', color: '#21386e', rotate: 270, label: 'Spine — name / phrase', placeholder: 'Our Nico', maxLength: 24 },
     ]
   },
 
   scale: 3,
   fonts: { display: 'Twinkle Star', body: 'Baskervville' },
+  // Fonts offered in the caption toolbar for this template (values match COVER_FONTS
+  // in the engine). Keeps the picker scoped so staff can't apply another template's font.
+  fontPicker: ['Twinkle Star', 'Baskervville'],
   colors: {
     navy:    '#262262',
     ink:     '#12264b',
@@ -212,6 +215,11 @@ window.NEWBORN_DATA = {
     // text block. No photo upload, no orientation choice.
     FPintro: {
       type: 'functional', id: 'FPintro', label: 'Intro',
+      // Intro is a single page that OPENS the book: when selected it takes the
+      // first-spread slot in place of SP0 (buildBookSequence honours this flag).
+      // rightOnly renders it like SP0 — blank inside-cover left, Intro on the right.
+      replacesFirstSpread: true,
+      rightOnly: true,
       orderFormPhoto: null,
       orderFormMeta: {
         introFields: true,
@@ -266,12 +274,12 @@ window.NEWBORN_DATA = {
           H: { bgColor: '#c0d5ee', svg: 'FP Labour/FP 02 H Labour Left.svg',
             slots: [ { slot: 1, x: 95, y: 95, xBleed: 98, yBleed: 98, w: 150, h: 100, ratio: '3:2', pool: 'labour', caption: { allowed: true, customerField: 'leftCaption', xMm: 98, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'center', font: 'Baskervville', sizePt: 18, style: 'italic', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } } ] },
           V: { bgColor: '#c0d5ee', svg: 'FP Labour/FP 02 V Labour Left.svg',
-            slots: [ { slot: 1, x: 95, y: 95, xBleed: 98, yBleed: 98, w: 100, h: 133, ratio: '3:4', pool: 'labour', caption: { allowed: true, customerField: 'leftCaption', xMm: 108, yMm: 103, wMm: 100, hMm: 13, halign: 'center', valign: 'center', font: 'Baskervville', sizePt: 18, style: 'italic', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } } ] },
+            slots: [ { slot: 1, x: 95, y: 95, xBleed: 98, yBleed: 98, w: 100, h: 133, ratio: '3:4', pool: 'labour', caption: { allowed: true, customerField: 'leftCaption', xMm: 98, yMm: 183, wMm: 100, hMm: 13, halign: 'center', valign: 'center', font: 'Baskervville', sizePt: 18, style: 'italic', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } } ] },
         },
         right: {
           // svg is the zodiac overlay (set at render time from zodiac.path); None = empty.
           H: { bgColor: '#ffffff', svg: null, zodiacOverlay: true,
-            slots: [ { slot: 1, x: 105, y: 95, xBleed: 108, yBleed: 98, w: 150, h: 100, ratio: '3:2', pool: 'labour', caption: { allowed: true, aiGenerated: true, xMm: 130.5, yMm: 175, wMm: 105, hMm: 30, halign: 'right', valign: 'top', font: 'Baskervville', sizePt: 18, style: 'italic', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } } ] },
+            slots: [ { slot: 1, x: 105, y: 95, xBleed: 108, yBleed: 98, w: 150, h: 100, ratio: '3:2', pool: 'labour', caption: { allowed: true, aiGenerated: true, xMm: 130.5, yMm: 173, wMm: 105, hMm: 30, halign: 'right', valign: 'top', font: 'Baskervville', sizePt: 18, style: 'italic', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } } ] },
           V: { bgColor: '#ffffff', svg: null, zodiacOverlay: true,
             slots: [ { slot: 1, x: 85, y: 100, xBleed: 88, yBleed: 103, w: 120, h: 160, ratio: '3:4', pool: 'labour', caption: { allowed: true, aiGenerated: true, xMm: 173, yMm: 63, wMm: 40, hMm: 80, halign: 'left', valign: 'top', font: 'Baskervville', sizePt: 18, style: 'italic', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } } ] },
         },
