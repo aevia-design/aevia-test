@@ -227,11 +227,11 @@ window.NEWBORN_DATA = {
       orderFormMeta: {
         introFields: true,
         fields: [
-          { key: 'date',   label: 'Date of birth', placeholder: 'May 15th' },
+          { key: 'date',   label: 'Date of birth', placeholder: '15 May, 2026' },
           { key: 'time',   label: 'Time of birth', placeholder: '6:09 a.m.' },
           { key: 'weight', label: 'Weight',        placeholder: '3.28 kg' },
           { key: 'length', label: 'Length',        placeholder: '53 cm' },
-          { key: 'gender', label: 'Gender', placeholder: 'Boy / Girl' },
+          { key: 'gender', label: 'Gender', placeholder: 'boy / girl' },
         ],
         hint: 'A few key details about your little one — we weave these into a short birth story on the intro page.'
       },

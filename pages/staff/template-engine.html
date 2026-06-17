@@ -1374,12 +1374,23 @@
       }
     }
 
-    // Special photos: one filename per key (max 1 per key), except FP5 which stores [left, right]
+    // Special photos: keys whose slots draw from a PER-SIDE pool ('artwork' or 'labour')
+    // store an array [leftPhoto, rightPhoto]; single-photo keys (cover/FP1/FP3/FP4) store
+    // one filename. Detect per-side keys from the active template so a new per-side pool
+    // (e.g. Newborn's FPlabour after Scribble's FP5) doesn't silently collapse to one photo
+    // and lose the second page — the recurring export bug. Mirrored in export-pdf.js.
+    const _spreads = (getActiveTemplateData() || {}).spreads || {};
+    const _usesPerSidePool = (node) => {
+      if (!node || typeof node !== 'object') return false;
+      if (Array.isArray(node.slots) && node.slots.some(s => s.pool === 'artwork' || s.pool === 'labour')) return true;
+      return Object.values(node).some(v => v && typeof v === 'object' && _usesPerSidePool(v));
+    };
+    const perSideKeys = new Set(Object.keys(_spreads).filter(k => _usesPerSidePool(_spreads[k])));
     const specialPhotos = {};
     for (const [key, arr] of Object.entries(window.specialPhotos || {})) {
       const names = arr.filter(Boolean).map(p => p.name || null);
       if (!names.length) continue;
-      if (key === 'FP5') {
+      if (key === 'FP5' || perSideKeys.has(key)) {
         specialPhotos[key] = names; // array: [leftPhoto, rightPhoto]
       } else {
         specialPhotos[key] = names[0]; // cover/FP1/FP3/FP4 have max 1
@@ -2774,16 +2785,23 @@
         // Typography: CSV defaults, then any spreadCaptionStyles override for this textPanel.
         const _tpOv     = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.['textPanel'] || {};
         const _tpFont   = _tpOv.font          !== undefined ? _tpOv.font          : tpCap.font;
+        const _tpWeight = _tpOv.weight        !== undefined ? _tpOv.weight        : (tpCap.style === 'bold' ? 700 : tpCap.style === 'semibold' ? 600 : tpCap.style === 'medium' ? 500 : 400);
+        const _tpItalic = _tpOv.italic        !== undefined ? _tpOv.italic        : (tpCap.style === 'italic');
         const _tpSizePt = _tpOv.sizePt        !== undefined ? _tpOv.sizePt        : tpCap.sizePt;
         const _tpLineS  = _tpOv.lineSpacing   !== undefined ? _tpOv.lineSpacing   : tpCap.lineSpacing;
         const _tpLetS   = _tpOv.letterSpacing !== undefined ? _tpOv.letterSpacing : tpCap.letterSpacing;
         if (_tpFont)                         panelEl.style.fontFamily    = `'${_tpFont}', var(--sans)`;
         if (_tpSizePt) {
-          // funnyWords panel is scaled to the canvas (px); regular text panels use pt
-          panelEl.style.fontSize = isFunnyWords ? (_tpSizePt * SCALE) + 'px' : _tpSizePt + 'pt';
+          // funnyWords panel scales to the canvas (px). Regular text panels convert pt→canvas px
+          // (sizePt * SCALE * 25.4/72) to match the toolbar live-apply, the per-photo captions,
+          // and the PDF physical size. Raw 'pt' here renders ~26% too big (canvas is 3px/mm,
+          // not 96px/inch) and mismatched the toolbar — the staff/customer size discrepancy.
+          panelEl.style.fontSize = isFunnyWords ? (_tpSizePt * SCALE) + 'px' : (_tpSizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
         }
         if (_tpLineS !== undefined)           panelEl.style.lineHeight    = _tpLineS;
         if (_tpLetS  !== undefined)           panelEl.style.letterSpacing = _tpLetS + 'em';
+        panelEl.style.fontWeight = _tpWeight;
+        panelEl.style.fontStyle  = _tpItalic ? 'italic' : 'normal';
         // Line breaks handled via <br> tags (innerHTML round-trip) — pre-line not needed
 
         const formatFunnyWords = (text) => {

@@ -379,10 +379,10 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
       const spRaw = specialPhotos[spreadId];
       const spName = typeof spRaw === 'string' ? spRaw : spRaw?.name;
       if (spName) photo = { name: spName };
-    } else if (slot.pool === 'artwork') {
-      // FP5 art gallery: specialPhotos.FP5 must be array [leftName, rightName].
-      // Legacy string fallback below handles old book-state.json from before 2026-05.
-      // Re-export from the engine to upgrade to current schema.
+    } else if (slot.pool === 'artwork' || slot.pool === 'labour') {
+      // Per-side photo pools: FP5 art gallery + Newborn FPlabour. specialPhotos[spreadId]
+      // is an array [leftName, rightName] (one photo per page). Legacy string fallback
+      // below handles old book-state.json (pre-fix) — re-export from the engine to upgrade.
       const artArr = specialPhotos[spreadId];
       const artIdx = side === 'left' ? 0 : 1;
       let artName;
@@ -706,7 +706,11 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     const charSpacing   = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0
       : ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
 
-    const lines = String(text).split('\n').filter(l => l.trim());
+    // Preserve empty lines as blank lines ('') — see the textPanel render below for rationale.
+    // The engine renders \n\n as <br><br> (a visible paragraph gap); filtering them out here
+    // collapsed that spacing in the PDF. Blank lines are skipped at draw time but still occupy
+    // one line-height via the forEach index.
+    const lines = String(text).split('\n');
 
     // xMm/yMm are CENTER coords (with-bleed mm). Convert to pdf-lib box origin (bottom-left of box).
     const boxWidthPt  = capDef.wMm * MM_TO_PT;
@@ -717,7 +721,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     const textYPt = pageSizePt - (capDef.yMm + capDef.hMm / 2) * MM_TO_PT;
 
     // Word-wrap text to fit box width
-    const wrappedLines = lines.flatMap(l => wrapText(font, l, sizePt, boxWidthPt, charSpacing));
+    const wrappedLines = lines.flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : ['']);
 
     // Horizontal alignment
     const halign = capDef.halign || 'left';
@@ -735,6 +739,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
 
     const isLig = LIGATURE_FONTS.has(fontName);
     wrappedLines.forEach((line, li) => {
+      if (!line.trim()) return; // blank line: reserve space (via li) but draw nothing
       const textWidthPt = isLig
         ? measureNoLig(font, line, sizePt, charSpacing)
         : font.widthOfTextAtSize(line, sizePt) + charSpacing * Math.max(0, line.length - 1);
@@ -767,14 +772,13 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     if (font) {
       const isFunnyWords = capDef.font === 'FirstTimeWriting';
       // FunnyWords: template sizePt is in mm (canvas-scaled units), convert to PDF pt.
-      // Regular panels: the engine renders these in raw CSS pt at 96dpi, which on its
-      // 3px/mm (76.2dpi) canvas makes them ~1.26× larger than their nominal pt. The PDF
-      // reads sizePt as a true 72dpi point, so it prints ~1.26× smaller than the screen.
-      // Scale panel pt up by 96dpi / 76.2dpi so the print matches the engine appearance.
-      const PANEL_PT_SCALE = (96 / 25.4) / 3;  // ≈ 1.2598  (SCALE = 3 px/mm in both engines)
+      // Regular panels: the engine now renders sizePt at its true physical size
+      // (sizePt * SCALE * 25.4/72 px = sizePt typographic points), same as the per-photo
+      // slot captions above. So the PDF draws the panel at raw sizePt PDF points — no
+      // PANEL_PT_SCALE fudge (that compensated for the old raw-CSS-pt engine bug, now fixed).
       const sizePt        = isFunnyWords
         ? ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 20) * MM_TO_PT
-        : ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 16) * PANEL_PT_SCALE;
+        : ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 16);
       const lineSpacingPt = sizePt * ((ov.lineSpacing !== undefined ? ov.lineSpacing : capDef.lineSpacing) || 1.28);
       const charSpacing   = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0
       : ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
@@ -786,7 +790,10 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
       const lines = String(panelText).split('\n');
       // Apply word-wrap so long lines flow within the caption box (same as slot captions).
       // FunnyWords panels: each "word" is already one line — wrapText still works correctly.
-      const wrappedLines = lines.flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : []);
+      // Empty lines are PRESERVED as a single blank line ('') so they reserve one line-height
+      // of vertical space — matching the engine, which renders \n\n as <br><br> (a visible gap
+      // staff/customers use to space paragraphs). Dropping them collapsed the spacing in the PDF.
+      const wrappedLines = lines.flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : ['']);
       // Measure total text height for valign
       const totalTextHeight = wrappedLines.length > 0
         ? (wrappedLines.length * lineSpacingPt - (lineSpacingPt - sizePt))
@@ -993,8 +1000,15 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
         ? measureNoLig(font, l, sizePt, charSpacing)
         : font.widthOfTextAtSize(l, sizePt);
 
-      const ascenderPt = font.heightAtSize(sizePt, { descender: false });
-      const spineXPt   = capDef.xMm * MM_TO_PT + ascenderPt / 2;
+      // Center the glyph line-box on the spine center, matching the engine (which rotates the
+      // caption box about its center → text visual-center sits on xMm). After 90° CCW rotation
+      // ascenders extend LEFT of the baseline (by ascent) and descenders RIGHT (by descent), so
+      // the line-box horizontal center = baseline_x + (descent − ascent)/2. Solving for the
+      // baseline so that center lands on xMm gives the +(ascent − descent)/2 offset below.
+      // (The old + ascent/2 ignored the descender and sat ~descent/2 too far right.)
+      const ascenderPt  = font.heightAtSize(sizePt, { descender: false });
+      const descenderPt = font.heightAtSize(sizePt) - ascenderPt;
+      const spineXPt   = capDef.xMm * MM_TO_PT + (ascenderPt - descenderPt) / 2;
       const yCenterPt  = pageSizeHPt - capDef.yMm * MM_TO_PT;
       const totalW     = lines.reduce((sum, l) => sum + measure(l), 0)
                        + (lines.length - 1) * lineSpacing;

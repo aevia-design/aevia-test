@@ -737,7 +737,7 @@ we both had tears of happiness.
 
 You weighed ${v.weight} and were ${v.length} long.
 
-Our sweet little ${v.gender}.`;
+Our sweet little ${(v.gender || '').toLowerCase()}.`;
 }
 
 // Newborn Labour left page: a short welcome built from the baby's name.
@@ -1688,12 +1688,17 @@ async function submitOrder() {
     return;
   }
 
-  // Validate pool photo count
+  // Validate pool photo count — must match the book's slot count EXACTLY.
+  // One photo per slot: too few leaves empty slots, too many leaves surplus photos
+  // that the engine can't place (they show up "unplaced" for staff). Guard both ends.
   const required = window._photoCountTarget || 0;
   const uploaded = (mainFiles || []).length;
-  if (uploaded < required) {
-    const diff = required - uploaded;
-    errEl.textContent = `Please upload ${diff} more photo${diff === 1 ? '' : 's'} (${uploaded} of ${required} added).`;
+  if (required > 0 && uploaded !== required) {
+    const diff = Math.abs(required - uploaded);
+    const noun = `photo${diff === 1 ? '' : 's'}`;
+    errEl.textContent = uploaded < required
+      ? `Please upload ${diff} more ${noun} (${uploaded} of ${required} added).`
+      : `Please remove ${diff} ${noun} — your book has ${required} photo slots (${uploaded} of ${required} added).`;
     errEl.style.display = 'block';
     errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;

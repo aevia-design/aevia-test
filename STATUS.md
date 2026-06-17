@@ -1,7 +1,31 @@
 # Session Status
-_Last updated: 2026-06-16 (session 45)_
+_Last updated: 2026-06-16 (session 47)_
 
 ## Status
+**Session 47 (2026-06-16) — NEWBORN E2E bug-fixing: caption parity (engine↔engine) + PDF parity (3 bugs). Branch `newborn-template` (NOT main). NOTHING COMMITTED — all fixes are working-tree only, pending Evgeny's visual confirm of the regenerated AEV-037 PDF (he stopped to inspect; resumes next session). 102/102 tests. Read `sessions/2026-06-16-s47.md` first.**
+
+**Fixed this session (all UNCOMMITTED):**
+1. **Intro caption staff↔customer mismatch** — two stacked bugs: (a) text-panel render dropped `weight`+`italic` from the style override (staff italic, customer roman); (b) render used raw `sizePt+'pt'` (~26% too big) while the toolbar used the canvas-scaled `sizePt*SCALE*25.4/72` px. Both render blocks fixed to scaled formula + full field read-back. Verified by live DOM measurement (16.9px italic = staff).
+2. **PDF Intro panel ~26% too big** — removed the `PANEL_PT_SCALE≈1.26` fudge (it compensated for the now-fixed engine pt-bug). Engine=customer=PDF.
+3. **PDF Labour photos missing** — (a) PDF now handles `pool:'labour'` like `'artwork'`; (b) engine Export was collapsing all non-FP5 special keys to a single filename → made it data-driven (any artwork/labour pool → `[left,right]` array). Recurring "new per-side pool breaks export" bug, now generic.
+4. **PDF spine caption off-center** — changed `+ascenderPt/2` → `+(ascent−descent)/2` to center the glyph line-box like the engine. ⚠ unconfirmed (Twinkle Star metrics) — Evgeny to eyeball.
+
+### ▶ NEXT SESSION (Session 48) — Evgeny inspects PDF, then commit + finish E2E
+**Read `sessions/2026-06-16-s47.md` first. Confirm branch `newborn-template`.**
+1. **Pick up Evgeny's PDF inspection** (Intro size, spine centering, Labour photos). Spine (bug 4) is the watch item.
+2. **Labour photos need a re-Export** — the PDF Evgeny is viewing used the OLD book-state (string `FPlabour`), so both Labour pages show the SAME photo. For 2 distinct: re-click **"Export book state (JSON)"** in the staff engine, then `cd scripts && npm run pdf -- AEV-037`.
+3. **Commit everything** once approved: `customer-preview.html`, `template-engine.html`, `scripts/export-pdf.js`, `LEARNINGS.md`, S46 dangling (`pages/order.html` guard + `tests/photo-count-guard.test.js`, `ideas.md`, `TO-DOS.md`), Evgeny's CSV (`Newborn_sizing_full.csv`), new `qa/measure-intro-panel.mjs`. `.claude/settings.local.json` left OUT.
+4. **Merge to `main` only after Evgeny approves.** The pt→px + PANEL_PT_SCALE fixes also resize **Scribble (FP1/FP2) + Wander (itinerary)** text panels (now correct/smaller, matching PDF) — eyeball those before merge; they're live.
+5. Carried: Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`); real submit → live `AEV-xxx` to clean (TO-DO #60).
+
+### ⚠ S47 watch-outs
+- **Branch only, NOT pushed/merged. NOTHING committed this session** — all fixes working-tree only.
+- **The pt→px caption fix touches ALL templates' text panels** (Newborn/Scribble/Wander) — correct direction but visible change on live Scribble/Wander.
+- **Spine centering fix is metric-based + unconfirmed** — verify on the regenerated PDF.
+- **Caption render rules now codified in `LEARNINGS.md` (2026-06-16)** — read before any caption work. The recurring caption hiccups (pt-vs-px, dropped style fields, per-side pool export) are documented there.
+- **Low-res yellow engine border = intended warning** — not a bug (AI sample photos sub-print-res).
+
+### Previous: Session 45
 **Session 45 (2026-06-16) — NEWBORN template (#4) Stage 4 (order form) DONE + committed (`5dd84e9`) on branch `newborn-template` (NOT on `main`). Order form drives cover captions + Intro fields + Labour caption/photos/zodiac. Independent reviewer pass (Revise→fixed). Evgeny eyeballed BOTH the order form AND the resulting engine render: "renders well." Next: Stage 5 (customer-preview fonts + PDF).**
 
 **Context:** "Little Annette" is actually the **Newborn** template. Xenia delivered `assets/Template_Newborn/` (CSVs + SVGs). Square 200×200mm book. It will land on the **Bloom** product page — Bloom is being **renamed to Newborn EVERYWHERE incl. the URL** (`bloom.html→newborn.html`) + Stripe wiring (Stage 6). All work is isolated on the branch; do NOT merge to `main` until Evgeny approves locally (Cloudflare auto-deploys `main`).

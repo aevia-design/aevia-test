@@ -2063,13 +2063,17 @@
         // Typography: CSV defaults, then any staffSpreadCaptionStyles override for this textPanel.
         const _tpOv     = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.['textPanel'] || {};
         const _tpFont   = _tpOv.font          !== undefined ? _tpOv.font          : tpCap.font;
+        const _tpWeight = _tpOv.weight        !== undefined ? _tpOv.weight        : (tpCap.style === 'bold' ? 700 : tpCap.style === 'semibold' ? 600 : tpCap.style === 'medium' ? 500 : 400);
+        const _tpItalic = _tpOv.italic        !== undefined ? _tpOv.italic        : (tpCap.style === 'italic');
         const _tpSizePt = _tpOv.sizePt        !== undefined ? _tpOv.sizePt        : tpCap.sizePt;
         const _tpLineS  = _tpOv.lineSpacing   !== undefined ? _tpOv.lineSpacing   : tpCap.lineSpacing;
         const _tpLetS   = _tpOv.letterSpacing !== undefined ? _tpOv.letterSpacing : tpCap.letterSpacing;
         if (_tpFont)                         panelEl.style.fontFamily    = `'${_tpFont}', var(--sans)`;
-        if (_tpSizePt)                       panelEl.style.fontSize      = isFunnyWords ? (_tpSizePt * SCALE) + 'px' : _tpSizePt + 'pt';
+        if (_tpSizePt)                       panelEl.style.fontSize      = isFunnyWords ? (_tpSizePt * SCALE) + 'px' : (_tpSizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
         if (_tpLineS  !== undefined)         panelEl.style.lineHeight    = _tpLineS;
         if (_tpLetS   !== undefined)         panelEl.style.letterSpacing = _tpLetS + 'em';
+        panelEl.style.fontWeight = _tpWeight;
+        panelEl.style.fontStyle  = _tpItalic ? 'italic' : 'normal';
 
         const formatFunnyWords = (text) => {
           if (!isFunnyWords) return text;
