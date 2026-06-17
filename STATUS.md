@@ -1,24 +1,29 @@
 # Session Status
-_Last updated: 2026-06-17 (session 50)_
+_Last updated: 2026-06-17 (session 51)_
 
 ## Status
-**Session 50 (2026-06-17) — TO-DO #74 SHIPPED: drag-to-reposition crop for ALL photo slots (generalise heart crop). Committed + PUSHED to `main` (`f005ea9` + housekeeping `35f3c13`; Cloudflare auto-deploys). Evgeny hand-verified all 3 surfaces (staff drag, customer render, PDF). 102/102 tests. Read `sessions/2026-06-17-s50.md`.**
+**Session 51 (2026-06-17) — STEP-BASED ORDER FORM UX SHIPPED to `main` (`723fac4`, pushed → Cloudflare auto-deploys). The order form's long single-scroll upload stage is now discrete guided steps — Details → Cover → Special pages → Photos — across all templates, data-driven (Special auto-skips with no add-ons), linear-forward/free-backward nav. Independent /reviewer-agent + /design-review both passed. 102/102 tests. Read `sessions/2026-06-17-s51.md`.**
 
-**What shipped this session (all on `main`, pushed):**
-1. **#74 crop generalised to all slots (`f005ea9`)** — `attachHeartDrag`→`attachCropDrag` (alwaysOn flag). Regular photo slots get a hover "✥" handle that toggles per-slot reposition-mode (swap-drag disabled, gold ring, Esc/click-away exits); staff can nudge any photo inside its frame. Saved crop applied to every placed photo across engine + customer-preview + PDF. PDF: shared `coverExtract()` helper; default 50/50 = byte-identical to old `fit:cover`/centre. Reused the existing `heartCrop`/`staffHeartCrop` store (keyed by photo name) — NO persistence change.
-2. **Latent photo-name key mismatch fixed (same commit)** — customer-preview named pool photos by full GCS path while staff used basename, so staff-set crops silently missed the name-keyed lookup → customer rendered everything centred. This also had broken heart-crop (#55) customer parity (the "never tested" caveat). Customer pool now names by basename (`_baseName(...)`) to match staff.
-3. **Housekeeping (`35f3c13`)** — TO-DO #74 marked DONE (original spec preserved as #74-spec); #55 customer-parity caveat cleared.
+**What shipped this session (branch `step-form-ux`, 3 commits, merged `--no-ff`):**
+1. **`000a2e8` — the refactor** (`pages/order.html`). Step engine (`buildSteps`/`goToStep`/`advance`/`renderStepper`/`showStepError`); `#step2` → three `<section class="form-step">` panels; data-driven `#stepper`; `goToStep2()` → `validateDetailsStep()` + `prepareUploadSteps()`; validation re-homed into `validateCoverStep/validateSpecialStep/validatePhotosStep` (submit re-runs them as a final guard that navigates to the failing step). S40 upload-hardening untouched.
+2. **`8a47815` — Wander/Newborn follow-ups.** Wander: country-select autofill guard (`onCountryPick` requires a user gesture — Chrome was autofilling "Austria"), spread sizing fix (`refreshCountryMaps()` on step-show + width fallback), "Your route" moved above the spread, **click-to-enlarge** spread preview (`openSpreadZoom` → `#spread-lightbox`). Newborn product page: special spreads default **unticked**.
+3. **`0a2a5c9` — logo** aligned to `aevia_logo_transparent.png` (was the lone outlier).
 
-### ▶ NEXT SESSION (Session 51)
-1. **Verify #74 on live** — it's customer-facing AND print-affecting. Un-repositioned photos are byte-identical, but eyeball a live customer-preview + a fresh PDF once Cloudflare finishes deploying.
-2. **Carried from S48/S49:** watch live Newborn (first real E2E order on the deployed site); eyeball the S47 pt→px caption resize on live Scribble/Wander; confirm the S49 order-load change (saved order restores with no prompt).
-3. **Stripe price split** — confirm `STRIPE_PRICE_ID_40/_80` are real `price_…` IDs + `firebase deploy --only functions:createCheckoutSession`. (Evgeny: "maybe later.")
-4. **Next build candidates after Newborn** (from ideas.md / TO-DOS): engine-driven mockup imagery (needs brief, go-3D); step-based order form UX; customer "my-orders" dashboard (needs brief + ADR); #73 data-driven cover clipShape (blocked on Xenia's assets).
+### ▶ NEXT SESSION (Session 52)
+1. **Verify the step-form order flow on LIVE** once Cloudflare deploys — it's customer-facing AND feeds the staff engine. Walk Scribble/Wander/Newborn; **real-device phone test** (Evgeny: not yet done — design-review only covered the 375px viewport).
+2. **Newborn end-to-end** still not eyeballed by Evgeny through the new stepped flow (renders headlessly; do a real Intro+Labour order).
+3. **Carried from S50/S48/S49:** verify #74 crop on live; live Newborn first real E2E; S47 pt→px caption resize on live Scribble/Wander; S49 no-prompt order-load.
+4. **Stripe price split** — confirm `STRIPE_PRICE_ID_40/_80` are real `price_…` IDs + `firebase deploy --only functions:createCheckoutSession`. (Evgeny: "maybe later.")
+5. **Next build candidates** (ideas.md / TO-DOS): engine-driven mockup imagery (needs brief, go-3D); customer "my-orders" dashboard (needs brief + ADR); #73 data-driven cover clipShape (blocked on Xenia's assets). The order-phase "preview my data" panel now has a ready seam in the stepped form (Cover/Special `<section class="form-step">`).
 
-### ⚠ S50 watch-outs
-- **`photo.name` must stay basename-consistent across staff ↔ customer ↔ PDF.** Any new photo-source path that sets `.name` from a stored GCS path must basename it, or name-keyed features (crop, captions-by-name) break only on that surface. This was the root cause of the S50 customer-crop bug.
-- **PDF `coverExtract()` default 50/50 reproduces `fit:cover`/centre exactly** — preserve that on any future change or un-repositioned photos shift.
-- **Reposition handle disables `slotEl.draggable` while active**; the Esc + capture-phase outside-pointerdown exit handlers must always restore it or swap-drag silently breaks for that slot.
+### ⚠ S51 watch-outs
+- **Step engine invariant:** `advance()` is the ONLY extender of `furthestReached`; `goToStep` refuses any `idx > furthestReached`. Preserve or "can't skip past an invalid step" breaks.
+- **Country select gesture guard:** any new programmatic select-set must set `dataset.touched='1'` first or the change is ignored (intentional anti-autofill).
+- **Region-map previews need a visible panel to size right** — redrawn via `refreshCountryMaps()` when the Special step shows; hidden render falls back to 480px.
+- **Untracked `qa/review-step-form.mjs`** left by the design-review agent — review/delete if unwanted.
+
+### Previous: Session 50
+**Session 50 (2026-06-17) — TO-DO #74 SHIPPED: drag-to-reposition crop for ALL photo slots. Committed + PUSHED (`f005ea9` + `35f3c13`). Hand-verified all 3 surfaces. Read `sessions/2026-06-17-s50.md`.** ⚠ Watch-outs still live: `photo.name` must stay basename-consistent across staff↔customer↔PDF; PDF `coverExtract()` default 50/50 reproduces `fit:cover`/centre exactly; reposition handle disables `slotEl.draggable` while active (exit handlers must restore it).
 
 ### Previous: Session 49
 **Session 49 (2026-06-17) — MINOR UX/SAFETY FIXES.** Three small changes committed + PUSHED to `main`, each clarified with Evgeny first. 102/102 tests. Read `sessions/2026-06-17-s49.md`. (1) Caption formatting guard `027931d` — `beforeinput` blocks `format*` on engine + customer-preview (PDF can't keep inline bold); regression check `qa/verify-format-block.mjs`. (2) Slim customer-preview footer `09ffec8`. (3) Always restore saved book on order load `ca44ab2` (removed destructive `confirm()`; staff-only, not browser-verified).

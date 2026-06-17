@@ -69,7 +69,7 @@ Captured ideas, most recent at the bottom. Status: Captured | Exploring | Commit
 
 **Related to:** `pages/order.html` (template-aware order flow); the optional special-page preview idea (would slot naturally into Step 2).
 
-**Status:** Captured — standalone task, schedule after Newborn lands.
+**Status:** ✅ SHIPPED Session 51 (2026-06-17, `723fac4`). Built across all templates: Details → Cover → Special pages → Photos, data-driven stepper, Special auto-skips with no add-ons, linear-forward/free-backward nav. The "preview my data" idea now has a ready seam (each step is a `<section class="form-step">`). See `sessions/2026-06-17-s51.md` + `docs/briefs/step-form-ux.md`.
 
 ## 2026-06-16 — Engine-driven mockup imagery for the website (placeholders → product shots)
 
