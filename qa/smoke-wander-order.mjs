@@ -15,9 +15,9 @@ async function run(label, query, checks) {
   // Step 1 → fill name/email → continue
   await page.fill('#inp-name', 'Test User');
   await page.fill('#inp-email', 'test@example.com');
-  await page.click('button[onclick="goToStep2()"]', { timeout: 3000 }).catch(async () => {
-    // fallback: find the continue button
-    await page.evaluate(() => goToStep2());
+  await page.click('button[onclick="advance()"]', { timeout: 3000 }).catch(async () => {
+    // fallback: drive the step engine directly
+    await page.evaluate(() => advance());
   });
   await page.waitForTimeout(400);
   const out = await checks(page);

@@ -30,7 +30,7 @@ const pages = [
   ['order-step2', `${LOCAL}/order?${orderQuery}`, async (page) => {
     await page.fill('#inp-name', 'Mobile Test').catch(() => {});
     await page.fill('#inp-email', 'mobile@test.com').catch(() => {});
-    await page.evaluate(() => { try { goToStep2(); } catch (e) { } });
+    await page.evaluate(() => { try { advance(); } catch (e) { } });
     await page.waitForTimeout(600);
   }],
 ];

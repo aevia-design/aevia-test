@@ -11,7 +11,7 @@ async function check(label, query) {
   await page.goto(`${BASE}/order?${query}`, { waitUntil: 'networkidle' });
   await page.fill('#inp-name', 'T');
   await page.fill('#inp-email', 't@e.com');
-  await page.evaluate(() => goToStep2());
+  await page.evaluate(() => advance());
   await page.waitForTimeout(300);
   const fields = await page.evaluate(() =>
     [...document.querySelectorAll('[id^="cover-cap-"]')].map(i => ({
