@@ -2009,7 +2009,8 @@
     group.innerHTML = '';
     // Style pills shown for both cover and spread captions.
     // In spread mode, pills write to spreadCaptionStyles (read by PDF export).
-    // B/I execCommand buttons remain for visual-only inline markup in the engine preview.
+    // Weight/italic are whole-caption only (via these pills) — inline markup
+    // (Ctrl+B/I) is blocked, since the PDF can't honor it.
     const fontDef = COVER_FONTS.find(f => f.value === fontValue);
     if (!fontDef) return;
     fontDef.styles.forEach(s => {
@@ -2112,6 +2113,18 @@
     e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData('text/plain');
     document.execCommand('insertText', false, text);
+  });
+
+  // Block inline rich-text formatting (Ctrl+B / Ctrl+I / Ctrl+U, etc.) in caption editors.
+  // Captions are styled only via the toolbar (whole-caption font/weight/italic), which both
+  // the engine and the PDF honor. Inline markup would show on screen but be stripped from
+  // print, so we prevent it at the source — keeping every caption box plain-text.
+  document.addEventListener('beforeinput', e => {
+    const ce = e.target.closest && e.target.closest('[contenteditable="true"]');
+    if (!ce) return;
+    if (typeof e.inputType === 'string' && e.inputType.startsWith('format')) {
+      e.preventDefault();
+    }
   });
 
   // Toolbar event wiring (runs once on DOMContentLoaded)
