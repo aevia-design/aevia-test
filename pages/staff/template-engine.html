@@ -3979,16 +3979,10 @@
       }
       const order = await res.json();
       window._loadedOrderNumber = order.orderNumber || raw;
-      if (order.staffBookAssignments && Object.keys(order.staffBookAssignments).length > 0) {
-        const useSaved = confirm('This order has a saved book state. Load the saved state?\n\nOK = load saved  |  Cancel = start from scratch');
-        if (!useSaved) {
-          delete order.staffBookAssignments;
-          delete order.staffBookCaptions;
-          delete order.staffBookSequence;
-          delete order.staffCoverCaptionStyles;
-          delete order.staffSpreadCaptionStyles;
-        }
-      }
+      // Always restore a saved book state when present — it holds the customer's
+      // approved layout (approveOrder merges customer* → staff* at approval). There is
+      // no "start from scratch" prompt: discarding a saved book was a footgun (native
+      // confirm where Cancel/Esc = wipe the approved layout) with no real use case.
       setActiveTemplate(order.templateName);
       buildLocalTemplateUI(); // rebuild FP checkboxes for THIS order's template
                               // (the local selector may have left a different set)
