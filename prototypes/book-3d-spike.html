@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aevia — 3D book mockup spike</title>
+<style>
+  :root { --bg:#f4f1ea; --ink:#1c1c1c; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--ink);
+    font-family:Georgia,'Times New Roman',serif; }
+  #scene { width:100%; height:100vh; display:block; }
+  .hud { position:fixed; top:18px; left:20px; max-width:320px; line-height:1.45;
+    font-size:13px; color:#555; background:rgba(255,255,255,.7); padding:12px 14px;
+    border-radius:8px; backdrop-filter:blur(4px); }
+  .hud b { color:#1c1c1c; }
+  .hud kbd { font-family:monospace; background:#eee; padding:1px 5px; border-radius:3px; }
+  .controls { position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+    display:flex; gap:10px; background:rgba(255,255,255,.8); padding:8px 10px;
+    border-radius:30px; backdrop-filter:blur(4px); }
+  .controls button { font-family:inherit; font-size:13px; border:1px solid #ccc;
+    background:#fff; padding:7px 16px; border-radius:20px; cursor:pointer; }
+  .controls button:hover { background:#1c1c1c; color:#fff; border-color:#1c1c1c; }
+</style>
+</head>
+<body>
+<div class="hud">
+  <b>3D book mockup — spike</b><br>
+  Drag to rotate · scroll to zoom.<br>
+  Texture = a real Newborn cover render. This is throwaway code to judge the
+  <i>look</i>, not the final build.
+</div>
+<div class="controls">
+  <button id="poseHero">Hero angle</button>
+  <button id="poseFront">Front on</button>
+  <button id="poseFlat">Lay flat</button>
+</div>
+<canvas id="scene"></canvas>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf4f1ea);
+
+const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+camera.position.set(2.4, 1.8, 3.6);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.target.set(0, 0.15, 0);
+
+// ---- lighting: soft studio look ----
+scene.add(new THREE.HemisphereLight(0xffffff, 0xddd5c4, 0.65));
+const key = new THREE.DirectionalLight(0xffffff, 2.2);
+key.position.set(3, 5, 4);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.near = 0.5; key.shadow.camera.far = 20;
+key.shadow.camera.left = -4; key.shadow.camera.right = 4;
+key.shadow.camera.top = 4; key.shadow.camera.bottom = -4;
+key.shadow.bias = -0.0003;
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xffffff, 0.5);
+fill.position.set(-4, 2, 2);
+scene.add(fill);
+
+// ---- ground + soft shadow ----
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(40, 40),
+  new THREE.ShadowMaterial({ opacity: 0.22 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.001;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ---- the book ----
+// Newborn is a 200x200mm square book. Box: cover 2x2, thickness 0.32.
+const W = 2, H = 2, D = 0.34;
+const book = new THREE.Group();
+book.position.y = D / 2;            // rest on the ground
+scene.add(book);
+
+const loader = new THREE.TextureLoader();
+const coverTex = loader.load('../sessions/qa-runs/shot-newborn-cover.png', t => {
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  render();
+});
+
+// The render is a full wrap: [ back-cover | spine | front-cover ].
+// Slice it with UV offset/repeat so each face shows the right region.
+function crop(tex, offsetX, repeatX) {
+  const t = tex.clone();
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.needsUpdate = true;
+  t.offset.x = offsetX;
+  t.repeat.x = repeatX;
+  return t;
+}
+// Front cover sits on the right of the wrap; back cover on the left.
+const frontTex = crop(coverTex, 0.60, 0.40);
+const backTex  = crop(coverTex, 0.00, 0.40);
+
+const navy = new THREE.MeshStandardMaterial({ color:0x1f2c50, roughness:0.5 }); // spine
+const pageEdge = new THREE.MeshStandardMaterial({ color:0xf3efe6, roughness:0.9 });
+const matte = (map) => new THREE.MeshStandardMaterial({ map, roughness:0.62, metalness:0.0 });
+
+// BoxGeometry face order: +x, -x, +y, -y, +z, -z
+//  +x = right (front cover), -x = left (back cover),
+//  +y top edge, -y bottom edge, +z spine-front?, -z spine-back
+// We orient the book so the COVER faces up by rotating later; simplest:
+// make +y the front cover, -y the back cover, side faces = pages, one side = spine.
+const cover = new THREE.Mesh(
+  new THREE.BoxGeometry(W, D, H),
+  [ pageEdge, navy, matte(frontTex), matte(backTex), pageEdge, pageEdge ]
+);
+cover.castShadow = true; cover.receiveShadow = true;
+book.add(cover);
+
+// fan of inside pages, slightly inset, to read as paper not a solid block
+const pageMat = new THREE.MeshStandardMaterial({ color:0xfbf8f1, roughness:0.95 });
+for (let i = 0; i < 5; i++) {
+  const p = new THREE.Mesh(new THREE.BoxGeometry(W*0.97, D*0.8, H*0.97), pageMat);
+  p.position.y = -D*0.05 + i*0.001;
+  p.castShadow = false; p.receiveShadow = true;
+  // (kept simple — real page-flip is the next build, not this spike)
+}
+
+// ---- poses ----
+const poses = {
+  hero:  { rx:-0.5, ry:-0.6 },
+  front: { rx:-0.05, ry:0 },
+  flat:  { rx:0, ry:0 }
+};
+function setPose(name){
+  const p = poses[name];
+  book.rotation.set(p.rx, p.ry, 0);
+}
+setPose('hero');
+document.getElementById('poseHero').onclick = ()=>setPose('hero');
+document.getElementById('poseFront').onclick = ()=>setPose('front');
+document.getElementById('poseFlat').onclick = ()=>setPose('flat');
+
+// ---- resize + loop ----
+function resize(){
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (canvas.width !== w || canvas.height !== h){
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+}
+function render(){ renderer.render(scene, camera); }
+function loop(){ resize(); controls.update(); render(); requestAnimationFrame(loop); }
+loop();
+</script>
+</body>
+</html>

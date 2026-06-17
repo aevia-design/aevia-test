@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aevia — 3D book render harness</title>
+<style>
+  html,body { margin:0; height:100%; background:#f4f1ea; }
+  #scene { width:100vw; height:100vh; display:block; }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<!-- pure logic (browser globals) + template data -->
+<script src="../assets/js/book-3d-spec.js"></script>
+<script src="../assets/Template_Newborn/newborn-data.js"></script>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { createBook, studioLighting, groundShadow } from '../assets/js/book-3d-renderer.js';
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, preserveDrawingBuffer:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf4f1ea);
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+
+studioLighting(THREE, scene, renderer);
+
+const spec = window.buildBookSpec(window.NEWBORN_DATA);
+
+new THREE.TextureLoader().load('../sessions/qa-runs/shot-newborn-cover.png', (wrap) => {
+  // The engine screenshot has a thin UI toolbar across the very top — trim it
+  // vertically so it doesn't map onto the cover. (A clean cover-wrap export later
+  // removes this need.)
+  wrap.offset.y = 0.0;
+  wrap.repeat.y = 0.92;
+
+  const { book, fit, dims } = createBook(THREE, scene, renderer, spec, wrap);
+  book.position.y = dims.D / 2;            // rest on the ground
+  groundShadow(THREE, scene, 0);
+  fit(camera);
+  camera.position.y += 0.4;
+  camera.lookAt(0, 0, 0);
+
+  const controls = new OrbitControls(camera, canvas);
+  controls.target.set(0, 0, 0);
+  controls.enableDamping = true;
+  window.__ready = true;
+
+  function resize(){
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (canvas.width !== w || canvas.height !== h){
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+  }
+  function loop(){ resize(); controls.update(); renderer.render(scene, camera); requestAnimationFrame(loop); }
+  loop();
+});
+</script>
+</body>
+</html>

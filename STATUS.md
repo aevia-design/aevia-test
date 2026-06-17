@@ -1,7 +1,27 @@
 # Session Status
-_Last updated: 2026-06-17 (session 51)_
+_Last updated: 2026-06-17 (session 52)_
 
 ## Status
+**Session 52 (2026-06-17) — STARTED THE 3D BOOK RENDERER (engine-driven mockup imagery). Branch `mockup-3d-renderer` (NOT main, not pushed). Full pre-build chain done: /understanding-the-ask → /solutioning (ADR 0005: Three.js, edit-flat/present-in-3D split) → /creating-briefs. TDD cycle 1 GREEN (`book-3d-spec.js`, pure texture/proportion math, 107/107). Renderer module + harness built; Newborn render screenshot-verified; Evgeny APPROVED THE DIRECTION. Read `sessions/2026-06-17-s52.md`. Refinement queue (below) is the next-session start.**
+
+**What's on the branch (foundation, committed):** `docs/decisions/0005-3d-book-renderer.md`, `docs/briefs/3d-book-renderer.md`, `assets/js/book-3d-spec.js` (+ `tests/book-3d-spec.test.js`), `assets/js/book-3d-renderer.js`, `prototypes/book-3d-render.html` (harness) + `prototypes/book-3d-spike.html` (throwaway). Screenshot `sessions/qa-runs/book-3d-render-newborn.png`.
+
+### ▶ NEXT SESSION (Session 53) — 3D renderer refinement queue (Evgeny's feedback)
+1. **HIGHEST — fix the texture source.** Mockup is far from the real PDF (sizing, bleed, spine + photo-slot placement off). Root cause: harness fed an **engine UI screenshot**, not a clean trimmed cover wrap. The 3D math is correct — it wraps a bad source. **Export a clean, correctly-trimmed cover wrap (PDF bleed/trim)** from the engine or `scripts/export-pdf.js`, feed THAT.
+2. **Dark underside/bottom edge** render bug — white pages render dark on the bottom face (unlit from below). Lighting fix (lift ambient / soft bounce).
+3. Then: clean textures → generalize to **Scribble/Wander** → add **back-cover + inside-spread** views → wire static PNGs into website placeholders.
+4. **Carried (not 3D):** real-device phone E2E of the step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`).
+
+### ⚠ S52 watch-outs
+- **Branch `mockup-3d-renderer`, NOT main, NOT pushed.** Nothing customer-facing changed.
+- **TDD split:** `book-3d-spec.js` (pure math) is unit-tested; `book-3d-renderer.js` (WebGL scene) is **screenshot-verified only** — don't try to unit-test the render.
+- **The renderer is faithful to its input** — fidelity problems live in the *texture source*, not the 3D code. Fix the clean cover-wrap export before tuning geometry.
+- **Three.js is now a dependency** (CDN, no build step), a deliberate ADR-0005 exception to CLAUDE.md's "no frameworks" default.
+- `.claude/settings.local.json` left out of the commit as usual.
+
+---
+
+### Previous: Session 51
 **Session 51 (2026-06-17) — STEP-BASED ORDER FORM UX SHIPPED to `main` (`723fac4`, pushed → Cloudflare auto-deploys). The order form's long single-scroll upload stage is now discrete guided steps — Details → Cover → Special pages → Photos — across all templates, data-driven (Special auto-skips with no add-ons), linear-forward/free-backward nav. Independent /reviewer-agent + /design-review both passed. 102/102 tests. Read `sessions/2026-06-17-s51.md`.**
 
 **What shipped this session (branch `step-form-ux`, 3 commits, merged `--no-ff`):**
@@ -10,9 +30,9 @@ _Last updated: 2026-06-17 (session 51)_
 3. **`0a2a5c9` — logo** aligned to `aevia_logo_transparent.png` (was the lone outlier).
 
 ### ▶ NEXT SESSION (Session 52)
-1. **Verify the step-form order flow on LIVE** once Cloudflare deploys — it's customer-facing AND feeds the staff engine. Walk Scribble/Wander/Newborn; **real-device phone test** (Evgeny: not yet done — design-review only covered the 375px viewport).
-2. **Newborn end-to-end** still not eyeballed by Evgeny through the new stepped flow (renders headlessly; do a real Intro+Labour order).
-3. **Carried from S50/S48/S49:** verify #74 crop on live; live Newborn first real E2E; S47 pt→px caption resize on live Scribble/Wander; S49 no-prompt order-load.
+1. **Verify the step-form order flow on LIVE** — customer-facing AND feeds the staff engine. **Real-device phone E2E still outstanding** (Evgeny: not yet done — design-review only covered the 375px viewport).
+2. ~~Newborn end-to-end through the stepped flow~~ — **DONE (S52): Evgeny ran a full Newborn order, all good.**
+3. ~~Carried S50/S48/S49: #74 crop on live; live Newborn E2E; S47 pt→px caption resize on live Scribble/Wander; S49 no-prompt order-load~~ — **DONE (S52): Evgeny confirmed verified on live.**
 4. **Stripe price split** — confirm `STRIPE_PRICE_ID_40/_80` are real `price_…` IDs + `firebase deploy --only functions:createCheckoutSession`. (Evgeny: "maybe later.")
 5. **Next build candidates** (ideas.md / TO-DOS): engine-driven mockup imagery (needs brief, go-3D); customer "my-orders" dashboard (needs brief + ADR); #73 data-driven cover clipShape (blocked on Xenia's assets). The order-phase "preview my data" panel now has a ready seam in the stepped form (Cover/Special `<section class="form-step">`).
 
@@ -20,7 +40,7 @@ _Last updated: 2026-06-17 (session 51)_
 - **Step engine invariant:** `advance()` is the ONLY extender of `furthestReached`; `goToStep` refuses any `idx > furthestReached`. Preserve or "can't skip past an invalid step" breaks.
 - **Country select gesture guard:** any new programmatic select-set must set `dataset.touched='1'` first or the change is ignored (intentional anti-autofill).
 - **Region-map previews need a visible panel to size right** — redrawn via `refreshCountryMaps()` when the Special step shows; hidden render falls back to 480px.
-- **Untracked `qa/review-step-form.mjs`** left by the design-review agent — review/delete if unwanted.
+- ~~Untracked `qa/review-step-form.mjs`~~ — **deleted (S52): throwaway design-review script, overlapped `qa/verify-step-form.mjs`.**
 
 ### Previous: Session 50
 **Session 50 (2026-06-17) — TO-DO #74 SHIPPED: drag-to-reposition crop for ALL photo slots. Committed + PUSHED (`f005ea9` + `35f3c13`). Hand-verified all 3 surfaces. Read `sessions/2026-06-17-s50.md`.** ⚠ Watch-outs still live: `photo.name` must stay basename-consistent across staff↔customer↔PDF; PDF `coverExtract()` default 50/50 reproduces `fit:cover`/centre exactly; reposition handle disables `slotEl.draggable` while active (exit handlers must restore it).
