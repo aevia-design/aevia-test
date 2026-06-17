@@ -1,22 +1,27 @@
 # Session Status
-_Last updated: 2026-06-17 (session 49)_
+_Last updated: 2026-06-17 (session 50)_
 
 ## Status
-**Session 49 (2026-06-17) — MINOR UX/SAFETY FIXES. Three small changes committed + PUSHED to `main` (Cloudflare auto-deploys), each clarified with Evgeny first. 102/102 tests. Read `sessions/2026-06-17-s49.md`.**
+**Session 50 (2026-06-17) — TO-DO #74 SHIPPED: drag-to-reposition crop for ALL photo slots (generalise heart crop). Committed + PUSHED to `main` (`f005ea9` + housekeeping `35f3c13`; Cloudflare auto-deploys). Evgeny hand-verified all 3 surfaces (staff drag, customer render, PDF). 102/102 tests. Read `sessions/2026-06-17-s50.md`.**
 
 **What shipped this session (all on `main`, pushed):**
-1. **Caption formatting guard (`027931d`)** — Ctrl+B/I bolded captions on screen but the PDF stripped it. Added one `beforeinput` guard on BOTH engine + customer-preview that blocks any `format*` command, keeping all caption boxes plain-text (the toolbar's whole-caption styles are the only thing engine+PDF honor). New regression check `qa/verify-format-block.mjs` (must test with REAL keystrokes — `execCommand` doesn't fire `beforeinput`).
-2. **Slim customer-preview footer (`09ffec8`)** — replaced the full marketing footer (storefront nav that pulled customers away mid-flow) with one quiet line + a contact link; dropped the dead Terms span.
-3. **Always restore saved book on order load (`ca44ab2`)** — removed the native `confirm()` whose Cancel/Esc path discarded the customer's APPROVED layout (a Save afterward = silent overwrite). Always restores now; no use case for discarding. ⚠ not browser-verified (needs staff login + saved order).
+1. **#74 crop generalised to all slots (`f005ea9`)** — `attachHeartDrag`→`attachCropDrag` (alwaysOn flag). Regular photo slots get a hover "✥" handle that toggles per-slot reposition-mode (swap-drag disabled, gold ring, Esc/click-away exits); staff can nudge any photo inside its frame. Saved crop applied to every placed photo across engine + customer-preview + PDF. PDF: shared `coverExtract()` helper; default 50/50 = byte-identical to old `fit:cover`/centre. Reused the existing `heartCrop`/`staffHeartCrop` store (keyed by photo name) — NO persistence change.
+2. **Latent photo-name key mismatch fixed (same commit)** — customer-preview named pool photos by full GCS path while staff used basename, so staff-set crops silently missed the name-keyed lookup → customer rendered everything centred. This also had broken heart-crop (#55) customer parity (the "never tested" caveat). Customer pool now names by basename (`_baseName(...)`) to match staff.
+3. **Housekeeping (`35f3c13`)** — TO-DO #74 marked DONE (original spec preserved as #74-spec); #55 customer-parity caveat cleared.
 
-### ▶ NEXT SESSION (Session 50)
-1. **Carried from S48:** watch live Newborn (first real E2E order on the deployed site); eyeball the S47 pt→px caption resize on live Scribble/Wander.
-2. **Stripe price split** — confirm `STRIPE_PRICE_ID_40/_80` are real `price_…` IDs + `firebase deploy --only functions:createCheckoutSession`. A real Newborn submit mints a live `AEV-xxx` to clean up.
-3. Continue the minor-fix pass, or pick next priority from TO-DOS / ROADMAP.
+### ▶ NEXT SESSION (Session 51)
+1. **Verify #74 on live** — it's customer-facing AND print-affecting. Un-repositioned photos are byte-identical, but eyeball a live customer-preview + a fresh PDF once Cloudflare finishes deploying.
+2. **Carried from S48/S49:** watch live Newborn (first real E2E order on the deployed site); eyeball the S47 pt→px caption resize on live Scribble/Wander; confirm the S49 order-load change (saved order restores with no prompt).
+3. **Stripe price split** — confirm `STRIPE_PRICE_ID_40/_80` are real `price_…` IDs + `firebase deploy --only functions:createCheckoutSession`. (Evgeny: "maybe later.")
+4. **Next build candidates after Newborn** (from ideas.md / TO-DOS): engine-driven mockup imagery (needs brief, go-3D); step-based order form UX; customer "my-orders" dashboard (needs brief + ADR); #73 data-driven cover clipShape (blocked on Xenia's assets).
 
-### ⚠ S49 watch-outs
-- **All three changes are live** (pushed to `main`). Caption guard + footer are customer-facing; order-load change is staff-only — eyeball on live.
-- **Order-load change (item 3) is not browser-verified** — confirm a saved order restores with no prompt next time you're in the engine.
+### ⚠ S50 watch-outs
+- **`photo.name` must stay basename-consistent across staff ↔ customer ↔ PDF.** Any new photo-source path that sets `.name` from a stored GCS path must basename it, or name-keyed features (crop, captions-by-name) break only on that surface. This was the root cause of the S50 customer-crop bug.
+- **PDF `coverExtract()` default 50/50 reproduces `fit:cover`/centre exactly** — preserve that on any future change or un-repositioned photos shift.
+- **Reposition handle disables `slotEl.draggable` while active**; the Esc + capture-phase outside-pointerdown exit handlers must always restore it or swap-drag silently breaks for that slot.
+
+### Previous: Session 49
+**Session 49 (2026-06-17) — MINOR UX/SAFETY FIXES.** Three small changes committed + PUSHED to `main`, each clarified with Evgeny first. 102/102 tests. Read `sessions/2026-06-17-s49.md`. (1) Caption formatting guard `027931d` — `beforeinput` blocks `format*` on engine + customer-preview (PDF can't keep inline bold); regression check `qa/verify-format-block.mjs`. (2) Slim customer-preview footer `09ffec8`. (3) Always restore saved book on order load `ca44ab2` (removed destructive `confirm()`; staff-only, not browser-verified).
 
 ### Previous: Session 48
 **Session 48 (2026-06-17) — NEWBORN SHIPPED TO `main`. Fixed the last E2E bug (PDF dropped blank lines → paragraph spacing collapsed) + two Intro order-copy tweaks, then merged `newborn-template` → `main` (`fc972d0`) and pushed. Cloudflare auto-deploys. 102/102 tests. The Newborn template (#4) is now LIVE end-to-end: order form → staff engine → customer preview → PDF.**
