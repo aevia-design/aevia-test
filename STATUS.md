@@ -1,7 +1,24 @@
 # Session Status
-_Last updated: 2026-06-16 (session 47)_
+_Last updated: 2026-06-17 (session 48)_
 
 ## Status
+**Session 48 (2026-06-17) — NEWBORN SHIPPED TO `main`. Fixed the last E2E bug (PDF dropped blank lines → paragraph spacing collapsed) + two Intro order-copy tweaks, then merged `newborn-template` → `main` (`fc972d0`) and pushed. Cloudflare auto-deploys. 102/102 tests. The Newborn template (#4) is now LIVE end-to-end: order form → staff engine → customer preview → PDF.**
+
+**What shipped this session (committed `5319cc3`, merged to main `fc972d0`):**
+1. **PDF blank-line drop (root-caused via /systematic-debugging)** — both PDF text-render paths (`scripts/export-pdf.js`: text-panel wrap ~788, per-photo caption split ~709) deleted empty lines, collapsing paragraph spacing vs the engine (which renders `\n\n` as `<br><br>`). Fixed generically across ALL templates: empty line preserved as `['']` (reserves one line-height, drawn as nothing). Evgeny visually confirmed on AEV-037. See LEARNINGS 2026-06-17.
+2. **Newborn Intro order copy** — DOB placeholder `'May 15th'`→`'15 May, 2026'`; gender placeholder `'Boy / Girl'`→`'boy / girl'`; gender lowercased in `composeIntroBlock` so the caption always reads "Our sweet little boy/girl". (`newborn-data.js`, `pages/order.html`.)
+3. **Folded in S47 caption/PDF parity fixes** (pt→px formula, dropped weight/italic, PANEL_PT_SCALE removed, Labour photos in PDF, data-driven per-side pool export, spine centering) + dangling S46 photo-count guard.
+
+### ▶ NEXT SESSION (Session 49)
+1. **Watch live Newborn after Cloudflare deploys** — first real end-to-end Newborn order (order form → engine → customer → PDF) on the live site. The pt→px caption fix also resized **Scribble (FP1/FP2)** and **Wander (itinerary)** text panels live — eyeball those on the deployed site (they were checked locally, not yet on live).
+2. **Stripe price split (carried, TO-DO #60-adjacent)** — confirm `STRIPE_PRICE_ID_40/_80` are real `price_…` IDs + `firebase deploy --only functions:createCheckoutSession`. A real Newborn submit mints a live `AEV-xxx` to clean up.
+3. Pick next priority from TO-DOS / ROADMAP.
+
+### ⚠ S48 watch-outs
+- **Newborn is now on `main` and deploying live.** The pt→px caption fix changed Scribble/Wander text-panel sizes on the live site too — verified locally, confirm on live.
+- **Blank lines are the only vertical-spacing lever in text panels** (leading spaces collapse in HTML on both surfaces). Any future line-based PDF text code must NOT `.filter(l => l.trim())` or it re-eats paragraph gaps — see LEARNINGS 2026-06-17.
+
+### Previous: Session 47
 **Session 47 (2026-06-16) — NEWBORN E2E bug-fixing: caption parity (engine↔engine) + PDF parity (3 bugs). Branch `newborn-template` (NOT main). NOTHING COMMITTED — all fixes are working-tree only, pending Evgeny's visual confirm of the regenerated AEV-037 PDF (he stopped to inspect; resumes next session). 102/102 tests. Read `sessions/2026-06-16-s47.md` first.**
 
 **Fixed this session (all UNCOMMITTED):**

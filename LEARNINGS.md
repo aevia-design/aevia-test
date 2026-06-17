@@ -1,3 +1,22 @@
+## 2026-06-17 — PDF dropped blank lines (paragraph spacing collapsed vs engine)
+
+Staff/customers space paragraphs in a text panel (and per-photo captions) with **blank
+lines** — the engine renders stored `\n\n` as `<br><br>`, a visible empty line that consumes
+one line-height. The PDF was **deleting** empty lines in both render paths
+(`scripts/export-pdf.js`): the text-panel wrap did `flatMap(l => l.trim() ? wrap(l) : [])`
+and per-photo captions did `.split('\n').filter(l => l.trim())`. Both collapsed multi-paragraph
+text into a single block — the Newborn Intro looked spaced on screen but cramped in print.
+
+**Fix (generic, all templates):** preserve an empty line as a single blank line (`['']`)
+instead of dropping it, so it reserves one line-height via the forEach index, and skip drawing
+it (`if (!line.trim()) return;`). valign centering stays correct because blank lines now count
+in the height measurement — matching the engine's flexbox centering of the full block.
+
+**Rule:** any line-based PDF text rendering must keep empty lines as spacing. `.filter(l => l.trim())`
+or a `: []` branch on a per-line map silently eats paragraph gaps. Leading *spaces* for indentation
+do NOT work on either surface (HTML `white-space:normal` collapses them) — blank lines are the
+only vertical-spacing lever, so they must survive into the PDF.
+
 ## 2026-06-16 — Caption / text-panel render bugs: pt-vs-px and dropped style fields
 
 Captions — especially functional-page **text panels** (Newborn Intro/Labour, Wander
