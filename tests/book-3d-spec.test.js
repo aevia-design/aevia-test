@@ -53,4 +53,12 @@ describe('buildBookSpec', () => {
     expect(spec.proportions.aspect).toBeCloseTo(1, 5);
     expect(spec.proportions.depthRatio).toBeCloseTo(9 / 200, 5);
   });
+
+  test('exposes raw mm so the renderer can scale fixed physical features (board, square)', () => {
+    const data = { pageSize: 200, cover: { sections: NEWBORN_SECTIONS } };
+    const spec = buildBookSpec(data);
+    expect(spec.mm.frontWmm).toBe(200);
+    expect(spec.mm.pageHeightMm).toBe(200);
+    expect(spec.mm.spineWmm).toBe(9);
+  });
 });

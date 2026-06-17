@@ -40,13 +40,11 @@ studioLighting(THREE, scene, renderer);
 
 const spec = window.buildBookSpec(window.NEWBORN_DATA);
 
-new THREE.TextureLoader().load('../sessions/qa-runs/shot-newborn-cover.png', (wrap) => {
-  // The engine screenshot has a thin UI toolbar across the very top — trim it
-  // vertically so it doesn't map onto the cover. (A clean cover-wrap export later
-  // removes this need.)
-  wrap.offset.y = 0.0;
-  wrap.repeat.y = 0.92;
-
+// Clean, pixel-exact trim wrap captured from the engine's .cover-canvas element
+// (qa/capture-cover-wrap.mjs). It is EXACTLY back|spine|front with no UI chrome,
+// margin, or bleed — so the spec's UV slicing maps each face correctly. No
+// vertical trim hack needed.
+new THREE.TextureLoader().load('../sessions/qa-runs/cover-wrap-newborn.png', (wrap) => {
   const { book, fit, dims } = createBook(THREE, scene, renderer, spec, wrap);
   book.position.y = dims.D / 2;            // rest on the ground
   groundShadow(THREE, scene, 0);
@@ -57,6 +55,8 @@ new THREE.TextureLoader().load('../sessions/qa-runs/shot-newborn-cover.png', (wr
   const controls = new OrbitControls(camera, canvas);
   controls.target.set(0, 0, 0);
   controls.enableDamping = true;
+  // Debug handles so a headless verifier can orbit to inspect back/spine faces.
+  window.__three = { THREE, scene, camera, controls, book, renderer };
   window.__ready = true;
 
   function resize(){

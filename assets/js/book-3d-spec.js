@@ -49,6 +49,15 @@ function buildBookSpec(data) {
       pageHeightMm,
       spineWmm: sections.spine.wMm,
     }),
+    // Raw mm the renderer needs to convert fixed physical features (board
+    // thickness, cover overhang "square") into scene units. These features are
+    // UNIVERSAL across templates (same case-bound hardcover spec), so they live
+    // as constants in the renderer; only the scale (units-per-mm) comes from here.
+    mm: {
+      frontWmm,
+      pageHeightMm,
+      spineWmm: sections.spine.wMm,
+    },
   };
 }
 
