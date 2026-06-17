@@ -40,6 +40,16 @@
     .step-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); transition: color 0.2s; white-space: nowrap; }
     .step.active .step-label { color: var(--text); }
     .step-line { flex: 1; height: 1px; background: var(--border); margin: 0 20px; min-width: 40px; }
+    .step.clickable { cursor: pointer; }
+    .step.clickable:hover .step-label { color: var(--text); }
+
+    /* ── Step panels + per-step nav ── */
+    .form-step { animation: stepFade 0.25s ease; }
+    @keyframes stepFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .step-nav { display: flex; align-items: center; gap: 22px; margin-top: 8px; }
+    .step-nav .btn-primary { width: auto; margin-top: 0; }
+    .step-back { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); cursor: pointer; background: none; border: none; font-family: var(--sans); padding: 0; }
+    .step-back:hover { color: var(--text); }
 
     /* ── Page wrapper ── */
     .content { max-width: 1100px; margin: 0 auto; padding: 56px 56px 96px; }
@@ -232,17 +242,8 @@
 
 <!-- Stepper -->
 <div class="stepper-wrap">
-  <div class="stepper">
-    <div class="step active" id="stepper-1">
-      <div class="step-num">1</div>
-      <div class="step-label">Your details</div>
-    </div>
-    <div class="step-line"></div>
-    <div class="step" id="stepper-2">
-      <div class="step-num">2</div>
-      <div class="step-label">Upload photos</div>
-    </div>
-  </div>
+  <!-- Populated by renderStepper() from the runtime STEPS array (data-driven per template). -->
+  <div class="stepper" id="stepper"></div>
 </div>
 
 <div class="content">
@@ -283,7 +284,7 @@
 
         <div class="error-msg" id="err-step1"></div>
 
-        <button class="btn-primary" onclick="goToStep2()">Continue to photos &rarr;</button>
+        <button class="btn-primary" onclick="advance()">Continue &rarr;</button>
       </div>
 
       <!-- Summary card (right) -->
@@ -323,15 +324,35 @@
   ═══════════════════════════════════ -->
   <div id="step2" style="display:none;">
 
-    <!-- Compact summary bar -->
+    <!-- Compact summary bar — persistent context across all upload steps -->
     <div class="step2-bar" id="step2-bar"></div>
 
-    <!-- Cover section — rendered from the active template's cover data (photo zone + caption fields) -->
-    <div class="upload-section" id="cover-section"><!-- filled by renderCoverSection() --></div>
+    <!-- ── Step: Cover ──
+         A future "preview my data" panel (Wander-map style) can be appended
+         inside this section without touching the step engine or navigation. -->
+    <section class="form-step" id="step-cover" style="display:none;">
+      <!-- Cover section — rendered from the active template's cover data (photo zone + caption fields) -->
+      <div class="upload-section" id="cover-section"><!-- filled by renderCoverSection() --></div>
+      <div class="error-msg" id="err-cover"></div>
+      <div class="step-nav">
+        <button type="button" class="step-back" onclick="goToStep(currentStepIdx - 1)">&larr; Back</button>
+        <button type="button" class="btn-primary" onclick="advance()">Continue &rarr;</button>
+      </div>
+    </section>
 
-    <!-- FP sections (photo + text per functional page, injected in goToStep2) -->
-    <div id="fp-sections"></div>
+    <!-- ── Step: Special pages (auto-skipped when the order has no add-ons) ── -->
+    <section class="form-step" id="step-special" style="display:none;">
+      <!-- FP sections (photo + text per functional page, injected in prepareUploadSteps) -->
+      <div id="fp-sections"></div>
+      <div class="error-msg" id="err-special"></div>
+      <div class="step-nav">
+        <button type="button" class="step-back" onclick="goToStep(currentStepIdx - 1)">&larr; Back</button>
+        <button type="button" class="btn-primary" onclick="advance()">Continue &rarr;</button>
+      </div>
+    </section>
 
+    <!-- ── Step: Photos (owns the hardened upload + submit path — unchanged) ── -->
+    <section class="form-step" id="step-photos" style="display:none;">
     <!-- Main photos -->
     <div class="upload-section">
       <div class="upload-label">Your photos</div>
@@ -371,8 +392,12 @@
       <div class="error-msg" id="err-step2"></div>
       <button class="btn-primary" id="submit-btn" onclick="submitOrder()">Submit your order</button>
       <p class="submit-note">No payment until you approve the design.<br>Preview within 48 hours.</p>
-
+      <div class="step-nav" style="justify-content:center;margin-top:18px;">
+        <button type="button" class="step-back" onclick="goToStep(currentStepIdx - 1)">&larr; Back</button>
+      </div>
     </div>
+
+    </section><!-- /step-photos -->
 
   </div><!-- /step2 -->
 
@@ -523,11 +548,107 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('no-template').style.display = 'block';
     return;
   }
-  document.getElementById('step1').style.display = 'block';
   initSummary();
   renderCoverSection();
   initDragDrop();
+  buildSteps();      // data-driven step list for this template/order
+  goToStep(0);       // shows Details + paints the stepper
 });
+
+// ─────────────────────────────────────────────────────────────────
+// Step engine — linear-forward, free-backward navigation.
+// STEPS is built per template/order: Details → Cover → [Special] → Photos.
+// The Special step is included only when the order has active add-ons,
+// so templates/orders without special pages auto-skip it.
+// ─────────────────────────────────────────────────────────────────
+let STEPS = [];
+let currentStepIdx = 0;
+let furthestReached = 0;
+let uploadStepsPrepared = false;
+
+function buildSteps() {
+  const steps = [
+    { id: 'details', label: 'Your details', panelId: 'step1',      errId: 'step1', validate: validateDetailsStep },
+    { id: 'cover',   label: 'Your cover',   panelId: 'step-cover', errId: 'cover', validate: validateCoverStep },
+  ];
+  const hasSpecial = ORDER.addons.filter(a => !cancelledAddons.has(a.slug)).length > 0;
+  if (hasSpecial) {
+    steps.push({ id: 'special', label: 'Special pages', panelId: 'step-special', errId: 'special', validate: validateSpecialStep });
+  }
+  steps.push({ id: 'photos', label: 'Your photos', panelId: 'step-photos', errId: 'step2', validate: validatePhotosStep });
+  STEPS = steps;
+}
+
+function renderStepper() {
+  const wrap = document.getElementById('stepper');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  STEPS.forEach((s, i) => {
+    if (i > 0) {
+      const line = document.createElement('div');
+      line.className = 'step-line';
+      wrap.appendChild(line);
+    }
+    const isActive = i === currentStepIdx;
+    const isDone   = !isActive && i <= furthestReached; // visited → checkmark + clickable
+    const step = document.createElement('div');
+    step.className = 'step' + (isActive ? ' active' : '') + (isDone ? ' done clickable' : '');
+    step.innerHTML =
+      `<div class="step-num">${isDone ? '&#10003;' : (i + 1)}</div>` +
+      `<div class="step-label">${s.label}</div>`;
+    if (isDone) step.onclick = () => goToStep(i); // free navigation among visited steps
+    wrap.appendChild(step);
+  });
+}
+
+// Navigate to a step by index. Hides every panel, shows the target, repaints
+// the stepper. Going forward never happens here without validation — callers
+// use advance() to extend; goToStep itself is for free (already-reached) moves.
+function goToStep(idx) {
+  if (idx < 0 || idx >= STEPS.length) return;
+  // goToStep only ever moves among already-visited steps. Extending forward to a
+  // new step happens ONLY through advance() (which validates first), so a step
+  // can never be reached without passing its predecessor's validation.
+  if (idx > furthestReached) return;
+  currentStepIdx = idx;
+
+  const isDetails = STEPS[idx].id === 'details';
+  document.getElementById('step1').style.display = isDetails ? 'block' : 'none';
+  document.getElementById('step2').style.display = isDetails ? 'none'  : 'block';
+  ['step-cover', 'step-special', 'step-photos'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  if (!isDetails) {
+    const panel = document.getElementById(STEPS[idx].panelId);
+    if (panel) panel.style.display = 'block';
+  }
+  renderStepper();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Validate the current step and, if it passes, advance to the next.
+function advance() {
+  const step = STEPS[currentStepIdx];
+  const res = step.validate ? step.validate() : { ok: true };
+  if (!res.ok) { showStepError(step.errId, res.message); return; }
+  showStepError(step.errId, '');
+  if (step.id === 'details' && !uploadStepsPrepared) prepareUploadSteps();
+  const next = currentStepIdx + 1;
+  if (next >= STEPS.length) return;
+  furthestReached = Math.max(furthestReached, next); // advance() is the only extender
+  goToStep(next);
+}
+
+// Show/clear the error message for a step (each step panel has its own err-<errId>).
+function showStepError(errId, message) {
+  const el = document.getElementById('err-' + errId);
+  if (!el) return;
+  if (!message) { el.style.display = 'none'; el.textContent = ''; return; }
+  el.textContent = message;
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
 // Register beforeunload listener to prevent navigation during upload (Chunk 3)
 window.addEventListener('beforeunload', (e) => {
@@ -804,7 +925,7 @@ function initSpecialPhotoZones() {
 
 // ─────────────────────────────────────────────────────────────────
 // FP sections — photo zone(s) + text field per functional page
-// Called from goToStep2(); reads SCRIBBLE_DATA for photo count + text prompts
+// Called from prepareUploadSteps(); reads template data for photo count + text prompts
 // ─────────────────────────────────────────────────────────────────
 function initFPSections() {
   const container = document.getElementById('fp-sections');
@@ -1168,24 +1289,23 @@ function initSpecialDragDrop() {
 // ─────────────────────────────────────────────────────────────────
 // Step navigation
 // ─────────────────────────────────────────────────────────────────
-function goToStep2() {
+// Details-step validator (returns {ok, message}; the step engine shows the error).
+function validateDetailsStep() {
   const name  = document.getElementById('inp-name').value.trim();
   const email = document.getElementById('inp-email').value.trim();
-  const errEl = document.getElementById('err-step1');
-
   if (!name || !email) {
-    errEl.textContent = 'Please fill in your name and email before continuing.';
-    errEl.style.display = 'block';
-    return;
+    return { ok: false, message: 'Please fill in your name and email before continuing.' };
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errEl.textContent = 'That email address doesn\'t look right — please check it.';
-    errEl.style.display = 'block';
-    return;
+    return { ok: false, message: 'That email address doesn\'t look right — please check it.' };
   }
-  errEl.style.display = 'none';
+  return { ok: true };
+}
 
-  // Build step 2 summary bar
+// One-time setup for the upload steps, run when leaving Details: summary bar,
+// photo-count target, and the special-page (FP) sections + their drag-drop.
+function prepareUploadSteps() {
+  // Build the persistent summary bar
   const parts = [
     `<strong>${ORDER.template}</strong>`,
     `<span class="sep">·</span><span>${ORDER.pages} pages</span>`,
@@ -1214,12 +1334,109 @@ function goToStep2() {
   initFPSections();
   initSpecialDragDrop();
 
-  document.getElementById('step1').style.display = 'none';
-  document.getElementById('step2').style.display = 'block';
-  document.getElementById('stepper-1').classList.remove('active');
-  document.getElementById('stepper-1').classList.add('done');
-  document.getElementById('stepper-2').classList.add('active');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  uploadStepsPrepared = true;
+}
+
+// Cover-step validator. Cover photo is required only for templates whose cover
+// declares a photo slot; captions are optional (so a captions-only cover, e.g.
+// Wander's album name, is always valid here).
+function validateCoverStep() {
+  if (coverHasPhoto() && !coverFile) {
+    return { ok: false, message: 'Please upload a cover photo before continuing.' };
+  }
+  return { ok: true };
+}
+
+// Special-pages validator — checks every active add-on's required photo slot(s)
+// and text field(s). Returns on the first problem. No active add-ons → valid.
+function validateSpecialStep() {
+  for (const addon of ORDER.addons) {
+    if (cancelledAddons.has(addon.slug)) continue;
+    const fpKey     = fpKeyForSlug(addon.slug);
+    const fpData    = templateData()?.spreads?.[fpKey];
+    const photoMeta = fpData?.orderFormPhoto;
+    const textMeta  = fpData?.orderFormMeta;
+
+    // Validate photo slot(s)
+    if (photoMeta) {
+      const count = photoMeta.count || 1;
+      for (let i = 0; i < count; i++) {
+        const slotKey = count > 1 ? `${addon.slug}-${i}` : addon.slug;
+        if (!specialFiles[slotKey]) {
+          const label = count > 1 ? `${addon.name} (photo ${i + 1})` : addon.name;
+          return { ok: false, message: `Please upload a photo for "${label}", or remove this page.` };
+        }
+      }
+    }
+
+    // Validate text field
+    if (textMeta && textMeta.introFields) {
+      // All intro fields are required so the birth-story template has no gaps.
+      const missing = (textMeta.fields || []).find(f =>
+        !((document.getElementById(`intro-${addon.slug}-${f.key}`) || {}).value?.trim()));
+      if (missing) {
+        return { ok: false, message: `Please complete all intro details (${missing.label}) for "${addon.name}", or remove this page.` };
+      }
+    } else if (textMeta && (textMeta.leftName || textMeta.zodiacSelect)) {
+      // Labour: require the baby's name (zodiac is optional, defaults to None).
+      if (textMeta.leftName) {
+        const nm = (document.getElementById(`labour-name-${addon.slug}`) || {}).value?.trim() || '';
+        if (!nm) {
+          return { ok: false, message: `Please add the baby's name for "${addon.name}", or remove this page.` };
+        }
+      }
+    } else if (textMeta && textMeta.countrySelect) {
+      const state = window._fpCountries[addon.slug];
+      if (!state || !state.countries.length) {
+        return { ok: false, message: `Please select at least one country for "${addon.name}", or remove this page.` };
+      }
+      if (!getItinLines(addon.slug).length) {
+        return { ok: false, message: `Please add at least one route line for "${addon.name}", or remove this page.` };
+      }
+    } else if (textMeta && textMeta.funnyWords) {
+      const wordList = document.getElementById(`fp-word-list-${addon.slug}`);
+      const filled = wordList
+        ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
+        : [];
+      if (filled.length < (textMeta.minWords || 3)) {
+        return { ok: false, message: `${addon.name}: please enter at least ${textMeta.minWords || 3} words or phrases, or remove this page.` };
+      }
+    } else if (textMeta && textMeta.count > 1) {
+      // Multi-caption validation (e.g. FP5)
+      for (let ci = 0; ci < textMeta.count; ci++) {
+        const val = (document.getElementById(`addon-text-${addon.slug}-${ci}`) || {}).value || '';
+        if (!val.trim()) {
+          const labels = textMeta.labels || [];
+          return { ok: false, message: `Please fill in "${labels[ci] || `Caption ${ci + 1}`}" for ${addon.name}, or remove this page.` };
+        }
+      }
+    } else if (textMeta) {
+      const val = (document.getElementById(`addon-text-${addon.slug}`) || {}).value || '';
+      if (!val.trim()) {
+        return { ok: false, message: `Please fill in "${textMeta.textPrompt || addon.name}", or remove this page.` };
+      }
+    }
+  }
+  return { ok: true };
+}
+
+// Photos-step validator — pool count must match the book's slot count EXACTLY.
+// Too few leaves empty slots; too many leaves surplus photos the engine can't
+// place (they show up "unplaced" for staff). Guard both ends.
+function validatePhotosStep() {
+  const required = window._photoCountTarget || 0;
+  const uploaded = (mainFiles || []).length;
+  if (required > 0 && uploaded !== required) {
+    const diff = Math.abs(required - uploaded);
+    const noun = `photo${diff === 1 ? '' : 's'}`;
+    return {
+      ok: false,
+      message: uploaded < required
+        ? `Please upload ${diff} more ${noun} (${uploaded} of ${required} added).`
+        : `Please remove ${diff} ${noun} — your book has ${required} photo slots (${uploaded} of ${required} added).`,
+    };
+  }
+  return { ok: true };
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1680,120 +1897,18 @@ async function submitOrder() {
   const errEl  = document.getElementById('err-step2');
   const btn    = document.getElementById('submit-btn');
 
-  // Validate cover photo — only required for templates whose cover has a photo slot
-  if (coverHasPhoto() && !coverFile) {
-    errEl.textContent = 'Please upload a cover photo before submitting.';
-    errEl.style.display = 'block';
-    errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-
-  // Validate pool photo count — must match the book's slot count EXACTLY.
-  // One photo per slot: too few leaves empty slots, too many leaves surplus photos
-  // that the engine can't place (they show up "unplaced" for staff). Guard both ends.
-  const required = window._photoCountTarget || 0;
-  const uploaded = (mainFiles || []).length;
-  if (required > 0 && uploaded !== required) {
-    const diff = Math.abs(required - uploaded);
-    const noun = `photo${diff === 1 ? '' : 's'}`;
-    errEl.textContent = uploaded < required
-      ? `Please upload ${diff} more ${noun} (${uploaded} of ${required} added).`
-      : `Please remove ${diff} ${noun} — your book has ${required} photo slots (${uploaded} of ${required} added).`;
-    errEl.style.display = 'block';
-    errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-
-  // Validate active FP sections using SCRIBBLE_DATA
-  for (const addon of ORDER.addons) {
-    if (cancelledAddons.has(addon.slug)) continue;
-    const fpKey    = fpKeyForSlug(addon.slug);
-    const fpData   = templateData()?.spreads?.[fpKey];
-    const photoMeta = fpData?.orderFormPhoto;
-    const textMeta  = fpData?.orderFormMeta;
-
-    // Validate photo slot(s)
-    if (photoMeta) {
-      const count = photoMeta.count || 1;
-      for (let i = 0; i < count; i++) {
-        const slotKey = count > 1 ? `${addon.slug}-${i}` : addon.slug;
-        if (!specialFiles[slotKey]) {
-          const label = count > 1 ? `${addon.name} (photo ${i + 1})` : addon.name;
-          errEl.textContent = `Please upload a photo for "${label}", or remove this page.`;
-          errEl.style.display = 'block';
-          errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          return;
-        }
-      }
-    }
-
-    // Validate text field
-    if (textMeta && textMeta.introFields) {
-      // All intro fields are required so the birth-story template has no gaps.
-      const missing = (textMeta.fields || []).find(f =>
-        !((document.getElementById(`intro-${addon.slug}-${f.key}`) || {}).value?.trim()));
-      if (missing) {
-        errEl.textContent = `Please complete all intro details (${missing.label}) for "${addon.name}", or remove this page.`;
-        errEl.style.display = 'block';
-        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-    } else if (textMeta && (textMeta.leftName || textMeta.zodiacSelect)) {
-      // Labour: require the baby's name (zodiac is optional, defaults to None).
-      if (textMeta.leftName) {
-        const nm = (document.getElementById(`labour-name-${addon.slug}`) || {}).value?.trim() || '';
-        if (!nm) {
-          errEl.textContent = `Please add the baby's name for "${addon.name}", or remove this page.`;
-          errEl.style.display = 'block';
-          errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          return;
-        }
-      }
-    } else if (textMeta && textMeta.countrySelect) {
-      const state = window._fpCountries[addon.slug];
-      if (!state || !state.countries.length) {
-        errEl.textContent = `Please select at least one country for "${addon.name}", or remove this page.`;
-        errEl.style.display = 'block';
-        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-      if (!getItinLines(addon.slug).length) {
-        errEl.textContent = `Please add at least one route line for "${addon.name}", or remove this page.`;
-        errEl.style.display = 'block';
-        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-    } else if (textMeta && textMeta.funnyWords) {
-      const wordList = document.getElementById(`fp-word-list-${addon.slug}`);
-      const filled = wordList
-        ? Array.from(wordList.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean)
-        : [];
-      if (filled.length < (textMeta.minWords || 3)) {
-        errEl.textContent = `${addon.name}: please enter at least ${textMeta.minWords || 3} words or phrases, or remove this page.`;
-        errEl.style.display = 'block';
-        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-    } else if (textMeta && textMeta.count > 1) {
-      // Multi-caption validation (e.g. FP5)
-      for (let ci = 0; ci < textMeta.count; ci++) {
-        const val = (document.getElementById(`addon-text-${addon.slug}-${ci}`) || {}).value || '';
-        if (!val.trim()) {
-          const labels = textMeta.labels || [];
-          errEl.textContent = `Please fill in "${labels[ci] || `Caption ${ci + 1}`}" for ${addon.name}, or remove this page.`;
-          errEl.style.display = 'block';
-          errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          return;
-        }
-      }
-    } else if (textMeta) {
-      const val = (document.getElementById(`addon-text-${addon.slug}`) || {}).value || '';
-      if (!val.trim()) {
-        errEl.textContent = `Please fill in "${textMeta.textPrompt || addon.name}", or remove this page.`;
-        errEl.style.display = 'block';
-        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
+  // Final guard — re-run each step's validator before submitting. Each step was
+  // validated on advance, but the customer can free-navigate back and edit, so
+  // re-check everything here. Data-driven over STEPS (skipping details, already
+  // validated): any future step is auto-covered. On failure, navigate to that
+  // step and show the error in its own panel — no confusing cross-panel errors.
+  for (const step of STEPS) {
+    if (step.id === 'details' || !step.validate) continue;
+    const res = step.validate();
+    if (!res.ok) {
+      goToStep(STEPS.indexOf(step));
+      showStepError(step.errId, res.message);
+      return;
     }
   }
   errEl.style.display = 'none';
@@ -2118,7 +2233,10 @@ async function submitOrder() {
 function showSuccess(orderNumber, email) {
   document.getElementById('step1').style.display = 'none';
   document.getElementById('step2').style.display = 'none';
-  document.getElementById('stepper-2').classList.add('done');
+  // Mark every step complete on the stepper.
+  furthestReached = STEPS.length - 1;
+  currentStepIdx = STEPS.length; // none active → all render as done
+  renderStepper();
 
   document.getElementById('success-order-num').textContent   = 'Order ' + orderNumber;
   document.getElementById('success-template-name').textContent = ORDER.template;
