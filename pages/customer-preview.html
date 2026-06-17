@@ -6,6 +6,7 @@
   <title>Aevia — Your Book Preview</title>
   <script src="../assets/Template_Scribble/scribble-data.js"></script>
   <script src="../assets/Template_Wander/wander-data.js"></script>
+  <script src="../assets/Template_Newborn/newborn-data.js"></script>
   <script src="../assets/js/photo-utils.js"></script>
   <script src="../assets/js/book-completeness.js"></script>
   <script src="../assets/js/map-render.js"></script>
@@ -65,6 +66,26 @@
       font-family: 'Cormorant Garamond';
       src: url('../assets/fonts/CormorantGaramond-Bold.ttf') format('truetype');
       font-weight: 700; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Twinkle Star';
+      src: url('../assets/fonts/TwinkleStar-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Baskervville';
+      src: url('../assets/fonts/Baskervville-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Baskervville';
+      src: url('../assets/fonts/Baskervville-Italic.ttf') format('truetype');
+      font-weight: 400; font-style: italic; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Baskervville';
+      src: url('../assets/fonts/Baskervville-MediumItalic.ttf') format('truetype');
+      font-weight: 500; font-style: italic; font-display: swap;
     }
     :root {
       --bg:        #fafaf8;
@@ -861,6 +882,7 @@
   const TEMPLATES = {
     scribble: { data: () => window.SCRIBBLE_DATA, svgBase: '../assets/Template_Scribble/Spreads/' },
     wander:   { data: () => window.WANDER_DATA,   svgBase: '../assets/Template_Wander/' },
+    newborn:  { data: () => window.NEWBORN_DATA,  svgBase: '../assets/Template_Newborn/' },
   };
 
   let _activeTemplateData = window.SCRIBBLE_DATA; // default
@@ -877,13 +899,41 @@
     SVG_BASE = t.svgBase;
   }
 
+  // Fresh per-template special-photo buckets (mirrors template-engine.html):
+  // Scribble base keys + a bucket for each functional spread of the active
+  // template that takes a photo upload (e.g. Newborn's FPlabour). Keyed by spreadId.
+  function freshSpecialPhotos() {
+    const o = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
+    const data = getActiveTemplateData();
+    Object.values((data && data.spreads) || {}).forEach(s => {
+      if (s.type === 'functional' && s.orderFormPhoto && o[s.id] === undefined) o[s.id] = [];
+    });
+    return o;
+  }
+
   const GET_ORDER_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getOrder';
 
+  // Master font list — mirrors the staff engine's COVER_FONTS. The caption toolbars
+  // show only the subset allowed by the active template's fontPicker (templateFonts()),
+  // but .find() lookups for style pills resolve against this full list.
   const CAPTION_FONTS = [
     { label: 'NT Somic',          value: 'NT Somic',          styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
     { label: 'EB Garamond',       value: 'EB Garamond',       styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Semi-Bold', weight: 600, italic: false }] },
-    { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }] },
+    { label: 'Cormorant Garamond', value: 'Cormorant Garamond', styles: [{ label: 'Light', weight: 300, italic: false }, { label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }, { label: 'Semi-Bold', weight: 600, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
+    { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }], funnyWordsOnly: true },
+    { label: 'Twinkle Star',      value: 'Twinkle Star',      styles: [{ label: 'Regular', weight: 400, italic: false }] },
+    { label: 'Baskervville',      value: 'Baskervville',      styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Medium Italic', weight: 500, italic: true }] },
   ];
+
+  // Caption-toolbar fonts scoped to the active template's fontPicker allow-list
+  // (mirrors the engine). funnyWordsOnly fonts stay gated separately.
+  function templateFonts(includeFunnyWords) {
+    const allow = getActiveTemplateData()?.fontPicker;
+    return CAPTION_FONTS.filter(f =>
+      (!f.funnyWordsOnly || includeFunnyWords) &&
+      (!allow || allow.includes(f.value))
+    );
+  }
 
   let _tbMode       = 'spread';
   let _tbCapEl      = null;
@@ -978,6 +1028,12 @@
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       window.orderData = await resp.json();
       setActiveTemplate(window.orderData.templateName);
+      // Re-bucket special photos for the active template (adds e.g. Newborn's
+      // FPlabour key so its labour photos aren't dropped on load). Mirrors the engine.
+      window.specialPhotos = freshSpecialPhotos();
+      // Newborn zodiac selection (Labour-right overlay), read by renderSpread.
+      window._newbornZodiac = window.orderData.zodiacSign
+        || (window.orderData.fpTexts && window.orderData.fpTexts.zodiac) || 'None';
 
       // Wander FP1 map selection (region + countries) for the Travel-map page.
       // fpTexts.fp1 is an object {region, countries, itinerary}; the map render
@@ -1111,13 +1167,14 @@
 
     // Special (FP) photos → specialPhotos[FPX] (mirrors staff engine structure)
     for (const [slug, urls] of Object.entries(signedUrls.special || {})) {
-      const fpKey   = slug.toUpperCase();
+      // Case-insensitive bucket match: Scribble 'fp1'→'FP1', Newborn 'fplabour'→'FPlabour'.
+      const fpKey   = Object.keys(window.specialPhotos).find(k => k.toLowerCase() === slug.toLowerCase());
       const nameArr = storedNames?.special?.[slug] || [];
       const urlArr  = Array.isArray(urls) ? urls : [urls];
       const photos  = await Promise.all(urlArr.map((url, i) =>
         fetchPhoto(url, (Array.isArray(nameArr) ? nameArr[i] : nameArr) || `${slug}-${i}`)
       ));
-      if (window.specialPhotos[fpKey] !== undefined) {
+      if (fpKey && window.specialPhotos[fpKey] !== undefined) {
         window.specialPhotos[fpKey] = photos.filter(Boolean);
       }
     }
@@ -1279,18 +1336,24 @@
   }
 
   function buildBookSequence(pageCount, selectedFPs) {
+    // Mirror of template-engine.html: an FP with replacesFirstSpread opens the book
+    // in place of SP0 when selected (e.g. Newborn Intro); else SP0 stays.
+    const _data = getActiveTemplateData();
+    const firstOverride = selectedFPs.find(id => _data?.spreads?.[id]?.replacesFirstSpread);
+    const bodyFPs = selectedFPs.filter(id => id !== firstOverride);
+
     const totalSpreads  = pageCount / 2;
     const remaining     = totalSpreads - 1;
-    const standardCount = remaining - selectedFPs.length;
+    const standardCount = remaining - bodyFPs.length;
     const stdIds = ['SP1','SP2','SP3','SP4','SP5','SP6'];
     const standards = [];
     for (let i = 0; i < standardCount; i++) standards.push(stdIds[i % stdIds.length]);
-    const fpCount   = selectedFPs.length;
-    const positions = selectedFPs.map((_, i) =>
+    const fpCount   = bodyFPs.length;
+    const positions = bodyFPs.map((_, i) =>
       Math.round((i + 1) * (standards.length + 1) / (fpCount + 1))
     );
-    for (let i = fpCount - 1; i >= 0; i--) standards.splice(positions[i], 0, selectedFPs[i]);
-    return ['SP0', ...standards];
+    for (let i = fpCount - 1; i >= 0; i--) standards.splice(positions[i], 0, bodyFPs[i]);
+    return [firstOverride || 'SP0', ...standards];
   }
 
   // Mirror of the staff engine's typographic rules (non-breaking spaces + widow prevention)
@@ -1309,12 +1372,17 @@
     const COVER_BLEED_MM = 18;
     const ov = window.coverCaptionStyles?.[capDef.key] || {};
     const font     = ov.font    || capDef.font;
-    const weight   = ov.weight !== undefined ? ov.weight : 400;
-    const italic   = ov.italic  || false;
+    // Default weight/italic from the caption's own CSV styling (capDef), not a
+    // hardcoded 400/non-italic — mirrors template-engine.html (Newborn subtitle).
+    const weight   = ov.weight !== undefined ? ov.weight : (capDef.weight !== undefined ? capDef.weight : 400);
+    const italic   = ov.italic !== undefined ? ov.italic : (capDef.italic || false);
     const sizePt   = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
     const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
     const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
     const align     = ov.align !== undefined ? ov.align : (capDef.align || 'center');
+    // Caption colour from the CSV (mirrors template-engine.html). Scribble's data
+    // colour matches the .cover-caption CSS default; Wander + Newborn now apply theirs.
+    const color     = ov.color !== undefined ? ov.color : (capDef.color || '#493955');
 
     const capW  = capDef.wMm * SCALE;
     const capCX = (capDef.xMm - COVER_BLEED_MM) * SCALE;
@@ -1325,9 +1393,9 @@
 
     if (capDef.rotate) {
       const top = capCY - lineHpx / 2;
-      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
+      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};color:${color};z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
     } else {
-      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};z-index:3;transform:translateY(-50%);`;
+      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};color:${color};z-index:3;transform:translateY(-50%);`;
     }
   }
 
@@ -1387,6 +1455,34 @@
       const slot = document.createElement('div');
       slot.className = 'photo-slot';
       slot.style.cssText = `left:${slotL}px;top:${slotT}px;width:${slotW}px;height:${slotH}px;z-index:1;`;
+
+      // Custom photo silhouette (data-driven clip, mirrors template-engine.html).
+      // The path lives in cover-SVG space (clipDef.pxPerMm, trim origin); scaling by
+      // SCALE/pxPerMm and translating by -slotL/-slotT expresses it in the slot's
+      // LOCAL px space. The SVG's opening is transparent with butterflies drawn after
+      // it, so the clipped photo stays below the SVG and shows through (see below).
+      const clipDef = slotDef.clipShape && coverDef.clipShapes
+        ? coverDef.clipShapes[slotDef.clipShape] : null;
+      if (clipDef) {
+        const f = SCALE / clipDef.pxPerMm;
+        const clipId = 'coverClip-' + slotDef.clipShape;
+        const ns = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
+        svg.style.cssText = 'position:absolute;width:0;height:0;';
+        const defs = document.createElementNS(ns, 'defs');
+        const cp = document.createElementNS(ns, 'clipPath');
+        cp.setAttribute('id', clipId);
+        cp.setAttribute('clipPathUnits', 'userSpaceOnUse');
+        const pth = document.createElementNS(ns, 'path');
+        pth.setAttribute('transform', `translate(${(-slotL).toFixed(2)},${(-slotT).toFixed(2)}) scale(${f.toFixed(5)})`);
+        pth.setAttribute('d', clipDef.d);
+        cp.appendChild(pth); defs.appendChild(cp); svg.appendChild(defs);
+        slot.appendChild(svg);
+        slot.style.clipPath = `url(#${clipId})`;
+        // Opening is transparent in the SVG with butterflies drawn after it, so the
+        // clipped photo stays BELOW the SVG (z-index 1) and shows through, butterflies on top.
+      }
 
       const coverPhoto = (window.specialPhotos.cover || [])[0];
       if (coverPhoto) {
@@ -1653,9 +1749,12 @@
             break;
           }
         }
-        // Special-slot sides (FP3/FP4 left page): drive variant from special photo
+        // Special-slot sides (FP3/FP4 left, Newborn Labour): drive variant from the
+        // special photo. Labour places one photo per page (left=0, right=1), so index
+        // by side; single-photo specials fall back to [0]. Mirrors template-engine.html.
         if (!found) {
-          const special = (window.specialPhotos[spreadId] || [])[0];
+          const spArr = window.specialPhotos[spreadId] || [];
+          const special = spArr[side === 'left' ? 0 : 1] || spArr[0];
           if (special) dominantOrientation = special.orientation || 'horizontal';
         }
       }
@@ -1681,6 +1780,23 @@
         overlay.alt = '';
         overlay.decoding = 'async';
         canvas.appendChild(overlay);
+      }
+
+      // ── Newborn zodiac overlay (Labour-right) ──
+      // Mirrors template-engine.html: the right Labour page's overlay IS the chosen
+      // zodiac constellation, resolved from data zodiac.path(orientation, sign).
+      if (variant.zodiacOverlay && spreadDef.zodiac) {
+        const sign  = window._newbornZodiac || 'None';
+        const zPath = spreadDef.zodiac.path(variantKey, sign);
+        if (zPath) {
+          const zImg = document.createElement('img');
+          zImg.className = 'svg-overlay';
+          zImg.src = SVG_BASE + zPath;
+          zImg.alt = '';
+          zImg.decoding = 'async';
+          zImg.onerror = () => { console.warn('Zodiac SVG failed to load:', zImg.src); };
+          canvas.appendChild(zImg);
+        }
       }
 
       // ── Wander FP1 Travel map (chunk-022) ──
@@ -1720,15 +1836,15 @@
       variant.slots.forEach((slotDef, slotIdx) => {
         let photo = null;
         let isSpecialSlot = false;
-        if (slotDef.pool === 'special' || slotDef.pool === 'artwork') {
+        if (slotDef.pool === 'special' || slotDef.pool === 'artwork' || slotDef.pool === 'labour') {
           isSpecialSlot = true;
           // Record this position so checkBookComplete() doesn't count its (intentional)
           // null assignment as an empty slot. Mirrors the staff engine.
           (window._specialSlots = window._specialSlots || []).push(`${spreadIndex}:${side}:${slotIdx}`);
           const spArr = window.specialPhotos[spreadId] || [];
-          // Artwork spreads (FP5): left page = artwork 0, right page = artwork 1.
+          // Artwork (FP5) and Labour place one photo per PAGE: left = 0, right = 1.
           // Each page has one slot (slotIdx 0), so index by side, not slotIdx.
-          const photoIdx = slotDef.pool === 'artwork' ? (side === 'left' ? 0 : 1) : slotIdx;
+          const photoIdx = (slotDef.pool === 'artwork' || slotDef.pool === 'labour') ? (side === 'left' ? 0 : 1) : slotIdx;
           photo = spArr[photoIdx] || null;
         } else {
           const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
@@ -1947,13 +2063,17 @@
         // Typography: CSV defaults, then any staffSpreadCaptionStyles override for this textPanel.
         const _tpOv     = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.['textPanel'] || {};
         const _tpFont   = _tpOv.font          !== undefined ? _tpOv.font          : tpCap.font;
+        const _tpWeight = _tpOv.weight        !== undefined ? _tpOv.weight        : (tpCap.style === 'bold' ? 700 : tpCap.style === 'semibold' ? 600 : tpCap.style === 'medium' ? 500 : 400);
+        const _tpItalic = _tpOv.italic        !== undefined ? _tpOv.italic        : (tpCap.style === 'italic');
         const _tpSizePt = _tpOv.sizePt        !== undefined ? _tpOv.sizePt        : tpCap.sizePt;
         const _tpLineS  = _tpOv.lineSpacing   !== undefined ? _tpOv.lineSpacing   : tpCap.lineSpacing;
         const _tpLetS   = _tpOv.letterSpacing !== undefined ? _tpOv.letterSpacing : tpCap.letterSpacing;
         if (_tpFont)                         panelEl.style.fontFamily    = `'${_tpFont}', var(--sans)`;
-        if (_tpSizePt)                       panelEl.style.fontSize      = isFunnyWords ? (_tpSizePt * SCALE) + 'px' : _tpSizePt + 'pt';
+        if (_tpSizePt)                       panelEl.style.fontSize      = isFunnyWords ? (_tpSizePt * SCALE) + 'px' : (_tpSizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
         if (_tpLineS  !== undefined)         panelEl.style.lineHeight    = _tpLineS;
         if (_tpLetS   !== undefined)         panelEl.style.letterSpacing = _tpLetS + 'em';
+        panelEl.style.fontWeight = _tpWeight;
+        panelEl.style.fontStyle  = _tpItalic ? 'italic' : 'normal';
 
         const formatFunnyWords = (text) => {
           if (!isFunnyWords) return text;
@@ -2110,9 +2230,10 @@
 
     document.getElementById('tb-caption-label').textContent = 'Caption';
 
+    const isFunnyWordsPanel = capDef.font === 'FirstTimeWriting';
     const sel = document.getElementById('tb-font');
     sel.innerHTML = '';
-    CAPTION_FONTS.forEach(f => {
+    templateFonts(isFunnyWordsPanel).forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.value;
       opt.textContent = f.label;
@@ -2156,7 +2277,7 @@
 
     const sel = document.getElementById('tb-font');
     sel.innerHTML = '';
-    CAPTION_FONTS.forEach(f => {
+    templateFonts(false).forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.value;
       opt.textContent = f.label;

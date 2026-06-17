@@ -1,3 +1,37 @@
+## 2026-06-16 — Caption / text-panel render bugs: pt-vs-px and dropped style fields
+
+Captions — especially functional-page **text panels** (Newborn Intro/Labour, Wander
+itinerary, Scribble birthday/funny-words) — are the most repeat-bug-prone area. Every
+caption change touches FOUR paths that must agree: staff engine (`template-engine.html`),
+customer preview (`customer-preview.html`), PDF (`scripts/export-pdf.js`), and the toolbar
+live-apply. A bug = one path diverging. Session 47 hit two stacked on the Newborn Intro panel.
+
+**Bug 1 — dropped style fields.** The text-panel render block read back only
+font/sizePt/lineSpacing/letterSpacing from the style override, omitting **weight + italic**.
+Staff looked italic (toolbar set it live on the element) but the customer rendered roman.
+Fix: mirror the per-photo caption block — read all six fields with a CSV `style` fallback
+(`style === 'italic'/'bold'/...`).
+
+**Bug 2 — font-size formula divergence (the real root cause).** The toolbar live-apply used
+`sizePt * SCALE * 25.4/72` px (canvas-scaled, correct) while the render used raw
+`sizePt + 'pt'`. On our 3px/mm canvas, raw CSS `Npt` = N*96/72 px ≈ **26% too big** and
+mismatched the PDF's true physical pt. Result: a size that "fit while editing" rendered
+larger and overflowed on reload + on the customer side — looked like a staff↔customer
+parity bug but was one engine disagreeing with itself. Fix: render uses the same
+`sizePt * SCALE * 25.4/72` px formula in both engines (funnyWords panels stay `sizePt*SCALE`).
+
+**Rules for future caption/special-page work:**
+1. HTML canvas font-size is always `sizePt * SCALE * 25.4/72` px — never raw `pt`.
+2. Toolbar live-apply and render formulas must be identical (else "fits while editing, wrong on reload").
+3. Render must read back all six override fields (font, weight, italic, sizePt, lineSpacing, letterSpacing) with CSV fallback.
+4. Customer style precedence: `customerCaptionStyles || staffSpreadCaptionStyles || {}`.
+5. Override key = `slotIdx`; text panels use the literal key `'textPanel'` — toolbar write key and render read key must match.
+
+**Fast debug:** `curl getOrder -H "X-Staff-Key: 865865" -d '{"orderNumber":"AEV-xxx"}'` to read
+saved `staffSpreadCaptionStyles`, then Playwright-measure the LIVE customer render (computed
+`fontSize`/`fontStyle`/box width) instead of guessing. "Same pt, different size" ⇒ formula
+divergence (rules 1–2); "italic staff, roman customer" ⇒ missing field read-back (rule 3).
+
 ## 2026-06-04 — Wander region maps carry bleed IN the viewBox (render bleed-fit)
 
 Unlike Scribble spreads + the Wander cover (content-only viewBox, `0 0 566.93` = 200mm),

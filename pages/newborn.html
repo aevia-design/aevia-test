@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bloom — Aevia</title>
+  <title>Newborn — Aevia</title>
   <style>
     :root {
       --bg: #fafaf8;
@@ -207,7 +207,7 @@
 </nav>
 
 <!-- Breadcrumb -->
-<div class="crumb"><a href="collections.html">Templates</a> <span>›</span> <a href="collections.html#kids">Kids</a> <span>›</span> Bloom</div>
+<div class="crumb"><a href="collections.html">Templates</a> <span>›</span> <a href="collections.html#kids">Kids</a> <span>›</span> Newborn</div>
 
 
 <!-- ═══════════════════════════════════════════════════════
@@ -219,7 +219,7 @@
     <div>
       <img id="a-img" class="gallery-main"
         src="https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp"
-        alt="Bloom photo book, open spread" />
+        alt="Newborn photo book, open spread" />
       <div class="thumbs">
         <button class="on" onclick="sw('a',0,this)">
           <img src="https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp?width=200&auto=webp" alt="" />
@@ -235,17 +235,17 @@
     <!-- Details right (sticky) -->
     <div class="panel">
       <div class="tag">Kids</div>
-      <h1 class="product-title">Bloom</h1>
-      <p class="product-tagline">Every tiny milestone, composed into something you'll keep forever.</p>
+      <h1 class="product-title">Newborn</h1>
+      <p class="product-tagline">The first days — the birth story, the tiny details, and the little one at the centre of it all.</p>
 
       <div class="page-toggle">
         <div class="section-label">Pages</div>
         <div class="chips">
-          <div class="chip on" onclick="pick('a',this,70)">
+          <div class="chip on" onclick="pick(this,70)">
             <span class="chip-label">40 pages</span>
             <span class="chip-price">€ 70</span>
           </div>
-          <div class="chip" onclick="pick('a',this,100)">
+          <div class="chip" onclick="pick(this,100)">
             <span class="chip-label">80 pages</span>
             <span class="chip-price">€ 100</span>
           </div>
@@ -253,22 +253,22 @@
       </div>
 
       <div class="addons">
-        <div class="section-label">Optional add-ons</div>
-        <div class="addon" data-input-type="text" data-slug="first-words" onclick="xtra('a',this)">
+        <div class="section-label">Special spreads — all free</div>
+        <div class="addon on" data-fp="FPintro" data-photos="0" onclick="xtra(this)">
           <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="addon-body">
-            <div class="addon-name">First words</div>
-            <div class="addon-desc">A dedicated spread to capture their earliest attempts at language</div>
+            <div class="addon-name">Intro</div>
+            <div class="addon-desc">A short birth story to open the book — composed from a few key details you share (date, time, weight, length).</div>
           </div>
-          <div class="addon-cost">Included</div>
+          <div class="addon-cost">Added ✓</div>
         </div>
-        <div class="addon" data-input-type="none" data-slug="first-year-timeline" onclick="xtra('a',this)">
+        <div class="addon on" data-fp="FPlabour" data-photos="2" onclick="xtra(this)">
           <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="addon-body">
-            <div class="addon-name">First year timeline</div>
-            <div class="addon-desc">A visual month-by-month spread — no extra photos needed</div>
+            <div class="addon-name">Labour</div>
+            <div class="addon-desc">A two-page spread from the day — a welcome line and your baby's zodiac constellation on the facing page.</div>
           </div>
-          <div class="addon-cost">Included</div>
+          <div class="addon-cost">Added ✓</div>
         </div>
       </div>
 
@@ -294,8 +294,8 @@
       <svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
     </button>
     <div class="acc-body">
-      <p>Bloom is designed for the first year — a quiet, considered structure that guides you from birth through the earliest milestones. The layout balances full-page imagery with typeset captions, giving each spread room to breathe.</p>
-      <p>We handle all design and typesetting. You supply the photos and any notes you'd like included, and our team composes the final layout for your approval before printing.</p>
+      <p>Newborn is designed for the first days — a quiet, considered structure built around the birth story and the tiny details worth keeping. The layout balances full-page imagery with typeset captions, giving each spread room to breathe.</p>
+      <p>We handle all design and typesetting. You supply the photos and a few key details, and our team composes the final layout for your approval before printing.</p>
     </div>
   </div>
   <div class="acc-item">
@@ -400,46 +400,46 @@
       'https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp',
     ],
   };
-  const st = { a: { base: 70, extra: 0 }, b: { base: 70, extra: 0 } };
-
   function sw(l, i, btn) {
     document.getElementById(l + '-img').src = srcs[l][i];
     btn.closest('.thumbs').querySelectorAll('button').forEach(b => b.classList.remove('on'));
     btn.classList.add('on');
   }
 
-  function pick(l, el, p) {
+  function pick(el, p) {
     el.closest('.chips').querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
     el.classList.add('on');
-    st[l].base = p;
-    render(l);
+    document.getElementById('a-price').textContent = p;
   }
 
-  function xtra(l, card) {
+  function xtra(card) {
     card.classList.toggle('on');
-    const cost = card.querySelector('.addon-cost');
-    cost.textContent = card.classList.contains('on') ? 'Added ✓' : 'Included';
+    card.querySelector('.addon-cost').textContent = card.classList.contains('on') ? 'Added ✓' : 'Add';
   }
 
-  function render(l) {
-    document.getElementById(l + '-price').textContent = st[l].base + st[l].extra;
-  }
+  // FP slug/input-type metadata. order.html reads the per-page fields from
+  // NEWBORN_DATA.spreads[*].orderFormMeta; inputType just keeps it off the legacy
+  // text-addon path. Slugs are lowercased spread ids (fpintro/fplabour).
+  const FP_META = {
+    FPintro:  { name: 'Intro',  inputType: 'intro',  slug: 'fpintro' },
+    FPlabour: { name: 'Labour', inputType: 'labour', slug: 'fplabour' },
+  };
 
   function goToOrder() {
-    const l = 'a';
-    const price = document.getElementById(l + '-price').textContent;
-    const selectedChip = document.querySelector('#l' + l + ' .chip.on');
+    const price = document.getElementById('a-price').textContent;
+    const selectedChip = document.querySelector('.chip.on');
     const pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
-    const addonNames = [], addonInputs = [], addonSlugs = [];
-    document.querySelectorAll('#l' + l + ' .addon.on').forEach(a => {
-      addonNames.push(a.querySelector('.addon-name').textContent);
-      addonInputs.push(a.dataset.inputType || 'none');
-      addonSlugs.push(a.dataset.slug || '');
+    const selected = [];
+    document.querySelectorAll('.addon.on').forEach(a => {
+      const meta = FP_META[a.dataset.fp];
+      if (meta) selected.push(meta);
     });
-    const params = new URLSearchParams({ template: 'Bloom', category: 'kids', pages, price, backUrl: 'bloom.html' });
-    addonNames.forEach(n => params.append('addonName', n));
-    addonInputs.forEach(t => params.append('addonInput', t));
-    addonSlugs.forEach(s => params.append('addonSlug', s));
+    const params = new URLSearchParams({ template: 'Newborn', category: 'kids', pages, price, back: 'newborn.html' });
+    if (selected.length) {
+      params.set('addons',       selected.map(m => m.name).join(','));
+      params.set('addon_inputs', selected.map(m => m.inputType).join(','));
+      params.set('addon_slugs',  selected.map(m => m.slug).join(','));
+    }
     window.location.href = 'order.html?' + params.toString();
   }
 

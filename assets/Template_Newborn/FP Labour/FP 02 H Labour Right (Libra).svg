@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" viewBox="0 0 566.929 566.929">
+  <g id="b" data-name="FP 02 H Labour Right (Libra)">
+    <g id="c" data-name="Libra">
+      <line x1="118.341" y1="154.645" x2="125.798" y2="64.715" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="148.133" y1="116.69" x2="121.811" y2="155.745" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="112.215" y1="161.666" x2="79.244" y2="164.553" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="84.833" y1="84.05" x2="65.376" y2="88.891" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="66.687" y1="172.608" x2="69.52" y2="168.775" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="149.404" y1="103.701" x2="128.259" y2="60.812" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <line x1="117.557" y1="62.659" x2="95.196" y2="79.412" fill="#fff" stroke="#21386e" stroke-miterlimit="10" stroke-width="2"/>
+      <g id="d" data-name="Star">
+        <polygon points="158.261 103.575 165.329 101.459 160.455 107.479 164.598 109.852 159.784 112.353 162.326 117.185 156.504 116.335 154.54 122.961 151.868 117.904 147.76 121.66 147.647 116.46 140.937 117.585 145.453 112.557 141.31 110.183 146.124 107.683 144.52 102.988 149.404 103.701 150.034 97.391 154.04 102.132 159.249 97.369 158.261 103.575" fill="#21386e"/>
+        <polygon points="160.746 104.519 157.595 108.423 159.979 109.902 157.175 111.449 159.085 114.958 155.136 113.92 154.239 118.214 152.257 114.891 149.787 117.034 149.637 113.992 145.434 115.079 148.278 111.565 145.894 110.086 148.698 108.539 147.049 105.088 150.737 106.068 151.426 101.713 153.616 105.097 156.931 102.22 156.236 105.996 160.746 104.519" fill="#fff"/>
+      </g>
+      <g id="e" data-name="Star">
+        <polygon points="131.384 50.467 138.452 48.351 133.578 54.371 137.721 56.744 132.907 59.245 135.449 64.077 129.627 63.226 127.663 69.853 124.991 64.795 120.883 68.552 120.77 63.352 114.06 64.477 118.576 59.448 114.433 57.075 119.248 54.575 117.644 49.88 122.527 50.593 123.157 44.283 127.163 49.024 132.372 44.261 131.384 50.467" fill="#21386e"/>
+        <polygon points="133.869 51.411 130.718 55.314 133.102 56.794 130.298 58.341 132.208 61.85 128.259 60.812 127.363 65.106 125.38 61.783 122.91 63.926 122.76 60.883 118.557 61.971 121.401 58.457 119.017 56.978 121.821 55.431 120.173 51.98 123.86 52.96 124.549 48.605 126.739 51.989 130.054 49.112 129.359 52.888 133.869 51.411" fill="#fff"/>
+      </g>
+      <g>
+        <ellipse cx="59.924" cy="90.639" rx="5.798" ry="5.832" transform="translate(-14.422 11.399) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="54.546" y1="92.698" x2="65.376" y2="88.891" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="90.538" cy="83.106" rx="5.798" ry="5.832" transform="translate(-12.714 16.452) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="95.196" y1="79.412" x2="85.019" y2="84.499" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="62.871" cy="176.488" rx="5.798" ry="5.832" transform="translate(-28.852 13.124) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="59.432" y1="181.177" x2="66.906" y2="172.311" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="73.672" cy="164.584" rx="5.798" ry="5.832" transform="translate(-26.69 14.774) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="79.632" y1="164.65" x2="69.52" y2="168.775" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+      <g>
+        <ellipse cx="118.197" cy="160.849" rx="5.798" ry="5.832" transform="translate(-25.423 22.227) rotate(-9.705)" fill="none" stroke="#21386e" stroke-miterlimit="10"/>
+        <line x1="112.215" y1="161.666" x2="121.829" y2="155.79" fill="#fff" stroke="#21386e" stroke-miterlimit="10"/>
+      </g>
+    </g>
+  </g>
+</svg>

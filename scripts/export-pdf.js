@@ -91,6 +91,7 @@ let slotLeft, slotTop, slotW, slotH;
 global.window = {};
 require(path.resolve(__dirname, '../assets/Template_Scribble/scribble-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Wander/wander-data.js'));
+require(path.resolve(__dirname, '../assets/Template_Newborn/newborn-data.js'));
 DATA = global.window.SCRIBBLE_DATA; // default; will be updated in main() if needed
 
 function initializePrintConstants() {
@@ -137,6 +138,7 @@ function initializePrintConstants() {
 const TEMPLATES = {
   scribble: { data: () => global.window.SCRIBBLE_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Scribble/Spreads') },
   wander:   { data: () => global.window.WANDER_DATA,   assetBase: path.resolve(__dirname, '../assets/Template_Wander') },
+  newborn:  { data: () => global.window.NEWBORN_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Newborn') },
 };
 
 let ASSET_BASE = TEMPLATES.scribble.assetBase; // default
@@ -335,9 +337,24 @@ function getPageDef(sidePages, variant) {
 }
 
 // Render one page (left or right) as a PNG buffer
-async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos) {
-  const { bgColor, svg, slots } = pageDef;
+async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos, variantKey) {
+  const { bgColor, slots } = pageDef;
+  let svg = pageDef.svg;
   const col = hexToSharpColor(bgColor || '#ffffff');
+
+  // ── Newborn zodiac overlay (Labour-right) ──────────────────────────────────
+  // The Labour right page has no fixed base SVG (svg:null); its overlay IS the
+  // chosen zodiac constellation, resolved from the data's zodiac.path(orientation,
+  // sign). 'None' resolves to the empty (None) SVG. Sign comes from state.zodiacSign.
+  // The engine appends it with the same .svg-overlay class + default positioning as
+  // a normal spread base SVG, so it flows through the identical content-SVG path below.
+  if (pageDef.zodiacOverlay) {
+    const spreadDef = DATA.spreads[spreadId] || {};
+    if (spreadDef.zodiac) {
+      const sign = state.zodiacSign || 'None';
+      svg = spreadDef.zodiac.path(variantKey || 'H', sign);
+    }
+  }
 
   // Start with a solid-color canvas (this IS the bleed on all sides)
   let canvas = sharp({
@@ -362,10 +379,10 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
       const spRaw = specialPhotos[spreadId];
       const spName = typeof spRaw === 'string' ? spRaw : spRaw?.name;
       if (spName) photo = { name: spName };
-    } else if (slot.pool === 'artwork') {
-      // FP5 art gallery: specialPhotos.FP5 must be array [leftName, rightName].
-      // Legacy string fallback below handles old book-state.json from before 2026-05.
-      // Re-export from the engine to upgrade to current schema.
+    } else if (slot.pool === 'artwork' || slot.pool === 'labour') {
+      // Per-side photo pools: FP5 art gallery + Newborn FPlabour. specialPhotos[spreadId]
+      // is an array [leftName, rightName] (one photo per page). Legacy string fallback
+      // below handles old book-state.json (pre-fix) — re-export from the engine to upgrade.
       const artArr = specialPhotos[spreadId];
       const artIdx = side === 'left' ? 0 : 1;
       let artName;
@@ -548,6 +565,10 @@ const FONT_FILE_MAP = {
   'Cormorant Garamond_medium':   'CormorantGaramond-Medium.ttf',
   'Cormorant Garamond_semibold': 'CormorantGaramond-SemiBold.ttf',
   'Cormorant Garamond_bold':     'CormorantGaramond-Bold.ttf',
+  'Twinkle Star_regular':        'TwinkleStar-Regular.ttf',
+  'Baskervville_regular':        'Baskervville-Regular.ttf',
+  'Baskervville_italic':         'Baskervville-Italic.ttf',
+  'Baskervville_mediumitalic':   'Baskervville-MediumItalic.ttf',
 };
 
 // Pre-embed all fonts into a PDFDocument; returns a lookup map
@@ -571,7 +592,11 @@ async function embedAllFonts(pdfDoc) {
 // is to draw each character as its own drawText call — fontkit can't form a ligature across separate
 // calls (no shaping context). Tradeoff: loses pair kerning, but barely perceptible at body sizes.
 // Cormorant Garamond has the same fontkit GSUB bug and needs the same workaround.
-const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond']);
+// Baskervville (Newborn body/caption font) + Twinkle Star (Newborn cover display)
+// both expose a `liga` GSUB feature and form ligatures (fi/fl/ffi collapse), the same
+// profile that triggered the bug on EB Garamond + Cormorant. Added pre-emptively so
+// Newborn print can't ship with mid-word gaps; confirm visually at E2E (Stage 7).
+const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star']);
 // EB Garamond additionally suppresses letter-spacing in the char-by-char path; the shaping
 // context loss caused irregular gaps when spacing was also applied. Cormorant Garamond keeps
 // its defined letter-spacing because the -0.02em tightening is aesthetically required.
@@ -681,7 +706,11 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     const charSpacing   = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0
       : ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
 
-    const lines = String(text).split('\n').filter(l => l.trim());
+    // Preserve empty lines as blank lines ('') — see the textPanel render below for rationale.
+    // The engine renders \n\n as <br><br> (a visible paragraph gap); filtering them out here
+    // collapsed that spacing in the PDF. Blank lines are skipped at draw time but still occupy
+    // one line-height via the forEach index.
+    const lines = String(text).split('\n');
 
     // xMm/yMm are CENTER coords (with-bleed mm). Convert to pdf-lib box origin (bottom-left of box).
     const boxWidthPt  = capDef.wMm * MM_TO_PT;
@@ -692,7 +721,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     const textYPt = pageSizePt - (capDef.yMm + capDef.hMm / 2) * MM_TO_PT;
 
     // Word-wrap text to fit box width
-    const wrappedLines = lines.flatMap(l => wrapText(font, l, sizePt, boxWidthPt, charSpacing));
+    const wrappedLines = lines.flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : ['']);
 
     // Horizontal alignment
     const halign = capDef.halign || 'left';
@@ -710,6 +739,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
 
     const isLig = LIGATURE_FONTS.has(fontName);
     wrappedLines.forEach((line, li) => {
+      if (!line.trim()) return; // blank line: reserve space (via li) but draw nothing
       const textWidthPt = isLig
         ? measureNoLig(font, line, sizePt, charSpacing)
         : font.widthOfTextAtSize(line, sizePt) + charSpacing * Math.max(0, line.length - 1);
@@ -742,14 +772,13 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     if (font) {
       const isFunnyWords = capDef.font === 'FirstTimeWriting';
       // FunnyWords: template sizePt is in mm (canvas-scaled units), convert to PDF pt.
-      // Regular panels: the engine renders these in raw CSS pt at 96dpi, which on its
-      // 3px/mm (76.2dpi) canvas makes them ~1.26× larger than their nominal pt. The PDF
-      // reads sizePt as a true 72dpi point, so it prints ~1.26× smaller than the screen.
-      // Scale panel pt up by 96dpi / 76.2dpi so the print matches the engine appearance.
-      const PANEL_PT_SCALE = (96 / 25.4) / 3;  // ≈ 1.2598  (SCALE = 3 px/mm in both engines)
+      // Regular panels: the engine now renders sizePt at its true physical size
+      // (sizePt * SCALE * 25.4/72 px = sizePt typographic points), same as the per-photo
+      // slot captions above. So the PDF draws the panel at raw sizePt PDF points — no
+      // PANEL_PT_SCALE fudge (that compensated for the old raw-CSS-pt engine bug, now fixed).
       const sizePt        = isFunnyWords
         ? ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 20) * MM_TO_PT
-        : ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 16) * PANEL_PT_SCALE;
+        : ((ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 16);
       const lineSpacingPt = sizePt * ((ov.lineSpacing !== undefined ? ov.lineSpacing : capDef.lineSpacing) || 1.28);
       const charSpacing   = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0
       : ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
@@ -761,7 +790,10 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
       const lines = String(panelText).split('\n');
       // Apply word-wrap so long lines flow within the caption box (same as slot captions).
       // FunnyWords panels: each "word" is already one line — wrapText still works correctly.
-      const wrappedLines = lines.flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : []);
+      // Empty lines are PRESERVED as a single blank line ('') so they reserve one line-height
+      // of vertical space — matching the engine, which renders \n\n as <br><br> (a visible gap
+      // staff/customers use to space paragraphs). Dropping them collapsed the spacing in the PDF.
+      const wrappedLines = lines.flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : ['']);
       // Measure total text height for valign
       const totalTextHeight = wrappedLines.length > 0
         ? (wrappedLines.length * lineSpacingPt - (lineSpacingPt - sizePt))
@@ -841,11 +873,34 @@ async function renderCoverImage(coverDef, coverPhotoName) {
       const sh = Math.round(slot.hMm * MM_TO_PX);
       const sx = Math.round((slot.xMm - slot.wMm / 2) * MM_TO_PX);
       const sy = Math.round((slot.yMm - slot.hMm / 2) * MM_TO_PX);
+      // Custom photo silhouette (data-driven clip, e.g. Newborn's scalloped frame).
+      // The path lives in cover-SVG space (clipDef.pxPerMm, trim-origin, NO bleed).
+      // Mirror the engine's translate(-slotL,-slotT) scale(f): here the PDF canvas
+      // origin is the bleed edge and sx/sy are bleed-origin, so map a path point P to
+      // slot-local px = P*g + COVER_BLEED_PX − sx, where g = MM_TO_PX / clipDef.pxPerMm.
+      const clipDef = slot.clipShape && coverDef.clipShapes
+        ? coverDef.clipShapes[slot.clipShape] : null;
       try {
         const photoBuffer = await sharp(photoData)
           .resize(sw, sh, { fit: 'cover', position: 'centre' })
           .png().toBuffer();
-        composites.push({ input: photoBuffer, left: sx, top: sy });
+        if (clipDef) {
+          const g  = MM_TO_PX / clipDef.pxPerMm;
+          const tx = COVER_BLEED_PX - sx;
+          const ty = COVER_BLEED_PX - sy;
+          const maskSvg = Buffer.from(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${sw}" height="${sh}">` +
+            `<path transform="translate(${tx.toFixed(2)},${ty.toFixed(2)}) scale(${g.toFixed(5)})" d="${clipDef.d}" fill="white"/>` +
+            `</svg>`
+          );
+          const maskBuffer = await sharp(maskSvg).resize(sw, sh).png().toBuffer();
+          const maskedBuffer = await sharp(photoBuffer)
+            .composite([{ input: maskBuffer, blend: 'dest-in' }])
+            .png().toBuffer();
+          composites.push({ input: maskedBuffer, left: sx, top: sy });
+        } else {
+          composites.push({ input: photoBuffer, left: sx, top: sy });
+        }
       } catch (e) {
         console.warn(`  ⚠ Cover photo failed: ${e.message}`);
       }
@@ -900,10 +955,16 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
       console.warn('cover caption override schema mismatch (weight should be numeric):', ov);
     }
     const fontName = ov.font || capDef.font || 'NT Somic';
-    const style    = ov.weight >= 700 ? 'bold'
-                   : ov.weight >= 600 ? 'semibold'
-                   : ov.weight >= 500 ? 'medium'
-                   : ov.italic        ? 'italic'
+    // Default weight/italic from the caption's own styling (capDef), not a hardcoded
+    // 400/non-italic — so e.g. the Newborn Baskervville subtitle is italic 500 (→
+    // mediumitalic) by default. User overrides (ov.*) still win. Mirrors the engine.
+    const capWeight = ov.weight !== undefined ? ov.weight : (capDef.weight !== undefined ? capDef.weight : 400);
+    const capItalic = ov.italic !== undefined ? ov.italic : (capDef.italic || false);
+    const style    = (capItalic && capWeight >= 500 && capWeight < 600) ? 'mediumitalic'
+                   : capWeight >= 700 ? 'bold'
+                   : capWeight >= 600 ? 'semibold'
+                   : capWeight >= 500 ? 'medium'
+                   : capItalic        ? 'italic'
                    :                    'regular';
     const font = lookupFont(fontMap, fontName, style);
     if (!font) { console.warn(`  ⚠ Cover caption font not found: ${fontName}`); continue; }
@@ -939,8 +1000,15 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
         ? measureNoLig(font, l, sizePt, charSpacing)
         : font.widthOfTextAtSize(l, sizePt);
 
-      const ascenderPt = font.heightAtSize(sizePt, { descender: false });
-      const spineXPt   = capDef.xMm * MM_TO_PT + ascenderPt / 2;
+      // Center the glyph line-box on the spine center, matching the engine (which rotates the
+      // caption box about its center → text visual-center sits on xMm). After 90° CCW rotation
+      // ascenders extend LEFT of the baseline (by ascent) and descenders RIGHT (by descent), so
+      // the line-box horizontal center = baseline_x + (descent − ascent)/2. Solving for the
+      // baseline so that center lands on xMm gives the +(ascent − descent)/2 offset below.
+      // (The old + ascent/2 ignored the descender and sat ~descent/2 too far right.)
+      const ascenderPt  = font.heightAtSize(sizePt, { descender: false });
+      const descenderPt = font.heightAtSize(sizePt) - ascenderPt;
+      const spineXPt   = capDef.xMm * MM_TO_PT + (ascenderPt - descenderPt) / 2;
       const yCenterPt  = pageSizeHPt - capDef.yMm * MM_TO_PT;
       const totalW     = lines.reduce((sum, l) => sum + measure(l), 0)
                        + (lines.length - 1) * lineSpacing;
@@ -1153,7 +1221,7 @@ async function main() {
         const label = `page-${String(pageNum).padStart(3, '0')}.pdf`;
         process.stdout.write(`  [${si+1}/${state.sequence.length}] ${spreadId} left (${leftVariant})… `);
         try {
-          const buf = await renderPage(spreadId, 'left', leftDef, leftArr, specialPhotos);
+          const buf = await renderPage(spreadId, 'left', leftDef, leftArr, specialPhotos, leftVariant);
           const capFn = (pg, fm) => drawCaptions(pg, fm, leftDef, String(si), 'left', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles);
           if (isPrint) { await writePrintPage(label, buf, capFn); }
           else         { await addPreviewPage(buf, capFn); }
@@ -1182,7 +1250,7 @@ async function main() {
       const label = `page-${String(pageNum).padStart(3, '0')}.pdf`;
       process.stdout.write(`  [${si+1}/${state.sequence.length}] ${spreadId} right (${rightVariant})… `);
       try {
-        const buf = await renderPage(spreadId, 'right', rightDef, rightArr, specialPhotos);
+        const buf = await renderPage(spreadId, 'right', rightDef, rightArr, specialPhotos, rightVariant);
         const capFn = (pg, fm) => drawCaptions(pg, fm, rightDef, String(si), 'right', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles);
         if (isPrint) { await writePrintPage(label, buf, capFn); }
         else         { await addPreviewPage(buf, capFn); }

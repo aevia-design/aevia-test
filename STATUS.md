@@ -1,24 +1,61 @@
 # Session Status
-_Last updated: 2026-06-15 (session 42)_
+_Last updated: 2026-06-16 (session 47)_
 
 ## Status
-**Session 42 (2026-06-15) — COVER PHOTO ORIENTATION + pre-submit confirmation shipped to `main` (`3102591`). Roadmap reviewed (core complete; remaining items blocked or P1). One ideation captured. Groundwork laid for data-driven cover clip shapes (#73), held until the new template's SVGs land.**
+**Session 47 (2026-06-16) — NEWBORN E2E bug-fixing: caption parity (engine↔engine) + PDF parity (3 bugs). Branch `newborn-template` (NOT main). NOTHING COMMITTED — all fixes are working-tree only, pending Evgeny's visual confirm of the regenerated AEV-037 PDF (he stopped to inspect; resumes next session). 102/102 tests. Read `sessions/2026-06-16-s47.md` first.**
 
-**What shipped (live on `main` + Cloudflare; `pages/order.html` + `scribble-data.js`):**
-1. **Cover orientation hint** — cover slot gains an `orientation` field (Scribble = `landscape`), piped from the existing CSV `Orientation` column into an orientation-aware upload hint.
-2. **Non-blocking orientation warning** — amber ⚠ box when an uploaded cover photo fights the frame (e.g. vertical photo on a landscape cover); it will be cropped. Customer can still proceed.
-3. **Pre-submit confirmation modal** ("Before we start") — lists soft issues (wrong-orientation cover + low-res photo count) with **Go back / Submit anyway**. Low-res count spans cover + special + main grid but **excludes FP5 art gallery** (scanned art is intentionally low-res). Happy path (no issues) = no modal.
-- Verified: 97/97 tests; browser-confirmed all paths (warning renders, modal fires/cancels/proceeds, hi-res landscape no modal, zero console errors). Self-reviewed via /reviewing-code (fixed em-dash stop-slop misses).
+**Fixed this session (all UNCOMMITTED):**
+1. **Intro caption staff↔customer mismatch** — two stacked bugs: (a) text-panel render dropped `weight`+`italic` from the style override (staff italic, customer roman); (b) render used raw `sizePt+'pt'` (~26% too big) while the toolbar used the canvas-scaled `sizePt*SCALE*25.4/72` px. Both render blocks fixed to scaled formula + full field read-back. Verified by live DOM measurement (16.9px italic = staff).
+2. **PDF Intro panel ~26% too big** — removed the `PANEL_PT_SCALE≈1.26` fudge (it compensated for the now-fixed engine pt-bug). Engine=customer=PDF.
+3. **PDF Labour photos missing** — (a) PDF now handles `pool:'labour'` like `'artwork'`; (b) engine Export was collapsing all non-FP5 special keys to a single filename → made it data-driven (any artwork/labour pool → `[left,right]` array). Recurring "new per-side pool breaks export" bug, now generic.
+4. **PDF spine caption off-center** — changed `+ascenderPt/2` → `+(ascent−descent)/2` to center the glyph line-box like the engine. ⚠ unconfirmed (Twinkle Star metrics) — Evgeny to eyeball.
 
-**Groundwork committed, NOT built (TO-DO #73):** Evgeny added a `Photo shape` column across all 4 template CSVs (heart = `custom`, else `rectangle`/blank). #73 = generalise the hardcoded heart clip-path into a data-driven `clipShape` field across all 3 surfaces. **Held until the new "Little Annette" template SVGs arrive** so it can be tested against a real second shape (building against only the working heart = regression risk).
+### ▶ NEXT SESSION (Session 48) — Evgeny inspects PDF, then commit + finish E2E
+**Read `sessions/2026-06-16-s47.md` first. Confirm branch `newborn-template`.**
+1. **Pick up Evgeny's PDF inspection** (Intro size, spine centering, Labour photos). Spine (bug 4) is the watch item.
+2. **Labour photos need a re-Export** — the PDF Evgeny is viewing used the OLD book-state (string `FPlabour`), so both Labour pages show the SAME photo. For 2 distinct: re-click **"Export book state (JSON)"** in the staff engine, then `cd scripts && npm run pdf -- AEV-037`.
+3. **Commit everything** once approved: `customer-preview.html`, `template-engine.html`, `scripts/export-pdf.js`, `LEARNINGS.md`, S46 dangling (`pages/order.html` guard + `tests/photo-count-guard.test.js`, `ideas.md`, `TO-DOS.md`), Evgeny's CSV (`Newborn_sizing_full.csv`), new `qa/measure-intro-panel.mjs`. `.claude/settings.local.json` left OUT.
+4. **Merge to `main` only after Evgeny approves.** The pt→px + PANEL_PT_SCALE fixes also resize **Scribble (FP1/FP2) + Wander (itinerary)** text panels (now correct/smaller, matching PDF) — eyeball those before merge; they're live.
+5. Carried: Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`); real submit → live `AEV-xxx` to clean (TO-DO #60).
 
-**Also:** `ideas.md` — logged the single multi-tab template workbook idea (fixes CSV schema drift; parked until ~6–7 more templates stabilise the column set).
+### ⚠ S47 watch-outs
+- **Branch only, NOT pushed/merged. NOTHING committed this session** — all fixes working-tree only.
+- **The pt→px caption fix touches ALL templates' text panels** (Newborn/Scribble/Wander) — correct direction but visible change on live Scribble/Wander.
+- **Spine centering fix is metric-based + unconfirmed** — verify on the regenerated PDF.
+- **Caption render rules now codified in `LEARNINGS.md` (2026-06-16)** — read before any caption work. The recurring caption hiccups (pt-vs-px, dropped style fields, per-side pool export) are documented there.
+- **Low-res yellow engine border = intended warning** — not a bug (AI sample photos sub-print-res).
 
-### ▶ NEXT SESSION (Session 43)
-1. **When Xenia's "Little Annette" CSV + SVGs land → build TO-DO #73** (data-driven cover `clipShape` + wire the new template). Tell Xenia: fill `Orientation = landscape`; deliver cover SVG with the photo-opening silhouette as its own vector layer + the decorative frame as its own layer (don't put the clip path in a CSV cell). Heart precedent: `template-engine.html:2348` (hardcoded today), mirror across engine + customer-preview + export-pdf.
-2. **Confirm Bug #3** (customer slot-drag → empty slot) on a fresh, non-approved order — still outstanding from S41.
-3. **Or pick a pre-launch priority:** #58 (configurator photo-count promise vs real requirement), #56 (post-payment customer email), #44 (book language EN/DE).
-4. Parked: #64 (Save/Export footgun), #40 (Capacitor app — web is sufficient), #67 rich-text caption editor.
+### Previous: Session 45
+**Session 45 (2026-06-16) — NEWBORN template (#4) Stage 4 (order form) DONE + committed (`5dd84e9`) on branch `newborn-template` (NOT on `main`). Order form drives cover captions + Intro fields + Labour caption/photos/zodiac. Independent reviewer pass (Revise→fixed). Evgeny eyeballed BOTH the order form AND the resulting engine render: "renders well." Next: Stage 5 (customer-preview fonts + PDF).**
+
+**Context:** "Little Annette" is actually the **Newborn** template. Xenia delivered `assets/Template_Newborn/` (CSVs + SVGs). Square 200×200mm book. It will land on the **Bloom** product page — Bloom is being **renamed to Newborn EVERYWHERE incl. the URL** (`bloom.html→newborn.html`) + Stripe wiring (Stage 6). All work is isolated on the branch; do NOT merge to `main` until Evgeny approves locally (Cloudflare auto-deploys `main`).
+
+**Planning artefacts:** brief `docs/briefs/newborn-template.md`; session logs `sessions/2026-06-15-s43.md` (Stages 1–2), `sessions/2026-06-16-s44.md` (Stage 3), `sessions/2026-06-16-s45.md` (Stage 4 — READ THIS FIRST next session).
+
+**What's DONE + committed on `newborn-template`:**
+1. **Stage 1 — `newborn-data.js`** (`468cfb6`). Data model: SP0–SP6, cover (custom clip path), FPintro (text), FPlabour (2 photos + zodiac).
+2. **Stage 2 — fonts** (`34dff26`). Twinkle Star + Baskervville registered (engine + customer-preview + PDF font map).
+3. **Stage 3 — registry + engine render** (`3af559b`). Registry in all 3 surfaces. Cover clip, zodiac overlay, Labour pool, Intro-replaces-SP0. 8 fixes. Scribble + Wander unchanged.
+4. **Stage 4 — order form** (`5dd84e9`, `pages/order.html` + `template-engine.html` + data/CSV). Cover captions (data-driven, already worked); **Intro** 5 labelled fields → composed block (`composeIntroBlock`), Intro opens book in place of SP0; **Labour** left caption + 2 photo uploads (slug `fplabour`) + zodiac select (12+None). **Root fix:** mixed-case functional keys — new `fpKeyForSlug` (order) + `resolveFpKey` (engine) replace `slug.toUpperCase()`; fpSelections now exact-cased ids; `calcPhotoTarget` mirrors `replacesFirstSpread`. **Zodiac rides `fpTexts.zodiac` → NO backend deploy needed.** Reviewer-flagged single-caption fill now targets the non-`aiGenerated` side (protects Labour's AI right page; FP3/FP4 still left). 97/97 tests; order form + engine render verified headless (0 errors); Scribble+Wander unchanged.
+
+### ▶ NEXT SESSION (Session 46) — Stage 5: customer-preview parity + PDF
+**Read `sessions/2026-06-16-s45.md` first.** Confirm branch `newborn-template`.
+1. **Stage 5 — customer-preview parity + PDF.** Add Baskervville/Twinkle Star (+scope) to customer `CAPTION_FONTS` (currently old 3-font Scribble list). PDF render of the custom clip + zodiac overlay in `export-pdf.js` (only registry/data-load wired). **fontkit GSUB ligature check** on Baskervville + Twinkle Star (both expose `liga`; Twinkle Star is connected script — HIGH risk). PDF cover-subtitle needs style token `mediumitalic` → `Baskervville_mediumitalic`.
+2. **Stage 6 — Bloom→Newborn rename** (URL `bloom.html→newborn.html`, links, `template` param, Stripe price wiring).
+3. **Stage 7 — E2E** (order→engine→customer→PDF, real order) + merge to `main` after Evgeny approves.
+
+### ⚠ S45 watch-outs
+- **Branch only; NOT pushed/merged.** Cloudflare deploys `main`. `.claude/settings.local.json` again left OUT of the commit (pre-existing local change).
+- **Full order→engine round-trip with a REAL order NOT yet run.** Stage 4 verified: (a) order-form rendering/validation/payload headless; (b) Evgeny eyeballed the engine render via the local tester. But the engine's `resolveFpKey` applying `fpTexts.fplabour`/`fpintro` from a *real submitted order* is unit-correct yet unseen on a live payload — that's Stage 7 E2E (needs Stage 6 product page to mint an order).
+- **Intro block format is a CHOICE** (`composeIntroBlock`: name / "Born {dob} at {time}" / "{weight} · {length}", empties dropped). Staff-editable starting point, like the Wander itinerary. Revisit if Evgeny/Xenia want a different editorial layout.
+- **Customer-preview `CAPTION_FONTS`** still the old 3-font list — Stage-5 item (carried from S44).
+- **No backend `zodiacSign` field** — zodiac travels via `fpTexts.zodiac` (engine reads `order.zodiacSign || order.fpTexts.zodiac`). If a proper column is ever added it needs a Firebase deploy (affects all templates live).
+- Carried: Cover SVG is edited (`#d8eaf0`→`none`) — re-apply if Xenia re-exports the cover. Wander cover caption colour shifts `#493955`→`#3E2A55` on next deploy (intended).
+
+### Previous: Session 42
+**Session 42 (2026-06-15) — COVER PHOTO ORIENTATION + pre-submit confirmation shipped to `main` (`3102591`). Roadmap reviewed (core complete; remaining items blocked or P1). One ideation captured. Groundwork laid for data-driven cover clip shapes (#73).**
+
+**What shipped (live on `main`; `pages/order.html` + `scribble-data.js`):** (1) cover orientation hint from CSV `Orientation`; (2) non-blocking amber orientation warning on wrong-orientation cover photo; (3) pre-submit "Before we start" modal listing soft issues (wrong-orientation cover + low-res count, excl. FP5 art) with Go back / Submit anyway. 97/97 tests; browser-verified. **#73 groundwork:** `Photo shape` column added across the 4 template CSVs — now being realised in the Newborn build (S43). **ideas.md:** multi-tab template workbook idea (parked).
 
 ### Previous: Session 41
 **Session 41 (2026-06-15) — MOBILE RESPONSIVENESS (#47) shipped + verified on a real iPhone; 4 follow-on bugs found via E2E and all fixed. Strategic question settled: web flow is sufficient, no app needed.**

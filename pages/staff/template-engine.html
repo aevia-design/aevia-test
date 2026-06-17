@@ -6,6 +6,7 @@
   <title>Aevia — Template Engine (Staff)</title>
   <script src="../../assets/Template_Scribble/scribble-data.js"></script>
   <script src="../../assets/Template_Wander/wander-data.js"></script>
+  <script src="../../assets/Template_Newborn/newborn-data.js"></script>
   <script src="../../assets/js/photo-utils.js"></script>
   <script src="../../assets/js/book-completeness.js"></script>
   <script src="../../assets/js/map-render.js"></script>
@@ -93,6 +94,26 @@
       font-family: 'Cormorant Garamond';
       src: url('../../assets/fonts/CormorantGaramond-Bold.ttf') format('truetype');
       font-weight: 700; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Twinkle Star';
+      src: url('../../assets/fonts/TwinkleStar-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Baskervville';
+      src: url('../../assets/fonts/Baskervville-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Baskervville';
+      src: url('../../assets/fonts/Baskervville-Italic.ttf') format('truetype');
+      font-weight: 400; font-style: italic; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Baskervville';
+      src: url('../../assets/fonts/Baskervville-MediumItalic.ttf') format('truetype');
+      font-weight: 500; font-style: italic; font-display: swap;
     }
     :root {
       --bg:        #fafaf8;
@@ -805,6 +826,7 @@
     <select class="config-select" id="template-select" title="Template (local testing)">
       <option value="Scribble">Scribble</option>
       <option value="Wander">Wander</option>
+      <option value="Newborn">Newborn</option>
     </select>
     <button class="config-export-btn" id="export-state-btn">Export State</button>
     <button class="config-upload-btn" id="upload-btn">+ Add Photos</button>
@@ -853,6 +875,18 @@
     <button class="special-upload-btn" data-fp="FP5" data-max="2">+ Upload artwork</button>
     <div class="special-thumbs" id="special-thumbs-FP5"></div>
     <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP5" />
+  </div>
+  <!-- Newborn Labour spread: 2 photos (left+right) + zodiac select. Local-tester
+       scaffolding to mimic the order flow before the Newborn order form (Stage 4). -->
+  <div class="special-zone" id="special-zone-FPlabour" style="display:none;">
+    <span class="special-zone-label">Labour — 2 photos (1st → left, 2nd → right)</span>
+    <button class="special-upload-btn" data-fp="FPlabour" data-max="2">+ Upload 2 photos</button>
+    <div class="special-thumbs" id="special-thumbs-FPlabour"></div>
+    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden multiple data-fp-input="FPlabour" />
+  </div>
+  <div class="special-zone" id="special-zone-zodiac" style="display:none;">
+    <span class="special-zone-label">Zodiac</span>
+    <select class="spread-type-select" id="zodiac-select" title="Zodiac sign (Labour-right overlay)"></select>
   </div>
 </div>
 
@@ -1087,6 +1121,7 @@
   const TEMPLATES = {
     scribble: { data: () => window.SCRIBBLE_DATA, svgBase: '../../assets/Template_Scribble/Spreads/' },
     wander:   { data: () => window.WANDER_DATA,   svgBase: '../../assets/Template_Wander/' },
+    newborn:  { data: () => window.NEWBORN_DATA,  svgBase: '../../assets/Template_Newborn/' },
   };
 
   let _activeTemplateData = window.SCRIBBLE_DATA; // default
@@ -1104,6 +1139,18 @@
     _activeTemplateData = t.data();
     _activeTemplateKey  = useKey;
     SVG_BASE = t.svgBase;
+  }
+
+  // Fresh per-template special-photo buckets. Always includes the Scribble base
+  // keys (back-compat) plus a bucket for every functional spread of the ACTIVE
+  // template that takes a photo upload (e.g. Newborn's FPlabour). Keyed by spreadId.
+  function freshSpecialPhotos() {
+    const o = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
+    const data = getActiveTemplateData();
+    Object.values((data && data.spreads) || {}).forEach(s => {
+      if (s.type === 'functional' && s.orderFormPhoto && o[s.id] === undefined) o[s.id] = [];
+    });
+    return o;
   }
 
   /* ── TYPOGRAPHIC HELPERS ── */
@@ -1327,12 +1374,23 @@
       }
     }
 
-    // Special photos: one filename per key (max 1 per key), except FP5 which stores [left, right]
+    // Special photos: keys whose slots draw from a PER-SIDE pool ('artwork' or 'labour')
+    // store an array [leftPhoto, rightPhoto]; single-photo keys (cover/FP1/FP3/FP4) store
+    // one filename. Detect per-side keys from the active template so a new per-side pool
+    // (e.g. Newborn's FPlabour after Scribble's FP5) doesn't silently collapse to one photo
+    // and lose the second page — the recurring export bug. Mirrored in export-pdf.js.
+    const _spreads = (getActiveTemplateData() || {}).spreads || {};
+    const _usesPerSidePool = (node) => {
+      if (!node || typeof node !== 'object') return false;
+      if (Array.isArray(node.slots) && node.slots.some(s => s.pool === 'artwork' || s.pool === 'labour')) return true;
+      return Object.values(node).some(v => v && typeof v === 'object' && _usesPerSidePool(v));
+    };
+    const perSideKeys = new Set(Object.keys(_spreads).filter(k => _usesPerSidePool(_spreads[k])));
     const specialPhotos = {};
     for (const [key, arr] of Object.entries(window.specialPhotos || {})) {
       const names = arr.filter(Boolean).map(p => p.name || null);
       if (!names.length) continue;
-      if (key === 'FP5') {
+      if (key === 'FP5' || perSideKeys.has(key)) {
         specialPhotos[key] = names; // array: [leftPhoto, rightPhoto]
       } else {
         specialPhotos[key] = names[0]; // cover/FP1/FP3/FP4 have max 1
@@ -1362,6 +1420,9 @@
       // Wander FP1 Travel-map selection (region + countries). The PDF draws the
       // region SVG + pins from this; null/absent for non-map templates.
       mapSelection: window._wanderMap || null,
+      // Newborn Labour-right zodiac sign. The PDF resolves the matching
+      // constellation overlay SVG from this; null/absent for non-zodiac templates.
+      zodiacSign: window._newbornZodiac || null,
     };
 
     // Check if in Order mode (staff tool with loaded order)
@@ -1678,6 +1739,36 @@
       slot.className = 'photo-slot';
       slot.style.cssText = `left:${slotL}px;top:${slotT}px;width:${slotW}px;height:${slotH}px;z-index:1;`;
 
+      // Custom photo silhouette (data-driven clip, generalises Scribble's heart but
+      // for a BOUNDED slot). The path lives in cover-SVG space (clipDef.pxPerMm,
+      // trim origin). Both the slot's canvas-px left/top and a path scaled by
+      // SCALE/pxPerMm share the same trim-origin*SCALE frame, so to express the
+      // path in the slot's LOCAL px space we scale by f and translate by -slotL/-slotT.
+      const clipDef = slotDef.clipShape && coverDef.clipShapes
+        ? coverDef.clipShapes[slotDef.clipShape] : null;
+      if (clipDef) {
+        const f = SCALE / clipDef.pxPerMm;
+        const clipId = 'coverClip-' + slotDef.clipShape;
+        const ns = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
+        svg.style.cssText = 'position:absolute;width:0;height:0;';
+        const defs = document.createElementNS(ns, 'defs');
+        const cp = document.createElementNS(ns, 'clipPath');
+        cp.setAttribute('id', clipId);
+        cp.setAttribute('clipPathUnits', 'userSpaceOnUse');
+        const p = document.createElementNS(ns, 'path');
+        p.setAttribute('transform', `translate(${(-slotL).toFixed(2)},${(-slotT).toFixed(2)}) scale(${f.toFixed(5)})`);
+        p.setAttribute('d', clipDef.d);
+        cp.appendChild(p); defs.appendChild(cp); svg.appendChild(defs);
+        slot.appendChild(svg);
+        slot.style.clipPath = `url(#${clipId})`;
+        // The cover SVG's photo opening (the "Image" group) is transparent, with the
+        // decorative "Illustrations" (butterflies) drawn AFTER it. So the clipped photo
+        // stays BELOW the SVG (default z-index 1) and shows through the opening, while
+        // the butterflies layer on top of it — matching the artwork's intended layering.
+      }
+
       const coverPhoto = (window.specialPhotos.cover || [])[0];
       if (coverPhoto) {
         const img = document.createElement('img');
@@ -1703,12 +1794,20 @@
       // Merge CSV defaults with any user overrides
       const ov       = window.coverCaptionStyles[capDef.key] || {};
       const font     = ov.font    || capDef.font;
-      const weight   = ov.weight !== undefined ? ov.weight : 400;
-      const italic   = ov.italic  || false;
+      // Default weight/italic from the caption's own CSV styling (capDef), not a
+      // hardcoded 400/non-italic — so e.g. the Newborn Baskervville subtitle is
+      // italic 500 by default. User overrides (ov.*) still win.
+      const weight   = ov.weight !== undefined ? ov.weight : (capDef.weight !== undefined ? capDef.weight : 400);
+      const italic   = ov.italic !== undefined ? ov.italic : (capDef.italic || false);
       const sizePt   = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
       const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
       const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
       const align     = ov.align !== undefined ? ov.align : (capDef.align || 'center');
+      // Caption colour from the CSV (capDef.color), with user override — previously
+      // the cover-caption CSS default (#493955) always won because color was never
+      // emitted here. Scribble's data colour matches that default (no change); Wander
+      // + Newborn now render their own CSV colour.
+      const color     = ov.color !== undefined ? ov.color : (capDef.color || '#493955');
 
       const fontSize = (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
       const lineH    = (sizePt * lineSpacing * SCALE * 25.4 / 72).toFixed(1) + 'px';
@@ -1723,9 +1822,9 @@
       let posCSS;
       if (capDef.rotate) {
         const top = capCY - lineHpx / 2;
-        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
+        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};color:${color};z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
       } else {
-        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};z-index:3;transform:translateY(-50%);`;
+        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};color:${color};z-index:3;transform:translateY(-50%);`;
       }
       cap.style.cssText = posCSS;
 
@@ -1770,7 +1869,20 @@
     { label: 'EB Garamond',       value: 'EB Garamond',       styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Semi-Bold', weight: 600, italic: false }] },
     { label: 'Cormorant Garamond', value: 'Cormorant Garamond', styles: [{ label: 'Light', weight: 300, italic: false }, { label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }, { label: 'Semi-Bold', weight: 600, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
     { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }], funnyWordsOnly: true },
+    { label: 'Twinkle Star',      value: 'Twinkle Star',      styles: [{ label: 'Regular', weight: 400, italic: false }] },
+    { label: 'Baskervville',      value: 'Baskervville',      styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Medium Italic', weight: 500, italic: true }] },
   ];
+
+  // Caption-toolbar fonts scoped to the active template's fontPicker allow-list
+  // (so e.g. Newborn only offers Twinkle Star + Baskervville). funnyWordsOnly fonts
+  // stay gated separately. Falls back to all fonts if a template declares no list.
+  function templateFonts(includeFunnyWords) {
+    const allow = getActiveTemplateData()?.fontPicker;
+    return COVER_FONTS.filter(f =>
+      (!f.funnyWordsOnly || includeFunnyWords) &&
+      (!allow || allow.includes(f.value))
+    );
+  }
 
   let _tbMode       = 'cover';  // 'cover' | 'spread'
   let _tbCapDef     = null;     // coverDef.captions entry (cover mode)
@@ -1812,7 +1924,7 @@
     // Font select
     const sel = document.getElementById('tb-font');
     sel.innerHTML = '';
-    COVER_FONTS.filter(f => !f.funnyWordsOnly).forEach(f => {
+    templateFonts(false).forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.value; opt.textContent = f.label;
       if (f.value === currentFont) opt.selected = true;
@@ -1867,7 +1979,7 @@
     const isFunnyWordsPanel = capDef.font === 'FirstTimeWriting';
     const sel = document.getElementById('tb-font');
     sel.innerHTML = '';
-    COVER_FONTS.filter(f => !f.funnyWordsOnly || isFunnyWordsPanel).forEach(f => {
+    templateFonts(isFunnyWordsPanel).forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.value; opt.textContent = f.label;
       if (f.value === currentFont) opt.selected = true;
@@ -2224,9 +2336,12 @@
             break;
           }
         }
-        // Special-slot sides (e.g. FP3 left toy): no regular photos, drive variant from special photo
+        // Special-slot sides (e.g. FP3 left toy, Newborn Labour): no regular photos,
+        // drive variant from the special photo. Labour places one photo per page
+        // (left=0, right=1), so index by side; single-photo specials fall back to [0].
         if (!found) {
-          const special = (window.specialPhotos[spreadId] || [])[0];
+          const spArr = window.specialPhotos[spreadId] || [];
+          const special = spArr[side === 'left' ? 0 : 1] || spArr[0];
           if (special) dominantOrientation = special.orientation || 'horizontal';
         }
       }
@@ -2261,6 +2376,24 @@
           overlay.style.outline = '3px solid #e05252';
         };
         canvas.appendChild(overlay);
+      }
+
+      // ── Newborn zodiac overlay (Labour-right) ──
+      // The right Labour page has no fixed base SVG — its overlay IS the chosen
+      // zodiac constellation, resolved from the data's zodiac.path(orientation, sign).
+      // 'None' resolves to the empty (None) SVG. Sign comes from window._newbornZodiac.
+      if (variant.zodiacOverlay && spreadDef.zodiac) {
+        const sign  = window._newbornZodiac || 'None';
+        const zPath = spreadDef.zodiac.path(variantKey, sign);
+        if (zPath) {
+          const zImg = document.createElement('img');
+          zImg.className = 'svg-overlay';
+          zImg.src = SVG_BASE + zPath;
+          zImg.alt = '';
+          zImg.decoding = 'async';
+          zImg.onerror = () => { console.warn('Zodiac SVG failed to load:', zImg.src); };
+          canvas.appendChild(zImg);
+        }
       }
 
       // ── Wander FP1 Travel map (chunk-022) ──
@@ -2308,7 +2441,7 @@
         let photo = null;
         let isSpecialSlot = false;
         let regularPoolIdx = null;   // pool index for regular photos (null for special) — used for the placement-warning badge
-        if (slotDef.pool === 'special' || slotDef.pool === 'artwork') {
+        if (slotDef.pool === 'special' || slotDef.pool === 'artwork' || slotDef.pool === 'labour') {
           isSpecialSlot = true;
           // Record this position so checkBookComplete() doesn't count its (intentional)
           // null assignment as an empty slot. Mirrors customer-preview.html.
@@ -2319,7 +2452,8 @@
           // right = artwork 1. Each page has a single slot (slotIdx 0), so slotIdx
           // can't tell the pages apart; index by side. Other special pools (FP3/FP4,
           // one photo total) keep slotIdx.
-          const photoIdx = slotDef.pool === 'artwork' ? (side === 'left' ? 0 : 1) : slotIdx;
+          // Artwork (FP5) and Labour place one photo per PAGE → index by side.
+          const photoIdx = (slotDef.pool === 'artwork' || slotDef.pool === 'labour') ? (side === 'left' ? 0 : 1) : slotIdx;
           photo = spArr[photoIdx] || null;
         } else {
           const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
@@ -2355,6 +2489,10 @@
           img.dataset.src = photo.url;
           img.alt = photo.name;
           img.decoding = 'async';
+          // Suppress the browser's native image drag-ghost — it hijacks the slot's
+          // own dragstart, which is why slot→slot drag silently failed (only
+          // unplaced→slot worked). Mirrors the customer-preview fix (S41 bug #3).
+          img.draggable = false;
           img.onerror = () => {
             console.warn('Slot img failed to load:', photo.name, photo.url.slice(0,40));
             slotEl.style.outline = '3px solid #e05252';
@@ -2420,7 +2558,8 @@
           const ph = document.createElement('div');
           ph.className = 'slot-placeholder';
           if (isSpecialSlot) {
-            const labels = { FP3: 'Upload toy photo above', FP4: 'Upload steps photo above', FP5: 'Upload artwork above' };
+            const labels = { FP3: 'Upload toy photo above', FP4: 'Upload steps photo above', FP5: 'Upload artwork above',
+                             FPlabour: side === 'right' ? 'Upload the 2nd Labour photo above' : 'Upload the 1st Labour photo above' };
             ph.textContent = labels[spreadId] || 'Upload special photo above';
             ph.style.fontSize = '11px';
             ph.style.borderStyle = 'dashed';
@@ -2646,16 +2785,23 @@
         // Typography: CSV defaults, then any spreadCaptionStyles override for this textPanel.
         const _tpOv     = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.['textPanel'] || {};
         const _tpFont   = _tpOv.font          !== undefined ? _tpOv.font          : tpCap.font;
+        const _tpWeight = _tpOv.weight        !== undefined ? _tpOv.weight        : (tpCap.style === 'bold' ? 700 : tpCap.style === 'semibold' ? 600 : tpCap.style === 'medium' ? 500 : 400);
+        const _tpItalic = _tpOv.italic        !== undefined ? _tpOv.italic        : (tpCap.style === 'italic');
         const _tpSizePt = _tpOv.sizePt        !== undefined ? _tpOv.sizePt        : tpCap.sizePt;
         const _tpLineS  = _tpOv.lineSpacing   !== undefined ? _tpOv.lineSpacing   : tpCap.lineSpacing;
         const _tpLetS   = _tpOv.letterSpacing !== undefined ? _tpOv.letterSpacing : tpCap.letterSpacing;
         if (_tpFont)                         panelEl.style.fontFamily    = `'${_tpFont}', var(--sans)`;
         if (_tpSizePt) {
-          // funnyWords panel is scaled to the canvas (px); regular text panels use pt
-          panelEl.style.fontSize = isFunnyWords ? (_tpSizePt * SCALE) + 'px' : _tpSizePt + 'pt';
+          // funnyWords panel scales to the canvas (px). Regular text panels convert pt→canvas px
+          // (sizePt * SCALE * 25.4/72) to match the toolbar live-apply, the per-photo captions,
+          // and the PDF physical size. Raw 'pt' here renders ~26% too big (canvas is 3px/mm,
+          // not 96px/inch) and mismatched the toolbar — the staff/customer size discrepancy.
+          panelEl.style.fontSize = isFunnyWords ? (_tpSizePt * SCALE) + 'px' : (_tpSizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
         }
         if (_tpLineS !== undefined)           panelEl.style.lineHeight    = _tpLineS;
         if (_tpLetS  !== undefined)           panelEl.style.letterSpacing = _tpLetS + 'em';
+        panelEl.style.fontWeight = _tpWeight;
+        panelEl.style.fontStyle  = _tpItalic ? 'italic' : 'normal';
         // Line breaks handled via <br> tags (innerHTML round-trip) — pre-line not needed
 
         const formatFunnyWords = (text) => {
@@ -2774,9 +2920,16 @@
   ═══════════════════════════════════════════ */
 
   function buildBookSequence(pageCount, selectedFPs) {
+    // A functional page may declare replacesFirstSpread: when selected it OPENS the
+    // book in place of SP0 (e.g. Newborn's Intro) instead of being inserted in the
+    // body. Falls back to SP0 when no such page is selected (other templates).
+    const _data = getActiveTemplateData();
+    const firstOverride = selectedFPs.find(id => _data?.spreads?.[id]?.replacesFirstSpread);
+    const bodyFPs = selectedFPs.filter(id => id !== firstOverride);
+
     const totalSpreads  = pageCount / 2;
     const remaining     = totalSpreads - 1;
-    const standardCount = remaining - selectedFPs.length;
+    const standardCount = remaining - bodyFPs.length;
 
     // Cycle SP1–SP6 for however many standard slots are needed
     const stdIds = ['SP1','SP2','SP3','SP4','SP5','SP6'];
@@ -2787,16 +2940,16 @@
 
     // Calculate insertion positions for FPs (evenly spaced), then insert right-to-left
     // so earlier insertions don't shift later positions.
-    const fpCount = selectedFPs.length;
-    const positions = selectedFPs.map((_, i) =>
+    const fpCount = bodyFPs.length;
+    const positions = bodyFPs.map((_, i) =>
       Math.round((i + 1) * (standards.length + 1) / (fpCount + 1))
     );
     // Insert from last position to first to avoid index shifting
     for (let i = fpCount - 1; i >= 0; i--) {
-      standards.splice(positions[i], 0, selectedFPs[i]);
+      standards.splice(positions[i], 0, bodyFPs[i]);
     }
 
-    return ['SP0', ...standards];
+    return [firstOverride || 'SP0', ...standards];
   }
 
   /* ═══════════════════════════════════════════
@@ -3441,10 +3594,65 @@
       document.getElementById('special-zone-' + fp).style.display = checked.has(fp) ? 'flex' : 'none';
     });
     document.getElementById('special-zone-cover').style.display = hasCoverPhoto ? 'flex' : 'none';
+    // Newborn Labour: photo zone + zodiac selector, shown when the Labour page is on.
+    const hasLabour = checked.has('FPlabour');
+    document.getElementById('special-zone-FPlabour').style.display = hasLabour ? 'flex' : 'none';
+    document.getElementById('special-zone-zodiac').style.display = hasLabour ? 'flex' : 'none';
+    if (hasLabour) populateZodiacSelect();
     // Panel is needed if the cover photo zone or any FP zone is showing.
-    const needPanel = hasCoverPhoto || checked.has('FP1') || checked.has('FP3') || checked.has('FP4') || checked.has('FP5');
+    const needPanel = hasCoverPhoto || checked.has('FP1') || checked.has('FP3') || checked.has('FP4') || checked.has('FP5') || hasLabour;
     panel.classList.toggle('visible', needPanel);
     document.documentElement.style.setProperty('--special-h', needPanel ? '68px' : '0px');
+  }
+
+  // Newborn zodiac selector (local tester): populate from the active template's
+  // zodiac signs and re-render on change, mimicking the order form's pick.
+  function populateZodiacSelect() {
+    const sel = document.getElementById('zodiac-select');
+    const signs = getActiveTemplateData()?.spreads?.FPlabour?.zodiac?.signs;
+    if (!sel || !signs) return;
+    if (sel.options.length === signs.length) return; // already populated
+    sel.innerHTML = '';
+    signs.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
+    sel.value = window._newbornZodiac || 'None';
+  }
+  document.getElementById('zodiac-select').addEventListener('change', function () {
+    window._newbornZodiac = this.value;
+    if (window.photoPool.length) { renderBook(); applyZodiacDefaultCaptions(); }
+  });
+
+  // Fill the AI-side caption of any spread with a zodiac.copy map from the chosen
+  // sign (window._newbornZodiac). Used on fresh order load (loadOrderIntoEngine) and
+  // by the local-tester zodiac selector. Multi-line copy → <br> (contenteditable HTML).
+  // Reads the live sequence from window._bookSequence; safe no-op for other templates.
+  function applyZodiacDefaultCaptions() {
+    const seq = window._bookSequence || [];
+    const spreads = getActiveTemplateData()?.spreads || {};
+    Object.entries(spreads).forEach(([fpKey, spreadDef]) => {
+      const copy = spreadDef?.zodiac?.copy;
+      if (!copy) return;
+      const spreadIndex = seq.indexOf(fpKey);
+      if (spreadIndex === -1) return;
+      const sign  = window._newbornZodiac || 'None';
+      const plain = copy[sign] || copy['None'] || '';
+      if (!plain) return;
+      const aiSide = ['left', 'right'].find(side => {
+        const pd = spreadDef.pages?.[side];
+        if (!pd) return false;
+        const v = pd.H || pd.default || Object.values(pd)[0] || {};
+        return (v.slots || []).some(s => s.caption?.allowed && s.caption.aiGenerated);
+      });
+      if (!aiSide) return;
+      const el = document.querySelector(
+        `.slot-caption[data-spread-index="${spreadIndex}"][data-side="${aiSide}"]:not(.fp-text-panel)`
+      );
+      if (!el) return;
+      const html = plain.replace(/\n/g, '<br>');
+      el.innerHTML = html;
+      if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+      if (!window.bookCaptions[spreadIndex][aiSide]) window.bookCaptions[spreadIndex][aiSide] = {};
+      window.bookCaptions[spreadIndex][aiSide][Number(el.dataset.slotIdx)] = html;
+    });
   }
 
   /* ── Photo count hint ── */
@@ -3528,7 +3736,7 @@
     setActiveTemplate(e.target.value);
     // Reset per-template state so the previous template's special photos/captions
     // don't leak into the new render.
-    window.specialPhotos = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
+    window.specialPhotos = freshSpecialPhotos();
     window._orderOnlyFPs = []; // clear order-only map pages when switching template
     buildLocalTemplateUI();
     updateSpecialPanel();
@@ -3576,6 +3784,7 @@
     FP3:   'Fav. toy',
     FP4:   'First steps',
     FP5:   'Art gallery',
+    FPlabour: 'Labour',
   };
 
   function renderSpecialSidebar() {
@@ -3632,6 +3841,7 @@
       for (const file of toProcess) {
         const result = await processOneFile(file);
         if (result) {
+          if (!window.specialPhotos[fp]) window.specialPhotos[fp] = [];
           window.specialPhotos[fp].push(result);
         }
       }
@@ -3809,7 +4019,7 @@
 
     // FP-specific texts
     const fpTexts  = order.fpTexts  || {};
-    const fpLabels = { FP1: 'Birthday wishes', FP2: 'Funny words', FP3: 'Favourite toy', FP4: 'First steps', FP5: 'Art gallery captions' };
+    const fpLabels = { FP1: 'Birthday wishes', FP2: 'Funny words', FP3: 'Favourite toy', FP4: 'First steps', FP5: 'Art gallery captions', FPINTRO: 'Intro details', FPLABOUR: 'Labour caption', ZODIAC: 'Star sign' };
     Object.entries(fpTexts).forEach(([key, val]) => {
       const label = fpLabels[key.toUpperCase()] || key;
       let display;
@@ -3829,13 +4039,25 @@
     panel.classList.add('visible');
   }
 
+  // Resolve an fpTexts key to the active template's actual spread id,
+  // case-insensitively. Scribble/Wander keys map straight ('fp1'→'FP1');
+  // Newborn's are mixed-case ('fplabour'→'FPlabour','fpintro'→'FPintro').
+  function resolveFpKey(slug) {
+    const spreads = getActiveTemplateData()?.spreads || {};
+    const lower = String(slug || '').toLowerCase();
+    return Object.keys(spreads).find(k => k.toLowerCase() === lower) || String(slug || '').toUpperCase();
+  }
+
   async function loadOrderIntoEngine(order) {
     // 1. Reset engine state
     window.photoPool        = [];
     window.bookAssignments  = {};
     window.bookCaptions     = {};
     window.captionState     = {};
-    window.specialPhotos    = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
+    window.specialPhotos    = freshSpecialPhotos();
+    // Newborn zodiac selection (Labour-right overlay). Set from the order's
+    // zodiac field; read by renderSpread when a variant carries zodiacOverlay.
+    window._newbornZodiac   = order.zodiacSign || (order.fpTexts && order.fpTexts.zodiac) || 'None';
 
     // Wander FP1 map selection (region + countries). fpTexts.fp1 is an OBJECT
     // {region, countries, itinerary} — the map render (renderBook) reads region
@@ -3908,8 +4130,11 @@
         window.specialPhotos.cover.push(result);
         renderSpecialThumbs('cover');
       } else {
-        const fpKey = t.slug.toUpperCase();
-        if (window.specialPhotos[fpKey] !== undefined) {
+        // Match the order's special slug to a specialPhotos bucket case-insensitively:
+        // Scribble slugs are 'fp1'→'FP1'; Newborn's labour slug 'fplabour'→'FPlabour'.
+        const fpKey = Object.keys(window.specialPhotos)
+          .find(k => k.toLowerCase() === t.slug.toLowerCase());
+        if (fpKey) {
           window.specialPhotos[fpKey].push(result);
           renderSpecialThumbs(fpKey);
         }
@@ -4003,7 +4228,7 @@
     const fpTexts = order.fpTexts || {};
     const seq     = window._bookSequence || [];
     Object.entries(fpTexts).forEach(([slug, value]) => {
-      const fpKey = slug.toUpperCase(); // 'fp1' → 'FP1'
+      const fpKey = resolveFpKey(slug); // 'fp1'→'FP1', 'fplabour'→'FPlabour'
       const spreadIndex = seq.indexOf(fpKey);
       if (spreadIndex === -1) return;
 
@@ -4031,7 +4256,7 @@
 
     // 7b. Pre-fill slot captions for FP spreads without a textPanel (FP3, FP4, FP5)
     Object.entries(fpTexts).forEach(([slug, value]) => {
-      const fpKey     = slug.toUpperCase();
+      const fpKey     = resolveFpKey(slug);
       const spreadDef = getActiveTemplateData()?.spreads?.[fpKey];
       if (!spreadDef?.orderFormMeta) return;
 
@@ -4062,11 +4287,22 @@
           window.bookCaptions[spreadIndex][capSide][Number(el.dataset.slotIdx)] = text;
         });
       } else {
-        // Single-caption FP (FP3 Favourite toy, FP4 First steps): fill first allowed slot
+        // Single-caption FP (FP3 Favourite toy, FP4 First steps, Newborn Labour):
+        // fill the customer's caption slot. Target a side whose caption is NOT
+        // AI-generated, so the customer's text never clobbers Labour's AI-written
+        // right page. FP3/FP4 resolve to 'left' as before; falls back to the first
+        // allowed slot if no side qualifies.
         const text = (values[0] || '').trim();
         if (!text) return;
+        const custSide = ['left', 'right'].find(side => {
+          const pd = spreadDef.pages?.[side];
+          if (!pd) return false;
+          const v = pd.H || pd.default || Object.values(pd)[0] || {};
+          return (v.slots || []).some(s => s.caption?.allowed && !s.caption.aiGenerated);
+        }) || '';
+        const sideSel = custSide ? `[data-side="${custSide}"]` : '';
         const el = document.querySelector(
-          `.slot-caption[data-spread-index="${spreadIndex}"]:not(.fp-text-panel)`
+          `.slot-caption[data-spread-index="${spreadIndex}"]${sideSel}:not(.fp-text-panel)`
         );
         if (!el) return;
         el.innerHTML = text;
@@ -4076,6 +4312,11 @@
         window.bookCaptions[spreadIndex][capSide][Number(el.dataset.slotIdx)] = text;
       }
     });
+
+    // 7c. Newborn Labour right page: default the AI-side caption from the chosen
+    // zodiac sign. Fresh-order only — the `restoring` guard above returns early on
+    // saved state, so staff edits to this caption persist and aren't re-clobbered.
+    applyZodiacDefaultCaptions();
 
     // 8. Pre-fill cover captions from customer order form input
     if (order.coverCaptions && Object.keys(order.coverCaptions).length) {

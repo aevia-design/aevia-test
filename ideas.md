@@ -58,3 +58,39 @@ Captured ideas, most recent at the bottom. Status: Captured | Exploring | Commit
 **Status:** Parked — revisit after ~6–7 templates added (column set stabilises).
 
 ---
+
+## 2026-06-15 — Step-based order form UX (all templates)
+
+**Context:** Raised by Evgeny during the Newborn build (S43). Today the order form is one long scrollable screen: cover photo + captions, then special pages, then the main photo pool, all stacked. It works but feels like "a long ass scrollable list," not premium.
+
+**Idea:** Break the order form into discrete **steps** with progress + checkmarks, e.g. **Step 1 — Your cover** (photo + captions) → ✓ → **Step 2 — Your special pages** → ✓ → **Step 3 — Your photos** (main pool) → submit. Cleaner, more guided, more premium-feeling; lets us validate each step before advancing.
+
+**Scope note:** Applies to ALL templates, not just Newborn — it's a refactor of the shared `order.html` flow. Should be designed once and applied across Scribble/Wander/Newborn/etc. Not part of the Newborn build; a standalone UX task.
+
+**Related to:** `pages/order.html` (template-aware order flow); the optional special-page preview idea (would slot naturally into Step 2).
+
+**Status:** Captured — standalone task, schedule after Newborn lands.
+
+## 2026-06-16 — Engine-driven mockup imagery for the website (placeholders → product shots)
+
+**Context:** Raised by Evgeny during the Newborn build (S46). The site has no real product imagery (no professional shoots or printed books yet) — product pages show grey boxes with SVG glyphs, and the special-page add-ons on the product page have a tiny icon that pretends to be a preview but opens nothing (and clicking it accidentally toggles selection). Evgeny wants the site to look like a real product *before* launch, using our OWN rendering engine to generate mockups from sample (Aevia) photos.
+
+**Core concept:** Reuse the book-rendering pipeline we already built to generate marketing imagery. Two distinct image products on the **product page**:
+- **① Special-spread previews** — a clickable preview of each special spread (Intro, Labour, Birthday, Travel-map…) filled with Aevia sample photos, so the customer sees the *flavour* of the page before adding it. The preview opening must be **decoupled from selecting the add-on** (today the whole card toggles on click).
+- **② General gallery placeholders** — 3–4 mockups across the product page: **cover front, a few open-book spreads, cover back** — so the page reads like a real product.
+
+**Key insights / feasibility:**
+- **Highly feasible — two existing pipelines already do ~90%.** (a) `scripts/export-pdf.js` already composites every page to a `sharp` PNG before assembling the PDF (tap those buffers → spread images). (b) The staff engine is a pixel-faithful browser render, and we already drive it via Playwright in `qa/` (screenshot each spread row → WYSIWYG mockups). Flat spread renders are close to free.
+- **Two image *types*, not one job:** flat spread/page renders (engine/PDF do natively — easy, on-brand editorial) vs a **3D "book on a table" hero** (needs an extra compositing step: a mockup scene / smart-object we drop flat renders into). ② ("cover front/back") really only reads as a **3D book object**; ① works fine flat but Evgeny prefers 3D-premium.
+- **Strategic upside beyond placeholders:** because it's code-generated, a layout tweak → re-run a script → ALL marketing images update (product pages, collection cards, special-page previews, OG/social). Self-updating; hand-shot photography can't do that.
+- **Real prerequisite = a curated sample-content kit** (a few good sample photos per template + canned captions, reused consistently). Garbage sample photos → unconvincing mockups. This is the actual gating work, not the rendering.
+
+**Decisions (Evgeny, S46):**
+- **Go 3D** for the premium look — but it needs a **proper brief** (mockup-scene source: pure-code vs smart-object/mockup tool; sample-content kit; which spreads; lightbox interaction; applies to ALL templates).
+- **Sequencing:** finish + validate the **Newborn E2E first**, then pick this up as its own focused effort.
+
+**Related to:** the special-page add-on UI on every product page (`pages/scribble.html`/`wander.html`/`newborn.html`); [[Step-based order form UX]] (③ order-phase preview WITH the customer's own data — à la Wander's map page — would slot into Step 2; documented deferred in `docs/briefs/newborn-template.md`); `scripts/export-pdf.js` + `qa/` Playwright (the two render pipelines); `project_qa_scripts`.
+
+**Status:** Parked — start after Newborn E2E; needs a proper brief (3D mockup scene + sample-content kit).
+
+---
