@@ -623,8 +623,21 @@ function goToStep(idx) {
     const panel = document.getElementById(STEPS[idx].panelId);
     if (panel) panel.style.display = 'block';
   }
+  // Region-map previews must be (re)drawn once their step is visible, so they
+  // size to the real panel width rather than 0 (hidden panels have no width).
+  if (STEPS[idx].id === 'special') refreshCountryMaps();
   renderStepper();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Re-render any Wander country-map previews from current state. Called when the
+// Special step is shown so maps drawn while the panel was hidden get correct size.
+function refreshCountryMaps() {
+  Object.keys(window._fpCountries || {}).forEach(slug => {
+    if (!document.getElementById(`region-map-${slug}`)) return;
+    renderCountryTags(slug);
+    renderRegionMap(slug);
+  });
 }
 
 // Validate the current step and, if it passes, advance to the next.
@@ -1118,17 +1131,30 @@ function renderCountrySelect(slug, meta) {
   return `
     <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Countries visited</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">Select every country on this trip. They must all be in the same region — the map covers one region at a time.</div>
-    <select id="country-add-${slug}" onchange="addCountry('${slug}', this.value); this.value='';" style="${inputStyle}width:100%;">${opts}</select>
+    <select id="country-add-${slug}" autocomplete="off"
+      onpointerdown="this.dataset.touched='1'" onkeydown="this.dataset.touched='1'"
+      onchange="onCountryPick('${slug}', this)" style="${inputStyle}width:100%;">${opts}</select>
     <div id="country-tags-${slug}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;"></div>
     <div id="country-err-${slug}" style="display:none;font-size:12px;color:#b4413c;margin-top:8px;line-height:1.5;"></div>
-    <div id="region-map-${slug}" style="margin-top:16px;"></div>
     <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin:22px 0 6px;">${meta.textPrompt || 'Your route'}</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${meta.hint || 'List your route one stop per line — staff will set the final styling.'}</div>
     <div id="itin-list-${slug}">${itinRows}</div>
     <button type="button" id="itin-add-btn-${slug}" onclick="addItinRow('${slug}',7)"
       style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;font-family:var(--sans);color:var(--muted);cursor:pointer;margin-top:2px;">+ Add a line</button>
     <div style="font-size:12px;color:var(--muted);margin-top:8px;">Up to 7 lines.</div>
+    <div id="region-map-${slug}" style="margin-top:22px;"></div>
   `;
+}
+
+// Country-select change handler. Chrome ignores autocomplete="off" on
+// country-shaped fields and autofills the user's profile country (e.g. Austria
+// for a Vienna user), firing a change with no user gesture. We only accept a
+// change once the user has actually interacted with this select (pointer/key),
+// so the autofilled value is rejected instead of being added as a stop.
+function onCountryPick(slug, sel) {
+  if (!sel.dataset.touched) { sel.value = ''; return; }
+  addCountry(slug, sel.value);
+  sel.value = '';
 }
 
 function addCountry(slug, name) {
@@ -1205,7 +1231,10 @@ function renderRegionMap(slug) {
   // dropped into the engine's text-panel position) on the right. Mirrors how the
   // staff engine renders this spread; only the final staff typesetting is missing.
   const ASSET_BASE = '../assets/Template_Wander/';
-  const colW  = Math.min(el.clientWidth || 360, 520);
+  // clientWidth is 0 when the step panel is hidden (the map can be drawn before the
+  // Special step is shown). Fall back to a sensible width; refreshCountryMaps()
+  // re-renders at the true width once the step becomes visible.
+  const colW  = Math.min(el.clientWidth || 480, 520);
   const Wp    = Math.max(140, Math.floor((colW - 10) / 2)); // each page square, 10px gutter
   const scale = Wp / (data.pageSize || 200);
   const bleed = data.bleed != null ? data.bleed : 3;
@@ -1238,14 +1267,14 @@ function renderRegionMap(slug) {
 
   el.innerHTML = `
     <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Spread preview · ${label}</div>
-    <div style="display:flex;gap:10px;align-items:flex-start;">
+    <div id="spread-row-${slug}" onclick="openSpreadZoom('${slug}')" title="Click to enlarge" style="display:inline-flex;gap:10px;align-items:flex-start;cursor:zoom-in;">
       <div id="map-canvas-${slug}" style="position:relative;width:${Wp}px;height:${Wp}px;border:1px solid var(--border);border-radius:6px 0 0 6px;background:#f2ede3;overflow:hidden;flex:0 0 auto;"></div>
       <div style="position:relative;width:${Wp}px;height:${Wp}px;border:1px solid var(--border);border-radius:0 6px 6px 0;background:#f2ede3;overflow:hidden;flex:0 0 auto;">
         ${rightBg}
         <div id="itin-text-${slug}" style="${panelStyle}">${itinTextHtml}</div>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">Rough preview — staff will format the final layout before you approve.</div>`;
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">Rough preview — click to enlarge. Staff will format the final layout before you approve.</div>`;
 
   const canvas = document.getElementById(`map-canvas-${slug}`);
   // Base the scale on the canvas's true INNER width (clientWidth excludes the 1px
@@ -2352,6 +2381,31 @@ function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
 }
 
+// Enlarge the Wander spread preview. Clones the rendered two-page row (map +
+// itinerary page, with pins + text) and scales it up to fit the viewport — no
+// re-render needed, so the zoomed view is pixel-identical to the inline preview.
+function openSpreadZoom(slug) {
+  const row = document.getElementById(`spread-row-${slug}`);
+  if (!row) return;
+  const natW = row.offsetWidth, natH = row.offsetHeight;
+  if (!natW || !natH) return;
+  const zoom = document.getElementById('spread-zoom');
+  zoom.innerHTML = '';
+  const clone = row.cloneNode(true);
+  clone.style.cursor = 'default';
+  clone.removeAttribute('onclick');
+  zoom.appendChild(clone);
+  zoom.style.width  = natW + 'px';
+  zoom.style.height = natH + 'px';
+  const scale = Math.min((window.innerWidth * 0.92) / natW, (window.innerHeight * 0.86) / natH);
+  zoom.style.transform = `scale(${scale})`;
+  document.getElementById('spread-lightbox').classList.add('open');
+}
+function closeSpreadZoom() {
+  document.getElementById('spread-lightbox').classList.remove('open');
+  document.getElementById('spread-zoom').innerHTML = '';
+}
+
 // ── Pre-submit confirmation ───────────────────────────────────────
 // Builds the list of soft issues (wrong-orientation cover, low-res photos)
 // and asks the customer to confirm. Returns a Promise<boolean>: true =
@@ -2399,6 +2453,12 @@ function preSubmitConfirm() {
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <span class="lightbox-close" onclick="closeLightbox()">×</span>
   <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()" />
+</div>
+
+<!-- Spread-preview zoom (Wander travel map) — holds a scaled clone of the rendered spread -->
+<div class="lightbox" id="spread-lightbox" onclick="closeSpreadZoom()">
+  <span class="lightbox-close" onclick="closeSpreadZoom()">×</span>
+  <div id="spread-zoom" onclick="event.stopPropagation()" style="transform-origin:center center;"></div>
 </div>
 
 <!-- Pre-submit confirmation (orientation / low-res) -->
