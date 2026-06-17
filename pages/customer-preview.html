@@ -799,11 +799,11 @@
   // Shown when a customer tries to move/remove/replace a Story-page photo (fixed at order time).
   const SPECIAL_LOCK_MSG = 'This photo was chosen for your Story page when you ordered, so it can’t be moved here. Contact us if you’d like to change it.';
   window.spreadCaptionStyles = {};
-  window.heartCrop          = {};   // { photoName: { x, y } } — staff-set object-position % for the heart slot (read-only here)
+  window.heartCrop          = {};   // { photoName: { x, y } } — staff-set object-position % crop offset for any slot, heart or regular (#74); read-only here
   window.orderData          = null;
 
-  // Heart-slot crop offset, keyed by photo name. Read-only in the customer engine —
-  // the crop is part of our layout. Mirrors the staff engine's getHeartCrop.
+  // Crop offset keyed by photo name (heart slot + regular slots, #74). Read-only in the
+  // customer engine — the crop is part of our layout. Mirrors the staff engine's getHeartCrop.
   function getHeartCrop(name) {
     const c = window.heartCrop[name];
     return { x: (c && typeof c.x === 'number') ? c.x : 50,
@@ -1119,10 +1119,13 @@
       }
     }
 
-    // Pool photos → photoPool only (indices match staffBookAssignments)
+    // Pool photos → photoPool only (indices match staffBookAssignments).
+    // Name by BASENAME (not the full GCS path) so photo.name matches the staff engine's
+    // storedBasename(...) — the crop store (#74) and heart crop (#55) are keyed by name,
+    // and the raw path mismatch silently dropped staff-set crops on the customer side.
     const poolNames  = storedNames?.pool || [];
     const poolPhotos = await Promise.all((signedUrls.pool || []).map((url, i) =>
-      fetchPhoto(url, poolNames[i] || `pool-${i}`)
+      fetchPhoto(url, _baseName(poolNames[i]) || `pool-${i}`)
     ));
     window.photoPool = poolPhotos.filter(Boolean);
   }
@@ -1821,9 +1824,10 @@
           // dragstart with a native image drag (no JSON payload), so slot→slot
           // moves silently fail. Disable it so the slotEl drag handler fires.
           img.draggable = false;
-          // Heart-mask slot: apply the staff-set crop offset (read-only — crop is part of
-          // our layout, not customer-editable). Mirrors the staff engine's render-apply.
-          if (slotDef.heartClip) {
+          // Apply the staff-set crop offset (object-position %) to every placed photo —
+          // heart slot AND regular slots (#74). Read-only: crop is part of our layout,
+          // not customer-editable. Mirrors the staff engine's render-apply. Default 50/50.
+          {
             const hc = getHeartCrop(photo.name);
             img.style.objectPosition = hc.x + '% ' + hc.y + '%';
           }

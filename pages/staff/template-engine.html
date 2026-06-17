@@ -668,11 +668,37 @@
       image-rendering: -webkit-optimize-contrast;
       image-rendering: smooth;
     }
-    .photo-slot img.slot-photo.heart-dragging {
+    .photo-slot img.slot-photo.crop-dragging {
       cursor: grabbing;
       user-select: none;
       -webkit-user-drag: none;
     }
+    /* Reposition handle (#74): small affordance on hover over a placed regular slot.
+       Click it to enter reposition-mode (drag the photo inside its frame). */
+    .photo-slot .reposition-handle {
+      position: absolute;
+      top: 5px; left: 5px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(30, 30, 30, 0.55);
+      color: #fff;
+      font-size: 13px; line-height: 22px; text-align: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.12s ease;
+      z-index: 4;
+      user-select: none;
+    }
+    .photo-slot:hover .reposition-handle { opacity: 1; }
+    .photo-slot.repositioning .reposition-handle {
+      opacity: 1;
+      background: #c98a2a;
+    }
+    .photo-slot.repositioning {
+      outline: 2px solid #c98a2a;
+      outline-offset: -2px;
+    }
+    .photo-slot.repositioning img.slot-photo { cursor: move; }
     .photo-slot .slot-placeholder {
       width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
@@ -1052,10 +1078,10 @@
   window.specialPhotos      = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
   window.coverCaptionStyles  = {};   // { year: { font, weight, style, sizePt, lineSpacing, letterSpacing }, name: {...} }
   window.spreadCaptionStyles = {};   // { spreadIndex: { side: { slotIdx: { font, weight, italic, sizePt, lineSpacing, letterSpacing } } } }
-  window.heartCrop          = {};   // { photoName: { x, y } } — object-position % for the heart-mask slot (default 50/50 = center)
+  window.heartCrop          = {};   // { photoName: { x, y } } — object-position % crop offset, keyed by photo name. Covers the heart-mask slot AND every regular slot (#74); default 50/50 = center. Persisted key stays 'heartCrop' for back-compat with saved orders.
 
-  // Crop offset for the heart-mask slot, keyed by photo name (mirrors caption-by-name).
-  // x/y are CSS object-position percentages (0–100); default 50/50 = centred (today's behaviour).
+  // Crop offset keyed by photo name (mirrors caption-by-name). x/y are CSS
+  // object-position percentages (0–100); default 50/50 = centred (today's behaviour).
   function getHeartCrop(name) {
     const c = window.heartCrop[name];
     return { x: (c && typeof c.x === 'number') ? c.x : 50,
@@ -1066,11 +1092,16 @@
     window.heartCrop[name] = { x: clamp(x), y: clamp(y) };
   }
 
-  // Pointer-drag to reposition a photo inside the heart slot. The photo tracks the
-  // cursor 1:1: a drag of dx px moves the displayed image by dx px, which maps to a
-  // change in object-position %. Only the axis that overflows the (square) slot moves.
-  function attachHeartDrag(img, slotEl, photoName, spreadIndex) {
+  // Pointer-drag to reposition a photo inside its slot. The photo tracks the cursor
+  // 1:1: a drag of dx px moves the displayed image by dx px, which maps to a change
+  // in object-position %. Only the axis that overflows the slot moves. Works for any
+  // slot shape (heart or rectangle) since overflow is derived from real slot dims.
+  // alwaysOn=true → drag is always live (heart slot, which isn't swap-draggable).
+  // alwaysOn=false → drag only fires while the slot has the 'repositioning' class
+  //   (regular slots, so the default gesture stays slot→slot swap-drag).
+  function attachCropDrag(img, slotEl, photoName, { alwaysOn = false } = {}) {
     img.addEventListener('pointerdown', e => {
+      if (!alwaysOn && !slotEl.classList.contains('repositioning')) return;
       // natural dims needed to know the cover-scaled image size; bail if not loaded yet
       const natW = img.naturalWidth, natH = img.naturalHeight;
       if (!natW || !natH) return;
@@ -1086,7 +1117,7 @@
       const start = getHeartCrop(photoName);
       const startX = e.clientX, startY = e.clientY;
       img.setPointerCapture(e.pointerId);
-      img.classList.add('heart-dragging');
+      img.classList.add('crop-dragging');
 
       const onMove = ev => {
         // object-position offset = -(overflow) * pct/100. Moving the image by +d px
@@ -1100,7 +1131,7 @@
       };
       const onUp = ev => {
         img.releasePointerCapture(e.pointerId);
-        img.classList.remove('heart-dragging');
+        img.classList.remove('crop-dragging');
         img.removeEventListener('pointermove', onMove);
         img.removeEventListener('pointerup', onUp);
       };
@@ -2524,16 +2555,20 @@
             slotEl.appendChild(badge);
           }
 
-          // Heart-mask slot: apply saved crop offset and let staff drag the photo to
-          // reposition it inside the heart (so the heart's pinched top/bottom never
-          // crops a face). Keyed by photo name; the % drives both engine and PDF.
-          if (slotDef.heartClip) {
+          // Apply the saved crop offset (object-position %) to every placed photo —
+          // heart slot AND regular slots (#74). Keyed by photo name; the % drives
+          // engine, customer-preview, and PDF identically. Default 50/50 = centred.
+          {
             const hc = getHeartCrop(photo.name);
             img.style.objectPosition = hc.x + '% ' + hc.y + '%';
+          }
+
+          // Heart-mask slot isn't swap-draggable, so its reposition-drag is always live.
+          if (slotDef.heartClip) {
             img.style.cursor = 'move';
             img.draggable = false;   // suppress native image drag-ghost; we drive our own
             img.title = 'Drag to reposition inside the heart';
-            attachHeartDrag(img, slotEl, photo.name, spreadIndex);
+            attachCropDrag(img, slotEl, photo.name, { alwaysOn: true });
           }
 
           if (photo.lowRes) {
@@ -2543,6 +2578,34 @@
           // Special slots are fixed — not draggable or swappable
           if (!isSpecialSlot) {
             slotEl.draggable = true;
+
+            // Reposition handle (#74): the default gesture stays slot→slot swap-drag;
+            // the handle toggles a per-slot "reposition mode" where the photo can be
+            // nudged inside its frame (and swap-drag is disabled so the two don't clash).
+            const handle = document.createElement('div');
+            handle.className = 'reposition-handle';
+            handle.textContent = '✥';
+            handle.title = 'Reposition photo inside the frame';
+            attachCropDrag(img, slotEl, photo.name, { alwaysOn: false });
+            const exitReposition = () => {
+              slotEl.classList.remove('repositioning');
+              slotEl.draggable = true;
+              document.removeEventListener('pointerdown', onOutside, true);
+              document.removeEventListener('keydown', onEsc);
+            };
+            const onOutside = ev => { if (!slotEl.contains(ev.target)) exitReposition(); };
+            const onEsc = ev => { if (ev.key === 'Escape') exitReposition(); };
+            handle.addEventListener('pointerdown', e => { e.stopPropagation(); });
+            handle.addEventListener('click', e => {
+              e.stopPropagation();
+              if (slotEl.classList.contains('repositioning')) { exitReposition(); return; }
+              slotEl.classList.add('repositioning');
+              slotEl.draggable = false;   // disable swap-drag while repositioning
+              document.addEventListener('pointerdown', onOutside, true);
+              document.addEventListener('keydown', onEsc);
+            });
+            slotEl.appendChild(handle);
+
             slotEl.addEventListener('dragstart', e => {
               e.stopPropagation();
               window._dragType = 'slot';

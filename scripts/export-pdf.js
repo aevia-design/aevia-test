@@ -336,6 +336,26 @@ function getPageDef(sidePages, variant) {
   return sidePages[variant] || sidePages['default'] || sidePages[Object.keys(sidePages)[0]] || null;
 }
 
+// Replicate CSS object-fit:cover + object-position exactly: scale the image to cover
+// the target box, then extract a targetW×targetH window offset by the crop %. Default
+// 50/50 = centred (matches sharp's fit:'cover', position:'centre'). Shared by the heart
+// slot and every regular slot (#74) so a staff-set crop prints identically.
+async function coverExtract(photoData, targetW, targetH, cropX = 50, cropY = 50) {
+  const tw = Math.round(targetW), th = Math.round(targetH);
+  const meta = await sharp(photoData).metadata();
+  const coverScale = Math.max(tw / meta.width, th / meta.height);
+  const scaledW = Math.round(meta.width  * coverScale);
+  const scaledH = Math.round(meta.height * coverScale);
+  const clamp = (v, max) => Math.max(0, Math.min(max, v));
+  const exLeft = clamp(Math.round((scaledW - tw) * cropX / 100), scaledW - tw);
+  const exTop  = clamp(Math.round((scaledH - th) * cropY / 100), scaledH - th);
+  return sharp(photoData)
+    .resize(scaledW, scaledH)
+    .extract({ left: exLeft, top: exTop, width: tw, height: th })
+    .png()
+    .toBuffer();
+}
+
 // Render one page (left or right) as a PNG buffer
 async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos, variantKey) {
   const { bgColor, slots } = pageDef;
@@ -430,31 +450,20 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
         const hc = (state.heartCrop && state.heartCrop[photo.name]) || {};
         const cropX = typeof hc.x === 'number' ? hc.x : 50;
         const cropY = typeof hc.y === 'number' ? hc.y : 50;
-        // Replicate CSS object-fit:cover + object-position exactly: scale the image to
-        // cover the square, then extract the CONTENT_PX window offset by the same %.
-        // window-left = (scaledW − CONTENT_PX) × x/100 — the inverse of CSS's object-position.
-        const meta = await sharp(photoData).metadata();
-        const coverScale = Math.max(CONTENT_PX / meta.width, CONTENT_PX / meta.height);
-        const scaledW = Math.round(meta.width  * coverScale);
-        const scaledH = Math.round(meta.height * coverScale);
-        const clamp = (v, max) => Math.max(0, Math.min(max, v));
-        const exLeft = clamp(Math.round((scaledW - CONTENT_PX) * cropX / 100), scaledW - CONTENT_PX);
-        const exTop  = clamp(Math.round((scaledH - CONTENT_PX) * cropY / 100), scaledH - CONTENT_PX);
-        const photoBuffer = await sharp(photoData)
-          .resize(scaledW, scaledH)
-          .extract({ left: exLeft, top: exTop, width: CONTENT_PX, height: CONTENT_PX })
-          .png()
-          .toBuffer();
+        const photoBuffer = await coverExtract(photoData, CONTENT_PX, CONTENT_PX, cropX, cropY);
         const maskedBuffer = await sharp(photoBuffer)
           .composite([{ input: maskBuffer, blend: 'dest-in' }])
           .png()
           .toBuffer();
         composites.push({ input: maskedBuffer, left: BLEED_PX, top: BLEED_PX });
       } else {
-        const photoBuffer = await sharp(photoData)
-          .resize(sw, sh, { fit: 'cover', position: 'centre' })
-          .png()
-          .toBuffer();
+        // Regular slot: apply the staff-set crop offset (#74). Default 50/50 reproduces
+        // the old fit:'cover', position:'centre' exactly, so un-repositioned photos are
+        // byte-identical to before.
+        const hc = (state.heartCrop && state.heartCrop[photo.name]) || {};
+        const cropX = typeof hc.x === 'number' ? hc.x : 50;
+        const cropY = typeof hc.y === 'number' ? hc.y : 50;
+        const photoBuffer = await coverExtract(photoData, sw, sh, cropX, cropY);
         composites.push({ input: photoBuffer, left: sx, top: sy });
       }
     } catch (e) {
