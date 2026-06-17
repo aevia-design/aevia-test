@@ -1,7 +1,24 @@
 # Session Status
-_Last updated: 2026-06-17 (session 48)_
+_Last updated: 2026-06-17 (session 49)_
 
 ## Status
+**Session 49 (2026-06-17) — MINOR UX/SAFETY FIXES. Three small changes committed + PUSHED to `main` (Cloudflare auto-deploys), each clarified with Evgeny first. 102/102 tests. Read `sessions/2026-06-17-s49.md`.**
+
+**What shipped this session (all on `main`, pushed):**
+1. **Caption formatting guard (`027931d`)** — Ctrl+B/I bolded captions on screen but the PDF stripped it. Added one `beforeinput` guard on BOTH engine + customer-preview that blocks any `format*` command, keeping all caption boxes plain-text (the toolbar's whole-caption styles are the only thing engine+PDF honor). New regression check `qa/verify-format-block.mjs` (must test with REAL keystrokes — `execCommand` doesn't fire `beforeinput`).
+2. **Slim customer-preview footer (`09ffec8`)** — replaced the full marketing footer (storefront nav that pulled customers away mid-flow) with one quiet line + a contact link; dropped the dead Terms span.
+3. **Always restore saved book on order load (`ca44ab2`)** — removed the native `confirm()` whose Cancel/Esc path discarded the customer's APPROVED layout (a Save afterward = silent overwrite). Always restores now; no use case for discarding. ⚠ not browser-verified (needs staff login + saved order).
+
+### ▶ NEXT SESSION (Session 50)
+1. **Carried from S48:** watch live Newborn (first real E2E order on the deployed site); eyeball the S47 pt→px caption resize on live Scribble/Wander.
+2. **Stripe price split** — confirm `STRIPE_PRICE_ID_40/_80` are real `price_…` IDs + `firebase deploy --only functions:createCheckoutSession`. A real Newborn submit mints a live `AEV-xxx` to clean up.
+3. Continue the minor-fix pass, or pick next priority from TO-DOS / ROADMAP.
+
+### ⚠ S49 watch-outs
+- **All three changes are live** (pushed to `main`). Caption guard + footer are customer-facing; order-load change is staff-only — eyeball on live.
+- **Order-load change (item 3) is not browser-verified** — confirm a saved order restores with no prompt next time you're in the engine.
+
+### Previous: Session 48
 **Session 48 (2026-06-17) — NEWBORN SHIPPED TO `main`. Fixed the last E2E bug (PDF dropped blank lines → paragraph spacing collapsed) + two Intro order-copy tweaks, then merged `newborn-template` → `main` (`fc972d0`) and pushed. Cloudflare auto-deploys. 102/102 tests. The Newborn template (#4) is now LIVE end-to-end: order form → staff engine → customer preview → PDF.**
 
 **What shipped this session (committed `5319cc3`, merged to main `fc972d0`):**
