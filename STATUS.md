@@ -1,25 +1,37 @@
 # Session Status
-_Last updated: 2026-06-17 (session 52)_
+_Last updated: 2026-06-17 (session 53)_
 
 ## Status
-**Session 52 (2026-06-17) — STARTED THE 3D BOOK RENDERER (engine-driven mockup imagery). Branch `mockup-3d-renderer` (NOT main, not pushed). Full pre-build chain done: /understanding-the-ask → /solutioning (ADR 0005: Three.js, edit-flat/present-in-3D split) → /creating-briefs. TDD cycle 1 GREEN (`book-3d-spec.js`, pure texture/proportion math, 107/107). Renderer module + harness built; Newborn render screenshot-verified; Evgeny APPROVED THE DIRECTION. Read `sessions/2026-06-17-s52.md`. Refinement queue (below) is the next-session start.**
+**Session 53 (2026-06-17) — 3D RENDERER REFINED INTO A FAITHFUL HARDCOVER. Branch `mockup-3d-renderer` (NOT main, NOT pushed). Committed `87777a6`. Worked the S52 refinement queue + Xenia's "looks softcover → make it hardcover" feedback. Closed-book Newborn render now reads as a premium case-bound hardcover; Evgeny approved across this session's passes. Read `sessions/2026-06-17-s53.md`. Next: back-cover / inside-spread views, then generalize to Scribble/Wander, then wire PNGs into website placeholders.**
 
-**What's on the branch (foundation, committed):** `docs/decisions/0005-3d-book-renderer.md`, `docs/briefs/3d-book-renderer.md`, `assets/js/book-3d-spec.js` (+ `tests/book-3d-spec.test.js`), `assets/js/book-3d-renderer.js`, `prototypes/book-3d-render.html` (harness) + `prototypes/book-3d-spike.html` (throwaway). Screenshot `sessions/qa-runs/book-3d-render-newborn.png`.
+**What shipped this session (committed `87777a6` on the branch):**
+1. **Texture source fixed** — `qa/capture-cover-wrap.mjs` logs into the LIVE engine, loads a Newborn order (AEV-037), screenshots ONLY the `.cover-canvas` element at 3× → exact trim wrap (back|spine|front, no chrome/bleed). Harness loads `sessions/qa-runs/cover-wrap-newborn.png` directly; the `repeat.y` toolbar hack is gone. **Needs the staff password — Evgeny runs it.**
+2. **Hardcover construction** (`book-3d-renderer.js`) — front/back 2.5mm boards overhang an **inset, striated page block**; flat (straight-back) spine. Board + ~3mm "square" sizes derive from `spec.mm` (universal across templates per printhouse spec). Replaces the flat softcover-looking box.
+3. **Edges/spine** — board rims use a solid cover-edge colour sampled GENERICALLY from the wrap (no smeared photo); spine textured from the wrap; spine→cover junction takes the cover colour (no cream sliver); geometry abuts cleanly (no z-fighting).
+4. **Lighting** — GENERIC ambient floor + key + back fill, tuned ~90% colour-faithful across ALL covers (NOT per-template, per Evgeny); soft contact shadow.
+5. **`spec.mm`** added to `book-3d-spec.js` + test (6/6 green). New QA tool `qa/verify-3d.mjs` (headless multi-angle screenshots). Xenia's hardcover refs in `assets/mockup example/`.
 
-### ▶ NEXT SESSION (Session 53) — 3D renderer refinement queue (Evgeny's feedback)
-1. **HIGHEST — fix the texture source.** Mockup is far from the real PDF (sizing, bleed, spine + photo-slot placement off). Root cause: harness fed an **engine UI screenshot**, not a clean trimmed cover wrap. The 3D math is correct — it wraps a bad source. **Export a clean, correctly-trimmed cover wrap (PDF bleed/trim)** from the engine or `scripts/export-pdf.js`, feed THAT.
-2. **Dark underside/bottom edge** render bug — white pages render dark on the bottom face (unlit from below). Lighting fix (lift ambient / soft bounce).
-3. Then: clean textures → generalize to **Scribble/Wander** → add **back-cover + inside-spread** views → wire static PNGs into website placeholders.
-4. **Carried (not 3D):** real-device phone E2E of the step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`).
+### ▶ NEXT SESSION (Session 54) — continue the 3D renderer
+1. **Back-cover + inside-spread views** (Evgeny's chosen next step; one of Xenia's refs is an open book). The closed hardcover is done.
+2. **Generalize to Scribble/Wander** — the real test of the GENERIC lighting (a light/off-white cover). Extend `capture-cover-wrap.mjs` to take a template + order number; Evgeny runs the capture once per template.
+3. Then **wire static PNGs into the website placeholders**.
+4. **Open product question (parked):** is 9mm the real book thickness, and how does it scale with page count? Evgeny: "i don't know honestly." Currently thickness = the spine width sent to the printer (9mm) → reads as a slim hardcover. Option to add a presentation-only thickness multiplier if the marketing hero needs more heft (print files untouched).
+5. **Carried (not 3D):** real-device phone E2E of the step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`).
 
-### ⚠ S52 watch-outs
+### ⚠ S53 watch-outs
 - **Branch `mockup-3d-renderer`, NOT main, NOT pushed.** Nothing customer-facing changed.
-- **TDD split:** `book-3d-spec.js` (pure math) is unit-tested; `book-3d-renderer.js` (WebGL scene) is **screenshot-verified only** — don't try to unit-test the render.
-- **The renderer is faithful to its input** — fidelity problems live in the *texture source*, not the 3D code. Fix the clean cover-wrap export before tuning geometry.
-- **Three.js is now a dependency** (CDN, no build step), a deliberate ADR-0005 exception to CLAUDE.md's "no frameworks" default.
+- **Lighting is GENERIC, not per-template** — ~90% match from one universal setup; do NOT fine-tune ambient/lights per cover. Codified in `book-3d-renderer.js` comments + memory `project_3d_renderer`. Verify colour objectively by sampling rendered navy vs engine `#142a4f`=(20,42,79).
+- **The texture is faithful to its source** — captured `.cover-canvas` navy = (20,43,80) ≈ engine. Fidelity problems live in the capture, not the 3D code.
+- **TDD split:** `book-3d-spec.js` (pure math) unit-tested; `book-3d-renderer.js` (WebGL scene) screenshot-verified only via `qa/verify-3d.mjs` — don't unit-test the render.
+- **Hardcover features are UNIVERSAL** (2.5mm board, ~3mm square, flat spine) — renderer constants scaled by `spec.mm`; only the printed wrap changes per template.
+- **`sessions/qa-runs/` is gitignored** — `cover-wrap-newborn.png` + `3d-*.png` are NOT committed; regenerate via the QA scripts.
+- **Three.js is a CDN (no-build) dependency** per ADR-0005, deliberate exception to CLAUDE.md's "no frameworks".
 - `.claude/settings.local.json` left out of the commit as usual.
 
 ---
+
+### Previous: Session 52
+**Session 52 (2026-06-17) — STARTED THE 3D BOOK RENDERER.** Full pre-build chain (/understanding-the-ask → /solutioning → ADR 0005 Three.js, edit-flat/present-in-3D split → /creating-briefs). TDD cycle 1 GREEN (`book-3d-spec.js` pure texture/proportion math). Renderer module + harness (`prototypes/book-3d-render.html`; throwaway `book-3d-spike.html`) built; Newborn render screenshot-verified; Evgeny approved the direction. Foundation committed on branch. Read `sessions/2026-06-17-s52.md`.
 
 ### Previous: Session 51
 **Session 51 (2026-06-17) — STEP-BASED ORDER FORM UX SHIPPED to `main` (`723fac4`, pushed → Cloudflare auto-deploys). The order form's long single-scroll upload stage is now discrete guided steps — Details → Cover → Special pages → Photos — across all templates, data-driven (Special auto-skips with no add-ons), linear-forward/free-backward nav. Independent /reviewer-agent + /design-review both passed. 102/102 tests. Read `sessions/2026-06-17-s51.md`.**
