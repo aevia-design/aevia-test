@@ -1,29 +1,32 @@
 # Session Status
-_Last updated: 2026-06-18 (session 57)_
+_Last updated: 2026-06-18 (session 58)_
 
 ## Status
-**Session 57 (2026-06-18) — CLOSED-BOOK + BACK-BOOK MOCKUPS DONE. Perspective warp (4-corner homography) lands the cover on the tilted face with no skew; back-book maps the full wrap onto the laid-open flat covers. Black-spine bug fixed. Cover bleed clarified (engine trim == mockup; PDF adds 18mm wrap). Branch `mockup-3d-renderer` (NOT main). NOTHING COMMITTED this session — working-tree only (`scripts/compose-closed.mjs` modified, `scripts/compose-back.mjs` NEW). Read `sessions/2026-06-18-s57.md`.**
+**Session 58 (2026-06-18) — ALL THREE MOCKUPS REFINED + APPROVED ("ok-ish"). Closed-book spine now reads cover-navy with the engine "Our Nicolas" caption (was black). Back-book rewritten as a 3-quad warp so it reads as a real open book with the page block showing underneath (folded depth) — front/back/spine each warped onto its own PSD-derived quad; green line + dark cover-bottom bands gone. All three share a soft off-white `#f0f0f0` backdrop. Branch `mockup-3d-renderer` (NOT main, NOT pushed). 3 compose scripts modified — COMMIT PENDING at handover (see below). Read `sessions/2026-06-18-s58.md`.**
 
-**Closed book** (`scripts/compose-closed.mjs`) — `ag-psd` doesn't expose the smart-object transform, so we supply our own perspective warp: `solveHomography()` maps the flat front-cover art → the cover top-FACE quad (a calibrated constant `{top:[1641,361],right:[2465,1086],bot:[1104,1620],left:[410,754]}`, detected from the cream example baked in the composite). CRITICAL: must use the top FACE, not the book's outer silhouette — the silhouette includes ~70px of board thickness at the near edge, which spilled navy onto the page block. `ROT=3` orients it upright. Warp proven pixel-exact by reproducing Photoshop's own placement of the example cover. Black-spine fixed (softened "Edge copy" multiply to 0.45 so the board edge reads cover navy).
+**Closed book** (`scripts/compose-closed.mjs`) — front cover warps onto the calibrated top-FACE quad (constant `{top:[1641,361],right:[2465,1086],bot:[1104,1620],left:[410,754]}`). NEW: the spine strip (middle 9mm of the wrap, carrying the caption) warps onto a **spine-face quad** calibrated from the `Edge copy` layer alpha extremes — hinge A`[403,746]`/B`[1107,1627]` (== cover near-left edge), C/D extruded `[-4,+77]`. `Edge copy` multiply softened 0.45→0.18 (light depth only). Spine reads cover-navy + caption, flush.
 
-**Back book** (`scripts/compose-back.mjs`, NEW) — `back book.psd` = book laid open flat, outside covers up. The whole open spread is one "Pages" quad, so the entire 409mm wrap maps onto it (`ROT=0`). Same homography helper.
+**Back book** (`scripts/compose-back.mjs`) — `back book.psd` = book laid open flat. Wrap warped as **3 pieces** onto 3 quads taken from the PSD's shading-layer alpha shapes: back 200mm → `Back cover` quad (left page), front 200mm → `Cover` (multiply) quad (right page), middle 9mm spine → `Edge ` quad (fold). The `Pages` layer (real page block) shows underneath → folded depth + cover overhang. Engine spine is genuinely **light blue `#c0d5ee`** (sampled), so the light-blue fold is faithful, not a bug.
 
-**Bleed (Evgeny's Q, no code change):** cover wrap bleed = **18mm/side** (the hardcover wrap/turn-in, never on the finished face); interior content bleed = 3mm. Engine `.cover-canvas` + `cover-wrap-newborn.png` = TRIM (409×200, no bleed); PDF = trim + 18mm = 445×236. So the engine render == the mockup outcome (both trim); the "elements off vs PDF" is the 18mm (9%/side) bleed framing, not a mockup bug.
+**Open book** (`scripts/compose-mockup.mjs`) — unchanged geometry; added `neutralize()` (rgb→luminance) on `Shadows` + `Back cover` to kill a warm pink wash that appeared once the backdrop went light.
 
-### ▶ NEXT (Session 58)
-1. **Commit S57** — `scripts/compose-closed.mjs` + new `scripts/compose-back.mjs` (code only; PSDs/PNGs stay local/gitignored). `.claude/settings.local.json` out.
-2. **Lock the website shot list** (likely 1 closed cover + 1 open spread per template; back optional).
-3. **Generalize Newborn → Scribble + Wander** — Evgeny re-runs `qa/capture-cover-wrap.mjs` + `qa/capture-spread.mjs` per template/order; PSD cover colour is a param (`compose-closed.mjs` argv[4]/COVER_HEX). Same PSDs reused for closed/back/open.
-4. **Wire the static PNGs into website placeholders** (`assets/images/mockups/`).
-5. **(Cleanup)** delete retired Three.js files (`book-3d-renderer.js`, `book-3d-spec.js`, prototypes, `qa/verify-3d.mjs`, `qa/verify-open.mjs`); KEEP `qa/capture-cover-wrap.mjs` + `qa/capture-spread.mjs`.
-6. **Carried (not mockup):** real-device phone E2E of step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`).
+**Backdrop** — all three set to `#f0f0f0` (240). Pure white (255) is brighter than the paper (~247–251) and washed out page edges that lack a cover line behind them; off-white keeps every edge crisp while still reading white.
 
-### ⚠ S57 watch-outs
-- **Closed-book top-face quad is a calibrated CONSTANT** tied to the fixed PSD camera angle. If Xenia re-saves `closed book.psd` at a different angle, re-detect it (cream-face axis-extremes from `psd.canvas`). The back-book "Pages" quad is auto-detected, so it self-adjusts.
-- **To refresh elements:** re-run `qa/capture-cover-wrap.mjs` (needs staff password, Evgeny runs) → drop fresh `cover-wrap-newborn.png` in `sessions/qa-runs/` → `cd scripts && node compose-closed.mjs && node compose-back.mjs`.
-- **Mockup PSDs/SVGs NOT in git** (46–83MB > Cloudflare 25MiB limit). `.gitignore`s `assets/mockup example/`. Live locally; Xenia has originals.
-- **`sessions/qa-runs/*` gitignored** — wrap/spread captures need staff login; composites regenerate offline.
-- **Branch only, NOT pushed. NOTHING committed S57.** `.claude/settings.local.json` left out as usual.
+### ▶ NEXT (Session 59)
+1. **Lock the website shot list** (likely 1 closed cover + 1 open spread per template; back optional).
+2. **Generalize Newborn → Scribble + Wander** — Evgeny re-runs `qa/capture-cover-wrap.mjs` + `qa/capture-spread.mjs` per template/order (needs staff password); cover colour is a param (`COVER_HEX`). Same PSDs reused for closed/back/open.
+3. **Wire static PNGs into website placeholders** (`assets/images/mockups/`).
+4. **(Cleanup)** delete retired Three.js files (`book-3d-renderer.js`, `book-3d-spec.js`, prototypes, `qa/verify-3d.mjs`, `qa/verify-open.mjs`); KEEP `qa/capture-cover-wrap.mjs` + `qa/capture-spread.mjs`.
+5. **Carried (not mockup):** real-device phone E2E of step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`).
+
+### ⚠ S58 watch-outs
+- **Closed-book top-face AND spine-face quads are calibrated CONSTANTS** tied to the fixed PSD camera angle. If Xenia re-saves `closed book.psd` at a new angle, re-detect both (top face from `psd.canvas` cream extremes; spine from `Edge copy` alpha extremes).
+- **Back-book's 3 quads auto-detect** from the PSD shading-layer alpha → self-adjust on re-save.
+- **Engine spine is light blue `#c0d5ee`**, not navy — faithful in both closed + back.
+- **Backdrop is `#f0f0f0`, not pure white** — deliberate; 255 washes out paper edges.
+- **To refresh:** re-run `qa/capture-cover-wrap.mjs` (Evgeny) → drop fresh `cover-wrap-newborn.png` in `sessions/qa-runs/` → `cd scripts && node compose-closed.mjs && node compose-back.mjs && node compose-mockup.mjs`.
+- **Mockup PSDs/SVGs NOT in git** (46–83MB > Cloudflare 25MiB limit); `assets/mockup example/` gitignored. `sessions/qa-runs/*` gitignored — composites regenerate offline.
+- **Branch only, NOT pushed.** `.claude/settings.local.json` left out as usual.
 - **Three.js retired but files still present** — deletion still a pending cleanup task.
 
 ---

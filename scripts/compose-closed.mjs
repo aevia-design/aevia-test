@@ -46,9 +46,9 @@ function layerRaw(name) {
 function withOpacity(raw, op) { const d = raw.buffer; for (let i = 3; i < d.length; i += 4) d[i] = Math.round(d[i] * op); return raw; }
 function tint(raw, rgb) { const d = raw.buffer; for (let i = 0; i < d.length; i += 4) { const f = d[i]/255; d[i]=Math.round(rgb.r*f); d[i+1]=Math.round(rgb.g*f); d[i+2]=Math.round(rgb.b*f); } return raw; }
 
-// Background colour from a corner of the flattened composite (periwinkle backdrop).
-const comp = psd.canvas.getContext('2d').getImageData(8, 8, 1, 1).data;
-const bg = { r: comp[0], g: comp[1], b: comp[2] };
+// Backdrop: soft off-white (#f0f0f0, just below the paper tone so page/cover edges stay crisp on it), shared across all three mockups (closed/open/back). The contact shadow
+// still renders via the multiply "Shadows" layer; "BG Highlights" (screen) is a no-op on white.
+const bg = { r: 240, g: 240, b: 240 };
 
 // --- Cover top-FACE quad (the flat front surface, NOT the outer book silhouette).
 // Calibrated from the example design baked into the PSD composite: the book's outer
@@ -88,7 +88,38 @@ function solveHomography(src, dst) {
   return h; // [a,b,c,d,e,f,g,h]
 }
 
-// Front cover = last 200mm of the 409mm wrap (back 200 | spine 9 | front 200), 9px/mm.
+// Warp a flat art strip (its own raw RGBA buffer, sized sw×sh) onto a destination quad.
+// `dst` corners correspond to the art rect corners [TL, TR, BR, BL] in that order. We solve
+// the INVERSE map (dst→src) so we can iterate output pixels and sample the source.
+function warp(art, sw, sh, dst) {
+  const SRC = [[0, 0], [sw, 0], [sw, sh], [0, sh]];
+  const hi = solveHomography(dst, SRC);
+  const minX = Math.max(0, Math.floor(Math.min(...dst.map(p => p[0]))));
+  const maxX = Math.min(W, Math.ceil(Math.max(...dst.map(p => p[0]))));
+  const minY = Math.max(0, Math.floor(Math.min(...dst.map(p => p[1]))));
+  const maxY = Math.min(H, Math.ceil(Math.max(...dst.map(p => p[1]))));
+  const ow = maxX - minX, oh = maxY - minY;
+  const warped = Buffer.alloc(ow * oh * 4, 0);
+  for (let y = minY; y < maxY; y++) {
+    for (let x = minX; x < maxX; x++) {
+      const w_ = hi[6] * x + hi[7] * y + 1;
+      const u = (hi[0] * x + hi[1] * y + hi[2]) / w_;
+      const v = (hi[3] * x + hi[4] * y + hi[5]) / w_;
+      if (u < 0 || v < 0 || u >= sw - 1 || v >= sh - 1) continue;
+      const x0 = Math.floor(u), y0 = Math.floor(v), fx = u - x0, fy = v - y0;
+      const o = (oy => (oy * ow + (x - minX)) * 4)(y - minY);
+      for (let c = 0; c < 3; c++) {
+        const p00 = art[(y0 * sw + x0) * 4 + c], p10 = art[(y0 * sw + x0 + 1) * 4 + c];
+        const p01 = art[((y0 + 1) * sw + x0) * 4 + c], p11 = art[((y0 + 1) * sw + x0 + 1) * 4 + c];
+        warped[o + c] = (p00 * (1 - fx) + p10 * fx) * (1 - fy) + (p01 * (1 - fx) + p11 * fx) * fy;
+      }
+      warped[o + 3] = 255;
+    }
+  }
+  return { warped, ow, oh, minX, minY };
+}
+
+// Wrap geometry: back 200mm | spine 9mm | front 200mm, 9px/mm.
 const wrap = sharp(WRAP);
 const wm = await wrap.metadata();
 const pxPerMm = wm.width / 409;
@@ -96,33 +127,23 @@ const frontX = Math.round((200 + 9) * pxPerMm);
 const aw = wm.width - frontX, ah = wm.height;
 const artBuf = await wrap.clone().extract({ left: frontX, top: 0, width: aw, height: ah }).ensureAlpha().raw().toBuffer();
 
-// Warp the flat art onto the book top-face quad. We solve the INVERSE map (dst→src) so we
-// can iterate output pixels and sample the source: solveHomography(DST_quad, art_rect).
-const SRC = [[0, 0], [aw, 0], [aw, ah], [0, ah]];
-const hi = solveHomography(DST, SRC);
-const minX = Math.max(0, Math.floor(Math.min(...DST.map(p => p[0]))));
-const maxX = Math.min(W, Math.ceil(Math.max(...DST.map(p => p[0]))));
-const minY = Math.max(0, Math.floor(Math.min(...DST.map(p => p[1]))));
-const maxY = Math.min(H, Math.ceil(Math.max(...DST.map(p => p[1]))));
-const ow = maxX - minX, oh = maxY - minY;
-const warped = Buffer.alloc(ow * oh * 4, 0);
-for (let y = minY; y < maxY; y++) {
-  for (let x = minX; x < maxX; x++) {
-    const w_ = hi[6] * x + hi[7] * y + 1;
-    const u = (hi[0] * x + hi[1] * y + hi[2]) / w_;
-    const v = (hi[3] * x + hi[4] * y + hi[5]) / w_;
-    if (u < 0 || v < 0 || u >= aw - 1 || v >= ah - 1) continue;
-    // Bilinear sample.
-    const x0 = Math.floor(u), y0 = Math.floor(v), fx = u - x0, fy = v - y0;
-    const o = (oy => (oy * ow + (x - minX)) * 4)(y - minY);
-    for (let c = 0; c < 3; c++) {
-      const p00 = artBuf[(y0 * aw + x0) * 4 + c], p10 = artBuf[(y0 * aw + x0 + 1) * 4 + c];
-      const p01 = artBuf[((y0 + 1) * aw + x0) * 4 + c], p11 = artBuf[((y0 + 1) * aw + x0 + 1) * 4 + c];
-      warped[o + c] = (p00 * (1 - fx) + p10 * fx) * (1 - fy) + (p01 * (1 - fx) + p11 * fx) * fy;
-    }
-    warped[o + 3] = 255;
-  }
-}
+// Front cover → top-face quad.
+const cover = warp(artBuf, aw, ah, DST);
+
+// Spine = the middle 9mm strip of the wrap, carrying the vertical engine caption. It maps onto
+// the spine FACE quad (a thin parallelogram hanging off the cover's near-left hinge edge,
+// bot→left). Corners A,B = the hinge (== top-face left/bot); C,D = A,B extruded by the board
+// thickness. Calibrated from the "Edge copy" layer's alpha extremes (the spine has no PSD layer
+// of its own). Art-rect→quad correspondence [TL,TR,BR,BL] → [D,A,B,C] orients the strip upright
+// with its front-adjacent edge on the hinge.
+const A = [403, 746], B = [1107, 1627];
+const EXT = [-4, 77];                 // board-thickness extrusion (C - B)
+const C = [B[0] + EXT[0], B[1] + EXT[1]];
+const D = [A[0] + EXT[0], A[1] + EXT[1]];
+const sx0 = Math.round(200 * pxPerMm), sx1 = Math.round(209 * pxPerMm);
+const sw = sx1 - sx0;
+const spineBuf = await wrap.clone().extract({ left: sx0, top: 0, width: sw, height: ah }).ensureAlpha().raw().toBuffer();
+const spine = warp(spineBuf, sw, ah, [D, A, B, C]);
 
 // Build the composite, bottom → top.
 const layers = [];
@@ -131,9 +152,11 @@ const add = (raw, blend) => layers.push({ input: raw.buffer, raw: { width: raw.w
 add(withOpacity(layerRaw('BG Highlights'), 0.6), 'screen');
 add(withOpacity(layerRaw('Shadows'), 0.5), 'multiply');
 add(layerRaw('Pages'), 'over');                          // page block fore-edge
-add(tint(layerRaw('Book'), COVER), 'over');              // book body → cover colour (spine / board edges)
-layers.push({ input: warped, raw: { width: ow, height: oh, channels: 4 }, left: minX, top: minY, blend: 'over' }); // warped cover design on the top face
-add(withOpacity(layerRaw('Edge copy'), 0.45), 'multiply'); // spine / board-edge shading — softened so the edge reads as cover navy, not black
+add(tint(layerRaw('Book'), COVER), 'over');              // book body → cover colour (board edges)
+const push = w => layers.push({ input: w.warped, raw: { width: w.ow, height: w.oh, channels: 4 }, left: w.minX, top: w.minY, blend: 'over' });
+push(cover);                                             // warped cover design on the top face
+push(spine);                                             // warped spine strip (engine caption) on the spine face
+add(withOpacity(layerRaw('Edge copy'), 0.18), 'multiply'); // light spine shading for depth (was 0.45 → blackened the spine)
 add(layerRaw('Highlights'), 'screen');                   // cover sheen over the design
 
 const base = sharp({ create: { width: W, height: H, channels: 3, background: bg } });

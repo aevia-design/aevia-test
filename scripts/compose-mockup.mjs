@@ -47,9 +47,9 @@ async function pngFromRaw(r) {
   return sharp(r.buffer, { raw: { width: r.width, height: r.height, channels: 4 } }).png().toBuffer();
 }
 
-// Background colour: sample a corner of the flattened composite (the periwinkle backdrop).
-const comp = psd.canvas.getContext('2d').getImageData(8, 8, 1, 1).data;
-const bg = { r: comp[0], g: comp[1], b: comp[2] };
+// Backdrop: soft off-white (#f0f0f0, just below the paper tone so page/cover edges stay crisp on it), shared across all three mockups (closed/open/back). The contact shadow
+// still renders via the multiply "Shadows" layer; "BG Highlights" (screen) is a no-op on white.
+const bg = { r: 240, g: 240, b: 240 };
 
 // The two artwork slots. Each edge is sourced from whichever layer is correct for it:
 //  - OUTER (fore) edges from the WHITE PAGE BASE ("Page left"/"Page right") — the multiply
@@ -83,6 +83,17 @@ function withOpacity(raw, op) {
   for (let i = 3; i < d.length; i += 4) d[i] = Math.round(d[i] * op);
   return raw;
 }
+// Neutralise a layer's colour to grey (rgb → luminance). The open-book "Shadows" layer carries
+// a faint warm tint that reads as a pink wash on the white backdrop; this keeps the shadow but
+// makes it neutral so all three mockups share an identical clean-white background.
+function neutralize(raw) {
+  const d = raw.buffer;
+  for (let i = 0; i < d.length; i += 4) {
+    const l = Math.round(0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2]);
+    d[i] = d[i+1] = d[i+2] = l;
+  }
+  return raw;
+}
 // Tint a (greyscale) raw RGBA layer to `rgb`, preserving its per-pixel luminance as a
 // brightness factor → keeps the layer's modelled form/shading but in the target hue.
 // Used to colour the "Book" silhouette to the template's cover colour; the page layers
@@ -103,9 +114,9 @@ const add = (raw, blend) => layers.push({ input: raw.buffer ? raw.buffer : raw, 
 add(withOpacity(layerRaw('BG Highlights'), 0.6), 'screen');
 // Shadows softened: the PSD layer is LINEAR-BURN; multiply at full strength reads too
 // dark/concentrated under the spine (issue #4). ~0.5 diffuses it toward linear-burn.
-add(withOpacity(layerRaw('Shadows'), 0.5), 'multiply');
+add(neutralize(withOpacity(layerRaw('Shadows'), 0.5)), 'multiply');
 add(tint(layerRaw('Book'), COVER), 'over');   // cover silhouette tinted to the template cover colour
-add(layerRaw('Back cover'), 'multiply');
+add(neutralize(layerRaw('Back cover')), 'multiply'); // neutralised: its warm drop-shadow tinted the white backdrop pink
 add(layerRaw('Pages'), 'over');
 add(layerRaw('Page left'), 'over');
 add(layerRaw('Page right'), 'over');

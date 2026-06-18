@@ -35,8 +35,9 @@ function layerRaw(name) {
 }
 function withOpacity(raw, op) { const d = raw.buffer; for (let i = 3; i < d.length; i += 4) d[i] = Math.round(d[i] * op); return raw; }
 
-const comp = psd.canvas.getContext('2d').getImageData(8, 8, 1, 1).data;
-const bg = { r: comp[0], g: comp[1], b: comp[2] };
+// Backdrop: soft off-white (#f0f0f0, just below the paper tone so page/cover edges stay crisp on it), shared across all three mockups (closed/open/back). The contact shadow
+// still renders via the multiply "Shadows" layer; "BG Highlights" (screen) is a no-op on white.
+const bg = { r: 240, g: 240, b: 240 };
 
 // Outer-surface quad from the blank "Pages" layer (axis-extreme corners of the tilted rect).
 function coverQuad(name) {
@@ -55,10 +56,13 @@ function coverQuad(name) {
   }
   return { top, right, bot, left };
 }
-const q = coverQuad('Pages');
-const ring = [q.top, q.right, q.bot, q.left];
-const ROT = parseInt(process.env.ROT || '0', 10);
-const DST = [0, 1, 2, 3].map(i => ring[(i + ROT) % 4]);
+// Three placement quads, taken from the PSD's own shading layers (their alpha SHAPES mark
+// exactly where each surface sits): back cover (left page), front cover (right page), and the
+// thin spine fold between them. The "Pages" layer underneath is the photographed book body
+// INCLUDING the page block, which shows below/around the covers → the open-book "folded" depth.
+const Q_BACK  = coverQuad('Back cover'); // left page
+const Q_FRONT = coverQuad('Cover');      // right page (the multiply "Cover" is last in the stack)
+const Q_SPINE = coverQuad('Edge ');      // spine fold (trailing space in the layer name)
 
 function solveHomography(src, dst) {
   const A = [], b = [];
@@ -80,45 +84,65 @@ function solveHomography(src, dst) {
   return b.map((v, i) => v / A[i][i]);
 }
 
-// Whole wrap = source rectangle.
+// Warp a flat art strip (own raw RGBA buffer, sw×sh) onto a destination quad. The quad's
+// axis-extreme corners {top,right,bot,left} correspond to the art rect [TL,TR,BR,BL] — a
+// correspondence proven by the original single full-wrap warp (ROT=0) and consistent for every
+// sub-rectangle of the wrap since the covers share the spread's tilt.
+function warpStrip(art, sw, sh, quad) {
+  const dst = [quad.top, quad.right, quad.bot, quad.left];
+  const SRC = [[0, 0], [sw, 0], [sw, sh], [0, sh]];
+  const hi = solveHomography(dst, SRC);
+  const minX = Math.max(0, Math.floor(Math.min(...dst.map(p => p[0]))));
+  const maxX = Math.min(W, Math.ceil(Math.max(...dst.map(p => p[0]))));
+  const minY = Math.max(0, Math.floor(Math.min(...dst.map(p => p[1]))));
+  const maxY = Math.min(H, Math.ceil(Math.max(...dst.map(p => p[1]))));
+  const ow = maxX - minX, oh = maxY - minY;
+  const warped = Buffer.alloc(ow * oh * 4, 0);
+  for (let y = minY; y < maxY; y++) {
+    for (let x = minX; x < maxX; x++) {
+      const w_ = hi[6] * x + hi[7] * y + 1;
+      const u = (hi[0] * x + hi[1] * y + hi[2]) / w_;
+      const v = (hi[3] * x + hi[4] * y + hi[5]) / w_;
+      if (u < 0 || v < 0 || u >= sw - 1 || v >= sh - 1) continue;
+      const x0 = Math.floor(u), y0 = Math.floor(v), fx = u - x0, fy = v - y0;
+      const o = (y - minY) * ow * 4 + (x - minX) * 4;
+      for (let c = 0; c < 3; c++) {
+        const p00 = art[(y0 * sw + x0) * 4 + c], p10 = art[(y0 * sw + x0 + 1) * 4 + c];
+        const p01 = art[((y0 + 1) * sw + x0) * 4 + c], p11 = art[((y0 + 1) * sw + x0 + 1) * 4 + c];
+        warped[o + c] = (p00 * (1 - fx) + p10 * fx) * (1 - fy) + (p01 * (1 - fx) + p11 * fx) * fy;
+      }
+      warped[o + 3] = 255;
+    }
+  }
+  return { warped, ow, oh, minX, minY };
+}
+
+// Wrap geometry: back 200mm | spine 9mm | front 200mm.
 const wrap = sharp(WRAP);
 const wm = await wrap.metadata();
 const aw = wm.width, ah = wm.height;
-const artBuf = await wrap.clone().ensureAlpha().raw().toBuffer();
+const pxPerMm = aw / 409;
+const sp0 = Math.round(200 * pxPerMm), sp1 = Math.round(209 * pxPerMm);
+const extract = async (left, width) => wrap.clone().extract({ left, top: 0, width, height: ah }).ensureAlpha().raw().toBuffer();
 
-const SRC = [[0, 0], [aw, 0], [aw, ah], [0, ah]];
-const hi = solveHomography(DST, SRC);
-const minX = Math.max(0, Math.floor(Math.min(...DST.map(p => p[0]))));
-const maxX = Math.min(W, Math.ceil(Math.max(...DST.map(p => p[0]))));
-const minY = Math.max(0, Math.floor(Math.min(...DST.map(p => p[1]))));
-const maxY = Math.min(H, Math.ceil(Math.max(...DST.map(p => p[1]))));
-const ow = maxX - minX, oh = maxY - minY;
-const warped = Buffer.alloc(ow * oh * 4, 0);
-for (let y = minY; y < maxY; y++) {
-  for (let x = minX; x < maxX; x++) {
-    const w_ = hi[6] * x + hi[7] * y + 1;
-    const u = (hi[0] * x + hi[1] * y + hi[2]) / w_;
-    const v = (hi[3] * x + hi[4] * y + hi[5]) / w_;
-    if (u < 0 || v < 0 || u >= aw - 1 || v >= ah - 1) continue;
-    const x0 = Math.floor(u), y0 = Math.floor(v), fx = u - x0, fy = v - y0;
-    const o = (y - minY) * ow * 4 + (x - minX) * 4;
-    for (let c = 0; c < 3; c++) {
-      const p00 = artBuf[(y0 * aw + x0) * 4 + c], p10 = artBuf[(y0 * aw + x0 + 1) * 4 + c];
-      const p01 = artBuf[((y0 + 1) * aw + x0) * 4 + c], p11 = artBuf[((y0 + 1) * aw + x0 + 1) * 4 + c];
-      warped[o + c] = (p00 * (1 - fx) + p10 * fx) * (1 - fy) + (p01 * (1 - fx) + p11 * fx) * fy;
-    }
-    warped[o + 3] = 255;
-  }
-}
+const backArt  = await extract(0, sp0);
+const spineArt = await extract(sp0, sp1 - sp0);
+const frontArt = await extract(sp1, aw - sp1);
+
+const back  = warpStrip(backArt,  sp0,        ah, Q_BACK);
+const spine = warpStrip(spineArt, sp1 - sp0,  ah, Q_SPINE);
+const front = warpStrip(frontArt, aw - sp1,   ah, Q_FRONT);
 
 const layers = [];
 const add = (raw, blend) => layers.push({ input: raw.buffer, raw: { width: raw.width, height: raw.height, channels: 4 }, left: raw.left || 0, top: raw.top || 0, blend });
+const push = w => layers.push({ input: w.warped, raw: { width: w.ow, height: w.oh, channels: 4 }, left: w.minX, top: w.minY, blend: 'over' });
 
 add(withOpacity(layerRaw('BG Highlights'), 0.6), 'screen');
 add(withOpacity(layerRaw('Shadows'), 0.5), 'multiply');
-add(layerRaw('Pages'), 'over');                          // blank cover surface
-layers.push({ input: warped, raw: { width: ow, height: oh, channels: 4 }, left: minX, top: minY, blend: 'over' }); // warped wrap design
-add(layerRaw('Edge '), 'multiply');                      // spine fold shading (note trailing space)
+add(layerRaw('Pages'), 'over');                          // book body incl. page block (shows underneath)
+push(back);                                              // back cover → left page
+push(front);                                             // front cover → right page
+push(spine);                                             // spine strip (engine caption) → spine fold
 add(layerRaw('Highlights'), 'screen');                   // cover sheen
 
 const base = sharp({ create: { width: W, height: H, channels: 3, background: bg } });
@@ -128,4 +152,4 @@ await sharp(composed)
   .modulate({ brightness: 1.05, saturation: 1.03 })
   .png()
   .toFile(path.resolve(OUT));
-console.log('wrote', OUT, '(bg', bg, ') quad', DST);
+console.log('wrote', OUT, '(bg', bg, ') quads back/front/spine', Q_BACK.top, Q_FRONT.top, Q_SPINE.top);
