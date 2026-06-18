@@ -46,8 +46,12 @@ const spec = window.buildBookSpec(window.NEWBORN_DATA);
 // vertical trim hack needed.
 new THREE.TextureLoader().load('../sessions/qa-runs/cover-wrap-newborn.png', (wrap) => {
   const { book, fit, dims } = createBook(THREE, scene, renderer, spec, wrap);
-  book.position.y = dims.D / 2;            // rest on the ground
-  groundShadow(THREE, scene, 0);
+  // Keep the book centred at the origin (frames cleanly from every angle); drop the
+  // shadow-catcher plane to the book's actual base so the contact shadow sits under
+  // it — NOT at y=0, which is the book's vertical middle (that floated a grey slab
+  // across the back view and banded the cover where the plane cut through).
+  const baseY = new THREE.Box3().setFromObject(book).min.y;
+  groundShadow(THREE, scene, baseY);
   fit(camera);
   camera.position.y += 0.4;
   camera.lookAt(0, 0, 0);

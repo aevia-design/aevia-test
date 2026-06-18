@@ -1,7 +1,32 @@
 # Session Status
-_Last updated: 2026-06-17 (session 53)_
+_Last updated: 2026-06-18 (session 56)_
 
 ## Status
+**Session 56 (2026-06-18) — OPEN-BOOK MOCKUP REFINED + STRATEGIC REGROUP. Scope locked: mockups are now ONLY temporary static website images, all PSD-composite, Three.js retired; the customer interactive 3D preview is ABANDONED. Closed-book composite started (needs a perspective fix). Branch `mockup-3d-renderer` (NOT main, NOT pushed). COMMITTED this session — code only; the heavy PSDs stay local/gitignored. Read `sessions/2026-06-18-s56.md`.**
+
+Refined the S55 open-book "good enough v1" with 3 fixes (all verified): (1) yellow low-res slot outlines stripped in `qa/capture-spread.mjs`; (2) bird/bleed overhang fixed — artwork edges now sourced per-side (OUTER from white page base, GUTTER from multiply layers) so near-edge art stays on-page AND reaches into the fold (no crease seam); (3) cover sliver tinted to the template cover colour via `tint()` (param, default navy `#142a4f`). Bleed confirmed correct as-is (engine spread = trim = finished book; PDF bleed is cut off in production).
+
+**Regroup outcome (scope locked with Evgeny):** the only aim is TEMPORARY static website images per template (pre-photoshoot), all PSD for ONE consistent style. **Three.js fully retired** (closed-book too). **Customer interactive flip-through preview ABANDONED** — to replace the flat preview it'd need to be live + pre-payment, but PSD compositing is offline/Node-only and a server pre-render lands the preview only after payment (pointless). Memory updated (`project_mockup_pipeline`, `project_3d_renderer`).
+
+**Closed-book started** (`scripts/compose-closed.mjs`): Evgeny added `closed book.psd` + `back book.psd`. First draft drops the front cover (last 200mm of the 409mm wrap) into the `"Cover"` multiply slot. BLOCKER: the book is at an ANGLE → flat cover stretched into the tilted face SKEWS; needs a perspective warp (or go flat/face-on — Evgeny says angle isn't fixed). Colour bug to fix: don't navy-tint `"Book"` under the front face.
+
+### ▶ NEXT (Session 57) — finish the static website images
+1. **Closed-book**: perspective-warp the cover onto the tilted face OR go flat/face-on (Evgeny's call); fix the light-base colour bug. Back-book PSD now exists → same technique.
+2. **Lock the website shot list** (likely 1 closed cover + 1 open spread per template; back optional).
+3. **Generalize Newborn → Scribble + Wander** — Evgeny runs `qa/capture-spread.mjs` + `qa/capture-cover-wrap.mjs` per template; PSD cover colour is a param.
+4. **Wire the static PNGs into website placeholders** (`assets/images/mockups/`).
+5. **(Cleanup)** delete retired Three.js files (`book-3d-renderer.js`, `book-3d-spec.js`, prototypes, `qa/verify-3d.mjs`, `qa/verify-open.mjs`); KEEP `qa/capture-cover-wrap.mjs`.
+6. **Carried (not mockup):** real-device phone E2E of step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`).
+
+### ⚠ S56 watch-outs
+- **Mockup-template PSDs/SVGs are NOT in git** (46–83MB, over Cloudflare's 25MiB silent-fail limit + bloat). `.gitignore`s `assets/mockup example/`. They live LOCALLY (Xenia has originals); compose scripts read them from disk. Git LFS if version control wanted later.
+- **Branch only, NOT pushed.** `.claude/settings.local.json` left out as usual.
+- **`sessions/qa-runs/*` gitignored** — `spread-newborn.png`/`cover-wrap-newborn.png` via QA captures (staff password, Evgeny runs); `mockup-open.png`/`mockup-closed.png` via the offline compose scripts.
+- **Three.js retired but files still present** — deletion is a pending cleanup task.
+
+---
+
+### Previous: Session 53
 **Session 53 (2026-06-17) — 3D RENDERER REFINED INTO A FAITHFUL HARDCOVER. Branch `mockup-3d-renderer` (NOT main, NOT pushed). Committed `87777a6`. Worked the S52 refinement queue + Xenia's "looks softcover → make it hardcover" feedback. Closed-book Newborn render now reads as a premium case-bound hardcover; Evgeny approved across this session's passes. Read `sessions/2026-06-17-s53.md`. Next: back-cover / inside-spread views, then generalize to Scribble/Wander, then wire PNGs into website placeholders.**
 
 **What shipped this session (committed `87777a6` on the branch):**
