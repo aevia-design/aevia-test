@@ -102,11 +102,20 @@
     .cta:hover { background: #2e2e2e; }
     .cta-note { text-align: center; font-size: 11px; color: var(--muted); }
 
-    .gallery-main { width: 100%; aspect-ratio: 5/4; object-fit: cover; border-radius: 4px; background: var(--surface); }
+    .gallery-main { width: 100%; aspect-ratio: 10/7; object-fit: contain; border-radius: 4px; background: #fff; cursor: zoom-in; }
     .thumbs { display: flex; gap: 8px; margin-top: 10px; }
-    .thumbs button { flex: 1; aspect-ratio: 1; border: 2px solid transparent; border-radius: 3px; overflow: hidden; padding: 0; transition: border-color 0.15s; }
-    .thumbs button.on { border-color: var(--text); }
-    .thumbs img { width: 100%; height: 100%; object-fit: cover; }
+    .thumbs button { flex: 1; aspect-ratio: 10/7; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; padding: 3px; background: #fff; cursor: pointer; transition: border-color 0.15s; }
+    .thumbs button.on { border-color: var(--text); box-shadow: 0 0 0 1px var(--text); }
+    .thumbs img { width: 100%; height: 100%; object-fit: contain; }
+    .addon-preview { position: relative; width: 160px; height: 112px; flex-shrink: 0; border-radius: 3px; background: #fff; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: zoom-in; }
+    .addon-preview img { width: 100%; height: 100%; object-fit: contain; }
+    .addon-preview .zoom-hint { position: absolute; bottom: 4px; right: 4px; background: rgba(20,20,20,0.6); color: #fff; font-size: 9px; letter-spacing: 0.04em; padding: 2px 5px; border-radius: 3px; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+    .addon-preview:hover .zoom-hint { opacity: 1; }
+    .lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(20,20,20,0.88); display: none; align-items: center; justify-content: center; padding: 40px; cursor: zoom-out; }
+    .lightbox.on { display: flex; }
+    .lightbox img { max-width: 100%; max-height: 100%; border-radius: 4px; box-shadow: 0 12px 48px rgba(0,0,0,0.4); }
+    .lightbox-close { position: absolute; top: 24px; right: 32px; width: 40px; height: 40px; border-radius: 100px; background: rgba(255,255,255,0.12); color: #fff; font-size: 22px; line-height: 40px; text-align: center; }
+    @media (max-width: 600px) { .addon-preview { width: 104px; height: 73px; } }
 
     /* ═══════════════════════════════
        LAYOUT A — Sticky split
@@ -218,17 +227,21 @@
     <!-- Gallery left -->
     <div>
       <img id="a-img" class="gallery-main"
-        src="https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp"
-        alt="Newborn photo book, open spread" />
+        src="../assets/images/mockups/newborn/hero.webp"
+        onclick="openLightbox(document.getElementById('a-img').src)"
+        alt="Newborn photo book, open flat" />
       <div class="thumbs">
         <button class="on" onclick="sw('a',0,this)">
-          <img src="https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp?width=200&auto=webp" alt="" />
+          <img src="../assets/images/mockups/newborn/hero.webp" alt="Open flat — back, spine and front" />
         </button>
         <button onclick="sw('a',1,this)">
-          <img src="https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-2.webp?width=200&auto=webp" alt="" />
+          <img src="../assets/images/mockups/newborn/closed.webp" alt="Closed book" />
         </button>
         <button onclick="sw('a',2,this)">
-          <img src="https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp?width=200&auto=webp" alt="" />
+          <img src="../assets/images/mockups/newborn/spread-1.webp" alt="Inside spread" />
+        </button>
+        <button onclick="sw('a',3,this)">
+          <img src="../assets/images/mockups/newborn/spread-2.webp" alt="Inside spread" />
         </button>
       </div>
     </div>
@@ -255,6 +268,9 @@
       <div class="addons">
         <div class="section-label">Special spreads — all free</div>
         <div class="addon" data-fp="FPintro" data-photos="0" onclick="xtra(this)">
+          <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/newborn/fpintro.webp')">
+            <img src="../assets/images/mockups/newborn/fpintro.webp" alt="Intro spread preview"/><span class="zoom-hint">Click to enlarge</span>
+          </div>
           <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="addon-body">
             <div class="addon-name">Intro</div>
@@ -263,6 +279,9 @@
           <div class="addon-cost">Add</div>
         </div>
         <div class="addon" data-fp="FPlabour" data-photos="2" onclick="xtra(this)">
+          <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/newborn/fplabour.webp')">
+            <img src="../assets/images/mockups/newborn/fplabour.webp" alt="Labour spread preview"/><span class="zoom-hint">Click to enlarge</span>
+          </div>
           <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="addon-body">
             <div class="addon-name">Labour</div>
@@ -286,6 +305,7 @@
 
 
 
+<div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button><img id="lightbox-img" src="" alt="Spread preview"/></div>
 <!-- Accordion -->
 <div class="acc-wrap">
   <div class="acc-item">
@@ -388,18 +408,13 @@
 
 
 <script>
+  const MOCKUP_BASE = '../assets/images/mockups/newborn/';
   const srcs = {
-    a: [
-      'https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp',
-      'https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-2.webp',
-      'https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp',
-    ],
-    b: [
-      'https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp',
-      'https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-2.webp',
-      'https://au-prod-media.s3.us-west-2.amazonaws.com/media/pdptest/baby-board-book-image-1.webp',
-    ],
+    a: ['hero.webp', 'closed.webp', 'spread-1.webp', 'spread-2.webp'].map(f => MOCKUP_BASE + f),
   };
+  function openLightbox(src){document.getElementById('lightbox-img').src=src;document.getElementById('lightbox').classList.add('on');}
+  function closeLightbox(){document.getElementById('lightbox').classList.remove('on');}
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox();});
   function sw(l, i, btn) {
     document.getElementById(l + '-img').src = srcs[l][i];
     btn.closest('.thumbs').querySelectorAll('button').forEach(b => b.classList.remove('on'));
