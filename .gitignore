@@ -25,3 +25,7 @@ sessions/qa-runs/
 desktop.ini
 .DS_Store
 Thumbs.db
+
+# composed mockup outputs (review artefacts, regenerate offline)
+# anchored to repo root so the web-ready assets under assets/images/mockups/ are NOT ignored
+/mockups/

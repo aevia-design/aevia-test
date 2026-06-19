@@ -16,13 +16,17 @@
     .product-tagline{font-family:var(--serif);font-style:italic;color:var(--muted);line-height:1.65;margin-bottom:36px;font-size:16px;max-width:340px;}
     .section-label{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
     .zone{display:grid;grid-template-columns:1fr 400px;gap:72px;max-width:1160px;margin:0 auto;padding:64px 56px;align-items:start;}.panel{position:sticky;top:90px;}
-    .gallery-main{width:100%;aspect-ratio:5/4;border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center;}.gallery-main svg{opacity:0.25;}
-    .thumbs{display:flex;gap:8px;margin-top:10px;}.thumb-ph{flex:1;aspect-ratio:1;border-radius:3px;background:var(--surface);border:2px solid transparent;}.thumb-ph.on{border-color:var(--text);}
+    .gallery-main{width:100%;aspect-ratio:10/7;border-radius:4px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in;}.gallery-main svg{opacity:0.25;}.gallery-main img{width:100%;height:100%;object-fit:contain;}
+    .thumbs{display:flex;gap:8px;margin-top:10px;}.thumb-ph{flex:1;aspect-ratio:10/7;border-radius:4px;background:#fff;border:1px solid var(--border);overflow:hidden;cursor:pointer;padding:3px;}.thumb-ph.on{border-color:var(--text);box-shadow:0 0 0 1px var(--text);}.thumb-ph img{width:100%;height:100%;object-fit:contain;display:block;}
+    .lightbox{position:fixed;inset:0;z-index:200;background:rgba(20,20,20,0.88);display:none;align-items:center;justify-content:center;padding:40px;cursor:zoom-out;}.lightbox.on{display:flex;}.lightbox img{max-width:100%;max-height:100%;border-radius:4px;box-shadow:0 12px 48px rgba(0,0,0,0.4);}
+    .lightbox-close{position:absolute;top:24px;right:32px;width:40px;height:40px;border-radius:100px;background:rgba(255,255,255,0.12);color:#fff;font-size:22px;line-height:40px;text-align:center;}
+    @media(max-width:600px){.addon-preview{width:104px;height:73px;}}
     .page-toggle{margin-bottom:30px;}.chips{display:flex;gap:8px;margin-top:8px;}
     .chip{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 22px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;min-width:108px;background:var(--white);transition:border-color 0.15s,background 0.15s;user-select:none;}.chip:hover{border-color:var(--text);}.chip.on{border-color:var(--text);background:var(--text);color:var(--white);}
     .chip-label{font-size:12px;font-weight:500;letter-spacing:0.03em;}.chip-price{font-family:var(--serif);font-size:15px;}
     .addons{margin-bottom:30px;}.addon{display:flex;align-items:flex-start;gap:14px;padding:15px;border:1.5px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--white);cursor:pointer;transition:border-color 0.15s;}.addon:hover{border-color:#c4a882;}.addon.on{border-color:var(--text);box-shadow:inset 0 0 0 0.5px var(--text);}
-    .addon-preview{width:88px;height:72px;flex-shrink:0;border-radius:3px;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;}.addon-preview img{width:100%;height:100%;object-fit:cover;}
+    .addon-preview{position:relative;width:160px;height:112px;flex-shrink:0;border-radius:3px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in;}.addon-preview img{width:100%;height:100%;object-fit:contain;}
+    .addon-preview .zoom-hint{position:absolute;bottom:4px;right:4px;background:rgba(20,20,20,0.6);color:#fff;font-size:9px;letter-spacing:0.04em;padding:2px 5px;border-radius:3px;opacity:0;transition:opacity 0.15s;pointer-events:none;}.addon-preview:hover .zoom-hint{opacity:1;}
     .photo-count{font-size:13px;color:var(--muted);line-height:1.6;padding:12px 14px;background:var(--surface);border-radius:4px;margin-bottom:24px;}
     .chk{width:20px;height:20px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:background 0.15s,border-color 0.15s;}.addon.on .chk{background:var(--text);border-color:var(--text);}.chk svg{display:none;}.addon.on .chk svg{display:block;}
     .addon-body{flex:1;}.addon-name{font-size:13px;font-weight:600;margin-bottom:3px;}.addon-desc{font-size:12px;color:var(--muted);line-height:1.5;}
@@ -54,8 +58,13 @@
 <div class="crumb"><a href="collections.html">Templates</a> <span>›</span> <a href="collections.html#adventures">Adventures</a> <span>›</span> Wander</div>
 <div class="zone">
   <div>
-    <div class="gallery-main"><svg width="72" height="72" viewBox="0 0 72 72" fill="none"><rect x="10" y="18" width="52" height="38" rx="3" stroke="#9b8e83" stroke-width="1.8"/><circle cx="25" cy="32" r="6" stroke="#9b8e83" stroke-width="1.8"/><path d="M10 46l14-14 10 10 8-8 12 10 8-10" stroke="#9b8e83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-    <div class="thumbs"><div class="thumb-ph on"></div><div class="thumb-ph"></div><div class="thumb-ph"></div></div>
+    <div class="gallery-main" onclick="openLightbox(document.getElementById('gallery-img').src)"><img id="gallery-img" src="../assets/images/mockups/wander/hero.webp" alt="Wander photo book"/></div>
+    <div class="thumbs">
+      <button class="thumb-ph on" onclick="pickThumb(this,'hero.webp')"><img src="../assets/images/mockups/wander/hero.webp" alt="Open flat — back, spine and front"/></button>
+      <button class="thumb-ph" onclick="pickThumb(this,'closed.webp')"><img src="../assets/images/mockups/wander/closed.webp" alt="Closed book"/></button>
+      <button class="thumb-ph" onclick="pickThumb(this,'spread-1.webp')"><img src="../assets/images/mockups/wander/spread-1.webp" alt="Inside spread"/></button>
+      <button class="thumb-ph" onclick="pickThumb(this,'spread-2.webp')"><img src="../assets/images/mockups/wander/spread-2.webp" alt="Inside spread"/></button>
+    </div>
   </div>
   <div class="panel">
     <div class="tag">Adventures</div>
@@ -72,8 +81,8 @@
       <div class="section-label">Optional spreads — all free</div>
 
       <div class="addon" onclick="xtra(this)" data-fp="FP1" data-photos="0">
-        <div class="addon-preview">
-          <svg width="40" height="40" viewBox="0 0 28 28" fill="none"><path d="M5 8l6-2 6 2 6-2v14l-6 2-6-2-6 2V8z" stroke="#c4a882" stroke-width="1.4" stroke-linejoin="round"/><path d="M11 6v14M17 8v14" stroke="#c4a882" stroke-width="1.4"/><circle cx="14" cy="12" r="2" stroke="#c4a882" stroke-width="1.4"/></svg>
+        <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/wander/fp1.webp')">
+          <img src="../assets/images/mockups/wander/fp1.webp" alt="Travel map spread preview"/><span class="zoom-hint">Click to enlarge</span>
         </div>
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="addon-body"><div class="addon-name">Travel map &amp; itinerary</div><div class="addon-desc">Share which country (or countries) you travelled to and add a short itinerary — we illustrate your route on a dedicated map spread.</div></div>
@@ -86,6 +95,7 @@
     <p class="cta-note">You approve before we print. No charge until you're happy.</p>
   </div>
 </div>
+<div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button><img id="lightbox-img" src="" alt="Spread preview"/></div>
 <div class="acc-wrap">
   <div class="acc-item"><button class="acc-btn" onclick="acc(this)">About this template<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Wander is designed for travel photography — wide panoramas, layered compositions, and the sweeping sense of moving through the world. Landscape orientation and full-bleed spreads let your images lead.</p></div></div>
   <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Print &amp; production<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Printed on 170gsm FSC-certified matte art paper. Hardcover case-bound. Produced in Vienna, dispatched within 5–7 business days.</p><ul><li>Format: 33 × 24 cm (landscape)</li><li>Cover: Matte linen hardcover, slate</li><li>Paper: 170gsm matte, archival quality</li><li>Binding: Case-bound, sewn signatures</li></ul></div></div>
@@ -113,6 +123,11 @@
       'Your ' + pages + '-page book will need approximately ' + (lo + extra) + '\u2013' + (hi + extra) + ' photos in total.';
   }
 
+  const MOCKUP_BASE='../assets/images/mockups/wander/';
+  function pickThumb(btn,file){btn.closest('.thumbs').querySelectorAll('.thumb-ph').forEach(t=>t.classList.remove('on'));btn.classList.add('on');document.getElementById('gallery-img').src=MOCKUP_BASE+file;}
+  function openLightbox(src){document.getElementById('lightbox-img').src=src;document.getElementById('lightbox').classList.add('on');}
+  function closeLightbox(){document.getElementById('lightbox').classList.remove('on');}
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox();});
   function pick(el,p){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');document.getElementById('price').textContent=p;updatePhotoCount();}
   function xtra(card){card.classList.toggle('on');card.querySelector('.addon-cost').textContent=card.classList.contains('on')?'Added \u2713':'Free';updatePhotoCount();}
 
