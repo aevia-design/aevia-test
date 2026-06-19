@@ -1,7 +1,17 @@
 # Session Status
-_Last updated: 2026-06-19 (session 62)_
+_Last updated: 2026-06-19 (session 63)_
 
 ## Status
+**Session 63 (2026-06-19) — MOCKUPS WIRED INTO THE WEBSITE + COMMITTED & PUSHED. Branch `mockup-3d-renderer` (NOT main → NOT live yet). 2 commits pushed (`57914b5` pipeline, `750f71b` web). Read `sessions/2026-06-19-s63.md`.**
+
+Scribble/Wander/Newborn product pages now show real mockups: hero (open-flat) + 4 thumbs + add-on spread previews with click-to-enlarge lightbox; collections cards show closed-book shots (other 7 = placeholders). New `scripts/web-mockups.mjs` derives 1600px WebP into `assets/images/mockups/<template>/`. `.gitignore` anchored to `/mockups/` (root rule was silently ignoring the web assets). `/reviewing-code`: Accept, 0 console errors desktop+mobile.
+
+### ▶ NEXT (Session 64)
+1. **MERGE TO `main` TO GO LIVE** — the only thing between this work and the live site (Cloudflare deploys main). PR: https://github.com/aevia-design/aevia-test/pull/new/mockup-3d-renderer
+2. **Parked pipeline fixes**: cover "too white" (closed.psd highlight wash; tone down in `compose-closed.mjs`); Scribble cover photo upside-down (EXIF auto-orient missing in live engine cover render — mirror S41 PDF `.rotate()`).
+3. Carried: real-device phone E2E of step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` + deploy `createCheckoutSession`).
+
+### Previous: Session 62
 **Session 62 (2026-06-19) — OPEN-SPREAD FIXES + SCRIBBLE ADDED + ALL 3 SETS REGENERATED. Branch `mockup-3d-renderer` (NOT main, NOT pushed). NOTHING COMMITTED. Read `sessions/2026-06-19-s62.md`.**
 
 **The mockup pipeline now runs clean across all 3 templates (Newborn AEV-039, Wander AEV-040, Scribble AEV-041).**
