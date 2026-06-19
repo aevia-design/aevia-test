@@ -18,6 +18,9 @@
 import { chromium } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
+import { createRequire } from 'module';
+// sharp is installed under scripts/, not the repo root — resolve it from there.
+const sharp = createRequire(path.resolve('scripts/package.json'))('sharp');
 
 const ORDER = process.env.QA_ORDER || 'AEV-037';
 const EMAIL = process.env.STAFF_EMAIL || 'evg.myasin@gmail.com';
@@ -39,6 +42,46 @@ const page = await ctx.newPage();
 const consoleMsgs = [];
 page.on('console', m => { if (['error','warning'].includes(m.type())) consoleMsgs.push(`${m.type()}: ${m.text()}`); });
 page.on('pageerror', e => consoleMsgs.push(`pageerror: ${e.message}`));
+page.on('requestfailed', r => consoleMsgs.push(`requestfailed: ${r.failure()?.errorText || '?'} ${r.url().slice(0, 130)}`));
+
+// ROOT CAUSE (s61, mirrored from capture-spread.mjs): heavy orders hang the headless load
+// because of the TOTAL image PAYLOAD, not the network. Wander AEV-040 is ~2 GB of full-res
+// originals; the engine's `Promise.all` over all photo fetches stalls when headless Chromium
+// can't hold that in memory, so the order panel (and cover) never render. FIX: intercept GCS
+// photos in the Node route and downsample each to ≤MAX_DIM before the browser sees it (~2 GB
+// → ~150 MB). The cover wrap only needs the cover art, but the engine still loads ALL pool
+// photos on order load, so the shrink is required here too. Engine untouched; non-image/HEIC
+// bodies pass through. (The OLD in-page window.fetch throttle this replaces was proven inert.)
+const MAX_DIM = 1600;
+let routedOk = 0, routedFail = 0, routedShrunk = 0;
+await page.route('**/storage.googleapis.com/**', async (route) => {
+  let lastErr;
+  for (let i = 0; i < 5; i++) {
+    try {
+      const resp = await route.fetch({ timeout: 60000 });
+      const orig = await resp.body();
+      let body = orig, headers = resp.headers();
+      try {
+        const out = await sharp(orig)
+          .rotate()
+          .resize(MAX_DIM, MAX_DIM, { fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 82 })
+          .toBuffer();
+        if (out.length < orig.length) {
+          body = out;
+          headers = { ...headers, 'content-type': 'image/jpeg' };
+          delete headers['content-length'];
+          routedShrunk++;
+        }
+      } catch (_) { /* HEIC/non-image/sharp failure → serve original */ }
+      routedOk++;
+      return await route.fulfill({ status: resp.status(), headers, body });
+    } catch (e) { lastErr = e; await new Promise(r => setTimeout(r, 800 * (i + 1))); }
+  }
+  routedFail++;
+  consoleMsgs.push(`route give-up after 5 tries: ${lastErr?.message || lastErr} ${route.request().url().slice(0, 130)}`);
+  return route.abort();
+});
 
 try {
   // ── Staff login ──────────────────────────────────────────────
@@ -55,12 +98,12 @@ try {
   await page.click('#mode-order-btn');
   await page.fill('#order-number-input', ORDER);
   await page.click('#order-load-btn');
-  await page.waitForSelector('#order-info-panel', { state: 'visible', timeout: 60000 });
+  await page.waitForSelector('#order-info-panel', { state: 'visible', timeout: 180000 });
   note(`Loading ${ORDER}…`);
 
   // ── Wait for the cover-canvas + its photo/SVG to finish painting ──
   const cover = page.locator('.cover-canvas').first();
-  await cover.waitFor({ state: 'visible', timeout: 60000 });
+  await cover.waitFor({ state: 'visible', timeout: 180000 });
   // All <img> inside the cover (SVG overlay + cover photo) must be fully loaded,
   // or the screenshot catches a half-painted wrap.
   await page.waitForFunction(() => {
@@ -68,7 +111,7 @@ try {
     if (!c) return false;
     const imgs = [...c.querySelectorAll('img')];
     return imgs.length > 0 && imgs.every(i => i.complete && i.naturalWidth > 0);
-  }, null, { timeout: 60000 }).catch(() => note('⚠ image-complete wait timed out — capturing anyway'));
+  }, null, { timeout: 180000 }).catch(() => note('⚠ image-complete wait timed out — capturing anyway'));
   await page.waitForTimeout(2000); // settle (fonts, clip-path)
 
   // ── Screenshot ONLY the cover-canvas element → clean trim wrap ──
@@ -82,6 +125,7 @@ try {
   note(`❌ ERROR: ${err.message}`);
   await page.screenshot({ path: path.join(OUT_DIR, 'capture-cover-ERROR.png'), fullPage: true }).catch(()=>{});
 } finally {
+  note(`GCS requests refetched via Node: ${routedOk} ok (${routedShrunk} downsampled), ${routedFail} gave up`);
   if (consoleMsgs.length) { note('--- CONSOLE (errors/warnings) ---'); [...new Set(consoleMsgs)].slice(0,15).forEach(m => note('  ' + m)); }
   await browser.close();
 }

@@ -11,6 +11,10 @@ window.SCRIBBLE_DATA = {
       spine: { xMm: 200, wMm: 9,   bgColor: '#fdd16f' },
       front: { xMm: 209, wMm: 200, bgColor: '#f8ead9' },
     },
+    // Visible per-surface cover colours used by the mockup composers (scripts/compose-*.mjs)
+    // to tint EXPOSED board edges. Distinct from sections.bgColor (the render's background
+    // fill behind the cover SVG).
+    mockupEdges: { front: '#f7e9d8', spine: '#fdd16f', back: '#3e2a55' },
     slots: [
       { xMm: 327, yMm: 118, wMm: 140, hMm: 100, pool: 'cover', orientation: 'landscape' }
     ],

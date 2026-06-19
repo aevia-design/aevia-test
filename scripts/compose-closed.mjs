@@ -26,9 +26,13 @@ ag.initializeCanvas((w, h) => createCanvas(w, h));
 const WRAP = process.argv[2] || '../sessions/qa-runs/cover-wrap-newborn.png';
 const OUT  = process.argv[3] || '../sessions/qa-runs/mockup-closed.png';
 const PSD  = '../assets/mockup example/closed book.psd';
-// Cover colour for the exposed spine / board edges (template's own cover colour).
-const COVER_HEX = process.argv[4] || process.env.COVER_HEX || '#142a4f';
-const COVER = { r: parseInt(COVER_HEX.slice(1,3),16), g: parseInt(COVER_HEX.slice(3,5),16), b: parseInt(COVER_HEX.slice(5,7),16) };
+// Cover colour for the exposed board edges. The closed book sits FRONT-up, so its visible
+// board edges belong to the FRONT cover (the spine FACE is covered by the warped spine art
+// from the wrap, which already carries the true spine colour). Sourced from the template's
+// cover.mockupEdges.front (passed as EDGE_FRONT by compose-all); falls back to argv/COVER_HEX.
+const FRONT_HEX = process.env.EDGE_FRONT || process.argv[4] || process.env.COVER_HEX || '#142a4f';
+const hexRgb = (h) => ({ r: parseInt(h.slice(1,3),16), g: parseInt(h.slice(3,5),16), b: parseInt(h.slice(5,7),16) });
+const COVER = hexRgb(FRONT_HEX);
 
 const psd = ag.readPsd(fs.readFileSync(path.resolve(PSD)), { skipCompositeImageData: false, skipThumbnail: true });
 const W = psd.width, H = psd.height;
@@ -136,14 +140,37 @@ const cover = warp(artBuf, aw, ah, DST);
 // thickness. Calibrated from the "Edge copy" layer's alpha extremes (the spine has no PSD layer
 // of its own). Art-rect→quad correspondence [TL,TR,BR,BL] → [D,A,B,C] orients the strip upright
 // with its front-adjacent edge on the hinge.
-const A = [403, 746], B = [1107, 1627];
-const EXT = [-4, 77];                 // board-thickness extrusion (C - B)
+// Spine FACE quad = the PSD's TRUE spine, calibrated from the "Edge copy" shading-mask alpha:
+// hinge A→B plus a CONSTANT board-thickness extrusion EXT. The mask sits as a constant-width
+// band along the book's left edge (verified by overlaying it on the Book silhouette), so warp
+// the spine art onto THIS quad undistorted. Do NOT taper the quad to the silhouette — that
+// squishes the caption. The tiny bits where this mask pokes past the book are removed below
+// by clipping to the Book alpha.
+const A = [403, 746], B = [1107, 1627]; // hinge corners (Edge copy alpha: top/left & right extremes)
+const EXT = [-4, 77];                   // constant board-thickness extrusion → outer spine edge
 const C = [B[0] + EXT[0], B[1] + EXT[1]];
 const D = [A[0] + EXT[0], A[1] + EXT[1]];
 const sx0 = Math.round(200 * pxPerMm), sx1 = Math.round(209 * pxPerMm);
 const sw = sx1 - sx0;
 const spineBuf = await wrap.clone().extract({ left: sx0, top: 0, width: sw, height: ah }).ensureAlpha().raw().toBuffer();
 const spine = warp(spineBuf, sw, ah, [D, A, B, C]);
+
+// The Edge-copy mask is fractionally LARGER than the book — it pokes a few px past the
+// silhouette at the top and bottom corners (the pure-red slivers in the mask overlay). Clip
+// the warped spine to the Book silhouette alpha: the slivers vanish, the spine keeps its
+// correct undistorted shape. (Fresh layerRaw read — the composite tints its own copy later.)
+{
+  const bk = layerRaw('Book');
+  const bAlpha = (X, Y) => {
+    const bx = X - bk.left, by = Y - bk.top;
+    if (bx < 0 || by < 0 || bx >= bk.width || by >= bk.height) return 0;
+    return bk.buffer[(by * bk.width + bx) * 4 + 3];
+  };
+  for (let y = 0; y < spine.oh; y++) for (let x = 0; x < spine.ow; x++) {
+    const o = (y * spine.ow + x) * 4;
+    if (spine.warped[o + 3] && bAlpha(spine.minX + x, spine.minY + y) < 128) spine.warped[o + 3] = 0;
+  }
+}
 
 // Build the composite, bottom → top.
 const layers = [];
@@ -157,13 +184,13 @@ const push = w => layers.push({ input: w.warped, raw: { width: w.ow, height: w.o
 push(cover);                                             // warped cover design on the top face
 push(spine);                                             // warped spine strip (engine caption) on the spine face
 add(withOpacity(layerRaw('Edge copy'), 0.18), 'multiply'); // light spine shading for depth (was 0.45 → blackened the spine)
-add(layerRaw('Highlights'), 'screen');                   // cover sheen over the design
+add(withOpacity(layerRaw('Highlights'), 0.5), 'screen'); // cover sheen, softened — full strength washed out the cover photo
 
 const base = sharp({ create: { width: W, height: H, channels: 3, background: bg } });
 const composed = await base.composite(layers).png().toBuffer();
 await sharp(composed)
   .linear(1.07, -4)
-  .modulate({ brightness: 1.05, saturation: 1.03 })
+  .modulate({ brightness: 1.0, saturation: 1.05 })       // no extra lift (was 1.05 → too bright); a touch more saturation keeps the navy rich
   .png()
   .toFile(path.resolve(OUT));
 console.log('wrote', OUT, '(bg', bg, ') quad', DST);

@@ -21,10 +21,15 @@ ag.initializeCanvas((w, h) => createCanvas(w, h));
 const SPREAD = process.argv[2] || '../sessions/qa-runs/spread-newborn.png';
 const OUT    = process.argv[3] || '../sessions/qa-runs/mockup-open.png';
 const PSD    = '../assets/mockup example/open book.psd';
-// Cover colour for the exposed cover sliver/edges — the template's own cover colour.
-// Default = Newborn cover (newborn-data.js cover.surfaces.front.bgColor #142a4f).
-const COVER_HEX = process.argv[4] || process.env.COVER_HEX || '#142a4f';
-const COVER = { r: parseInt(COVER_HEX.slice(1,3),16), g: parseInt(COVER_HEX.slice(3,5),16), b: parseInt(COVER_HEX.slice(5,7),16) };
+// Per-surface cover colours for the exposed board edges around the open spread. The book lies
+// open, so the LEFT page's edge is the FRONT cover, the RIGHT page's edge is the BACK cover, and
+// the centre fold is the SPINE. Sourced from cover.mockupEdges (passed as EDGE_* by compose-all);
+// falls back to a single legacy colour (argv[4]/COVER_HEX) used uniformly for all three.
+const hexRgb = (h) => ({ r: parseInt(h.slice(1,3),16), g: parseInt(h.slice(3,5),16), b: parseInt(h.slice(5,7),16) });
+const FALLBACK = process.argv[4] || process.env.COVER_HEX || '#142a4f';
+const FRONT = hexRgb(process.env.EDGE_FRONT || FALLBACK);
+const BACK  = hexRgb(process.env.EDGE_BACK  || FALLBACK);
+const SPINE = hexRgb(process.env.EDGE_SPINE || FALLBACK);
 
 const psd = ag.readPsd(fs.readFileSync(path.resolve(PSD)), { skipCompositeImageData: false, skipThumbnail: true });
 const W = psd.width, H = psd.height;
@@ -63,16 +68,64 @@ const pgR = byName['Page right'], mulR = byName['Right page'];
 const LEFT  = { left: pgL.left,  top: pgL.top, right: mulL.right, bottom: pgL.bottom }; // gutter on right
 const RIGHT = { left: mulR.left, top: pgR.top, right: pgR.right,  bottom: pgR.bottom }; // gutter on left
 
+// Page silhouettes are CURVED (open-book perspective): the page is tallest in the middle and
+// shorter at the outer fore-edge, but the artwork slots above are axis-aligned RECTANGLES built
+// from each layer's bounding box. So at the outer top/bottom corners the rectangle pokes past the
+// real page edge and the multiply art spills onto the cover. Clip each art half to its real page
+// shape: union of the white page base ("Page left/right", the curved silhouette) and the multiply
+// layer ("Left page "/"Right page", which reaches into the fold) so corners are trimmed but the
+// gutter still fills. Returns an absolute-pixel alpha sampler (0..255).
+function alphaSampler(names) {
+  const ls = names.map(layerRaw);
+  return (ax, ay) => {
+    let m = 0;
+    for (const r of ls) {
+      const lx = ax - r.left, ly = ay - r.top;
+      if (lx >= 0 && ly >= 0 && lx < r.width && ly < r.height) { const a = r.buffer[(ly * r.width + lx) * 4 + 3]; if (a > m) m = a; }
+    }
+    return m;
+  };
+}
+const maskLeft  = alphaSampler(['Page left', 'Left page ']);
+const maskRight = alphaSampler(['Page right', 'Right page']);
+
 // Customer spread → two halves resized to each artwork slot.
+// The capture frames `.spread-pages`, which carries an asymmetric strip of container
+// background (#fafafa ≈ 250,250,248) beyond the two real pages — measured ~168px on the
+// RIGHT, 0 on the left. Splitting the raw frame at width/2 therefore lands ~80px RIGHT of
+// the true gutter: the right page's inner strip is shoved into the fold AND the right slot
+// inherits the container strip as a blank band on the fore-edge. So: detect the real
+// content box (trim uniform container-bg margins on all four edges) and split THAT in half.
 const img = sharp(SPREAD);
 const meta = await img.metadata();
-const halfW = Math.floor(meta.width / 2);
-async function half(left, w, slot) {
-  return img.clone().extract({ left, top: 0, width: w, height: meta.height })
-    .resize(slot.right - slot.left, slot.bottom - slot.top, { fit: 'fill' }).png().toBuffer();
+const { data: sd, info: si } = await img.clone().raw().toBuffer({ resolveWithObject: true });
+const isContainer = (x, y) => {
+  const i = (y * si.width + x) * si.channels;
+  return Math.abs(sd[i] - 250) < 4 && Math.abs(sd[i+1] - 250) < 4 && Math.abs(sd[i+2] - 248) < 5;
+};
+// A row/column is "content" if it is NOT almost entirely container background.
+const colContent = (x) => { let n = 0, t = 0; for (let y = 0; y < si.height; y += 6) { t++; if (!isContainer(x, y)) n++; } return n / t > 0.05; };
+const rowContent = (y) => { let n = 0, t = 0; for (let x = 0; x < si.width; x += 6) { t++; if (!isContainer(x, y)) n++; } return n / t > 0.05; };
+let cL = 0, cR = si.width - 1, cT = 0, cB = si.height - 1;
+while (cL < cR && !colContent(cL)) cL++;
+while (cR > cL && !colContent(cR)) cR--;
+while (cT < cB && !rowContent(cT)) cT++;
+while (cB > cT && !rowContent(cB)) cB--;
+const contentW = cR - cL + 1, contentH = cB - cT + 1;
+const gutter = cL + Math.floor(contentW / 2);   // split the REAL spread, not the raw frame
+async function half(left, w, slot, mask) {
+  const sw = slot.right - slot.left, sh = slot.bottom - slot.top;
+  const { data } = await img.clone().extract({ left, top: cT, width: w, height: contentH })
+    .resize(sw, sh, { fit: 'fill' }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  // Clip to the page silhouette: scale each pixel's alpha by the mask at its absolute position.
+  for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
+    const i = (y * sw + x) * 4;
+    data[i + 3] = Math.round(data[i + 3] * mask(slot.left + x, slot.top + y) / 255);
+  }
+  return { buffer: data, width: sw, height: sh };
 }
-const leftArt  = await half(0, halfW, LEFT);
-const rightArt = await half(halfW, meta.width - halfW, RIGHT);
+const leftArt  = await half(cL, gutter - cL, LEFT, maskLeft);
+const rightArt = await half(gutter, cR - gutter + 1, RIGHT, maskRight);
 
 // Build the composite, bottom → top, honouring each layer's blend mode.
 // (linear burn ≈ multiply for these soft shadow maps; sharp has no linear-burn.)
@@ -106,6 +159,24 @@ function tint(raw, rgb) {
   }
   return raw;
 }
+// Region tint: colour each exposed Book pixel by which surface it belongs to, split on the
+// book's vertical fold. Left of the fold → FRONT, right → BACK, the thin fold band → SPINE.
+// `spineL/spineR` are absolute x of the gutter band (the inner page edges). Preserves each
+// pixel's luminance as a brightness factor so the board's modelled shading survives.
+function tintRegions(raw, spineL, spineR) {
+  const d = raw.buffer;
+  for (let i = 0; i < d.length; i += 4) {
+    const absX = raw.left + ((i / 4) % raw.width);
+    const rgb = absX < spineL ? FRONT : absX > spineR ? BACK : SPINE;
+    const f = d[i] / 255;
+    d[i] = Math.round(rgb.r * f); d[i+1] = Math.round(rgb.g * f); d[i+2] = Math.round(rgb.b * f);
+  }
+  return raw;
+}
+// Fold band = between the two pages' inner (gutter) edges; widen to a small fixed band if they
+// meet/cross so the spine colour still reads.
+let spineL = Math.min(LEFT.right, RIGHT.left), spineR = Math.max(LEFT.right, RIGHT.left);
+if (spineR - spineL < 6) { const c = (spineL + spineR) / 2; spineL = c - 8; spineR = c + 8; }
 
 const layers = [];
 const add = (raw, blend) => layers.push({ input: raw.buffer ? raw.buffer : raw, ...(raw.width ? { raw: { width: raw.width, height: raw.height, channels: 4 } } : {}), left: raw.left || 0, top: raw.top || 0, blend });
@@ -115,13 +186,13 @@ add(withOpacity(layerRaw('BG Highlights'), 0.6), 'screen');
 // Shadows softened: the PSD layer is LINEAR-BURN; multiply at full strength reads too
 // dark/concentrated under the spine (issue #4). ~0.5 diffuses it toward linear-burn.
 add(neutralize(withOpacity(layerRaw('Shadows'), 0.5)), 'multiply');
-add(tint(layerRaw('Book'), COVER), 'over');   // cover silhouette tinted to the template cover colour
+add(tintRegions(layerRaw('Book'), spineL, spineR), 'over'); // board edges: front (left) / spine (fold) / back (right)
 add(neutralize(layerRaw('Back cover')), 'multiply'); // neutralised: its warm drop-shadow tinted the white backdrop pink
 add(layerRaw('Pages'), 'over');
 add(layerRaw('Page left'), 'over');
 add(layerRaw('Page right'), 'over');
-layers.push({ input: leftArt,  left: LEFT.left,  top: LEFT.top,  blend: 'multiply' });
-layers.push({ input: rightArt, left: RIGHT.left, top: RIGHT.top, blend: 'multiply' });
+layers.push({ input: leftArt.buffer,  raw: { width: leftArt.width,  height: leftArt.height,  channels: 4 }, left: LEFT.left,  top: LEFT.top,  blend: 'multiply' });
+layers.push({ input: rightArt.buffer, raw: { width: rightArt.width, height: rightArt.height, channels: 4 }, left: RIGHT.left, top: RIGHT.top, blend: 'multiply' });
 add(layerRaw('Highlights'), 'screen');
 
 const base = sharp({ create: { width: W, height: H, channels: 3, background: bg } });

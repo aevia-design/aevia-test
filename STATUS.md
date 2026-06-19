@@ -1,8 +1,46 @@
 # Session Status
-_Last updated: 2026-06-18 (session 58)_
+_Last updated: 2026-06-19 (session 62)_
 
 ## Status
-**Session 58 (2026-06-18) — ALL THREE MOCKUPS REFINED + APPROVED ("ok-ish"). Closed-book spine now reads cover-navy with the engine "Our Nicolas" caption (was black). Back-book rewritten as a 3-quad warp so it reads as a real open book with the page block showing underneath (folded depth) — front/back/spine each warped onto its own PSD-derived quad; green line + dark cover-bottom bands gone. All three share a soft off-white `#f0f0f0` backdrop. Branch `mockup-3d-renderer` (NOT main, NOT pushed). 3 compose scripts modified — COMMIT PENDING at handover (see below). Read `sessions/2026-06-18-s58.md`.**
+**Session 62 (2026-06-19) — OPEN-SPREAD FIXES + SCRIBBLE ADDED + ALL 3 SETS REGENERATED. Branch `mockup-3d-renderer` (NOT main, NOT pushed). NOTHING COMMITTED. Read `sessions/2026-06-19-s62.md`.**
+
+**The mockup pipeline now runs clean across all 3 templates (Newborn AEV-039, Wander AEV-040, Scribble AEV-041).**
+1. **Edge colours APPROVED** (Wander AEV-040) — the S61 per-surface `cover.mockupEdges` work verified by Evgeny.
+2. **Open-spread BLANK STRIP fixed** (composer-only). Measured root cause: every capture has ~168px of `.spread-pages` container bg (#fafafa) on the RIGHT edge only, so splitting at width/2 landed ~80px right of the true gutter → right page shoved into fold + blank fore-edge band. FIX in `compose-mockup.mjs`: trim uniform container-bg margins, split the REAL content box. Works on existing captures (no re-capture). **Bonus: also fixed S61's `open-11-fp1` map-spread issue for free.**
+3. **Open-spread CORNER OVERSHOOT fixed.** PSD page silhouettes are curved (perspective) but art slots are axis-aligned rectangles → corners spilled multiply art onto the cover. FIX: `half()` clips each art half's alpha to the page silhouette (union of `Page left/right` base + `Left page `/`Right page` multiply layer); art halves now raw RGBA so the clip bakes on `multiply`. Both pages.
+4. **Fold-seam softening DEFERRED** — fold is already subtle; Evgeny: blank strip mattered more, fold "good enough".
+5. **Scribble AEV-041 added** — Evgeny ran captures, Claude composed (22 mockups). All 3 sets regenerated with both fixes. Evgeny: "stunning". Memory `project_mockup_pipeline` updated.
+
+### ▶ NEXT (Session 63)
+1. **Lock the website shot list** — which PNGs per template go on which product page — START HERE.
+2. **Wire chosen PNGs** into `assets/images/mockups/` + product pages.
+3. **Commit** the script + data changes (pipeline now proven across all 3 templates). `.claude/settings.local.json` stays out.
+4. **(Side)** Scribble cover family photo reads upside-down — likely EXIF auto-orient missing in the LIVE engine preview (PDF path already `.rotate()`s since S41). Confirm + mirror the fix if so.
+5. **Carried (not mockup):** real-device phone E2E of step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`).
+
+### ⚠ S62 watch-outs
+- **Split now keys off the trimmed content box, not width/2** — relies on the container bg being `#fafafa` (250,250,248), distinct from page white (255). If the engine bg tone changes, revisit.
+- **Art halves are raw RGBA + alpha-clipped to the page silhouette** — keep it, or the corner overshoot returns (a PNG art half would ignore the clip).
+- **Downsample-in-route (S61) is the load lever** — don't remove it; heavy orders won't load in headless.
+- **`cover.mockupEdges` ≠ `cover.sections[].bgColor`** — never overwrite bgColor (it drives the real cover render).
+- **`compose-all` takes a TEMPLATE NAME** (`node compose-all.mjs <order> <template>`); legacy `#hex` = uniform colour.
+- **Captures need Evgeny's staff password**; `compose-all.mjs` is plain Node (Claude can run it).
+- **mockups/<order>/ + sessions/qa-runs/* gitignored** — regenerate offline.
+- **Branch only, NOT pushed. Nothing committed.** `.claude/settings.local.json` left out as usual.
+
+### Previous: Session 61
+**Session 61 (2026-06-19) — WANDER UNBLOCKED + PER-SURFACE COVER EDGE COLOURS.** Wander AEV-040 headless hang SOLVED (root cause = total image payload size; FIX = downsample each GCS photo to ≤1600px in the Node route). Per-surface `cover.mockupEdges {front,spine,back}` added to all 3 data files; `compose-all.mjs` takes a template name. FP1 map-spread diagnosed but unfixed (→ resolved in S62). Read `sessions/2026-06-19-s61.md`.
+
+---
+
+### Previous: Session 59
+
+**What shipped (working-tree only):**
+- **`qa/capture-spread.mjs` rewritten** → ONE login dumps EVERY interior spread (`spread-<order>-<NN>.png`) + `spread-<order>-manifest.json` (id/label/flags from `window._bookSequence`). Excludes the cover row (it shares `.spread-pages`); strips low-res outline + blank-page label + placement-warn badge.
+- **`scripts/compose-all.mjs` (NEW)** → reads the manifest, composes open-per-spread + closed + back into a clean per-order folder **`mockups/<order>/`** (gitignored). Usage: `cd scripts && node compose-all.mjs <order> [#coverhex]`.
+- **Newborn AEV-039 = 22 mockups, approved.** Closed lighting softened (Highlights 0.5, brightness→1.0); warning icons stripped; **spine-overhang bug fixed on closed AND back** (root cause via `/systematic-debugging`: the `Edge copy`/`Edge ` spine masks are larger than the book → clip the warped spine to the `Book`/`Pages` silhouette alpha; keep the true constant-width quad — do NOT taper it, that squishes the caption). Accepted residual: a few-px sliver at the closed top corner, invisible at display size.
+
+**▶ WANDER AEV-040 BLOCKER:** capture fails — `loadOrderIntoEngine` downloads photos with `Promise.all`, so ONE failed fetch aborts the whole order load → `#order-info-panel` never shows (180s timeout). Headless Chromium drops ~2 of the ~37 heavy parallel GCS fetches with `net::ERR_FAILED` (RANDOM photos each run → not corrupt, not auth; a resource-pressure issue; renders fine in Evgeny's real browser). Timeouts↑180s, fetch retry, and concurrency-throttle-to-6 did NOT fix it. Next-session fix order in the s59 log (lower concurrency 2–3 / scale 3→2 / headed mode / browser flags / last resort `Promise.allSettled` in the engine — needs parity mirror).
 
 **Closed book** (`scripts/compose-closed.mjs`) — front cover warps onto the calibrated top-FACE quad (constant `{top:[1641,361],right:[2465,1086],bot:[1104,1620],left:[410,754]}`). NEW: the spine strip (middle 9mm of the wrap, carrying the caption) warps onto a **spine-face quad** calibrated from the `Edge copy` layer alpha extremes — hinge A`[403,746]`/B`[1107,1627]` (== cover near-left edge), C/D extruded `[-4,+77]`. `Edge copy` multiply softened 0.45→0.18 (light depth only). Spine reads cover-navy + caption, flush.
 
@@ -12,12 +50,21 @@ _Last updated: 2026-06-18 (session 58)_
 
 **Backdrop** — all three set to `#f0f0f0` (240). Pure white (255) is brighter than the paper (~247–251) and washed out page edges that lack a cover line behind them; off-white keeps every edge crisp while still reading white.
 
-### ▶ NEXT (Session 59)
-1. **Lock the website shot list** (likely 1 closed cover + 1 open spread per template; back optional).
-2. **Generalize Newborn → Scribble + Wander** — Evgeny re-runs `qa/capture-cover-wrap.mjs` + `qa/capture-spread.mjs` per template/order (needs staff password); cover colour is a param (`COVER_HEX`). Same PSDs reused for closed/back/open.
-3. **Wire static PNGs into website placeholders** (`assets/images/mockups/`).
-4. **(Cleanup)** delete retired Three.js files (`book-3d-renderer.js`, `book-3d-spec.js`, prototypes, `qa/verify-3d.mjs`, `qa/verify-open.mjs`); KEEP `qa/capture-cover-wrap.mjs` + `qa/capture-spread.mjs`.
-5. **Carried (not mockup):** real-device phone E2E of step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`).
+### ▶ NEXT (Session 60) — unblock Wander, then Scribble, then wire to site
+1. **Unblock Wander AEV-040** (cheapest first): lower fetch concurrency `MAX` 6→2–3 and/or `deviceScaleFactor` 3→2 in `qa/capture-*.mjs`; else headed mode (`headless:false`); else flags `--disable-dev-shm-usage --disable-gpu`; last resort `Promise.allSettled` in `loadOrderIntoEngine` (NEEDS Evgeny OK + customer-preview parity mirror). Then `node compose-all.mjs AEV-040 '#262262'`.
+2. **Scribble** — get order number from Evgeny; cover hex from `scribble-data.js`; same two captures + `compose-all`.
+3. **Lock the website shot list** + wire chosen PNGs into product pages (`assets/images/mockups/`).
+4. **Commit** the S59 script changes once the pipeline is proven across all 3 templates.
+5. **(Cleanup)** delete retired Three.js files (`book-3d-renderer.js`, `book-3d-spec.js`, prototypes, `qa/verify-3d.mjs`, `qa/verify-open.mjs`); KEEP `qa/capture-cover-wrap.mjs` + `qa/capture-spread.mjs` + `scripts/compose-*.mjs`.
+6. **Carried (not mockup):** real-device phone E2E of step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`).
+
+### ⚠ S59 watch-outs
+- **Capture needs Evgeny's staff password** (live engine login) — Claude can't run captures itself.
+- **Wander AEV-040 BLOCKED** — headless drops ~2 random heavy GCS photo fetches (`ERR_FAILED`); `Promise.all` then aborts the whole load. See s59 log for the fix order.
+- **`mockups/<order>/` + `sessions/qa-runs/*` gitignored** — regenerate offline; `compose-all.mjs` must run with cwd `scripts/`.
+- **Wander `COVER_HEX = #262262`** (navy back/spine), not the cream front `#f2ede3`.
+- **Closed-book top-corner sliver accepted** — inherent PSD-mask disagreement, invisible at display size; don't re-open.
+- **Spine now clipped to the book silhouette** (`Book` for closed, `Pages` for back) on top of the calibrated quad — the real overhang fix.
 
 ### ⚠ S58 watch-outs
 - **Closed-book top-face AND spine-face quads are calibrated CONSTANTS** tied to the fixed PSD camera angle. If Xenia re-saves `closed book.psd` at a new angle, re-detect both (top face from `psd.canvas` cream extremes; spine from `Edge copy` alpha extremes).

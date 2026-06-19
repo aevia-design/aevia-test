@@ -133,6 +133,21 @@ const back  = warpStrip(backArt,  sp0,        ah, Q_BACK);
 const spine = warpStrip(spineArt, sp1 - sp0,  ah, Q_SPINE);
 const front = warpStrip(frontArt, aw - sp1,   ah, Q_FRONT);
 
+// Clip a warped strip's alpha to a layer's silhouette: zero any pixel that falls outside it.
+// The "Edge " spine mask pokes a few px past the book body at the top of the fold (verified by
+// overlaying it on "Pages"), so the warped spine "flies" outside the book. Clipping it to the
+// Pages silhouette keeps the spine's shape and removes only the overshoot.
+function clipTo(s, mask) {
+  const a = (X, Y) => { const x = X - mask.left, y = Y - mask.top;
+    if (x < 0 || y < 0 || x >= mask.width || y >= mask.height) return 0;
+    return mask.buffer[(y * mask.width + x) * 4 + 3]; };
+  for (let y = 0; y < s.oh; y++) for (let x = 0; x < s.ow; x++) {
+    const o = (y * s.ow + x) * 4;
+    if (s.warped[o + 3] && a(s.minX + x, s.minY + y) < 128) s.warped[o + 3] = 0;
+  }
+}
+clipTo(spine, layerRaw('Pages'));
+
 const layers = [];
 const add = (raw, blend) => layers.push({ input: raw.buffer, raw: { width: raw.width, height: raw.height, channels: 4 }, left: raw.left || 0, top: raw.top || 0, blend });
 const push = w => layers.push({ input: w.warped, raw: { width: w.ow, height: w.oh, channels: 4 }, left: w.minX, top: w.minY, blend: 'over' });

@@ -20,6 +20,11 @@ window.WANDER_DATA = {
       spine: { xMm: 200, wMm: 9,   bgColor: '#262262' },
       front: { xMm: 209, wMm: 200, bgColor: '#f2ede3' },
     },
+    // Visible per-surface cover colours (sampled from the real cover) used by the mockup
+    // composers (scripts/compose-*.mjs) to tint EXPOSED board edges: closed front-face edges
+    // + open-book left page → front; open right page → back; spine fold → spine. Distinct from
+    // sections.bgColor, which is the render's background fill behind the cover SVG.
+    mockupEdges: { front: '#E7DED3', spine: '#86A37B', back: '#6F454C' },
     slots: [],
     // Coords are with-bleed (include 18mm cover bleed) and measured from the box CENTRE,
     // same convention as Scribble. `align` controls text inside the box; `hMm` is stored
