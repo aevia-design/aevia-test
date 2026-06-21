@@ -157,12 +157,45 @@ exports.getOrder = functions
         return url;
       }
 
+      // ── Chunk-023: Derive derivative URLs (web-resolution for screen rendering) ──
+      // For each original, derive the derivative path and check if it exists in GCS.
+      // If yes, return signed URL for derivative. If no (legacy orders), return null
+      // so engines fallback to the original.
+      const { deriveDerivativePath } = require('./derivative-utils');
+
+      async function signedDerivativeUrl(originalStoredName) {
+        if (!originalStoredName) return null;
+        const derivativePath = deriveDerivativePath(originalStoredName);
+        if (!derivativePath) return null;
+        try {
+          // Check if derivative exists (GCS file.exists() is fast, uses head request)
+          const [exists] = await bucket.file(derivativePath).exists();
+          if (!exists) return null;
+          // Derivative exists — sign and return its URL
+          const [url] = await bucket.file(derivativePath).getSignedUrl({ action: 'read', version: 'v4', expires });
+          return url;
+        } catch (err) {
+          console.warn(`Error checking derivative for ${originalStoredName}:`, err.message);
+          return null; // Graceful fallback if derivative check fails
+        }
+      }
+
       const signedUrls = { cover: null, special: {}, pool: [] };
+      const derivativeUrls = { cover: null, special: {}, pool: [] };
+
+      // Originals (for PDF export — chunk-023 does not modify this path)
       signedUrls.cover = await signedReadUrl(manifest.cover);
       for (const [slug, paths] of Object.entries(manifest.special || {})) {
         signedUrls.special[slug] = await Promise.all((Array.isArray(paths) ? paths : [paths]).map(p => signedReadUrl(p)));
       }
       signedUrls.pool = await Promise.all((manifest.pool || []).map(p => signedReadUrl(p)));
+
+      // Derivatives (for engine rendering — chunk-023, with fallback to originals)
+      derivativeUrls.cover = await signedDerivativeUrl(manifest.cover);
+      for (const [slug, paths] of Object.entries(manifest.special || {})) {
+        derivativeUrls.special[slug] = await Promise.all((Array.isArray(paths) ? paths : [paths]).map(p => signedDerivativeUrl(p)));
+      }
+      derivativeUrls.pool = await Promise.all((manifest.pool || []).map(p => signedDerivativeUrl(p)));
 
       return res.status(200).json({
         orderNumber:          order.orderNumber,
@@ -189,6 +222,7 @@ exports.getOrder = functions
         customerCaptionStyles:      order.customerCaptionStyles      || null,
         customerCoverCaptionStyles: order.customerCoverCaptionStyles || null,
         signedUrls,
+        derivativeUrls, // chunk-023: web-resolution URLs for engine rendering (fallback to signedUrls)
         storedNames: {
           cover:            manifest.cover            || null,
           special:          manifest.special          || {},
@@ -745,5 +779,79 @@ exports.markSentToPrint = functions
     } catch (err) {
       console.error('markSentToPrint error:', err);
       return res.status(500).json({ error: err.message });
+    }
+  });
+
+// ── Generate web-resolution photo derivatives (chunk-023) ────────────────────
+// GCS Storage trigger: onFinalize for all files in the bucket.
+// When an original photo is uploaded, generates a ~1600px long-edge JPEG derivative.
+// Skips files already under a 'previews/' path (avoid infinite recursion).
+// Skips non-image objects (avoid crashes on text/JSON/PDF).
+//
+// Derivative spec: ~1600px long edge, JPEG quality ~80 (screen-only, not print).
+// Naming: original `<folder>/<category>/<name>` → derivative `<folder>/<category>/previews/<name>`
+// This allows getOrder to derive the derivative URL from the original's storedName path.
+const { deriveDerivativePath, isDerivativePath, isImageFile } = require('./derivative-utils');
+
+exports.generateDerivative = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 120, memory: '1GB' })
+  .storage.object().onFinalize(async (object, context) => {
+    const storagePath = object.name; // Full path in GCS
+    const bucketName = object.bucket;
+
+    // Guard 1: Skip objects already under a 'previews/' path (avoid infinite recursion)
+    if (isDerivativePath(storagePath)) {
+      console.log(`Skipping derivative path: ${storagePath}`);
+      return;
+    }
+
+    // Guard 2: Skip non-image objects (avoid crashes when sharp decodes them)
+    if (!isImageFile(storagePath)) {
+      console.log(`Skipping non-image file: ${storagePath}`);
+      return;
+    }
+
+    try {
+      const sharp = require('sharp');
+      const { Storage } = require('@google-cloud/storage');
+      const storage = new Storage();
+      const bucket = storage.bucket(bucketName);
+
+      // Download the original photo
+      const originalFile = bucket.file(storagePath);
+      const [originalBuffer] = await originalFile.download();
+
+      // Generate web-resolution derivative (~1600px long edge, JPEG quality 80)
+      const derivativeBuffer = await sharp(originalBuffer)
+        .resize(1600, 1600, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .jpeg({ quality: 80, progressive: true })
+        .toBuffer();
+
+      // Derive the destination path from the original (pure function, no Firestore)
+      const derivativePath = deriveDerivativePath(storagePath);
+      if (!derivativePath) {
+        console.error(`Could not derive derivative path for: ${storagePath}`);
+        return;
+      }
+
+      // Upload the derivative to GCS
+      const derivativeFile = bucket.file(derivativePath);
+      await derivativeFile.save(derivativeBuffer, {
+        contentType: 'image/jpeg',
+        metadata: {
+          cacheControl: 'public, max-age=31536000', // 1 year (content-hash is the version)
+        },
+      });
+
+      const sizeKB = Math.round(derivativeBuffer.length / 1024);
+      console.log(`Generated derivative: ${derivativePath} (${sizeKB} KB)`);
+    } catch (err) {
+      console.error(`Error generating derivative for ${storagePath}:`, err);
+      // Don't re-throw — log and continue so the function doesn't fail completely
+      // (subsequent retries would cause duplicate derivatives)
     }
   });

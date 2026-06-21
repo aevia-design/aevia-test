@@ -1065,9 +1065,23 @@
   }
 
   async function loadPhotos() {
-    const signedUrls  = window.orderData?.signedUrls;
+    const derivUrls   = window.orderData?.derivativeUrls;
+    const origUrls    = window.orderData?.signedUrls;
     const storedNames = window.orderData?.storedNames;
-    if (!signedUrls) { console.warn('No signed URLs in order data'); return; }
+    if (!origUrls) { console.warn('No signed URLs in order data'); return; }
+
+    // chunk-023: Merge derivatives (web-res for screen) with originals (fallback for legacy orders)
+    const signedUrls = {
+      cover: (derivUrls?.cover || origUrls?.cover) || null,
+      special: {},
+      pool: []
+    };
+    for (const slug of Object.keys(origUrls.special || {})) {
+      const derivArr = Array.isArray(derivUrls?.special?.[slug]) ? derivUrls.special[slug] : [];
+      const origArr = Array.isArray(origUrls.special[slug]) ? origUrls.special[slug] : [];
+      signedUrls.special[slug] = origArr.map((orig, i) => derivArr[i] || orig);
+    }
+    signedUrls.pool = (origUrls.pool || []).map((orig, i) => (derivUrls?.pool || [])[i] || orig);
 
     // Real progress: count every photo we're about to fetch, then tick the bar as each
     // resolves (success or failure). Beats the bare hourglass — the customer sees movement.
