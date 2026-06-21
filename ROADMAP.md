@@ -514,7 +514,69 @@ _(Renumbered from a duplicate chunk-018 — chunk-018 is Firebase Auth.)_
 
 ---
 
+## Phase 5 — Cost & scale hardening
+
+_Goal: keep GCS egress (the dominant cost) negligible per order. See ADR-0005._
+
+### chunk-023: Web-resolution previews
+
+**Type:** feature / infrastructure
+**Component:** Upload pipeline + Staff engine + Customer preview (+ PDF unchanged)
+**Status:** pending — briefed in `docs/briefs/web-res-previews.md`
+**Size:** M
+**Priority:** High — the real fix for per-order egress cost (ADR-0005).
+**Depends on:** —
+**Files:** `functions/upload.js` (or a new GCS-triggered function), `functions/index.js` (`getOrder`), `pages/staff/template-engine.html`, `pages/customer-preview.html`
+
+**Description:** Store a ~1600px web derivative per uploaded photo alongside the full-res original. The staff engine and customer preview load the **derivative**; the PDF script keeps loading the **original** (chunk-006 behaviour, unchanged). Drops a preview view from ~1.5 GB to ~150 MB → production egress ~€0.02/order (down from ~€1.10).
+
+**Acceptance criteria:**
+- Each uploaded photo has a web derivative (~1600px long edge) stored in GCS; originals untouched.
+- `getOrder` returns signed URLs for the derivatives (engines) and still exposes originals for the PDF path.
+- Staff engine + customer preview render visually identical to today on screen, loading the derivative (verified: network panel shows ~150 MB, not ~1.5 GB, for a large order).
+- PDF print output is byte-identical to today (still uses originals at 300 DPI).
+- Invariant honoured: engines → derivative, PDF → original. `npm test` green.
+
+**Contextual notes:**
+- See ADR-0005 and `docs/briefs/web-res-previews.md` for the open decision (client-side at upload vs GCS-triggered Cloud Function) and naming/storage convention.
+- Engine-parity rule: the load-path change must be mirrored in staff + customer engines.
+
+---
+
+### chunk-024: Server-side PDF generation (in-region)
+
+**Type:** infrastructure
+**Component:** PDF export + Staff dashboard + Firebase backend
+**Status:** pending
+**Size:** L
+**Priority:** Pre-launch ops requirement (ADR-0005). Also removes PDF egress.
+**Depends on:** chunk-007
+**Files:** `scripts/export-pdf.js` (ported), `functions/`, `pages/staff/dashboard.html`
+
+**Description:** Run the PDF render in a Cloud Function / Cloud Run job in the bucket's region (`europe-west1`) instead of on a founder's laptop, triggered from the dashboard. Photo reads become internal (no internet egress). Resolves ARCHITECTURE.md Open Question #5 ("Target state") and chunk-007's "future upgrade path". Justified primarily because staff cannot run a Node CLI per order at production — the egress saving is a side benefit.
+
+**Acceptance criteria:**
+- Either founder triggers a render from the dashboard (no local Node required); both PDFs land in GCS under `AEV-XXX/pdfs/` as today.
+- Render reads photos in-region (no `Download Worldwide Destinations` egress for the PDF path).
+- Output PDFs are byte-identical to the current local script for the same `book-state.json`.
+
+**Contextual notes:**
+- The render logic itself (`export-pdf.js`) shouldn't need to change — only its host + trigger. Watch Cloud Function memory/timeout limits for 80-page books (consider Cloud Run).
+
+---
+
 ## Decisions Log
+
+### 2026-06-20: Cut GCS egress — web-res previews (chunk-023) + server-side PDF (chunk-024); CDN deferred, R2 parked
+
+Post-trial billing showed 99.7% of cost was Cloud Storage **egress** (full-res
+originals re-downloaded on every engine view and every local PDF run), not storage.
+Per ADR-0005: commit to **#1 web-resolution previews** (the simplest fix — drops a
+preview view ~10× with no on-screen quality loss; production egress €1.10 → ~€0.02/
+order) and **#6 server-side in-region PDF** (needed for production ops regardless;
+removes PDF egress as a side effect). **CDN (#3) deferred** (second-order once views
+are ~150 MB), **R2 migration (#7) parked** (one-way door, YAGNI after #1+#6). #1 is
+briefed in `docs/briefs/web-res-previews.md`.
 
 ### 2026-06-03: First second-template (Wander) carries the multi-template + map infrastructure (chunks 020, 022 added)
 
