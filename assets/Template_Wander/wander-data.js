@@ -340,7 +340,7 @@ window.WANDER_DATA = {
             bgColor: '#f2ede3',
             svg: 'FP Spread 1/FP 01 Map Right.svg',
             slots: [],
-            textPanel: { caption: { allowed: true, xMm: 108, yMm: 103, wMm: 135, hMm: 100, halign: 'center', valign: 'center', font: 'Cormorant Garamond', sizePt: 18, style: 'light', letterSpacing: -0.02, lineSpacing: 1.28, color: '#12264b' }, itinerary: true }
+            textPanel: { caption: { allowed: true, xMm: 108, yMm: 103, wMm: 135, hMm: 100, halign: 'left', valign: 'center', font: 'Cormorant Garamond', sizePt: 18, style: 'light', letterSpacing: -0.02, lineSpacing: 1.28, color: '#12264b' }, itinerary: true }
           },
         },
       }

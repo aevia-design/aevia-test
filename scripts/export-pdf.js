@@ -849,7 +849,7 @@ const COVER_SVG_BLEED_UNITS = COVER_BLEED_MM * 72 / 25.4;  // ~51.024
 
 // Render the full cover spread as a PNG buffer.
 // coverDef = DATA.cover; coverPhoto = filename string; coverCaptions = { year, name, spineName, spineYear }
-async function renderCoverImage(coverDef, coverPhotoName) {
+async function renderCoverImage(coverDef, coverPhotoName, heartCrop = {}) {
   const { sections, slots, svg } = coverDef;
   // Cover SVG lives in the same Spreads/ folder as content SVGs (ASSET_BASE already points there)
   const COVER_ASSET_BASE = ASSET_BASE;
@@ -890,9 +890,13 @@ async function renderCoverImage(coverDef, coverPhotoName) {
       const clipDef = slot.clipShape && coverDef.clipShapes
         ? coverDef.clipShapes[slot.clipShape] : null;
       try {
-        const photoBuffer = await sharp(photoData)
-          .resize(sw, sh, { fit: 'cover', position: 'centre' })
-          .png().toBuffer();
+        // Honour the staff-set cover crop (object-position %). coverExtract reproduces
+        // CSS object-fit:cover + object-position exactly; default 50/50 = centred, which
+        // matches the old fit:'cover', position:'centre' for un-repositioned covers.
+        const hc = heartCrop[coverPhotoName] || {};
+        const cropX = typeof hc.x === 'number' ? hc.x : 50;
+        const cropY = typeof hc.y === 'number' ? hc.y : 50;
+        const photoBuffer = await coverExtract(photoData, sw, sh, cropX, cropY);
         if (clipDef) {
           const g  = MM_TO_PX / clipDef.pxPerMm;
           const tx = COVER_BLEED_PX - sx;
@@ -1157,7 +1161,7 @@ async function main() {
     ? specialPhotos.cover : specialPhotos.cover?.name;
 
   try {
-    const coverBuf = await renderCoverImage(coverDef, coverPhotoName);
+    const coverBuf = await renderCoverImage(coverDef, coverPhotoName, state.heartCrop || {});
 
     const COVER_W_PT = COVER_FULL_W_MM / 25.4 * 72;
     const COVER_H_PT = COVER_FULL_H_MM / 25.4 * 72;

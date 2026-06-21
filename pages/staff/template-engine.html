@@ -1805,6 +1805,16 @@
         const img = document.createElement('img');
         img.className = 'slot-photo';
         img.src = coverPhoto.url;
+        img.draggable = false;   // suppress native image drag-ghost; we drive our own
+        // Apply the saved crop offset + let staff drag the photo inside the cover frame
+        // (#74-style reposition). The cover slot isn't swap-draggable, so the drag is
+        // always live (like the heart slot). Crop is keyed by photo name → carries to
+        // customer-preview + PDF identically. Default 50/50 = centred.
+        const hc = getHeartCrop(coverPhoto.name);
+        img.style.objectPosition = hc.x + '% ' + hc.y + '%';
+        img.style.cursor = 'move';
+        img.title = 'Drag to reposition inside the cover frame';
+        attachCropDrag(img, slot, coverPhoto.name, { alwaysOn: true });
         slot.appendChild(img);
       } else {
         const ph = document.createElement('div');
