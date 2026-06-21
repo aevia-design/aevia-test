@@ -522,7 +522,7 @@ _Goal: keep GCS egress (the dominant cost) negligible per order. See ADR-0005._
 
 **Type:** feature / infrastructure
 **Component:** Upload pipeline + Staff engine + Customer preview (+ PDF unchanged)
-**Status:** pending — briefed in `docs/briefs/web-res-previews.md`
+**Status:** BUILT + committed on branch `egress-web-res-previews` (`95ed8e4`); NOT deployed, NOT on main. Custom `generateDerivative` onFinalize function + `getOrder` derivative signing + both engines load derivative-with-fallback; `export-pdf.js` untouched; 116/116 tests. Next: `firebase deploy --only functions:generateDerivative`, verify on a real order, then merge. See S64 in STATUS.md + `docs/briefs/web-res-previews.md`.
 **Size:** M
 **Priority:** High — the real fix for per-order egress cost (ADR-0005).
 **Depends on:** —
