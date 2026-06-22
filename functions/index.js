@@ -438,7 +438,9 @@ exports.saveBookState = functions
 // The service URL is configured via the PDF_RENDERER_URL environment variable.
 exports.generatePdf = functions
   .region('europe-west1')
-  .runWith({ timeoutSeconds: 120, memory: '256MB' })
+  // Waits synchronously on the Cloud Run render; an 80-page book + cold start can
+  // exceed 120s, so allow 300s. The render itself runs in Cloud Run (900s budget).
+  .runWith({ timeoutSeconds: 300, memory: '256MB' })
   .https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
