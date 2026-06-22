@@ -547,7 +547,7 @@ _Goal: keep GCS egress (the dominant cost) negligible per order. See ADR-0005._
 
 **Type:** infrastructure
 **Component:** PDF export + Staff dashboard + Firebase backend
-**Status:** pending
+**Status:** DEPLOYED 2026-06-22 (s70) — pending E2E verification on a real order + prod hardening (lock the public Cloud Run URL to private + identity token). See STATUS.md s70 + brief `docs/briefs/chunk-024-server-side-pdf.md`.
 **Size:** L
 **Priority:** Pre-launch ops requirement (ADR-0005). Also removes PDF egress.
 **Depends on:** chunk-007

@@ -1,37 +1,40 @@
 # Session Status
-_Last updated: 2026-06-22 (session 69)_
+_Last updated: 2026-06-22 (session 70)_
 
 ## Status
-**Session 69 (2026-06-22) — Papercut template FULLY VERIFIED (E2E passed). Nothing committed yet — all changes are working-tree only in `c:\Users\evgmy\aevia-test` (main branch). Session 70 = commit + push + Cloudflare deploy.**
+**Session 70 (2026-06-22) — chunk-024 (server-side PDF) BUILT, REVIEWED, DEPLOYED + Papercut shipped to main. All on `main` + live infra. NOT yet E2E-tested on a real order by Evgeny — that's the first task next session.**
 
-### What was built/fixed this session (all uncommitted, working-tree only)
+### What shipped this session
+1. **Papercut template → main + live** (`3d057d6`). Committed all s67/68/69 work (48 SVGs, 16 Source Sans 3 weights, papercut.html, registry across all surfaces, PDF). Then **Xenia re-exported the oversized `FP Toy 05 H Left.svg`** (67 MB → 1 MB — it had an embedded sample raster that blew past Cloudflare's 25 MiB/file limit); replacement committed (`2f485ea`). Cloudflare deploy unblocked.
+2. **chunk-024 — server-side PDF generation, DEPLOYED.** Moves PDF render off the local CLI to a Cloud Run job triggered from the dashboard. Eliminates the GCS photo egress on the PDF leg (the last egress source after chunk-023).
+   - **Cloud Run service** `aevia-pdf-renderer` (`europe-west1`, 4 GB / 2 CPU / 900s). Reads order from Firestore + photos from GCS **in-region**, calls the ported `export-pdf.js`, uploads `{folder}/pdfs/{AEV}_preview.pdf`. Health check 200. URL: `https://aevia-pdf-renderer-677807969667.europe-west1.run.app`.
+   - **`generatePdf` Cloud Function** (deployed, 300s timeout) — staff-auth gated, validates order status, calls the renderer, **signs the PDF URL itself** (the function has `serviceAccountKey.json`; Cloud Run's SA can't sign).
+   - **Dashboard** — "Generate PDF" button per order (new/approved/paid) → becomes "Preview PDF" link + file size.
+   - **`export-pdf.js`** — made importable (CLI guarded by `require.main===module`), `photoBufferMap` injection, `generatePdfFromFirestore()` export. **CLI (`npm run pdf -- AEV-XXX`) unchanged.**
+   - Data source = Firestore (`staffBook*` fields, written by engine **Save**), NOT `book-state.json`/Export — closes the TO-DO #64 footgun. Data-shape audit passed (assignments/sequence/captions/heartCrop/styles all match; specialPhotos derived from manifest).
+   - 116/116 tests. Commits `b294cdb` (build) + `667d3ae` (review fixes) + `001544f` (timeout bump), merged to main + pushed.
 
-**Sessions 67/68 (earlier today) — Stages 1–6 + PDF:**
-All surfaces wired: papercut-data.js, TEMPLATE_REGISTRY in engine/customer-preview/order.html, papercut.html product page, collections.html updated (wonder.html deleted), Source Sans 3 fonts registered, PDF (export-pdf.js) with Source Sans 3 + heart path + overlay z-order. 116/116 tests, 0 PDF warnings, 11.6 MB PDF.
+### ▶ NEXT SESSION (Session 71 — E2E test chunk-024, then harden)
+1. **TEST the dashboard "Generate PDF"** on a real order that has been **Saved in the engine** (e.g. AEV-042). Click → expect a "Preview PDF" link. Compare output to `npm run pdf -- AEV-XXX` (acceptance criterion #2). First click is slow (Cloud Run cold start + photo fetch + render).
+2. **Confirm the egress win** — check billing the day after a PDF run: Cloud Storage egress should be near-zero where a local CLI run would've shown GB-scale.
+3. **Harden the renderer** — it's currently `--allow-unauthenticated` (public URL) for testing. Lock to private + identity token before it's a permanent prod path. See brief `docs/briefs/chunk-024-server-side-pdf.md`.
+4. **Wire print-mode PDF** to the dashboard (only preview is wired today) — easy follow-up.
 
-**Session 69 bug fixes (on top of s67/68):**
-1. **Cover captions alignment** — `align: 'left'` → `'center'` for both front captions (year, name) in papercut-data.js.
-2. **Heart photo coordinates** — `heartClipPath` rescaled ×(600/566.929): path was in SVG viewBox units, CSS `clip-path: path()` needs canvas pixels. Fixed to match the heart outline in FP Birthday 02 Right.svg.
-3. **FP special slot drag-to-reposition** — added `alwaysOn:true` crop drag for `isSpecialSlot && !heartClip` in template-engine.html (FP3 toy, FP4 first steps, FP5 artwork). Customer-preview reads crop by photo name for all slots already → no change needed there.
+### ⚠ Watch-outs (chunk-024)
+- **Renderer reads `staffBook*` Firestore fields** — an order must have been **Saved in the engine** (or approved, which copies customer→staff) or the PDF renders empty. Brand-new never-opened orders won't work.
+- **Cloud Run URL is PUBLIC** (`--allow-unauthenticated`). The dashboard path is still protected (dashboard login → `generatePdf` checks `isStaff`), but the raw `…run.app` URL is directly reachable. Harden before prod (item 3 above).
+- **Function signs, renderer doesn't** — Cloud Run's default SA has no private key for v4 signing, so `generatePdf` mints the signed URL via `serviceAccountKey.json`. Don't move signing back into the renderer without granting `iam.serviceAccountTokenCreator`.
+- **Dockerfile lives at REPO ROOT** (not `services/pdf-renderer/`) because `gcloud run deploy --source` only auto-detects a root Dockerfile. Deps install at `/app` so `scripts/export-pdf.js` resolves sharp/pdf-lib. `.dockerignore` keeps the build context lean.
+- **Redeploy the service** after any change to `export-pdf.js`, `services/pdf-renderer/`, or template assets: `gcloud run deploy aevia-pdf-renderer --source <repo> --region europe-west1 --memory 4Gi --cpu 2 --timeout 900 --allow-unauthenticated --project aevia-uploads` (with the `CLOUDSDK_PYTHON` fix — see memory `reference_gcloud_python`).
+- **Function timeout 300s** — it waits synchronously on the render. If a huge book exceeds it, the function errors but the PDF likely still completed in Cloud Run (900s) → check the existing `getPdfUrl`/PDF link.
 
-**E2E result:** Evgeny placed a real Papercut order, loaded in staff engine, confirmed good. Stage 7 PASSED.
-
-### ▶ NEXT SESSION (Session 70 — commit + push + deploy)
-1. **Commit everything** — files to stage (see `sessions/2026-06-22-s69.md` for full list). Leave out `.claude/settings.local.json` and `assets/mockup example/`.
-2. **Push** → Cloudflare auto-deploys main.
-3. **chunk-024** (server-side PDF) is the next build chunk.
-
-### ⚠ Watch-outs
-- **Nothing committed** — all changes are unstaged working-tree edits on main branch in `c:\Users\evgmy\aevia-test`. Do NOT run `git checkout .` or `git restore .`.
-- **Cover clip shape path** from `<clipPath id="ac">` in `Cover/Artboard 1.svg` — if Xenia re-exports the SVG, re-extract the path from that clipPath.
-- **Spine width is 9mm** for all templates (not 18mm). The 18mm in the cover CSV is the bleed size.
+### ⚠ Watch-outs (Papercut, carried)
+- **Cover clip shape path** from `<clipPath id="ac">` in `Cover/Artboard 1.svg` — re-extract if Xenia re-exports.
+- **Spine width is 9mm** for all templates (18mm in the cover CSV is the bleed size).
 - **FP1 overlayAbovePhotos:false** — balloons/clouds behind the heart photo is intentional.
-- **heartClipPath is pre-scaled to 600px canvas** — coordinates are ×1.0584 vs SVG viewBox (566.929). If Xenia re-exports FP Birthday 02 Right.svg, re-extract `<clipPath id="g">` and scale by 600/566.929.
-- **FP special slot crop drag** — alwaysOn:true (no toggle handle). Any new `pool:'special'/'artwork'/'labour'` slot gets drag automatically via the `else if (isSpecialSlot)` branch in template-engine.html.
-
-**Also pending live confirmation (low effort):**
-1. **AEV-042 live Network check** once Cloudflare finishes — photo URLs should contain `/previews/`, ~100–300 KB each (not multi-MB).
-2. **Billing June 23** (for June 22) should now show near-zero Cloud Storage egress for screen loads. That near-zero IS the live confirmation.
+- **heartClipPath is pre-scaled to 600px canvas** (×1.0584 vs SVG viewBox 566.929). Re-extract `<clipPath id="g">` from FP Birthday 02 Right.svg and rescale if re-exported.
+- **Oversized-SVG trap** — Papercut's FP Toy 05 shipped at 67 MB (embedded sample raster) and silently failed Cloudflare. Any re-exported template SVG >25 MiB freezes the whole deploy. Check file sizes before pushing new template art (see memory `project_cloudflare_file_limit`).
+- **FP special slot crop drag** — alwaysOn:true; any new `pool:'special'/'artwork'/'labour'` slot gets drag automatically.
 
 ### ⚠ S66 watch-outs
 - **chunk-023 is now LIVE on main/Cloudflare.** Old orders only get small previews if back-filled — 039/040/041 done; all other legacy orders still fall back to full-res originals on load (by design, safe). Back-fill recipe in LEARNINGS 2026-06-22.
