@@ -478,9 +478,17 @@ exports.generatePdf = functions
         throw new Error(result.error || `Renderer returned HTTP ${rendererResp.status}`);
       }
 
+      // Sign the uploaded PDF here — the function has a key file (serviceAccountKey.json),
+      // so it can mint a v4 signed URL; the Cloud Run renderer cannot (no private key).
+      const { Storage } = require('@google-cloud/storage');
+      const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
+      const bucket  = storage.bucket('aevia-uploads.firebasestorage.app');
+      const expires = new Date(Date.now() + 60 * 60 * 1000);
+      const [previewUrl] = await bucket.file(result.gcsPath).getSignedUrl({ action: 'read', version: 'v4', expires });
+
       return res.status(200).json({
         success: true,
-        previewUrl: result.previewUrl,
+        previewUrl,
         gcsPath:    result.gcsPath,
         sizeBytes:  result.sizeBytes,
       });

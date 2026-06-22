@@ -1,0 +1,15 @@
+# Cloud Build uploads the whole context; the Dockerfile only needs
+# services/pdf-renderer/, scripts/export-pdf.js, and assets/. Exclude the rest
+# to keep uploads small and builds fast.
+.git
+**/node_modules
+sessions
+qa
+docs
+tests
+motif-engine
+pages
+functions
+pdf-out
+*.md
+assets/mockup example

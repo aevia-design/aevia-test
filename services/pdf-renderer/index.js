@@ -112,12 +112,13 @@ async function fetchAllPhotos(storedNames) {
   return bufferMap;
 }
 
-// ── Upload PDF to GCS and return a signed URL (1-hour expiry) ─────────────────
-async function uploadPdfAndSign(pdfBytes, gcsPath) {
+// ── Upload PDF to GCS ─────────────────────────────────────────────────────────
+// We do NOT sign the URL here: the Cloud Run runtime service account has no
+// private key, so v4 signing would require the iam.serviceAccountTokenCreator
+// role. Signing is done by the generatePdf Cloud Function (which has a key file)
+// via the existing getPdfUrl path. The renderer just writes the file.
+async function uploadPdf(pdfBytes, gcsPath) {
   await bucket.file(gcsPath).save(pdfBytes, { contentType: 'application/pdf' });
-  const expires = new Date(Date.now() + 60 * 60 * 1000);
-  const [url] = await bucket.file(gcsPath).getSignedUrl({ action: 'read', version: 'v4', expires });
-  return url;
 }
 
 // ── Request handler ────────────────────────────────────────────────────────────
@@ -158,13 +159,12 @@ async function handleGenerate(body) {
 
   if (!pdfBytes || !pdfBytes.length) throw new Error('PDF render returned no bytes');
 
-  // 5. Upload to GCS and return signed URL
+  // 5. Upload to GCS (signing happens in the generatePdf Cloud Function)
   const gcsPath = `${folderName}/pdfs/${orderNumber}_preview.pdf`;
-  const signedUrl = await uploadPdfAndSign(pdfBytes, gcsPath);
+  await uploadPdf(pdfBytes, gcsPath);
 
   console.log(`  ✅ PDF uploaded: gs://${BUCKET_NAME}/${gcsPath}`);
   return {
-    previewUrl: signedUrl,
     gcsPath,
     sizeBytes: pdfBytes.length,
   };

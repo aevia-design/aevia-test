@@ -234,6 +234,7 @@ let folderName    = null;        // derived from storedNames in setupPhotoSource
 let gcsOrder      = null;        // full order object from getOrder (for book-state.json fetch in --order mode)
 
 async function setupPhotoSource() {
+  if (photoBufferMap) return;    // server mode: photos already injected + state pre-built; never call getOrder
   if (!orderNumber) return;      // local --photos mode: nothing to set up
   const resp = await fetch(GET_ORDER_ENDPOINT, {
     method: 'POST',
