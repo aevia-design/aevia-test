@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 566.929 566.929">
+  <defs>
+    <clipPath id="d">
+      <rect id="e" data-name="&amp;lt;Clipping Path&amp;gt;" x="-8.504" y="675.039" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <clipPath id="h">
+      <rect id="i" data-name="&amp;lt;Clipping Path&amp;gt;" x="-610.587" y="675.039" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <clipPath id="l">
+      <rect id="m" data-name="&amp;lt;Clipping Path&amp;gt;" x="-8.504" y="-8.504" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <filter id="n" data-name="drop-shadow-5" x="80.29" y="-97.739" width="148.56" height="202.56" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="o" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="o" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="p" data-name="drop-shadow-6" x="499.81" y="245.221" width="145.68" height="205.44" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="q" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="q" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <clipPath id="t">
+      <rect id="u" data-name="&amp;lt;Clipping Path&amp;gt;" x="-610.587" y="-8.504" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <filter id="v" data-name="drop-shadow-7" x="-99.71" y="310.981" width="145.44" height="205.44" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="w" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="w" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="b" data-name="SP 08 V Right">
+    <g id="c" data-name="Design 08 Right">
+      <g clip-path="url(#d)">
+        <path d="M-150.376,615.502l-99.177-46.637-45.456,136.368,103.309,57.853,206.028-43.095,165.885-48.408c.197-38.569.472-116.533,0-119.839s-27.746,10.036-41.324,17.12L-29.947,449.616l-86.78,72.612c-3.149,14.168-10.744,44.866-15.939,54.311-5.195,9.445-13.971,29.911-17.71,38.962Z" fill="#f3e8dc"/>
+      </g>
+    </g>
+  </g>
+  <g id="f" data-name="SP 07 V Left">
+    <g id="g" data-name="Design 08 Left">
+      <g clip-path="url(#h)">
+        <path d="M-309.537,655.231l-99.177-46.637-45.456,136.368,103.309,57.853,206.028-43.095,165.885-48.408c.197-38.569.472-116.533,0-119.839s-27.746,10.036-41.324,17.12l-168.837-119.248-86.78,72.612c-3.149,14.168-10.744,44.866-15.939,54.311-5.195,9.445-13.971,29.911-17.71,38.962Z" fill="#f3e8dc"/>
+      </g>
+    </g>
+  </g>
+  <g id="j" data-name="SP 08 H Right">
+    <g id="k" data-name="Design 08 Right">
+      <g clip-path="url(#l)">
+        <path d="M-129.392-63.365l-99.177-46.637-45.456,136.368,103.309,57.853L35.312,41.125,201.197-7.283c.197-38.569.472-116.533,0-119.839-.472-3.306-27.746,10.036-41.324,17.12L-8.963-229.25l-86.78,72.612c-3.149,14.168-10.744,44.866-15.939,54.311-5.195,9.445-13.971,29.911-17.71,38.962Z" fill="#f3e8dc"/>
+        <path d="M244.035,420.179l-99.177-53.115-45.456,155.311,103.309,65.89,206.028-49.081,165.885-55.132c.197-43.926.472-132.721,0-136.486s-27.746,11.43-41.324,19.498l-168.837-135.813-86.78,82.698c-3.149,16.136-10.744,51.098-15.939,61.856-5.195,10.757-13.971,34.065-17.71,44.375Z" fill="#f3e8dc"/>
+        <g filter="url(#n)">
+          <polygon points="190.879 -96.437 81.588 70.4 225.656 102.224 226.153 70.941 190.879 -96.437" fill="#914c77"/>
+        </g>
+        <g filter="url(#p)">
+          <polygon points="502.954 448.09 642.825 305.911 507.79 246.466 501.171 277.046 502.954 448.09" fill="#914c77"/>
+        </g>
+      </g>
+    </g>
+  </g>
+  <g id="r" data-name="SP 07 H Left">
+    <g id="s" data-name="Design 08 Left">
+      <g clip-path="url(#t)">
+        <path d="M-316.956-17.846l-99.177-46.637-45.456,136.368,103.309,57.853,206.028-43.095L13.634,38.236c.197-38.569.472-116.533,0-119.839-.472-3.306-27.746,10.036-41.324,17.12l-168.837-119.248-86.78,72.612c-3.149,14.168-10.744,44.866-15.939,54.311-5.195,9.445-13.971,29.911-17.71,38.962Z" fill="#f3e8dc"/>
+        <g filter="url(#v)">
+          <polygon points="-96.76 513.755 43.111 371.575 -91.924 312.131 -98.543 342.71 -96.76 513.755" fill="#914c77"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

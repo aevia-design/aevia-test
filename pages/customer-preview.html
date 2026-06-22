@@ -7,6 +7,7 @@
   <script src="../assets/Template_Scribble/scribble-data.js"></script>
   <script src="../assets/Template_Wander/wander-data.js"></script>
   <script src="../assets/Template_Newborn/newborn-data.js"></script>
+  <script src="../assets/Template_Papercut/papercut-data.js"></script>
   <script src="../assets/js/photo-utils.js"></script>
   <script src="../assets/js/book-completeness.js"></script>
   <script src="../assets/js/map-render.js"></script>
@@ -86,6 +87,16 @@
       font-family: 'Baskervville';
       src: url('../assets/fonts/Baskervville-MediumItalic.ttf') format('truetype');
       font-weight: 500; font-style: italic; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Source Sans 3';
+      src: url('../assets/fonts/SourceSans3/SourceSans3-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Source Sans 3';
+      src: url('../assets/fonts/SourceSans3/SourceSans3-Bold.ttf') format('truetype');
+      font-weight: 700; font-style: normal; font-display: swap;
     }
     :root {
       --bg:        #fafaf8;
@@ -823,6 +834,7 @@
     scribble: { data: () => window.SCRIBBLE_DATA, svgBase: '../assets/Template_Scribble/Spreads/' },
     wander:   { data: () => window.WANDER_DATA,   svgBase: '../assets/Template_Wander/' },
     newborn:  { data: () => window.NEWBORN_DATA,  svgBase: '../assets/Template_Newborn/' },
+    papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../assets/Template_Papercut/SVG/' },
   };
 
   let _activeTemplateData = window.SCRIBBLE_DATA; // default
@@ -863,6 +875,7 @@
     { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }], funnyWordsOnly: true },
     { label: 'Twinkle Star',      value: 'Twinkle Star',      styles: [{ label: 'Regular', weight: 400, italic: false }] },
     { label: 'Baskervville',      value: 'Baskervville',      styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Medium Italic', weight: 500, italic: true }] },
+    { label: 'Source Sans 3',    value: 'Source Sans 3',    styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
   ];
 
   // Caption-toolbar fonts scoped to the active template's fontPicker allow-list
@@ -1391,10 +1404,13 @@
       canvas.style.background = `linear-gradient(90deg, ${backColor} 0px ${spineStartPx}px, ${spineColor} ${spineStartPx}px ${frontStartPx}px, ${frontColor} ${frontStartPx}px 100%)`;
     }
 
+    // Cover SVG z-order — mirrors template-engine.html. overlayAbovePhotos:false
+    // (Papercut) drops the SVG below the photo so the photo prints on top.
     const svgImg = document.createElement('img');
     svgImg.className = 'svg-overlay';
     svgImg.src = SVG_BASE + coverDef.svg;
     svgImg.alt = '';
+    if (coverDef.overlayAbovePhotos === false) svgImg.style.zIndex = '0';
     svgImg.onerror = () => { console.warn('Cover SVG failed to load:', svgImg.src); };
     canvas.appendChild(svgImg);
 
@@ -1734,12 +1750,18 @@
       canvas.dataset.variant = variantKey;
       if (variant.bgColor) canvas.style.background = variant.bgColor;
 
+      // SVG overlay z-order — mirrors template-engine.html. Default .svg-overlay
+      // z-index:2 sits above the z-index:1 photo slots (correct for Scribble/Newborn/
+      // Wander and Papercut's overlayAbovePhotos:true spreads). When a spread sets
+      // overlayAbovePhotos:false (Papercut SP4 + cover), drop the overlay below the
+      // photos so they cover it.
       if (variant.svg) {
         const overlay = document.createElement('img');
         overlay.className = 'svg-overlay';
         overlay.src = SVG_BASE + variant.svg;
         overlay.alt = '';
         overlay.decoding = 'async';
+        if (spreadDef.overlayAbovePhotos === false) overlay.style.zIndex = '0';
         canvas.appendChild(overlay);
       }
 
@@ -1828,8 +1850,10 @@
           slotEl.style.height = (slotDef.h * SCALE) + 'px';
         }
         if (slotDef.heartClip) {
-          // Heart path scaled from original 566.93×566.93 SVG space to 600×600 canvas
-          slotEl.style.clipPath = "path('M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z')";
+          const _heartPath = getActiveTemplateData().heartClipPath ||
+            'M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z';
+          slotEl.style.clipPath = `path('${_heartPath}')`;
+
           slotEl.style.background = 'transparent';
         }
 

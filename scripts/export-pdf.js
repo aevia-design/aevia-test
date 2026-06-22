@@ -92,6 +92,7 @@ global.window = {};
 require(path.resolve(__dirname, '../assets/Template_Scribble/scribble-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Wander/wander-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Newborn/newborn-data.js'));
+require(path.resolve(__dirname, '../assets/Template_Papercut/papercut-data.js'));
 DATA = global.window.SCRIBBLE_DATA; // default; will be updated in main() if needed
 
 function initializePrintConstants() {
@@ -139,6 +140,7 @@ const TEMPLATES = {
   scribble: { data: () => global.window.SCRIBBLE_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Scribble/Spreads') },
   wander:   { data: () => global.window.WANDER_DATA,   assetBase: path.resolve(__dirname, '../assets/Template_Wander') },
   newborn:  { data: () => global.window.NEWBORN_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Newborn') },
+  papercut: { data: () => global.window.PAPERCUT_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Papercut/SVG') },
 };
 
 let ASSET_BASE = TEMPLATES.scribble.assetBase; // default
@@ -438,7 +440,9 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
       } else if (slot.heartClip) {
         // Heart slot covers full content area; clip-path is in 600px canvas space → scale to CONTENT_PX
         const scale = CONTENT_PX / 600;
-        const heartPath = 'M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z';
+        // Heart path: template-specific if defined (Papercut has its own outline), else Scribble's.
+        // Mirrors the engine's getActiveTemplateData().heartClipPath || <scribble fallback>.
+        const heartPath = DATA.heartClipPath || 'M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z';
         const maskSvg = Buffer.from(
           `<svg xmlns="http://www.w3.org/2000/svg" width="${CONTENT_PX}" height="${CONTENT_PX}">` +
           `<g transform="scale(${scale})"><path d="${heartPath}" fill="white"/></g>` +
@@ -486,7 +490,16 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
           .resize(FULL_PX, FULL_PX, { fit: 'fill' })
           .png()
           .toBuffer();
-        composites.push({ input: svgBuffer, left: 0, top: 0 });
+        // Z-order: composites paint in array order. Default (push) = SVG on top of photos,
+        // matching overlayAbovePhotos:true. When a spread sets overlayAbovePhotos:false
+        // (Papercut SP4), the photos must sit ON TOP, so insert the SVG BEFORE them.
+        // Scribble/Wander/Newborn omit the flag (undefined) → unchanged push behaviour.
+        const _spreadDef = DATA.spreads[spreadId] || {};
+        if (_spreadDef.overlayAbovePhotos === false) {
+          composites.unshift({ input: svgBuffer, left: 0, top: 0 });
+        } else {
+          composites.push({ input: svgBuffer, left: 0, top: 0 });
+        }
       } catch (e) {
         console.warn(`  ⚠ SVG overlay failed (${path.basename(svg)}): ${e.message}`);
       }
@@ -578,6 +591,8 @@ const FONT_FILE_MAP = {
   'Baskervville_regular':        'Baskervville-Regular.ttf',
   'Baskervville_italic':         'Baskervville-Italic.ttf',
   'Baskervville_mediumitalic':   'Baskervville-MediumItalic.ttf',
+  'Source Sans 3_regular':       'SourceSans3/SourceSans3-Regular.ttf',
+  'Source Sans 3_bold':          'SourceSans3/SourceSans3-Bold.ttf',
 };
 
 // Pre-embed all fonts into a PDFDocument; returns a lookup map
@@ -605,7 +620,9 @@ async function embedAllFonts(pdfDoc) {
 // both expose a `liga` GSUB feature and form ligatures (fi/fl/ffi collapse), the same
 // profile that triggered the bug on EB Garamond + Cormorant. Added pre-emptively so
 // Newborn print can't ship with mid-word gaps; confirm visually at E2E (Stage 7).
-const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star']);
+// Source Sans 3 forms fi/fl/ff ligatures (verified: 26 chars → 23 glyphs via fontkit.layout),
+// so it hits the same advance-width bug → per-character draw workaround.
+const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star', 'Source Sans 3']);
 // EB Garamond additionally suppresses letter-spacing in the char-by-char path; the shaping
 // context loss caused irregular gaps when spacing was also applied. Cormorant Garamond keeps
 // its defined letter-spacing because the -0.02em tightening is aesthetically required.
@@ -936,7 +953,15 @@ async function renderCoverImage(coverDef, coverPhotoName, heartCrop = {}) {
         const svgBuffer   = await sharp(Buffer.from(svgExpanded))
           .resize(COVER_FULL_W_PX, COVER_FULL_H_PX, { fit: 'fill' })
           .png().toBuffer();
-        composites.push({ input: svgBuffer, left: 0, top: 0 });
+        // Z-order: default (push) draws the cover SVG on top of the photo — correct for
+        // Scribble/Newborn, whose SVG has a transparent photo window + decorations on top.
+        // Papercut's cover sets overlayAbovePhotos:false: the photo must sit ON TOP of the
+        // graphics, so insert the SVG BEFORE the (already-pushed) photo composite.
+        if (coverDef.overlayAbovePhotos === false) {
+          composites.unshift({ input: svgBuffer, left: 0, top: 0 });
+        } else {
+          composites.push({ input: svgBuffer, left: 0, top: 0 });
+        }
       } catch (e) {
         console.warn(`  ⚠ Cover SVG overlay failed: ${e.message}`);
       }

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 566.929 566.929">
+  <defs>
+    <filter id="c" data-name="drop-shadow-1" x="97.401" y="37.141" width="90" height="80.16" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="d" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="d" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="e" data-name="drop-shadow-2" x="466.041" y="508.981" width="89.76" height="80.16" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="f" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="f" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="b" data-name="SP 12 H Right">
+    <g filter="url(#c)">
+      <polygon points="117.991 73.157 105.281 52.165 133.701 61.338 141.115 38.406 146.94 59.927 184.715 48.108 163.18 69.1 182.42 73.157 166.004 90.269 179.772 114.612 157.178 98.03 141.115 110.026 141.115 95.384 101.045 114.612 124.522 85.506 98.75 78.802 117.991 73.157" fill="#e7c979"/>
+    </g>
+    <g filter="url(#e)">
+      <polygon points="486.495 544.988 473.785 523.996 502.205 533.169 509.619 510.236 515.444 531.758 553.219 519.938 531.684 540.931 550.924 544.988 534.508 562.099 548.276 586.443 525.682 569.861 509.619 581.856 509.619 567.215 469.549 586.443 493.026 557.336 467.254 550.633 486.495 544.988" fill="#e7c979"/>
+    </g>
+  </g>
+</svg>

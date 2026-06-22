@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 566.929 566.929">
+  <defs>
+    <clipPath id="f">
+      <rect id="g" data-name="&amp;lt;Clipping Path&amp;gt;" x="652.817" y="-8.504" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <clipPath id="j">
+      <rect id="k" data-name="&amp;lt;Clipping Path&amp;gt;" x="-8.504" y="-8.504" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <filter id="l" data-name="drop-shadow-5" x="100.015" y="366.421" width="31.92" height="93.6" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="m" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="m" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="n" data-name="drop-shadow-6" x="41.935" y="470.101" width="137.76" height="59.28" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="o" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="o" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="p" data-name="drop-shadow-7" x="432.175" y="384.661" width="89.76" height="80.16" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="q" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="q" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="d" data-name="SP 07 H Left">
+    <g id="e" data-name="Design 08 Left">
+      <g clip-path="url(#f)">
+        <path d="M559.047,499.072l-99.177-46.637-45.456,136.368,103.309,57.853,206.028-43.095,165.885-48.408c.197-38.569.472-116.533,0-119.839-.472-3.306-27.746,10.036-41.324,17.12l-168.837-119.248-86.78,72.612c-3.149,14.168-10.744,44.866-15.939,54.311-5.195,9.445-13.971,29.911-17.71,38.962Z" fill="#f3e8dc"/>
+      </g>
+    </g>
+  </g>
+  <g id="h" data-name="SP 06 H Right">
+    <g id="i" data-name="Design 05 Right">
+      <g clip-path="url(#j)">
+        <g filter="url(#l)">
+          <polygon points="104.566 428.879 109.503 454.832 129.385 457.404 128.308 437.717 122.598 367.611 101.226 370.663 104.566 428.879" fill="#e7b849"/>
+        </g>
+        <g filter="url(#n)">
+          <polygon points="70.349 498.717 43.097 508.755 43.482 526.846 64.784 522.076 177.134 490.042 170.238 471.397 70.349 498.717" fill="#e57a43"/>
+        </g>
+        <g filter="url(#p)">
+          <polygon points="452.678 420.684 439.969 399.692 468.389 408.865 475.802 385.933 481.628 407.454 519.403 395.635 497.867 416.627 517.108 420.684 500.692 437.795 514.46 462.139 491.866 445.557 475.802 457.553 475.802 442.911 435.732 462.139 459.21 433.033 433.438 426.329 452.678 420.684" fill="#e57a43"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

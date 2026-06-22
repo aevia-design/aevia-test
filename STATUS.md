@@ -1,24 +1,33 @@
 # Session Status
-_Last updated: 2026-06-22 (session 66)_
+_Last updated: 2026-06-22 (session 69)_
 
 ## Status
-**Session 66 (2026-06-22) — chunk-023 MERGED TO MAIN + PUSHED (`10e34af`) → now LIVE on Cloudflare. Diagnosed that the June-21 egress (3.59 GiB / €0.37) was the web-res FRONTEND never being merged (backend was deployed, but live site still served originals). Back-filled derivatives for AEV-039/040/041 via in-cloud copy (zero egress). Next: two PARALLEL sessions (67 = new template, 68 = chunk-024 design) in git worktrees.**
+**Session 69 (2026-06-22) — Papercut template FULLY VERIFIED (E2E passed). Nothing committed yet — all changes are working-tree only in `c:\Users\evgmy\aevia-test` (main branch). Session 70 = commit + push + Cloudflare deploy.**
 
-Three commits landed on main this session: the Wander itinerary halign revert (left→center, JS + CSV synced per Evgeny) and the `egress-web-res-previews` merge (chunk-023 frontend + cover-reposition + submit-bar fix). 116/116 tests.
+### What was built/fixed this session (all uncommitted, working-tree only)
 
-**Key diagnosis (the session's main finding):** chunk-023 was split — the `generateDerivative` function + `getOrder` `derivativeUrls` were deployed to Firebase last session, but the FRONTEND that *requests* derivatives (`derivativeUrls` consumption in `customer-preview.html` + `template-engine.html`) was branch-only, never on main. So every load through the LIVE site ran main's frontend → pulled full-res originals. ~3.5 loads of AEV-042's ~1 GiB ≈ the 3.59 GiB billed on June 21. The fix was never broken — just not deployed where it counts. **Resolved by merging the branch to main.**
+**Sessions 67/68 (earlier today) — Stages 1–6 + PDF:**
+All surfaces wired: papercut-data.js, TEMPLATE_REGISTRY in engine/customer-preview/order.html, papercut.html product page, collections.html updated (wonder.html deleted), Source Sans 3 fonts registered, PDF (export-pdf.js) with Source Sans 3 + heart path + overlay z-order. 116/116 tests, 0 PDF warnings, 11.6 MB PDF.
 
-**Back-fill of existing orders (AEV-039/040/041):** derivatives only generate for NEW uploads (onFinalize). Re-triggered the function for 3 existing orders with an **in-cloud round-trip copy** (zero internet egress): copy folder → a temp prefix whose path contains `/previews/` (so the function's `isDerivativePath` guard SKIPS generating from the temp), then copy back onto the real originals (fires onFinalize → derivatives). Then `rm -r` the temp. Result: 54/54, 52/52, 50/50 derivatives. AEV-040 previews **15.37 MiB** vs originals **2.08 GiB** (~135×). Recipe codified in LEARNINGS 2026-06-22.
+**Session 69 bug fixes (on top of s67/68):**
+1. **Cover captions alignment** — `align: 'left'` → `'center'` for both front captions (year, name) in papercut-data.js.
+2. **Heart photo coordinates** — `heartClipPath` rescaled ×(600/566.929): path was in SVG viewBox units, CSS `clip-path: path()` needs canvas pixels. Fixed to match the heart outline in FP Birthday 02 Right.svg.
+3. **FP special slot drag-to-reposition** — added `alwaysOn:true` crop drag for `isSpecialSlot && !heartClip` in template-engine.html (FP3 toy, FP4 first steps, FP5 artwork). Customer-preview reads crop by photo name for all slots already → no change needed there.
 
-### ▶ NEXT SESSION (Sessions 67 + 68, PARALLEL in git worktrees)
-**Setup decided this session.** Two parallel sessions, each in its own `git worktree` off this updated main:
-- **Session 67 — new template (CODE).** Worktree `../aevia-template`, branch `feature/new-template`. Add a new template end-to-end (data file → registry in all 3 surfaces → order form → product page → fonts → PDF) per the adding-templates playbook (memory `project_adding_templates`). **Blocked on confirming WHICH template + whether Xenia's assets (CSVs/SVGs) are in hand.**
-- **Session 68 — chunk-024 (DESIGN ONLY, no code).** Worktree `../aevia-chunk024`, branch `feature/chunk-024-design`. Write `docs/briefs/server-side-pdf.md` + an ADR extending 0005: move PDF render server-side, in-region (`europe-west1`), triggered from dashboard. Decide host (Cloud Function vs Cloud Run — watch memory/timeout for 80-page books), staff trigger, cost model. **Do NOT touch `scripts/export-pdf.js` or any code** (it collides with the template work).
+**E2E result:** Evgeny placed a real Papercut order, loaded in staff engine, confirmed good. Stage 7 PASSED.
 
-**Parallel-session protocol (IMPORTANT):**
-- **`checkpoint` only in 67/68, NEVER `handover`** — full handover rewrites STATUS.md and would clobber the other parallel session. Each writes its own log: `sessions/2026-06-22-s67.md` / `…-s68.md`.
-- **Proper `handover` happens at MERGE time**, on main, sequentially — one per branch as it merges. Merge template (67) first, then chunk-024 (68). **Implement chunk-024 code only AFTER the template merges** (so `export-pdf.js` isn't edited from two directions).
-- Worktree create command (note `-b` to create the branch): `git worktree add -b feature/new-template ../aevia-template main`.
+### ▶ NEXT SESSION (Session 70 — commit + push + deploy)
+1. **Commit everything** — files to stage (see `sessions/2026-06-22-s69.md` for full list). Leave out `.claude/settings.local.json` and `assets/mockup example/`.
+2. **Push** → Cloudflare auto-deploys main.
+3. **chunk-024** (server-side PDF) is the next build chunk.
+
+### ⚠ Watch-outs
+- **Nothing committed** — all changes are unstaged working-tree edits on main branch in `c:\Users\evgmy\aevia-test`. Do NOT run `git checkout .` or `git restore .`.
+- **Cover clip shape path** from `<clipPath id="ac">` in `Cover/Artboard 1.svg` — if Xenia re-exports the SVG, re-extract the path from that clipPath.
+- **Spine width is 9mm** for all templates (not 18mm). The 18mm in the cover CSV is the bleed size.
+- **FP1 overlayAbovePhotos:false** — balloons/clouds behind the heart photo is intentional.
+- **heartClipPath is pre-scaled to 600px canvas** — coordinates are ×1.0584 vs SVG viewBox (566.929). If Xenia re-exports FP Birthday 02 Right.svg, re-extract `<clipPath id="g">` and scale by 600/566.929.
+- **FP special slot crop drag** — alwaysOn:true (no toggle handle). Any new `pool:'special'/'artwork'/'labour'` slot gets drag automatically via the `else if (isSpecialSlot)` branch in template-engine.html.
 
 **Also pending live confirmation (low effort):**
 1. **AEV-042 live Network check** once Cloudflare finishes — photo URLs should contain `/previews/`, ~100–300 KB each (not multi-MB).

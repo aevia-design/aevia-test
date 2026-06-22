@@ -61,7 +61,7 @@ No external fonts are loaded — system fonts only. This keeps the site fast and
 | `wander.html` | Wander | Adventures product page |
 | `terrain.html` | Terrain | Adventures product page |
 | `scribble.html` | Scribble | Kids product page |
-| `wonder.html` | Wonder | Kids product page |
+| `papercut.html` | Papercut | Kids product page |
 
 ---
 
@@ -71,7 +71,7 @@ No external fonts are loaded — system fonts only. This keeps the site fast and
 |------------|--------|-----------|
 | Love | `#love` | Devotion, Vows, Radiance |
 | Adventures | `#adventures` | Horizon, Wander, Terrain |
-| Kids | `#kids` | Bloom, Scribble, Wonder |
+| Kids | `#kids` | Bloom, Scribble, Papercut |
 
 ---
 

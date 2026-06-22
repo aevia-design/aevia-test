@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 566.929 566.929">
+  <defs>
+    <clipPath id="d">
+      <rect id="e" data-name="&amp;lt;Clipping Path&amp;gt;" x="-8.504" y="-8.504" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <filter id="f" data-name="drop-shadow-1" x="214.074" y="351.279" width="76.56" height="96.96" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="g" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="g" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="h" data-name="drop-shadow-2" x="82.074" y="404.559" width="109.2" height="120" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="i" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="i" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="j" data-name="drop-shadow-3" x="450.234" y="60.159" width="65.76" height="79.92" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="k" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="k" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="b" data-name="SP 05 V Left">
+    <g id="c" data-name="Design 04 Left">
+      <g clip-path="url(#d)">
+        <g filter="url(#f)">
+          <polygon points="246.979 352.557 215.415 445.724 288.137 443.114 284.508 428.116 246.979 352.557" fill="#e57a43"/>
+        </g>
+        <g filter="url(#h)">
+          <polygon points="120.935 465.548 171.155 521.958 188.585 512.053 175.883 496.974 98.487 405.757 83.249 421.051 120.935 465.548" fill="#e7b849"/>
+        </g>
+        <g filter="url(#j)">
+          <polygon points="478.716 61.508 506.969 67.153 513.368 73.472 496.561 75.711 487.229 83.384 478.343 93.247 475.767 102.735 478.581 113.656 490.386 128.013 502.549 135.307 490.368 137.502 479.259 137.162 465.301 124.575 453.436 105.756 451.551 93.77 462.923 74.493 478.716 61.508" fill="#e7b849"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
