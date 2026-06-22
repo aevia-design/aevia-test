@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 566.929 566.929">
+  <defs>
+    <clipPath id="d">
+      <rect id="e" data-name="&amp;lt;Clipping Path&amp;gt;" x="593.579" y="675.039" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <clipPath id="h">
+      <rect id="i" data-name="&amp;lt;Clipping Path&amp;gt;" x="-8.504" y="675.039" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <clipPath id="l">
+      <rect id="m" data-name="&amp;lt;Clipping Path&amp;gt;" x="593.579" y="-8.504" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <clipPath id="p">
+      <rect id="q" data-name="&amp;lt;Clipping Path&amp;gt;" x="-8.504" y="-8.504" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <filter id="r" data-name="drop-shadow-7" x="502.374" y="310.981" width="145.44" height="205.44" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="s" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="s" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="t" data-name="drop-shadow-8" x="-74.346" y="274.261" width="148.32" height="202.56" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="u" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="u" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="b" data-name="SP 08 V Right">
+    <g id="c" data-name="Design 08 Right">
+      <g clip-path="url(#d)">
+        <path d="M451.708,615.502l-99.177-46.637-45.456,136.368,103.309,57.853,206.028-43.095,165.885-48.408c.197-38.569.472-116.533,0-119.839s-27.746,10.036-41.324,17.12l-168.837-119.248-86.78,72.612c-3.149,14.168-10.744,44.866-15.939,54.311-5.195,9.445-13.971,29.911-17.71,38.962Z" fill="#f3e8dc"/>
+      </g>
+    </g>
+  </g>
+  <g id="f" data-name="SP 07 V Left">
+    <g id="g" data-name="Design 08 Left">
+      <g clip-path="url(#h)">
+        <path d="M292.546,655.231l-99.177-46.637-45.456,136.368,103.309,57.853,206.028-43.095,165.885-48.408c.197-38.569.472-116.533,0-119.839s-27.746,10.036-41.324,17.12l-168.837-119.248-86.78,72.612c-3.149,14.168-10.744,44.866-15.939,54.311-5.195,9.445-13.971,29.911-17.71,38.962Z" fill="#f3e8dc"/>
+      </g>
+    </g>
+  </g>
+  <g id="j" data-name="SP 08 H Right">
+    <g id="k" data-name="Design 08 Right">
+      <g clip-path="url(#l)">
+        <path d="M472.691-63.365l-99.177-46.637-45.456,136.368,103.309,57.853,206.028-43.095L803.281-7.283c.197-38.569.472-116.533,0-119.839-.472-3.306-27.746,10.036-41.324,17.12l-168.837-119.248-86.78,72.612c-3.149,14.168-10.744,44.866-15.939,54.311-5.195,9.445-13.971,29.911-17.71,38.962Z" fill="#f3e8dc"/>
+      </g>
+    </g>
+  </g>
+  <g id="n" data-name="SP 07 H Left">
+    <g id="o" data-name="Design 08 Left">
+      <g clip-path="url(#p)">
+        <path d="M-102.274,499.072l-99.177-46.637-45.456,136.368,103.309,57.853,206.028-43.095,165.885-48.408c.197-38.569.472-116.533,0-119.839-.472-3.306-27.746,10.036-41.324,17.12L18.155,333.187l-86.78,72.612c-3.149,14.168-10.744,44.866-15.939,54.311-5.195,9.445-13.971,29.911-17.71,38.962Z" fill="#f3e8dc"/>
+        <path d="M285.128-17.846l-99.177-46.637-45.456,136.368,103.309,57.853,206.028-43.095,165.885-48.408c.197-38.569.472-116.533,0-119.839-.472-3.306-27.746,10.036-41.324,17.12l-168.837-119.248-86.78,72.612c-3.149,14.168-10.744,44.866-15.939,54.311-5.195,9.445-13.971,29.911-17.71,38.962Z" fill="#f3e8dc"/>
+        <g filter="url(#r)">
+          <polygon points="505.324 513.755 645.195 371.575 510.159 312.131 503.54 342.71 505.324 513.755" fill="#914c77"/>
+        </g>
+        <g filter="url(#t)">
+          <polygon points="36.18 275.606 -73.111 442.443 70.957 474.267 71.454 442.984 36.18 275.606" fill="#914c77"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

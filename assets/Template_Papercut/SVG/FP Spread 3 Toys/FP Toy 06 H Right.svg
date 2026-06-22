@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 566.929 566.929">
+  <defs>
+    <clipPath id="d">
+      <rect id="e" data-name="&amp;lt;Clipping Path&amp;gt;" x="-8.504" y="-8.504" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <filter id="f" data-name="drop-shadow-1" x="-12.192" y="434.823" width="88.08" height="107.04" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="g" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="g" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="h" data-name="drop-shadow-2" x="498.768" y="190.743" width="96.72" height="129.36" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="i" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="i" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="b" data-name="FP Toy 06 H Right">
+    <g id="c" data-name="Design 06 Toy Right">
+      <g clip-path="url(#d)">
+        <g filter="url(#f)">
+          <path d="M25.278,462.147l.053-26.187-34.117,3.968-2.062,28.217,30.186,40.229,27.272,31.002c8.367-3.862,25.269-11.696,25.937-12.133s-4.981-4.989-7.889-7.211l8.716-48.615-24.501-11.431c-3.385.753-10.798,2.217-13.368,2.049-2.57-.168-7.888.004-10.226.112Z" fill="#79ba9b"/>
+        </g>
+        <g filter="url(#h)">
+          <polygon points="541.125 240.037 499.911 303.326 514.052 317.538 525.259 301.316 592.907 202.653 574.143 191.974 541.125 240.037" fill="#e7c979"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

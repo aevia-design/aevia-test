@@ -1,7 +1,44 @@
 # Session Status
-_Last updated: 2026-06-21 (session 65)_
+_Last updated: 2026-06-22 (session 69)_
 
 ## Status
+**Session 69 (2026-06-22) — Papercut template FULLY VERIFIED (E2E passed). Nothing committed yet — all changes are working-tree only in `c:\Users\evgmy\aevia-test` (main branch). Session 70 = commit + push + Cloudflare deploy.**
+
+### What was built/fixed this session (all uncommitted, working-tree only)
+
+**Sessions 67/68 (earlier today) — Stages 1–6 + PDF:**
+All surfaces wired: papercut-data.js, TEMPLATE_REGISTRY in engine/customer-preview/order.html, papercut.html product page, collections.html updated (wonder.html deleted), Source Sans 3 fonts registered, PDF (export-pdf.js) with Source Sans 3 + heart path + overlay z-order. 116/116 tests, 0 PDF warnings, 11.6 MB PDF.
+
+**Session 69 bug fixes (on top of s67/68):**
+1. **Cover captions alignment** — `align: 'left'` → `'center'` for both front captions (year, name) in papercut-data.js.
+2. **Heart photo coordinates** — `heartClipPath` rescaled ×(600/566.929): path was in SVG viewBox units, CSS `clip-path: path()` needs canvas pixels. Fixed to match the heart outline in FP Birthday 02 Right.svg.
+3. **FP special slot drag-to-reposition** — added `alwaysOn:true` crop drag for `isSpecialSlot && !heartClip` in template-engine.html (FP3 toy, FP4 first steps, FP5 artwork). Customer-preview reads crop by photo name for all slots already → no change needed there.
+
+**E2E result:** Evgeny placed a real Papercut order, loaded in staff engine, confirmed good. Stage 7 PASSED.
+
+### ▶ NEXT SESSION (Session 70 — commit + push + deploy)
+1. **Commit everything** — files to stage (see `sessions/2026-06-22-s69.md` for full list). Leave out `.claude/settings.local.json` and `assets/mockup example/`.
+2. **Push** → Cloudflare auto-deploys main.
+3. **chunk-024** (server-side PDF) is the next build chunk.
+
+### ⚠ Watch-outs
+- **Nothing committed** — all changes are unstaged working-tree edits on main branch in `c:\Users\evgmy\aevia-test`. Do NOT run `git checkout .` or `git restore .`.
+- **Cover clip shape path** from `<clipPath id="ac">` in `Cover/Artboard 1.svg` — if Xenia re-exports the SVG, re-extract the path from that clipPath.
+- **Spine width is 9mm** for all templates (not 18mm). The 18mm in the cover CSV is the bleed size.
+- **FP1 overlayAbovePhotos:false** — balloons/clouds behind the heart photo is intentional.
+- **heartClipPath is pre-scaled to 600px canvas** — coordinates are ×1.0584 vs SVG viewBox (566.929). If Xenia re-exports FP Birthday 02 Right.svg, re-extract `<clipPath id="g">` and scale by 600/566.929.
+- **FP special slot crop drag** — alwaysOn:true (no toggle handle). Any new `pool:'special'/'artwork'/'labour'` slot gets drag automatically via the `else if (isSpecialSlot)` branch in template-engine.html.
+
+**Also pending live confirmation (low effort):**
+1. **AEV-042 live Network check** once Cloudflare finishes — photo URLs should contain `/previews/`, ~100–300 KB each (not multi-MB).
+2. **Billing June 23** (for June 22) should now show near-zero Cloud Storage egress for screen loads. That near-zero IS the live confirmation.
+
+### ⚠ S66 watch-outs
+- **chunk-023 is now LIVE on main/Cloudflare.** Old orders only get small previews if back-filled — 039/040/041 done; all other legacy orders still fall back to full-res originals on load (by design, safe). Back-fill recipe in LEARNINGS 2026-06-22.
+- **PDF still serves full-res originals by design** — chunk-024 (not yet built) is what removes the PDF egress leg. A PDF export will still show GB-scale egress until then.
+- **`.claude/settings.local.json`** left out of commits as usual. **`assets/mockup example/`** untracked — pre-existing, not this session's work, left alone.
+
+### Previous: Session 65
 **Session 65 (2026-06-21) — chunk-023 DEPLOYED (Firebase) + VERIFIED on a real order; 3 small UX fixes committed on branch `egress-web-res-previews` (NOT merged to main, NOT on Cloudflare). Egress verified working on AEV-042.**
 
 Evgeny deployed `generateDerivative` (Firebase) at the start of the session. I verified the web-res pipeline end-to-end on a real Wander order **AEV-042** (52 photos): the bucket has all 52 derivatives (`AEV-042/photos/previews/`, **11.74 MiB** total vs **1.02 GiB** originals — ~87× smaller), and both engines served them on load.

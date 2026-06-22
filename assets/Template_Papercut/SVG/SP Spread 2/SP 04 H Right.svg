@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 566.929 566.929">
+  <defs>
+    <clipPath id="d">
+      <rect id="e" data-name="&amp;lt;Clipping Path&amp;gt;" x="-8.504" y="-8.504" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <filter id="f" data-name="drop-shadow-1" x="42.462" y="25.141" width="111.84" height="116.64" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="g" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="g" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="h" data-name="drop-shadow-2" x="442.782" y="421.141" width="100.56" height="50.88" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="i" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="i" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="j" data-name="drop-shadow-3" x="35.262" y="106.981" width="100.56" height="50.88" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="k" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="k" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="b" data-name="SP 04 H Right">
+    <g id="c" data-name="Design 03 right">
+      <g clip-path="url(#d)">
+        <g filter="url(#f)">
+          <polygon points="97.477 29.304 98.766 75.025 101.36 74.745 104.666 26.668 102.223 26.308 97.477 29.304" fill="#e57a43"/>
+          <polygon points="150.831 66.99 108.543 77.612 109.33 80.228 148.599 74.479 151.718 75.096 150.831 66.99" fill="#e57a43"/>
+          <polygon points="129.533 37.712 104.646 75.218 106.887 76.621 141.145 44.358 129.533 37.712" fill="#e57a43"/>
+          <polygon points="65.264 124.11 92.65 88.876 90.409 87.472 62.102 121.68 65.264 124.11" fill="#e57a43"/>
+          <polygon points="47.685 92.046 89.973 81.424 89.186 78.808 43.77 85.177 43.932 87.766 47.685 92.046" fill="#e57a43"/>
+          <polygon points="145.17 107.313 107.47 84.528 106.338 87 143.54 115.136 145.11 113.135 145.17 107.313" fill="#e57a43"/>
+          <polygon points="101.581 139.188 100.971 87.644 98.376 87.914 96.329 127.164 98.312 132.395 101.581 139.188" fill="#e57a43"/>
+          <polygon points="58.194 36.27 91.551 74.029 93.301 71.995 69.761 41.468 64.953 38.994 58.194 36.27" fill="#e57a43"/>
+          <path d="M79.952,73.102l10.073-7.194,14.76-1.787,10.77,6.555,7.611,12.847c.904,1.644,1.312,6.206-4.287,11.3-5.599,5.094-20.024,6.04-26.537,5.876l-10.264-8.174-2.609-11.374.485-8.047Z" fill="#e57a43"/>
+        </g>
+        <g filter="url(#h)">
+          <path d="M448.013,444.21c-1.528,1.605-3.3,4.617-3.3,4.617,0,0-1.395,5.209-.331,8.255,1.087,3.11,5.569,6.337,5.569,6.337l5.876,3.961,14.288,2.151,14.664-1.548,27.928-11.206s7.237-.461,11.774-1.384c4.535-.922,11.375-3.323,11.375-3.323,0,0,7.422-10.48,3.791-18.562,0,0-8.645-8.19-15.6-8.679-4.208-.296-10.609,2.028-10.609,2.028l-10.567,5.604s-2.485-8.101-3.372-8.617c-.887-.516-12.63-3.768-23.194,1.573l-3.764,2.191-3.675,5.088s-2.243,5.357-3.212,5.424c-8.888.62-12.618.81-17.643,6.088Z" fill="#074f89"/>
+        </g>
+        <g filter="url(#j)">
+          <path d="M40.639,130.027c-1.528,1.605-3.3,4.617-3.3,4.617,0,0-1.395,5.209-.331,8.255,1.087,3.11,5.569,6.337,5.569,6.337l5.876,3.961,14.288,2.151,14.664-1.548,27.928-11.206s7.237-.461,11.774-1.384c4.535-.922,11.375-3.323,11.375-3.323,0,0,7.422-10.48,3.791-18.562,0,0-8.645-8.19-15.6-8.679-4.208-.296-10.609,2.028-10.609,2.028l-10.567,5.604s-2.485-8.101-3.372-8.617c-.887-.516-12.63-3.768-23.194,1.573l-3.764,2.191-3.675,5.088s-2.243,5.357-3.212,5.424c-8.888.62-12.618.81-17.643,6.088Z" fill="#8bb8d8"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

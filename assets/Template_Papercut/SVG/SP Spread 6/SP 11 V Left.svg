@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 566.929 566.929">
+  <defs>
+    <filter id="c" data-name="drop-shadow-1" x="451.437" y="43.35" width="89.76" height="80.16" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="d" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="d" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="e" data-name="drop-shadow-2" x="273.117" y="-32.97" width="89.76" height="79.92" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="f" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="f" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="g" data-name="drop-shadow-3" x="55.197" y="456.15" width="89.76" height="80.16" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="h" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="h" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="b" data-name="SP 11 V Left">
+    <g filter="url(#c)">
+      <polygon points="471.958 79.452 459.249 58.46 487.668 67.633 495.082 44.7 500.907 66.222 538.683 54.403 517.147 75.395 536.388 79.452 519.972 96.563 533.74 120.907 511.146 104.325 495.082 116.321 495.082 101.679 455.012 120.907 478.489 91.8 452.718 85.097 471.958 79.452" fill="#e7c979"/>
+    </g>
+    <g filter="url(#e)">
+      <polygon points="293.634 2.943 280.925 -18.049 309.344 -8.876 316.758 -31.809 322.583 -10.287 360.358 -22.106 338.823 -1.114 358.064 2.943 341.647 20.054 355.416 44.398 332.821 27.816 316.758 39.812 316.758 25.17 276.688 44.398 300.165 15.291 274.393 8.588 293.634 2.943" fill="#e7c979"/>
+    </g>
+    <g filter="url(#g)">
+      <polygon points="75.754 492.173 63.045 471.181 91.464 480.354 98.878 457.421 104.703 478.943 142.479 467.123 120.943 488.116 140.184 492.173 123.767 509.284 137.536 533.628 114.941 517.046 98.878 529.041 98.878 514.4 58.808 533.628 82.285 504.521 56.514 497.818 75.754 492.173" fill="#e7c979"/>
+    </g>
+  </g>
+</svg>

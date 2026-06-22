@@ -7,6 +7,7 @@
   <script src="../../assets/Template_Scribble/scribble-data.js"></script>
   <script src="../../assets/Template_Wander/wander-data.js"></script>
   <script src="../../assets/Template_Newborn/newborn-data.js"></script>
+  <script src="../../assets/Template_Papercut/papercut-data.js"></script>
   <script src="../../assets/js/photo-utils.js"></script>
   <script src="../../assets/js/book-completeness.js"></script>
   <script src="../../assets/js/map-render.js"></script>
@@ -114,6 +115,16 @@
       font-family: 'Baskervville';
       src: url('../../assets/fonts/Baskervville-MediumItalic.ttf') format('truetype');
       font-weight: 500; font-style: italic; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Source Sans 3';
+      src: url('../../assets/fonts/SourceSans3/SourceSans3-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Source Sans 3';
+      src: url('../../assets/fonts/SourceSans3/SourceSans3-Bold.ttf') format('truetype');
+      font-weight: 700; font-style: normal; font-display: swap;
     }
     :root {
       --bg:        #fafaf8;
@@ -853,6 +864,7 @@
       <option value="Scribble">Scribble</option>
       <option value="Wander">Wander</option>
       <option value="Newborn">Newborn</option>
+      <option value="Papercut">Papercut</option>
     </select>
     <button class="config-export-btn" id="export-state-btn">Export State</button>
     <button class="config-upload-btn" id="upload-btn">+ Add Photos</button>
@@ -1153,6 +1165,7 @@
     scribble: { data: () => window.SCRIBBLE_DATA, svgBase: '../../assets/Template_Scribble/Spreads/' },
     wander:   { data: () => window.WANDER_DATA,   svgBase: '../../assets/Template_Wander/' },
     newborn:  { data: () => window.NEWBORN_DATA,  svgBase: '../../assets/Template_Newborn/' },
+    papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../../assets/Template_Papercut/SVG/' },
   };
 
   let _activeTemplateData = window.SCRIBBLE_DATA; // default
@@ -1743,11 +1756,15 @@
       canvas.style.background = `linear-gradient(90deg, ${backColor} 0px ${spineStartPx}px, ${spineColor} ${spineStartPx}px ${frontStartPx}px, ${frontColor} ${frontStartPx}px 100%)`;
     }
 
-    // SVG overlay
+    // SVG overlay. Default .svg-overlay z-index:2 sits above the z-index:1 photo slot —
+    // correct for Scribble/Newborn (transparent photo window, decorations on top). When
+    // the cover sets overlayAbovePhotos:false (Papercut), drop the SVG below the photo
+    // so the photo prints on top of the graphics.
     const svgImg = document.createElement('img');
     svgImg.className = 'svg-overlay';
     svgImg.src = SVG_BASE + coverDef.svg;
     svgImg.alt = '';
+    if (coverDef.overlayAbovePhotos === false) svgImg.style.zIndex = '0';
     svgImg.onerror = () => {
       console.warn('SVG overlay failed to load:', svgImg.src);
       svgImg.style.outline = '3px solid #e05252';
@@ -1912,6 +1929,7 @@
     { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }], funnyWordsOnly: true },
     { label: 'Twinkle Star',      value: 'Twinkle Star',      styles: [{ label: 'Regular', weight: 400, italic: false }] },
     { label: 'Baskervville',      value: 'Baskervville',      styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Medium Italic', weight: 500, italic: true }] },
+    { label: 'Source Sans 3',    value: 'Source Sans 3',    styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
   ];
 
   // Caption-toolbar fonts scoped to the active template's fontPicker allow-list
@@ -2416,7 +2434,13 @@
       canvas.dataset.variant = variantKey;
       if (variant.bgColor) canvas.style.background = variant.bgColor;
 
-      // SVG background first (z-index 0), photos on top (z-index 1)
+      // SVG overlay z-order. The .svg-overlay CSS rule gives z-index:2, above the
+      // z-index:1 photo slots — the right default for Scribble/Newborn/Wander (their
+      // SVGs have transparent photo windows) and for Papercut's overlayAbovePhotos:true
+      // spreads (paper-cut shapes layer over photos). When a spread sets
+      // overlayAbovePhotos:false (Papercut SP4 + cover), drop the overlay BELOW the
+      // photos (z-index:0) so the photos cover it. DOM order alone can't do this —
+      // the z-index:2 rule would always win.
       if (variant.svg) {
         const overlay = document.createElement('img');
         overlay.className = 'svg-overlay';
@@ -2429,6 +2453,7 @@
           console.warn('SVG overlay failed to load:', overlay.src);
           overlay.style.outline = '3px solid #e05252';
         };
+        if (spreadDef.overlayAbovePhotos === false) overlay.style.zIndex = '0';
         canvas.appendChild(overlay);
       }
 
@@ -2532,8 +2557,13 @@
         }
         slotEl.dataset.slot = slotDef.slot;
         if (slotDef.heartClip) {
-          // Heart path scaled from original 566.93×566.93 SVG space to 600×600 canvas
-          slotEl.style.clipPath = "path('M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z')";
+          // Heart path: use template-specific path if defined, otherwise Scribble's default.
+          // Both are in their template's SVG viewBox space (566.93×566.93); the engine canvas
+          // is 600×600px so the path renders at ~105.8% scale — acceptable visual match.
+          const _heartPath = getActiveTemplateData().heartClipPath ||
+            'M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z';
+          slotEl.style.clipPath = `path('${_heartPath}')`;
+
           slotEl.style.background = 'transparent';
         }
 
@@ -2578,6 +2608,13 @@
             img.style.cursor = 'move';
             img.draggable = false;   // suppress native image drag-ghost; we drive our own
             img.title = 'Drag to reposition inside the heart';
+            attachCropDrag(img, slotEl, photo.name, { alwaysOn: true });
+          } else if (isSpecialSlot) {
+            // Special photo slots (toy, first steps, artwork) aren't swap-draggable,
+            // so reposition is always live — no toggle handle needed.
+            img.style.cursor = 'move';
+            img.draggable = false;
+            img.title = 'Drag to reposition inside the frame';
             attachCropDrag(img, slotEl, photo.name, { alwaysOn: true });
           }
 

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 566.929 566.929">
+  <defs>
+    <filter id="c" data-name="drop-shadow-1" x="338.847" y="149.701" width="132" height="78.72" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="d" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="d" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <clipPath id="f">
+      <rect id="g" data-name="&amp;lt;Clipping Path&amp;gt;" x="-8.504" y="-8.504" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <filter id="h" data-name="drop-shadow-2" x="44.847" y="420.661" width="78.24" height="81.84" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="i" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="i" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="b" data-name="SP 09 H Left">
+    <g filter="url(#c)">
+      <path d="M377.897,156.775l-37.699,27.907,14.401,27.316,24.685,13.824,45.125-22.045,43.741.181c.047-9.216-3.97-38.07-4.083-38.86s-11.933-7.568-15.178-5.875l-30.956-8.303-14.577,4.386c-.752,3.385-9.53-2.747-10.771-.49-1.241,2.257-13.795-.204-14.688,1.958Z" fill="#79ba9b"/>
+    </g>
+    <g id="e" data-name="Design 08 Left">
+      <g clip-path="url(#f)">
+        <g filter="url(#h)">
+          <polygon points="71.652 483.025 67.952 461.307 102.77 453.375 106.784 487.228 106.014 493.255 85.414 499.902 76.996 493.976 71.652 483.025" fill="#79ba9b"/>
+          <path d="M106.457,453.602l-33.25,8.252-27.164,3.971s-.188-11.271,1.973-17.883l13.016-15.967,20.365-10.045,26.158,6.142,12.89,16.759-2.965,4.688-11.025,4.084Z" fill="#914c77"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

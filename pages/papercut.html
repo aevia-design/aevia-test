@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wonder — Aevia</title>
+  <title>Papercut — Aevia</title>
   <style>
     :root{--bg:#fafaf8;--surface:#f3efe9;--border:#e4dfd8;--text:#1a1a1a;--muted:#7d7570;--accent-dk:#a8895f;--white:#ffffff;--serif:Georgia,'Times New Roman',serif;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}html{scroll-behavior:smooth;}body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}img{display:block;max-width:100%;}button{cursor:pointer;border:none;background:none;font:inherit;}a{color:inherit;text-decoration:none;}
@@ -16,15 +16,16 @@
     .product-tagline{font-family:var(--serif);font-style:italic;color:var(--muted);line-height:1.65;margin-bottom:36px;font-size:16px;max-width:340px;}
     .section-label{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
     .zone{display:grid;grid-template-columns:1fr 400px;gap:72px;max-width:1160px;margin:0 auto;padding:64px 56px;align-items:start;}.panel{position:sticky;top:90px;}
-    .gallery-main{width:100%;aspect-ratio:5/4;border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center;}.gallery-main svg{opacity:0.25;}
-    .thumbs{display:flex;gap:8px;margin-top:10px;}.thumb-ph{flex:1;aspect-ratio:1;border-radius:3px;background:var(--surface);border:2px solid transparent;}.thumb-ph.on{border-color:var(--text);}
+    .gallery-main{width:100%;aspect-ratio:10/7;border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+    .thumbs{display:flex;gap:8px;margin-top:10px;}.thumb-ph{flex:1;aspect-ratio:10/7;border-radius:4px;background:var(--surface);border:1px solid var(--border);}
     .page-toggle{margin-bottom:30px;}.chips{display:flex;gap:8px;margin-top:8px;}
     .chip{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 22px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;min-width:108px;background:var(--white);transition:border-color 0.15s,background 0.15s;user-select:none;}.chip:hover{border-color:var(--text);}.chip.on{border-color:var(--text);background:var(--text);color:var(--white);}
     .chip-label{font-size:12px;font-weight:500;letter-spacing:0.03em;}.chip-price{font-family:var(--serif);font-size:15px;}
     .addons{margin-bottom:30px;}.addon{display:flex;align-items:flex-start;gap:14px;padding:15px;border:1.5px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--white);cursor:pointer;transition:border-color 0.15s;}.addon:hover{border-color:#c4a882;}.addon.on{border-color:var(--text);box-shadow:inset 0 0 0 0.5px var(--text);}
     .chk{width:20px;height:20px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:background 0.15s,border-color 0.15s;}.addon.on .chk{background:var(--text);border-color:var(--text);}.chk svg{display:none;}.addon.on .chk svg{display:block;}
     .addon-body{flex:1;}.addon-name{font-size:13px;font-weight:600;margin-bottom:3px;}.addon-desc{font-size:12px;color:var(--muted);line-height:1.5;}
-    .addon-cost{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:3px 9px;border-radius:100px;flex-shrink:0;align-self:center;}
+    .addon-cost{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:3px 9px;border-radius:100px;flex-shrink:0;align-self:flex-start;margin-top:2px;}
+    .photo-count{font-size:13px;color:var(--muted);line-height:1.6;padding:12px 14px;background:var(--surface);border-radius:4px;margin-bottom:24px;}
     .price-row{display:flex;align-items:baseline;gap:5px;margin-bottom:22px;}.price-sym{font-family:var(--serif);font-size:22px;color:var(--muted);}.price-val{font-family:var(--serif);font-size:52px;font-weight:400;letter-spacing:-0.03em;line-height:1;}.price-note{font-size:11px;color:var(--muted);}
     .cta{width:100%;background:var(--text);color:var(--white);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;padding:17px 32px;border-radius:3px;transition:background 0.2s;margin-bottom:11px;}.cta:hover{background:#2e2e2e;}.cta-note{text-align:center;font-size:11px;color:var(--muted);}
     .acc-wrap{border-top:1px solid var(--border);max-width:1160px;margin:0 auto;padding:0 56px;}.acc-item{border-bottom:1px solid var(--border);}
@@ -49,16 +50,16 @@
     <span></span><span></span><span></span>
   </button>
 </nav>
-<div class="crumb"><a href="collections.html">Templates</a> <span>›</span> <a href="collections.html#kids">Kids</a> <span>›</span> Wonder</div>
+<div class="crumb"><a href="collections.html">Templates</a> <span>›</span> <a href="collections.html#kids">Kids</a> <span>›</span> Papercut</div>
 <div class="zone">
   <div>
     <div class="gallery-main"><svg width="72" height="72" viewBox="0 0 72 72" fill="none"><rect x="10" y="18" width="52" height="38" rx="3" stroke="#9b8e83" stroke-width="1.8"/><circle cx="25" cy="32" r="6" stroke="#9b8e83" stroke-width="1.8"/><path d="M10 46l14-14 10 10 8-8 12 10 8-10" stroke="#9b8e83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-    <div class="thumbs"><div class="thumb-ph on"></div><div class="thumb-ph"></div><div class="thumb-ph"></div></div>
+    <div class="thumbs"><div class="thumb-ph"></div><div class="thumb-ph"></div><div class="thumb-ph"></div></div>
   </div>
   <div class="panel">
     <div class="tag">Kids</div>
-    <h1 class="product-title">Wonder</h1>
-    <p class="product-tagline">A book as curious as they are — capturing childhood at its most vivid.</p>
+    <h1 class="product-title">Papercut</h1>
+    <p class="product-tagline">Playful shapes, bold colours — a book that looks like childhood feels.</p>
     <div class="page-toggle">
       <div class="section-label">Pages</div>
       <div class="chips">
@@ -68,26 +69,47 @@
     </div>
     <div class="addons">
       <div class="section-label">Optional add-ons</div>
-      <div class="addon" onclick="xtra(this)">
+
+      <div class="addon" onclick="xtra(this)" data-fp="FP1" data-photos="1">
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body"><div class="addon-name">Favourite things</div><div class="addon-desc">A dedicated illustrated spread capturing their favourite foods, colours, and activities</div></div>
-        <div class="addon-cost">Included</div>
+        <div class="addon-body"><div class="addon-name">Birthday spread</div><div class="addon-desc">A dedicated spread for the birthday celebration. Add birthday wishes and one special photo from the day.</div></div>
+        <div class="addon-cost">Free</div>
       </div>
-      <div class="addon" onclick="xtra(this)">
+
+      <div class="addon" onclick="xtra(this)" data-fp="FP2" data-photos="0">
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body"><div class="addon-name">Gift message</div><div class="addon-desc">A personalised message printed on the inside front cover</div></div>
-        <div class="addon-cost">Included</div>
+        <div class="addon-body"><div class="addon-name">Funny words</div><div class="addon-desc">A spread for the things they say at this age — words and phrases worth keeping.</div></div>
+        <div class="addon-cost">Free</div>
+      </div>
+
+      <div class="addon" onclick="xtra(this)" data-fp="FP3" data-photos="1">
+        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="addon-body"><div class="addon-name">Favourite toy</div><div class="addon-desc">A quiet portrait spread. Add one photo of your child with the toy that went everywhere with them.</div></div>
+        <div class="addon-cost">Free</div>
+      </div>
+
+      <div class="addon" onclick="xtra(this)" data-fp="FP4" data-photos="1">
+        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="addon-body"><div class="addon-name">First steps</div><div class="addon-desc">The moment caught on camera. Add one photo and a milestone spread is dedicated entirely to this.</div></div>
+        <div class="addon-cost">Free</div>
+      </div>
+
+      <div class="addon" onclick="xtra(this)" data-fp="FP5" data-photos="2">
+        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="addon-body"><div class="addon-name">Artwork gallery</div><div class="addon-desc">Their drawings, preserved. A gallery spread for up to two pieces of their artwork.</div></div>
+        <div class="addon-cost">Free</div>
       </div>
     </div>
+    <div class="photo-count" id="photo-count">Your 40-page book will need approximately 35–44 photos in total.</div>
     <div class="price-row"><span class="price-sym">€</span><span class="price-val" id="price">70</span><span class="price-note">incl. design &amp; printing</span></div>
     <button class="cta" onclick="goToOrder()">Create your book</button>
     <p class="cta-note">You approve before we print. No charge until you're happy.</p>
   </div>
 </div>
 <div class="acc-wrap">
-  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">About this template<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Wonder is for older children — the curious, active years from toddler through primary school. Bright but considered, it mixes portrait spreads with candid moments and leaves room for the personality that's already fully formed.</p></div></div>
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">About this template<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Papercut is built around the joy of craft — bold cutout shapes and bright palette blocks that celebrate the chaos and colour of childhood. Every spread feels like something they made themselves.</p></div></div>
   <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Print &amp; production<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Printed on 170gsm FSC-certified matte art paper. Hardcover case-bound. Produced in Vienna, dispatched within 5–7 business days.</p><ul><li>Format: 21 × 21 cm (square)</li><li>Cover: Matte linen hardcover, warm grey</li><li>Paper: 170gsm matte, archival quality</li><li>Binding: Case-bound, sewn signatures</li></ul></div></div>
-  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Preparing your photos<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>A 40-page book uses 35–50 photos; 80 pages uses 70–90.</p><ul><li>Minimum resolution: 2000px on the short edge</li><li>Colour space: sRGB preferred</li><li>We accept Google Drive, Dropbox, or direct upload</li></ul></div></div>
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Preparing your photos<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>A 40-page book uses 35–50 photos; 80 pages uses 70–90. JPEG or RAW both work.</p><ul><li>Minimum resolution: 2000px on the short edge</li><li>Colour space: sRGB preferred</li><li>We accept Google Drive, Dropbox, or direct upload</li></ul></div></div>
   <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Delivery<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><ul><li>Austria: 2–3 business days</li><li>Germany, Switzerland: 3–4 business days</li><li>Rest of EU: 5–7 business days</li><li>UK, USA: 7–10 business days</li></ul><p>Standard shipping included.</p></div></div>
 </div>
 <footer class="footer">
@@ -100,20 +122,67 @@
   <div class="foot-base"><span>© 2026 Aevia. All rights reserved.</span><span>Terms of service</span></div>
 </footer>
 <script>
-  function pick(el,p){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');document.getElementById('price').textContent=p;}
-  function xtra(card){card.classList.toggle('on');card.querySelector('.addon-cost').textContent=card.classList.contains('on')?'Added \u2713':'Included';}
+  const FP_META = {
+    FP1: { name: 'Birthday spread',   inputType: 'photo', slug: 'fp1' },
+    FP2: { name: 'Funny words',        inputType: 'text',  slug: 'fp2' },
+    FP3: { name: 'Favourite toy',      inputType: 'photo', slug: 'fp3' },
+    FP4: { name: 'First steps',        inputType: 'photo', slug: 'fp4' },
+    FP5: { name: 'Artwork gallery',    inputType: 'photo', slug: 'fp5' },
+  };
+
+  // Photo count estimate: base + 1 per FP with photos
+  const BASE_COUNTS = { 40: [35, 44], 80: [70, 90] };
+  function updatePhotoCount() {
+    const pages = document.querySelector('.chip.on .chip-label')?.textContent?.replace(' pages','') || '40';
+    const [lo, hi] = BASE_COUNTS[pages] || BASE_COUNTS['40'];
+    const fpPhotos = [...document.querySelectorAll('.addon.on')].reduce((n, a) => n + (parseInt(a.dataset.photos) || 0), 0);
+    document.getElementById('photo-count').textContent =
+      `Your ${pages}-page book will need approximately ${lo + fpPhotos}–${hi + fpPhotos} photos in total.`;
+  }
+
+  function pick(el, p) {
+    el.closest('.chips').querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+    el.classList.add('on');
+    document.getElementById('price').textContent = p;
+    updatePhotoCount();
+  }
+
+  function xtra(card) {
+    card.classList.toggle('on');
+    updatePhotoCount();
+  }
+
   function goToOrder() {
     const price = document.getElementById('price').textContent;
     const selectedChip = document.querySelector('.chip.on');
     const pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
-    const addonNames = [];
-    document.querySelectorAll('.addon.on').forEach(a => addonNames.push(a.querySelector('.addon-name').textContent));
-    const params = new URLSearchParams({ template: 'Wonder', category: 'kids', pages, price: price, backUrl: 'wonder.html' });
-    addonNames.forEach(n => params.append('addonName', n));
-    window.location.href = 'order.html?' + params.toString();
+    const selected = [];
+    document.querySelectorAll('.addon.on').forEach(a => {
+      const meta = FP_META[a.dataset.fp];
+      if (meta) selected.push(meta);
+    });
+    const urlParams = new URLSearchParams({
+      template: 'Papercut', category: 'kids', pages, price, back: 'papercut.html',
+    });
+    if (selected.length) {
+      urlParams.set('addons',       selected.map(m => m.name).join(','));
+      urlParams.set('addon_inputs', selected.map(m => m.inputType).join(','));
+      urlParams.set('addon_slugs',  selected.map(m => m.slug).join(','));
+    }
+    window.location.href = 'order.html?' + urlParams.toString();
   }
-  function acc(btn){const item=btn.closest('.acc-item');const open=item.classList.contains('open');document.querySelectorAll('.acc-item').forEach(i=>i.classList.remove('open'));if(!open)item.classList.add('open');}
-  const nav=document.querySelector('.nav');window.addEventListener('scroll',()=>{nav.style.background=window.scrollY>80?'rgba(250,250,248,0.97)':'rgba(250,250,248,0.92)';});
+
+  function acc(btn) {
+    const item = btn.closest('.acc-item');
+    const open = item.classList.contains('open');
+    document.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
+    if (!open) item.classList.add('open');
+  }
+
+  const nav = document.querySelector('.nav');
+  window.addEventListener('scroll', () => {
+    nav.style.background = window.scrollY > 80 ? 'rgba(250,250,248,0.97)' : 'rgba(250,250,248,0.92)';
+  });
 </script>
 </body>
 </html>
