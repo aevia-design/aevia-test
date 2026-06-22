@@ -1,3 +1,44 @@
+## 2026-06-22 — Back-filling web-res derivatives for existing orders (zero-egress recipe)
+
+`generateDerivative` (chunk-023) only fires on NEW uploads (`onFinalize`). To give an
+EXISTING order small previews without re-uploading and without internet egress, re-trigger
+the function with an **in-cloud round-trip copy**:
+
+```
+# 1. Copy the order folder to a temp prefix whose path contains "/previews/"
+#    → the function's isDerivativePath() guard SKIPS it (no junk derivatives made in temp):
+gsutil -m cp -r gs://BUCKET/AEV-XXX gs://BUCKET/_rederive/previews/
+# 2. Copy it BACK onto the real originals → overwrite fires onFinalize → derivatives generated:
+gsutil -m cp -r gs://BUCKET/_rederive/previews/AEV-XXX gs://BUCKET/
+# 3. Delete the temp prefix:
+gsutil -m rm -r gs://BUCKET/_rederive
+```
+
+All three steps are server-side (in-cloud) → **no `Download Worldwide Destinations` egress**,
+only cheap Class-A ops + function invocations. Verify with a 1:1 count of image originals vs
+`/previews/` files. Two gotchas: (a) gsutil refuses an identical src==dst copy (`are the same
+file — abort`), which is why the temp round-trip is needed; (b) the temp prefix MUST contain
+the literal path segment `/previews/` or step 1 generates pointless derivatives in temp.
+On this Windows box, set `CLOUDSDK_PYTHON` to the bundled interpreter first (memory
+`reference_gcloud_python`). Bucket: `gs://aevia-uploads.firebasestorage.app`.
+
+---
+
+## 2026-06-22 — A split feature isn't "live" until BOTH halves are deployed
+
+chunk-023's backend (`generateDerivative` + `getOrder` derivativeUrls) was deployed to
+Firebase, but the FRONTEND that consumes `derivativeUrls` sat on an un-merged branch. The
+live site therefore still served full-res originals — a full day of egress (3.59 GiB / €0.37)
+after we believed the fix was working. The S65 verification looked fine because it was run
+**locally with the branch checked out**, not against the live deployment.
+
+**Rule:** for any feature split across backend (Firebase) and frontend (Cloudflare/main),
+"deployed" means BOTH are live in the same place real users hit. Verify on the actual
+deployed surface, not a local checkout. The deploy-ordering rule (backend first — S40) is
+about safety; this is about not declaring victory at the halfway point.
+
+---
+
 ## 2026-06-21 — Template `*-data.js` values that come from a CSV: CSV is source of truth
 
 The `*-data.js` files (`wander-data.js`, `scribble-data.js`, `newborn-data.js`) are

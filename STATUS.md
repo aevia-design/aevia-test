@@ -1,7 +1,35 @@
 # Session Status
-_Last updated: 2026-06-21 (session 65)_
+_Last updated: 2026-06-22 (session 66)_
 
 ## Status
+**Session 66 (2026-06-22) — chunk-023 MERGED TO MAIN + PUSHED (`10e34af`) → now LIVE on Cloudflare. Diagnosed that the June-21 egress (3.59 GiB / €0.37) was the web-res FRONTEND never being merged (backend was deployed, but live site still served originals). Back-filled derivatives for AEV-039/040/041 via in-cloud copy (zero egress). Next: two PARALLEL sessions (67 = new template, 68 = chunk-024 design) in git worktrees.**
+
+Three commits landed on main this session: the Wander itinerary halign revert (left→center, JS + CSV synced per Evgeny) and the `egress-web-res-previews` merge (chunk-023 frontend + cover-reposition + submit-bar fix). 116/116 tests.
+
+**Key diagnosis (the session's main finding):** chunk-023 was split — the `generateDerivative` function + `getOrder` `derivativeUrls` were deployed to Firebase last session, but the FRONTEND that *requests* derivatives (`derivativeUrls` consumption in `customer-preview.html` + `template-engine.html`) was branch-only, never on main. So every load through the LIVE site ran main's frontend → pulled full-res originals. ~3.5 loads of AEV-042's ~1 GiB ≈ the 3.59 GiB billed on June 21. The fix was never broken — just not deployed where it counts. **Resolved by merging the branch to main.**
+
+**Back-fill of existing orders (AEV-039/040/041):** derivatives only generate for NEW uploads (onFinalize). Re-triggered the function for 3 existing orders with an **in-cloud round-trip copy** (zero internet egress): copy folder → a temp prefix whose path contains `/previews/` (so the function's `isDerivativePath` guard SKIPS generating from the temp), then copy back onto the real originals (fires onFinalize → derivatives). Then `rm -r` the temp. Result: 54/54, 52/52, 50/50 derivatives. AEV-040 previews **15.37 MiB** vs originals **2.08 GiB** (~135×). Recipe codified in LEARNINGS 2026-06-22.
+
+### ▶ NEXT SESSION (Sessions 67 + 68, PARALLEL in git worktrees)
+**Setup decided this session.** Two parallel sessions, each in its own `git worktree` off this updated main:
+- **Session 67 — new template (CODE).** Worktree `../aevia-template`, branch `feature/new-template`. Add a new template end-to-end (data file → registry in all 3 surfaces → order form → product page → fonts → PDF) per the adding-templates playbook (memory `project_adding_templates`). **Blocked on confirming WHICH template + whether Xenia's assets (CSVs/SVGs) are in hand.**
+- **Session 68 — chunk-024 (DESIGN ONLY, no code).** Worktree `../aevia-chunk024`, branch `feature/chunk-024-design`. Write `docs/briefs/server-side-pdf.md` + an ADR extending 0005: move PDF render server-side, in-region (`europe-west1`), triggered from dashboard. Decide host (Cloud Function vs Cloud Run — watch memory/timeout for 80-page books), staff trigger, cost model. **Do NOT touch `scripts/export-pdf.js` or any code** (it collides with the template work).
+
+**Parallel-session protocol (IMPORTANT):**
+- **`checkpoint` only in 67/68, NEVER `handover`** — full handover rewrites STATUS.md and would clobber the other parallel session. Each writes its own log: `sessions/2026-06-22-s67.md` / `…-s68.md`.
+- **Proper `handover` happens at MERGE time**, on main, sequentially — one per branch as it merges. Merge template (67) first, then chunk-024 (68). **Implement chunk-024 code only AFTER the template merges** (so `export-pdf.js` isn't edited from two directions).
+- Worktree create command (note `-b` to create the branch): `git worktree add -b feature/new-template ../aevia-template main`.
+
+**Also pending live confirmation (low effort):**
+1. **AEV-042 live Network check** once Cloudflare finishes — photo URLs should contain `/previews/`, ~100–300 KB each (not multi-MB).
+2. **Billing June 23** (for June 22) should now show near-zero Cloud Storage egress for screen loads. That near-zero IS the live confirmation.
+
+### ⚠ S66 watch-outs
+- **chunk-023 is now LIVE on main/Cloudflare.** Old orders only get small previews if back-filled — 039/040/041 done; all other legacy orders still fall back to full-res originals on load (by design, safe). Back-fill recipe in LEARNINGS 2026-06-22.
+- **PDF still serves full-res originals by design** — chunk-024 (not yet built) is what removes the PDF egress leg. A PDF export will still show GB-scale egress until then.
+- **`.claude/settings.local.json`** left out of commits as usual. **`assets/mockup example/`** untracked — pre-existing, not this session's work, left alone.
+
+### Previous: Session 65
 **Session 65 (2026-06-21) — chunk-023 DEPLOYED (Firebase) + VERIFIED on a real order; 3 small UX fixes committed on branch `egress-web-res-previews` (NOT merged to main, NOT on Cloudflare). Egress verified working on AEV-042.**
 
 Evgeny deployed `generateDerivative` (Firebase) at the start of the session. I verified the web-res pipeline end-to-end on a real Wander order **AEV-042** (52 photos): the bucket has all 52 derivatives (`AEV-042/photos/previews/`, **11.74 MiB** total vs **1.02 GiB** originals — ~87× smaller), and both engines served them on load.

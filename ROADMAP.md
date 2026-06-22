@@ -522,7 +522,7 @@ _Goal: keep GCS egress (the dominant cost) negligible per order. See ADR-0005._
 
 **Type:** feature / infrastructure
 **Component:** Upload pipeline + Staff engine + Customer preview (+ PDF unchanged)
-**Status:** BUILT + committed on branch `egress-web-res-previews` (`95ed8e4`); NOT deployed, NOT on main. Custom `generateDerivative` onFinalize function + `getOrder` derivative signing + both engines load derivative-with-fallback; `export-pdf.js` untouched; 116/116 tests. Next: `firebase deploy --only functions:generateDerivative`, verify on a real order, then merge. See S64 in STATUS.md + `docs/briefs/web-res-previews.md`.
+**Status:** ✅ DONE — DEPLOYED + MERGED + LIVE. Function deployed to Firebase (S65); merged to main + pushed (`10e34af`, S66) → live on Cloudflare. Verified on AEV-042 (52 derivatives, 11.74 MiB vs 1.02 GiB). Custom `generateDerivative` onFinalize function + `getOrder` derivative signing + both engines load derivative-with-fallback; `export-pdf.js` untouched; 116/116 tests. Legacy orders fall back to originals unless back-filled (AEV-039/040/041 back-filled S66; recipe in LEARNINGS 2026-06-22). See S64–S66 in STATUS.md + `docs/briefs/web-res-previews.md`.
 **Size:** M
 **Priority:** High — the real fix for per-order egress cost (ADR-0005).
 **Depends on:** —
