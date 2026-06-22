@@ -1805,6 +1805,16 @@
         const img = document.createElement('img');
         img.className = 'slot-photo';
         img.src = coverPhoto.url;
+        img.draggable = false;   // suppress native image drag-ghost; we drive our own
+        // Apply the saved crop offset + let staff drag the photo inside the cover frame
+        // (#74-style reposition). The cover slot isn't swap-draggable, so the drag is
+        // always live (like the heart slot). Crop is keyed by photo name → carries to
+        // customer-preview + PDF identically. Default 50/50 = centred.
+        const hc = getHeartCrop(coverPhoto.name);
+        img.style.objectPosition = hc.x + '% ' + hc.y + '%';
+        img.style.cursor = 'move';
+        img.title = 'Drag to reposition inside the cover frame';
+        attachCropDrag(img, slot, coverPhoto.name, { alwaysOn: true });
         slot.appendChild(img);
       } else {
         const ph = document.createElement('div');
@@ -4166,7 +4176,25 @@
       return new File([blob], filename, { type: blob.type || 'image/jpeg' });
     }
 
-    const urls   = order.signedUrls  || {};
+    // chunk-023: Load derivatives for screen rendering with fallback to originals for legacy orders
+    // derivativeUrls contains web-resolution URLs (~150 KB) where available.
+    // signedUrls contains full-res originals (~6 MB) as fallback.
+    const derivUrls = order.derivativeUrls || {};
+    const origUrls  = order.signedUrls  || {};
+
+    // Merge: use derivative if present, else fallback to original
+    const urls = {
+      cover: derivUrls.cover || origUrls.cover || null,
+      special: {},
+      pool: []
+    };
+    for (const slug of Object.keys(origUrls.special || {})) {
+      const derivArr = Array.isArray(derivUrls.special?.[slug]) ? derivUrls.special[slug] : [];
+      const origArr = Array.isArray(origUrls.special[slug]) ? origUrls.special[slug] : [];
+      urls.special[slug] = origArr.map((orig, i) => derivArr[i] || orig);
+    }
+    urls.pool = (origUrls.pool || []).map((orig, i) => (derivUrls.pool || [])[i] || orig);
+
     const names  = order.storedNames || {};
 
     // Helper: extract filename from a GCS storedName path, preserving extension

@@ -1,3 +1,18 @@
+## 2026-06-21 — Template `*-data.js` values that come from a CSV: CSV is source of truth
+
+The `*-data.js` files (`wander-data.js`, `scribble-data.js`, `newborn-data.js`) are
+**hand-synced from Xenia's delivered CSVs** (`assets/Template_*/*.csv`) — there is **no
+CSV→JS generator**. So a value that exists in a CSV column (e.g. caption `halign`/`valign`
+= `captions_Halignment`/`captions_Valignment` in `Wander_sizing_full.csv`) must be changed
+in the **CSV first (or both together)**, never JS-only. A JS-only edit silently diverges
+from the canonical CSV and is lost on the next re-sync, and the CSV stops being trustworthy.
+
+**Rule:** before changing a data value, check if a CSV column holds it. If yes → edit the
+CSV (and re-sync JS); also confirm with Evgeny whether *we* edit Xenia's CSV or hand it back
+to her (she owns those files). Pure engine layout CONSTANTS that live only in JS (never in a
+CSV) are exempt. Concrete instance: Wander itinerary `halign` center→left was done in both
+the CSV and `wander-data.js` this session.
+
 ## 2026-06-17 — PDF dropped blank lines (paragraph spacing collapsed vs engine)
 
 Staff/customers space paragraphs in a text panel (and per-photo captions) with **blank

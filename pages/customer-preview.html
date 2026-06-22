@@ -1065,9 +1065,23 @@
   }
 
   async function loadPhotos() {
-    const signedUrls  = window.orderData?.signedUrls;
+    const derivUrls   = window.orderData?.derivativeUrls;
+    const origUrls    = window.orderData?.signedUrls;
     const storedNames = window.orderData?.storedNames;
-    if (!signedUrls) { console.warn('No signed URLs in order data'); return; }
+    if (!origUrls) { console.warn('No signed URLs in order data'); return; }
+
+    // chunk-023: Merge derivatives (web-res for screen) with originals (fallback for legacy orders)
+    const signedUrls = {
+      cover: (derivUrls?.cover || origUrls?.cover) || null,
+      special: {},
+      pool: []
+    };
+    for (const slug of Object.keys(origUrls.special || {})) {
+      const derivArr = Array.isArray(derivUrls?.special?.[slug]) ? derivUrls.special[slug] : [];
+      const origArr = Array.isArray(origUrls.special[slug]) ? origUrls.special[slug] : [];
+      signedUrls.special[slug] = origArr.map((orig, i) => derivArr[i] || orig);
+    }
+    signedUrls.pool = (origUrls.pool || []).map((orig, i) => (derivUrls?.pool || [])[i] || orig);
 
     // Real progress: count every photo we're about to fetch, then tick the bar as each
     // resolves (success or failure). Beats the bare hourglass — the customer sees movement.
@@ -1432,6 +1446,10 @@
         const img = document.createElement('img');
         img.className = 'slot-photo';
         img.src = coverPhoto.url;
+        // Apply the staff-set cover crop (object-position %). Read-only here, like the
+        // regular slots — the crop is part of our layout. Default 50/50 = centred.
+        const hc = getHeartCrop(coverPhoto.name);
+        img.style.objectPosition = hc.x + '% ' + hc.y + '%';
         slot.appendChild(img);
       } else {
         const ph = document.createElement('div');
@@ -2375,6 +2393,9 @@
     document.getElementById('photo-sidebar').classList.remove('hidden');
     document.getElementById('preview-controls').classList.remove('visible');
     document.getElementById('submit-bar').classList.remove('hidden');
+    // Re-assert inline display: visibility is owned by mode state, not a one-time
+    // showBookChrome() clear that a stray resize (scrollbar toggle) can stomp to none.
+    document.getElementById('submit-bar').style.display = '';
     // Preview mode hides all rows but the current spread — restore them all on return to edit.
     document.querySelectorAll('.spread-row').forEach(row => row.classList.remove('preview-hidden'));
     requestAnimationFrame(fitCover);
@@ -2686,6 +2707,10 @@
       document.getElementById('page-body').style.display = '';
       document.getElementById('photo-sidebar').style.display = '';
       document.getElementById('footer').style.display = '';
+      // Restore the two elements the mobile branch hid but previously never brought
+      // back — leaving them inline display:none stranded the submit-bar / preview nav.
+      document.getElementById('submit-bar').style.display = '';
+      document.getElementById('preview-controls').style.display = '';
     }
     fitCover();
   });

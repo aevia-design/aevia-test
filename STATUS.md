@@ -1,7 +1,62 @@
 # Session Status
-_Last updated: 2026-06-17 (session 51)_
+_Last updated: 2026-06-21 (session 65)_
 
 ## Status
+**Session 65 (2026-06-21) — chunk-023 DEPLOYED (Firebase) + VERIFIED on a real order; 3 small UX fixes committed on branch `egress-web-res-previews` (NOT merged to main, NOT on Cloudflare). Egress verified working on AEV-042.**
+
+Evgeny deployed `generateDerivative` (Firebase) at the start of the session. I verified the web-res pipeline end-to-end on a real Wander order **AEV-042** (52 photos): the bucket has all 52 derivatives (`AEV-042/photos/previews/`, **11.74 MiB** total vs **1.02 GiB** originals — ~87× smaller), and both engines served them on load.
+
+**Committed this session (`9e52d16`, branch `egress-web-res-previews`):**
+1. **Cover photo reposition** — drag-to-reposition inside the cover frame (staff engine, always-on like the heart slot), saved crop applied read-only in customer-preview, baked into PDF via `coverExtract`. Crop keyed by `photo.name`, consistent across all 3 surfaces. Wander cover (no photo) correctly skipped via the `slotDef` guard. 116/116 tests.
+2. **Wander itinerary left-align** — FP1 text panel `halign` center→left, synced in BOTH `Wander_sizing_full.csv` (source of truth) and `wander-data.js`. (Evgeny edited the CSV; I synced the JS — see new CSV-source-of-truth rule, LEARNINGS 2026-06-21 + memory `feedback_csv_source_of_truth`.)
+3. **customer-preview submit-bar fix** — Save/Approve bar disappearing after Preview→Edit. Root cause: bar visibility relied on a one-time inline `display=''` that the resize handler could stomp and never restore. Fix: edit handler re-asserts the inline display; resize desktop-branch now restores submit-bar + preview-controls (was asymmetric).
+
+**Cost verification (the session's main goal):**
+- Evgeny's debugging activity on AEV-042 = ~4 customer loads + 1 staff load, **no PDF**. Each load pulled ~11.74 MiB derivatives, NOT the 1.02 GiB originals.
+- **Estimated egress today ≈ 5 × 11.74 MiB ≈ 59 MiB ≈ €0.006** (vs ~€0.56 without the fix — same repeated-reload-on-big-order pattern that caused the €5.59 spike).
+
+### ▶ NEXT SESSION (Session 66)
+1. **CHECK BILLING (June 22)** — GCS egress lags ~1 day. Expect today's Cloud Storage egress to be **negligible (tens of MB, ~€0.00–0.01)**, NOT GB-scale. That near-zero IS the confirmation the web-res fix works on a live order. GB-scale would mean originals were served → investigate.
+2. **Merge `egress-web-res-previews` → main** once Evgeny is confident (billing confirms + UX fixes eyeballed). Cloudflare auto-deploys main. The function is ALREADY deployed (Firebase), so backend-first ordering is satisfied.
+3. **Eyeball the 3 UX fixes** on a maximized window: cover reposition (needs an order WITH a cover photo — AEV-042 is Wander/no cover), itinerary left-align (load a Wander order), submit-bar Preview→Edit persistence.
+4. **chunk-024 (server-side in-region PDF)** — still the next cost piece (removes the PDF full-res egress leg; needed for prod ops). Brief not yet written.
+
+### ⚠ S65 watch-outs
+- **Branch only — NOT merged, NOT on Cloudflare.** The `generateDerivative` FUNCTION is deployed to Firebase; the 3 UX commits are local to the branch. `.claude/settings.local.json` left OUT (as usual).
+- **"Missing Save/Approve buttons" was a RED HERRING / environmental** — Evgeny's Chrome window was 880px tall on an 816px usable screen (overshoot +64px, 112% display scaling), so the bottom-fixed bar sat behind the taskbar. Win+↑ (proper maximize) fixed it. NOT a code bug. The real bug (Preview→Edit disappearance) IS fixed.
+- **CSV source-of-truth:** don't edit `*-data.js` values that originate from a CSV — see LEARNINGS 2026-06-21 + memory `feedback_csv_source_of_truth`.
+- **PDF cover crop is new + untested in print** — `coverExtract` now honours the cover crop; no PDF was run this session, so verify a cover-reposition carries to the PDF when next exporting a template that has a cover photo (Scribble/Newborn).
+- **Untracked `assets/mockup example/`** — pre-existing, not this session's work; left alone.
+
+### Previous: Session 64
+**Session 64 (2026-06-21) — GCS EGRESS COST decided + chunk-023 (web-res previews) BUILT + COMMITTED on branch `egress-web-res-previews` (NOT on main, NOT deployed). No production change yet.** Diagnosed the post-trial bill: 99.7% was GCS **egress** (full-res originals re-downloaded on every engine view + every local PDF run), not storage. Verified the real rate from Evgeny's own billing report: **€0.103/GB** (post-trial: €5.62 / 54.53 GiB). Decision in **ADR-0005**: commit to web-res previews (#1) + in-region server-side PDF (#6, chunk-024); defer CDN (#3); park R2 (#7). Built chunk-023 via developer-agent + reviewed (critic-agent passed the decision; I hand-reviewed the code + fixed a deploy bug). 116/116 tests.
+
+**What was done this session:**
+1. **Decision package committed** (`82f4b9d`): `docs/decisions/0005-…`, `docs/briefs/web-res-previews.md` (revised per critic: explicit PoC gate, firm naming rule, export-pdf.js guard), ROADMAP Phase 5 (chunk-023 + chunk-024 + Decisions Log), ARCHITECTURE **Invariant 8** (engines load derivative, PDF loads original) + egress cost note + Open Questions #5/#7 resolved.
+2. **chunk-023 code committed** (`95ed8e4`): custom GCS `onFinalize` function `generateDerivative` (~1600px JPEG derivative per photo at `<folder>/<cat>/previews/<name>`); `getOrder` returns `derivativeUrls` alongside originals; BOTH engines load the derivative with per-photo fallback to original (legacy orders unchanged); `export-pdf.js` untouched. New `functions/derivative-utils.js` (pure path logic, 14 tests).
+3. **Fixed a real deploy bug** the agent introduced: firebase-functions v4 needs `.storage.object().onFinalize(...)`, not `.storage.onFinalize(...)`. `node -e "require('./index.js')"` now loads clean.
+
+### Cost picture (verified @ €0.103/GB) — egress happens on 4 events/order: staff load, customer load, staff export load, PDF
+- **80-page / 4 GB order:** today €1.65 → after chunk-023 **€0.42** (PDF leg remains) → after 023+024 **€0.008**.
+- **Your testing pattern** (10 reloads of a 4 GB order): €4.12 → **€0.03** after 023. This repeated-reload-on-big-orders is what caused the €5.59 spike.
+- chunk-023 fixes the 3 screen loads (~25×). Step 5 (PDF, full-res originals) only drops with **chunk-024** (in-region render).
+
+### ▶ NEXT SESSION (Session 65)
+1. **Deploy chunk-023:** `firebase deploy --only functions:generateDerivative` (backend-first, per the S40 deploy-ordering rule). The fix only makes derivatives for NEW uploads — existing orders fall back to originals (by design).
+2. **Verify on a real order** (deploy is the gate before merging to main → Cloudflare). You CAN'T make a 5–10 photo order (flow blocks incomplete books); smallest valid is a 40-page order. Test is a ONE-TIME load (~€0.03), not the repeated pattern that ran up the bill. **Two test routes:** (a) place a minimum 40-page order → load it → DevTools Network: photo URLs contain `/previews/` and are ~100–300 KB not multi-MB; or (b) zero-new-order — after deploy, re-trigger derivatives on an existing order with a **server-side** GCS copy (`gsutil cp gs://…/AEV-031/photos/ gs://…/AEV-031/photos/` — in-cloud, no egress), then load AEV-031. Claude can run the bucket check `gsutil ls -l …/AEV-XXX/photos/previews/` to confirm derivatives exist.
+3. **Regression checks:** PDF still full-res/sharp (loads originals, no `/previews/`); a legacy order (AEV-031) still renders with clean console (fallback).
+4. **Merge `egress-web-res-previews` → main** only after Evgeny confirms on a real order (Cloudflare auto-deploys main).
+5. **chunk-024 (server-side in-region PDF)** is the next cost piece — removes the PDF egress leg (step 5) + needed for prod ops (staff can't run a Node CLI per order). Brief not yet written.
+
+### ⚠ S64 watch-outs
+- **NOT deployed, branch only.** `firebase deploy` is required for the function to exist; until then the order pipeline is unchanged. `getOrder` already returns `derivativeUrls` once merged, but every value is null until the function runs on new uploads → engines fall back to originals (safe).
+- **Design note (not a bug):** `getOrder` does a GCS `.exists()` check **per photo** (≈100 HEAD calls on a big order, every load). Works, parallelised; possible follow-up = always sign the derivative URL + let `<img>` onerror fall back, dropping the existence checks.
+- **HEIC:** originals are normally JPEG (browser converts HEIC→JPEG before upload). If a `.heic` original sneaks through, `sharp` in the function may fail to decode it → caught → no derivative → fallback to original. Acceptable.
+- **firebase-functions v4.9.0 + Node 20 are deprecation-warned** (Node 20 decommissioned 2026-10-30). Do NOT upgrade as part of this — it's breaking across ALL functions; separate maintenance session before October.
+- **Worktree isolation didn't hold** — the developer-agent wrote into the MAIN working tree (on the egress branch), not its throwaway worktree. No harm; result is committed. Watch for this if spawning isolated agents again.
+- **chunk-024 will make the PDF egress-free but the web-res fix does NOT touch the PDF** — print genuinely needs originals.
+
+### Previous: Session 51
 **Session 51 (2026-06-17) — STEP-BASED ORDER FORM UX SHIPPED to `main` (`723fac4`, pushed → Cloudflare auto-deploys). The order form's long single-scroll upload stage is now discrete guided steps — Details → Cover → Special pages → Photos — across all templates, data-driven (Special auto-skips with no add-ons), linear-forward/free-backward nav. Independent /reviewer-agent + /design-review both passed. 102/102 tests. Read `sessions/2026-06-17-s51.md`.**
 
 **What shipped this session (branch `step-form-ux`, 3 commits, merged `--no-ff`):**
