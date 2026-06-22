@@ -1,0 +1,20 @@
+{
+  "name": "aevia-pdf-renderer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloud Run service: generates Aevia photobook PDFs server-side, reading from Firestore + GCS.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "^7.0.0",
+    "@google-cloud/storage": "^7.0.0",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "pdf-lib": "^1.17.1",
+    "sharp": "^0.33.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

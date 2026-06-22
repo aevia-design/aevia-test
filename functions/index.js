@@ -432,6 +432,64 @@ exports.saveBookState = functions
     }
   });
 
+// ── Generate PDF (chunk-024) ─────────────────────────────────────────────────
+// Staff-triggered from the dashboard. Delegates to the Cloud Run pdf-renderer
+// service which reads photos from GCS in-region (no egress) and renders the PDF.
+// The service URL is configured via the PDF_RENDERER_URL environment variable.
+exports.generatePdf = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 120, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (!(await isStaff(req))) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+
+    const rendererUrl = process.env.PDF_RENDERER_URL;
+    if (!rendererUrl) return res.status(500).json({ error: 'PDF_RENDERER_URL not configured' });
+
+    try {
+      // Verify order exists and has valid status
+      const db = admin.firestore();
+      const doc = await db.collection('orders').doc(orderNumber).get();
+      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+      const order = doc.data();
+      if (!['approved', 'paid', 'new'].includes(order.status)) {
+        return res.status(400).json({ error: `Order status '${order.status}' is not eligible for PDF generation` });
+      }
+
+      // Call the Cloud Run renderer
+      const rendererResp = await fetch(`${rendererUrl}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderNumber }),
+      });
+
+      const result = await rendererResp.json();
+      if (!rendererResp.ok) {
+        throw new Error(result.error || `Renderer returned HTTP ${rendererResp.status}`);
+      }
+
+      return res.status(200).json({
+        success: true,
+        previewUrl: result.previewUrl,
+        gcsPath:    result.gcsPath,
+        sizeBytes:  result.sizeBytes,
+      });
+    } catch (err) {
+      console.error('generatePdf error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
 // ── HEIC → JPEG converter ────────────────────────────────────────────────────
 exports.convertHeic = functions
   .region('europe-west1')

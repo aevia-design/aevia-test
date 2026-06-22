@@ -48,40 +48,22 @@ const stripHtml = s => {
   return stripped.split('\n').map(l => l.replace(/[ \t]+/g, ' ').trim()).join('\n');
 };
 
-// ── CLI args ──────────────────────────────────────────────────────────────────
-const args   = process.argv.slice(2);
-const getArg = (flag) => { const i = args.indexOf(flag); return i !== -1 ? args[i + 1] : null; };
-
-// Photo source: exactly one of --photos (local dir) or --order (pull full-res
-// ORIGINALS from GCS via getOrder, matched to book-state.json by filename).
-const photosDir   = getArg('--photos');
-const orderNumber = getArg('--order');
-const staffKey    = getArg('--staff-key') || process.env.STAFF_KEY || '865865';
-const stateFile = getArg('--state') || 'book-state.json';
-const outDir    = getArg('--out')   || 'pdf-out';
-// --mode preview  → single combined preview.pdf (cover + all content pages)
-// --mode print    → individual PDFs in <outDir>/print/  (cover.pdf + page-001.pdf etc.)
-// default: preview
-const mode = getArg('--mode') || 'preview';
-
-if (!photosDir && !orderNumber) {
-  console.error('Usage: node scripts/export-pdf.js (--photos <dir> | --order <orderNumber>) [--state book-state.json] [--out pdf-out] [--mode preview|print] [--staff-key <key>]');
-  process.exit(1);
-}
-if (photosDir && orderNumber) { console.error('Provide either --photos or --order, not both.'); process.exit(1); }
-if (photosDir && !fs.existsSync(photosDir)) { console.error('Photos dir not found:', photosDir); process.exit(1); }
-// In --order mode, state is fetched from GCS, so skip disk check
-if (!orderNumber && !fs.existsSync(stateFile)) { console.error('State file not found:', stateFile); process.exit(1); }
-
-fs.mkdirSync(outDir, { recursive: true });
+// ── Runtime config (set by CLI or by generatePdfFromFirestore for server mode) ─
+let photosDir   = null;
+let orderNumber = null;
+let staffKey    = null;
+let stateFile   = null;
+let outDir      = null;
+let mode        = null;
 
 // ── Load state + template data ────────────────────────────────────────────────
 // In --order mode, state is loaded from GCS by setupPhotoSource() and assigned in main() after.
-// In --photos mode, state is loaded from disk.
+// In --photos mode, state is loaded from disk (CLI) or injected directly (server mode).
 let state = null;
-if (!orderNumber) {
-  state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-}
+
+// Server mode: pre-fetched photo buffers keyed by basename (set by generatePdfFromFirestore).
+// When set, loadPhoto reads from this map instead of disk or signed URLs.
+let photoBufferMap = null;
 
 // Initialize print constants and DATA lazily (they depend on state which is loaded asynchronously in --order mode)
 let DPI, MM_TO_PX, CONTENT_MM, BLEED_MM, FULL_MM, FULL_PX, CONTENT_PX, BLEED_PX, DATA;
@@ -292,7 +274,11 @@ async function loadPhoto(name) {
   if (!name) return null;
   if (photoCache.has(name)) return photoCache.get(name);
   let buf = null;
-  if (orderNumber) {
+  if (photoBufferMap) {
+    // Server mode: photos pre-fetched from GCS in-region by generatePdfFromFirestore.
+    buf = photoBufferMap.get(name) || photoBufferMap.get(path.basename(name));
+    if (!buf) { console.warn(`  ⚠ Photo not in buffer map: ${name}`); return null; }
+  } else if (orderNumber) {
     const url = gcsUrlByName.get(name) || gcsUrlByName.get(path.basename(name));
     if (!url) { console.warn(`  ⚠ Photo not in order manifest: ${name}`); return null; }
     const r = await fetch(url);
@@ -1293,8 +1279,11 @@ async function main() {
     console.log(`\n✅ Done — cover + ${pageNum} pages (incl. blank QR page)`);
     console.log(`   File size: ${(pdfBytes.length / 1024 / 1024).toFixed(1)} MB\n`);
 
-    if (orderNumber) {
-      // Order mode: GCS is the system of record — upload directly, keep no local copy.
+    if (photoBufferMap) {
+      // Server mode (Cloud Run): return bytes — caller handles GCS upload.
+      return pdfBytes;
+    } else if (orderNumber) {
+      // CLI --order mode: GCS is the system of record — upload directly, keep no local copy.
       await uploadAndSignPdf(pdfBytes, `${folderName}/pdfs/${orderNumber}_preview.pdf`, `${orderNumber}_preview.pdf`);
     } else {
       // Local (--photos) mode: write to disk for manual inspection.
@@ -1354,4 +1343,56 @@ async function uploadAndSignPdf(fileBytes, gcsPath, label) {
   }
 }
 
-main().catch(e => { console.error('Fatal:', e); process.exit(1); });
+// ── CLI entry point ───────────────────────────────────────────────────────────
+if (require.main === module) {
+  const args   = process.argv.slice(2);
+  const getArg = (flag) => { const i = args.indexOf(flag); return i !== -1 ? args[i + 1] : null; };
+  photosDir   = getArg('--photos');
+  orderNumber = getArg('--order');
+  staffKey    = getArg('--staff-key') || process.env.STAFF_KEY || '865865';
+  stateFile   = getArg('--state') || 'book-state.json';
+  outDir      = getArg('--out')   || 'pdf-out';
+  mode        = getArg('--mode')  || 'preview';
+
+  if (!photosDir && !orderNumber) {
+    console.error('Usage: node scripts/export-pdf.js (--photos <dir> | --order <orderNumber>) [--state book-state.json] [--out pdf-out] [--mode preview|print] [--staff-key <key>]');
+    process.exit(1);
+  }
+  if (photosDir && orderNumber) { console.error('Provide either --photos or --order, not both.'); process.exit(1); }
+  if (photosDir && !fs.existsSync(photosDir)) { console.error('Photos dir not found:', photosDir); process.exit(1); }
+  if (!orderNumber && !fs.existsSync(stateFile)) { console.error('State file not found:', stateFile); process.exit(1); }
+
+  fs.mkdirSync(outDir, { recursive: true });
+
+  if (!orderNumber) {
+    state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+  }
+
+  main().catch(e => { console.error('Fatal:', e); process.exit(1); });
+}
+
+// ── Server-side API (used by Cloud Run pdf-renderer service) ─────────────────
+// Injects pre-built state + pre-fetched photo buffers, runs the preview render,
+// returns the PDF bytes without touching disk or signing any URLs.
+// The caller (pdf-renderer/index.js) is responsible for photo fetching + GCS upload.
+async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName }) {
+  // Reset module globals for this invocation (Cloud Run handles one request at a time)
+  orderNumber    = ordNum;
+  state          = stateData;
+  photoBufferMap = bufferMap;   // Map<basename, Buffer> — loadPhoto reads from here
+  folderName     = fName;
+  photosDir      = null;
+  gcsUrlByName   = null;
+  gcsOrder       = null;
+  mode           = 'preview';
+  outDir         = '/tmp/pdf-out';
+  Object.assign(photoCache, new Map()); // clear photo cache between requests
+  photoCache.clear();
+
+  fs.mkdirSync(outDir, { recursive: true });
+  setActiveTemplate(stateData.template || '');
+  initializePrintConstants();
+  return main();  // main() returns previewPdfBytes in server mode
+}
+
+module.exports = { generatePdfFromFirestore };

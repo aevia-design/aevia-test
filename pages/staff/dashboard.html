@@ -312,6 +312,7 @@
 
   // ── Auth (Firebase Email/Password) ─────────────────────────────────────────
   const GET_PDF_URL_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getPdfUrl';
+  const GENERATE_PDF_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/generatePdf';
   const MARK_SENT_TO_PRINT_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/markSentToPrint';
 
   // Headers for staff Cloud Function calls — sends the current user's Firebase
@@ -466,7 +467,11 @@
               : `<button class="preview-link-btn" onclick="generatePreviewLink('${esc(o.orderNumber)}')">Generate preview link</button>`
             }
           </div>
-          <div class="pdf-links-row" id="pdf-row-${esc(o.orderNumber)}" style="display:none;margin-top:8px;gap:8px;flex-wrap:wrap;"></div>
+          <div class="pdf-links-row" id="pdf-row-${esc(o.orderNumber)}" style="display:flex;margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center;">
+            ${['new','approved','paid'].includes(o.status)
+              ? `<button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(o.orderNumber)}', this)">Generate PDF</button>`
+              : ''}
+          </div>
           <div class="print-action-row" id="print-action-${esc(o.orderNumber)}" style="margin-top:8px;">
             ${o.status === 'paid'
               ? `<button class="pdf-link-btn" onclick="markSentToPrint('${esc(o.orderNumber)}')">Mark approved for print</button>`
@@ -528,6 +533,41 @@
       }
     }
   }
+
+  // ── Generate PDF from dashboard (chunk-024) ──────────────────────────────
+  // Calls the Cloud Run renderer via the generatePdf Cloud Function.
+  // Staff must have saved the book state first — the PDF is built from Firestore.
+  window.generatePdfFromDashboard = async function(orderNumber, btn) {
+    const row = document.getElementById(`pdf-row-${esc(orderNumber)}`);
+    const origLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Generating…';
+    const statusSpan = document.createElement('span');
+    statusSpan.style.cssText = 'font-size:11px;color:var(--muted);margin-left:6px;';
+    row.appendChild(statusSpan);
+
+    try {
+      const res = await fetch(GENERATE_PDF_ENDPOINT, {
+        method: 'POST',
+        headers: await staffHeaders(),
+        body: JSON.stringify({ orderNumber }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+
+      // Show the download link
+      btn.textContent = 'Preview PDF';
+      btn.onclick = () => window.open(data.previewUrl, '_blank');
+      btn.disabled = false;
+      const mb = (data.sizeBytes / 1024 / 1024).toFixed(1);
+      statusSpan.textContent = `${mb} MB`;
+    } catch (err) {
+      btn.textContent = origLabel;
+      btn.disabled = false;
+      statusSpan.remove();
+      alert(`PDF generation failed: ${err.message}`);
+    }
+  };
 
   // ── Generate preview link ────────────────────────────────────────────────
   window.generatePreviewLink = async function(orderNumber) {
