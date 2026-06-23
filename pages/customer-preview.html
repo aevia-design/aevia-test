@@ -1129,7 +1129,7 @@
     }
 
     // Cover → specialPhotos.cover (mirrors staff engine structure)
-    const coverPhoto = await fetchPhoto(signedUrls.cover, storedNames?.cover || 'cover');
+    const coverPhoto = await fetchPhoto(signedUrls.cover, _baseName(storedNames?.cover) || 'cover');
     if (coverPhoto) window.specialPhotos.cover = [coverPhoto];
 
     // Special (FP) photos → specialPhotos[FPX] (mirrors staff engine structure)
@@ -1139,7 +1139,7 @@
       const nameArr = storedNames?.special?.[slug] || [];
       const urlArr  = Array.isArray(urls) ? urls : [urls];
       const photos  = await Promise.all(urlArr.map((url, i) =>
-        fetchPhoto(url, (Array.isArray(nameArr) ? nameArr[i] : nameArr) || `${slug}-${i}`)
+        fetchPhoto(url, _baseName((Array.isArray(nameArr) ? nameArr[i] : nameArr) || '') || `${slug}-${i}`)
       ));
       if (fpKey && window.specialPhotos[fpKey] !== undefined) {
         window.specialPhotos[fpKey] = photos.filter(Boolean);

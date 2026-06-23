@@ -1,3 +1,21 @@
+## 2026-06-23 — Async long-job pattern (Cloud Run render + Firestore-polled progress)
+
+A Cloud Function cannot synchronously wait on a multi-minute job: gen-1 caps at 540s, and the PDF render is ~6m43s for 40 pages (≈13 min for 80). The S70 design had `generatePdf` await the render → it hit the 300s timeout while Cloud Run kept going and *succeeded* 2 min later (the browser saw "Failed to fetch"; the PDF was actually in GCS). Reusable fixes:
+
+1. **Decouple via fire-and-confirm, not fire-and-await.** The function POSTs to Cloud Run **without awaiting completion** (`.catch(()=>{})`), then polls Firestore until the renderer writes `pdfRender.status='rendering'` (confirms start, absorbs cold starts), then returns 202. Cloud Run keeps running after the function disconnects — **a Cloud Run request handler continues to completion even after the client drops**, with CPU allocated *because the request is still active server-side*. This is why we did NOT need `--no-cpu-throttling` (which would bill idle instance time after a 202 — the real cost trap).
+
+2. **Progress = Firestore field + dashboard poll.** Renderer writes `pdfRender:{status,done,total,sizeBytes,gcsPath}` per spread (throttled ~1/1.5s). New `getPdfStatus` function returns it and, when `done`, signs the preview URL (renderer still can't sign — no key). Dashboard polls every 2.5s → progress bar.
+
+3. **CPU is cost-neutral for CPU-bound jobs.** Cloud Run bills vCPU-seconds, so 4 vCPU finishing in half the time ≈ same cost as 2 vCPU (both ~840 vCPU-s ≈ $0.024/render), just faster. Bumped to `--cpu 4`.
+
+4. **Two unrelated bugs fixed en route to the timeout:** Cloud Run's Compute SA lacked Firestore/GCS roles (granted `datastore.user` + `storage.objectCreator`); and `console.log(...gcsUrlByName.size...)` threw in server mode (`gcsUrlByName` is null when `photoBufferMap` is set) — gate the log on `photoBufferMap` first.
+
+5. **PowerShell comma gotcha:** `firebase deploy --only functions:a,functions:b` fails ("No function matches") because the `firebase.ps1` shim treats the unquoted comma as a PS array. Quote it: `--only "functions:a,functions:b"`, or deploy one at a time.
+
+## 2026-06-23 — Crop offset (#74/#55) silently dropped on customer side for cover + special photos
+
+The drag-to-reposition crop is keyed by photo **basename** (`heartCrop[name]`). The staff engine stores basenames; customer-preview was passing **full GCS paths** for cover + special (FP) photos, so `getHeartCrop('AEV-042/photos/special/fp1.jpg')` never matched the stored `fp1.jpg` key → always defaulted 50/50. Pool photos were already fixed (basename-stripped); cover + special were missed. Fix: wrap their names in the existing `_baseName()` helper at fetch time. **Rule: any photo name used as a crop/caption key must be basename-normalised on BOTH surfaces.**
+
 ## 2026-06-22 — Cloud Run signed-URL gotcha + porting a Node CLI to Cloud Run (chunk-024)
 
 Two reusable lessons from moving `export-pdf.js` server-side:

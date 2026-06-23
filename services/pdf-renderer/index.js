@@ -121,6 +121,20 @@ async function uploadPdf(pdfBytes, gcsPath) {
   await bucket.file(gcsPath).save(pdfBytes, { contentType: 'application/pdf' });
 }
 
+// ── Progress / status reporting ────────────────────────────────────────────────
+// Written to the order's pdfRender field so the dashboard can poll it for a live
+// progress bar (via the getPdfStatus Cloud Function). The generatePdf function
+// fires this render and disconnects; Firestore is the only channel back to the UI.
+async function writeStatus(orderNumber, patch) {
+  try {
+    await db.collection('orders').doc(orderNumber).update({
+      pdfRender: { ...patch, updatedAt: new Date() },
+    });
+  } catch (err) {
+    console.warn(`  ⚠ Could not write pdfRender status: ${err.message}`);
+  }
+}
+
 // ── Request handler ────────────────────────────────────────────────────────────
 async function handleGenerate(body) {
   const { orderNumber } = body;
@@ -144,26 +158,44 @@ async function handleGenerate(body) {
 
   // 2. Build state from Firestore
   const state = buildStateFromOrder(order, storedNames);
-  console.log(`  Template: ${state.template}, ${state.sequence.length} spreads, ${state.pageCount} pages`);
+  const total = state.sequence.length;
+  console.log(`  Template: ${state.template}, ${total} spreads, ${state.pageCount} pages`);
+
+  // Mark rendering immediately — the generatePdf function polls for this to confirm
+  // the render actually started (covering Cloud Run cold-starts) before it returns.
+  await writeStatus(orderNumber, { status: 'rendering', done: 0, total, pageCount: state.pageCount });
 
   // 3. Fetch photos from GCS in-region (no internet egress)
   const bufferMap = await fetchAllPhotos(storedNames);
 
-  // 4. Render PDF (uses the ported export-pdf.js logic)
+  // 4. Render PDF (uses the ported export-pdf.js logic). Throttle progress writes
+  //    to ~1 per 1.5s so we don't hammer Firestore on fast spreads.
+  let lastWrite = 0;
+  const progressCb = async (done, tot) => {
+    const now = Date.now();
+    if (now - lastWrite < 1500) return;
+    lastWrite = now;
+    await writeStatus(orderNumber, { status: 'rendering', done, total: tot, pageCount: state.pageCount });
+  };
   const pdfBytes = await generatePdfFromFirestore({
     ordNum:    orderNumber,
     stateData: state,
     bufferMap,
     fName:     folderName,
+    progressCb,
   });
 
   if (!pdfBytes || !pdfBytes.length) throw new Error('PDF render returned no bytes');
 
-  // 5. Upload to GCS (signing happens in the generatePdf Cloud Function)
+  // 5. Upload to GCS (signing happens in the generatePdf / getPdfStatus Cloud Function)
   const gcsPath = `${folderName}/pdfs/${orderNumber}_preview.pdf`;
   await uploadPdf(pdfBytes, gcsPath);
 
   console.log(`  ✅ PDF uploaded: gs://${BUCKET_NAME}/${gcsPath}`);
+  await writeStatus(orderNumber, {
+    status: 'done', done: total, total, pageCount: state.pageCount,
+    sizeBytes: pdfBytes.length, gcsPath,
+  });
   return {
     gcsPath,
     sizeBytes: pdfBytes.length,
@@ -189,13 +221,17 @@ const server = http.createServer(async (req, res) => {
   let body = '';
   req.on('data', chunk => { body += chunk; });
   req.on('end', async () => {
+    let parsed = {};
     try {
-      const parsed = JSON.parse(body || '{}');
+      parsed = JSON.parse(body || '{}');
       const result = await handleGenerate(parsed);
       res.writeHead(200);
       res.end(JSON.stringify(result));
     } catch (err) {
       console.error('Generate error:', err.message);
+      // Record the failure so the polling dashboard stops and shows the error,
+      // even though the generatePdf function likely already disconnected.
+      if (parsed.orderNumber) await writeStatus(parsed.orderNumber, { status: 'error', error: err.message });
       const status = err.message.includes('not found') ? 404 : 500;
       res.writeHead(status);
       res.end(JSON.stringify({ error: err.message }));

@@ -65,6 +65,10 @@ let state = null;
 // When set, loadPhoto reads from this map instead of disk or signed URLs.
 let photoBufferMap = null;
 
+// Server mode: optional progress callback (set by generatePdfFromFirestore). Called
+// once per spread with (spreadsDone, totalSpreads) so the caller can report progress.
+let onProgress = null;
+
 // Initialize print constants and DATA lazily (they depend on state which is loaded asynchronously in --order mode)
 let DPI, MM_TO_PX, CONTENT_MM, BLEED_MM, FULL_MM, FULL_PX, CONTENT_PX, BLEED_PX, DATA;
 let slotLeft, slotTop, slotW, slotH;
@@ -1124,7 +1128,7 @@ async function main() {
   console.log(`   Template : ${state.template}`);
   console.log(`   Pages    : ${state.pageCount}`);
   console.log(`   Spreads  : ${state.sequence.length}`);
-  console.log(`   Photos   : ${orderNumber ? `GCS order ${orderNumber} (${gcsUrlByName.size} originals)` : photosDir}`);
+  console.log(`   Photos   : ${photoBufferMap ? `server buffer (${photoBufferMap.size} originals)` : orderNumber ? `GCS order ${orderNumber} (${gcsUrlByName.size} originals)` : photosDir}`);
   console.log(`   Mode     : ${mode}`);
   console.log(`   Output   : ${isPrint ? printDir : path.join(outDir, 'preview.pdf')}`);
   console.log(`   Canvas   : ${FULL_PX}×${FULL_PX}px (${FULL_MM}mm at ${DPI}dpi)\n`);
@@ -1225,6 +1229,9 @@ async function main() {
   }
 
   for (let si = 0; si < state.sequence.length; si++) {
+    // Report progress before each spread (server mode only). Best-effort: a failed
+    // progress write must never abort the render.
+    if (onProgress) { try { await onProgress(si, state.sequence.length); } catch (_) {} }
     const spreadId  = state.sequence[si];
     const spreadDef = DATA.spreads[spreadId];
     if (!spreadDef) { console.warn(`Unknown spread: ${spreadId}`); continue; }
@@ -1401,11 +1408,12 @@ if (require.main === module) {
 // Injects pre-built state + pre-fetched photo buffers, runs the preview render,
 // returns the PDF bytes without touching disk or signing any URLs.
 // The caller (pdf-renderer/index.js) is responsible for photo fetching + GCS upload.
-async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName }) {
+async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, progressCb }) {
   // Reset module globals for this invocation (Cloud Run handles one request at a time)
   orderNumber    = ordNum;
   state          = stateData;
   photoBufferMap = bufferMap;   // Map<basename, Buffer> — loadPhoto reads from here
+  onProgress     = progressCb || null;
   folderName     = fName;
   photosDir      = null;
   gcsUrlByName   = null;

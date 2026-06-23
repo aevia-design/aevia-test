@@ -436,11 +436,15 @@ exports.saveBookState = functions
 // Staff-triggered from the dashboard. Delegates to the Cloud Run pdf-renderer
 // service which reads photos from GCS in-region (no egress) and renders the PDF.
 // The service URL is configured via the PDF_RENDERER_URL environment variable.
+// generatePdf is a thin TRIGGER, not a synchronous waiter. The render takes
+// 3–13 min depending on book size — far longer than a Cloud Function can stay
+// alive — so we fire the Cloud Run renderer, confirm it has started (by polling
+// the pdfRender.status it writes to Firestore, which covers cold starts), then
+// return immediately. The dashboard polls getPdfStatus for live progress + the
+// final signed URL. Cloud Run keeps rendering after this function disconnects.
 exports.generatePdf = functions
   .region('europe-west1')
-  // Waits synchronously on the Cloud Run render; an 80-page book + cold start can
-  // exceed 120s, so allow 300s. The render itself runs in Cloud Run (900s budget).
-  .runWith({ timeoutSeconds: 300, memory: '256MB' })
+  .runWith({ timeoutSeconds: 60, memory: '256MB' })
   .https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -461,41 +465,96 @@ exports.generatePdf = functions
     try {
       // Verify order exists and has valid status
       const db = admin.firestore();
-      const doc = await db.collection('orders').doc(orderNumber).get();
+      const docRef = db.collection('orders').doc(orderNumber);
+      const doc = await docRef.get();
       if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
       const order = doc.data();
       if (!['approved', 'paid', 'new'].includes(order.status)) {
         return res.status(400).json({ error: `Order status '${order.status}' is not eligible for PDF generation` });
       }
 
-      // Call the Cloud Run renderer
-      const rendererResp = await fetch(`${rendererUrl}/generate`, {
+      // Mark queued so the dashboard sees movement instantly, even before Cloud Run
+      // (possibly cold-starting) writes its first 'rendering' status.
+      await docRef.update({ pdfRender: { status: 'starting', updatedAt: new Date() } });
+
+      // Fire the renderer. We deliberately do NOT await it to completion — Cloud Run
+      // continues server-side after we disconnect. .catch swallows the expected
+      // connection drop when this function returns and freezes.
+      fetch(`${rendererUrl}/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderNumber }),
-      });
+      }).catch(() => {});
 
-      const result = await rendererResp.json();
-      if (!rendererResp.ok) {
-        throw new Error(result.error || `Renderer returned HTTP ${rendererResp.status}`);
+      // Confirm the render actually started (Cloud Run sets status='rendering' first
+      // thing). Poll up to ~45s to absorb a cold start, then return.
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      const deadline = Date.now() + 45000;
+      while (Date.now() < deadline) {
+        await sleep(1500);
+        const pr = (await docRef.get()).data().pdfRender || {};
+        if (pr.status === 'error') return res.status(500).json({ error: pr.error || 'Render failed to start' });
+        if (pr.status === 'rendering' || pr.status === 'done') {
+          return res.status(202).json({ started: true });
+        }
       }
-
-      // Sign the uploaded PDF here — the function has a key file (serviceAccountKey.json),
-      // so it can mint a v4 signed URL; the Cloud Run renderer cannot (no private key).
-      const { Storage } = require('@google-cloud/storage');
-      const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
-      const bucket  = storage.bucket('aevia-uploads.firebasestorage.app');
-      const expires = new Date(Date.now() + 60 * 60 * 1000);
-      const [previewUrl] = await bucket.file(result.gcsPath).getSignedUrl({ action: 'read', version: 'v4', expires });
-
-      return res.status(200).json({
-        success: true,
-        previewUrl,
-        gcsPath:    result.gcsPath,
-        sizeBytes:  result.sizeBytes,
-      });
+      return res.status(504).json({ error: 'Renderer did not start in time — try again' });
     } catch (err) {
       console.error('generatePdf error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+// ── Get PDF render status (chunk-024, polling) ───────────────────────────────
+// The dashboard polls this for the progress bar. Returns the order's pdfRender
+// field; when status is 'done', also mints the signed preview URL (the renderer
+// can't sign — no private key; this function has serviceAccountKey.json).
+exports.getPdfStatus = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (!(await isStaff(req))) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+
+    try {
+      const db = admin.firestore();
+      const doc = await db.collection('orders').doc(orderNumber).get();
+      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+      const order = doc.data();
+      const pr = order.pdfRender || { status: 'none' };
+
+      const out = {
+        status:    pr.status || 'none',
+        done:      pr.done    || 0,
+        total:     pr.total   || 0,
+        sizeBytes: pr.sizeBytes || 0,
+        error:     pr.error   || null,
+      };
+
+      if (pr.status === 'done') {
+        const folderName = order.folderName;
+        const gcsPath = pr.gcsPath || `${folderName}/pdfs/${orderNumber}_preview.pdf`;
+        const { Storage } = require('@google-cloud/storage');
+        const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
+        const bucket  = storage.bucket('aevia-uploads.firebasestorage.app');
+        const expires = new Date(Date.now() + 60 * 60 * 1000);
+        const [url] = await bucket.file(gcsPath).getSignedUrl({ action: 'read', version: 'v4', expires });
+        out.previewUrl = url;
+      }
+
+      return res.status(200).json(out);
+    } catch (err) {
+      console.error('getPdfStatus error:', err);
       return res.status(500).json({ error: err.message });
     }
   });
