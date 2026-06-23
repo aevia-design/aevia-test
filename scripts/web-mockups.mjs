@@ -33,6 +33,13 @@ const TEMPLATES = {
     'open-00-fpintro.png':  'fpintro.webp',
     'open-11-fplabour.png': 'fplabour.webp',
   } },
+  papercut: { order: 'AEV-043', map: { ...COMMON,
+    'open-04-fp1.png': 'fp1.webp',
+    'open-07-fp2.png': 'fp2.webp',
+    'open-11-fp3.png': 'fp3.webp',
+    'open-14-fp4.png': 'fp4.webp',
+    'open-18-fp5.png': 'fp5.webp',
+  } },
 };
 
 const template = process.argv[2];

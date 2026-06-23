@@ -35,9 +35,12 @@ function layerRaw(name) {
 }
 function withOpacity(raw, op) { const d = raw.buffer; for (let i = 3; i < d.length; i += 4) d[i] = Math.round(d[i] * op); return raw; }
 
-// Backdrop: soft off-white (#f0f0f0, just below the paper tone so page/cover edges stay crisp on it), shared across all three mockups (closed/open/back). The contact shadow
-// still renders via the multiply "Shadows" layer; "BG Highlights" (screen) is a no-op on white.
-const bg = { r: 240, g: 240, b: 240 };
+// Backdrop: a soft warm greige surface the book sits on. Deliberately darker than the old
+// near-white (#f0f0f0) so a LIGHT cover (e.g. Papercut's pale blue) reads as a distinct object
+// instead of dissolving into the background at its edges. The final brightness grade lifts this
+// ~15–20, so the pre-grade value is set low to land on a visible light grey. The contact shadow
+// still renders via the multiply "Shadows" layer.
+const bg = { r: 209, g: 206, b: 200 };
 
 // Outer-surface quad from the blank "Pages" layer (axis-extreme corners of the tilted rect).
 function coverQuad(name) {
@@ -146,6 +149,14 @@ function clipTo(s, mask) {
     if (s.warped[o + 3] && a(s.minX + x, s.minY + y) < 128) s.warped[o + 3] = 0;
   }
 }
+// Clip ALL three warped strips to the photographed book body ("Pages"). Each strip fills its
+// own axis-extreme-corner parallelogram, which can poke a few px past the true tilted book edge
+// — on a light cover (e.g. Papercut) the spilled cover-fill is lit near-white and vanishes, but
+// any opaque decoration on it (a papercut shape, confetti dot) is left "floating" on the backdrop
+// just outside the corner. Clipping to Pages removes only that overshoot; Pages encloses the
+// covers, so no in-book pixels are lost.
+clipTo(back,  layerRaw('Pages'));
+clipTo(front, layerRaw('Pages'));
 clipTo(spine, layerRaw('Pages'));
 
 const layers = [];

@@ -41,6 +41,7 @@ const TEMPLATES = {
   scribble: '../assets/Template_Scribble/scribble-data.js',
   wander:   '../assets/Template_Wander/wander-data.js',
   newborn:  '../assets/Template_Newborn/newborn-data.js',
+  papercut: '../assets/Template_Papercut/papercut-data.js',
 };
 let EDGES;
 if (ARG3.startsWith('#')) {
