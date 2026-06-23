@@ -1,7 +1,23 @@
 # Session Status
-_Last updated: 2026-06-23 (session 72)_
+_Last updated: 2026-06-23 (session 73)_
 
 ## Status
+**Session 73 (2026-06-23) — Papercut pre-demo polish + a real bug from S72's EU migration. FOUR fixes, all working-tree only EXCEPT one live-infra change; nothing committed. (1) "Failed to fetch" loading a paid order into the staff engine — ROOT-CAUSED: S72's EU migration copied photo DATA but not the bucket's CORS config, so the new `aevia-uploads-eu` had NO CORS and every cross-origin `fetch()` of a photo (urlToFile→blob, template-engine.html:4210) was browser-blocked. FIXED by applying the old bucket's CORS policy to the EU bucket (`gsutil cors set`, free/reversible/live now — also un-breaks new uploads). (2) Papercut Spread 5 left SVGs — Xenia re-uploads; only a decorative shape moved, slot geometry unchanged → no data sync needed. (3) Papercut heart page (FP1) layering — removed the solid-heart backing (group `f`) from `FP Birthday 02 Right.svg` + set `overlayAbovePhotos:true`, so balloons/clouds sit ON TOP of the heart-clipped photo (photo already clipped independently, so the backing was invisible). SP4+Cover `false` untouched (those are the real "art behind" pages). (4) Removed the false low-res yellow border/badge in engine + customer-preview — since chunk-023 they load the ~1600px web derivative so `min(w,h)<1500` false-flagged EVERY real photo; genuine print-res warning still lives at order-form upload (on originals) + PDF renders from originals. Owner verified items 1–3 render well, then broke for lunch. NEXT: commit/push S73 → mockup → website UX → E2E → record demo. Full detail in `sessions/2026-06-23-s73.md`.**
+
+### ▶ NEXT SESSION (Session 74) — resume pre-demo plan
+0. (Optional) **Commit + push** S73's working-tree changes so the Papercut fixes reach live (`papercut-data.js`, `FP Birthday 02 Right.svg`, `SP 09 H/V Left.svg`, `template-engine.html`, `customer-preview.html`; leave `.claude/settings.local.json`).
+1. Polish any other Papercut template moments.
+2. Create a Papercut mockup + add it to the website (`scripts/compose-mockup.mjs` + ag-psd; memory `project_mockup_pipeline`).
+3. Fix a few website UX things before the demo.
+4. One full E2E test.
+5. Record the demo per `docs/naitive-fellowship/walkthrough-script.md`.
+
+### ⚠ Watch-outs (S73)
+- **Nothing committed this session.** All UI/template changes are working-tree only; the CORS change is live infra (not a file). Items 2–4 reach live only on push (Cloudflare auto-deploys main).
+- **CORS lesson:** a new GCS bucket needs its CORS policy copied too, or browser `fetch()`/uploads fail with the generic "Failed to fetch" — easy to misdiagnose as auth/network (the frontend never names the bucket).
+- Owner still owes (carried from S72): a dashboard PDF run on **AEV-043** + a billing check (egress near-zero; one-time ~€0.2–0.9 migration-copy charge expected).
+
+### Previous: Session 72
 **Session 72 (2026-06-23) — Two threads. (1) First pass on the nAItive fellowship application: decided the "one concrete thing" = a live, end-to-end automated photo-book production system built solo by a non-engineer via AI orchestration; captured the plan + a demo-video script in `docs/naitive-fellowship/`. (2) Shipped the chunk-024 async dashboard PDF to live (`24d2ead`), then MIGRATED ALL PHOTO STORAGE TO THE EU (`8f5171d`, ADR-0006): the bucket was in US-WEST1 while everything else is EU, causing cross-region egress. Created `aevia-uploads-eu` (europe-west1), copied 9.22 GiB, repointed all code, re-bound the generateDerivative trigger (verified firing), redeployed 17 functions + the renderer. Full EU data residency + in-region PDF reads now free. Added a cost-awareness rule to CLAUDE.md. TWO live checks still owed by owner: a dashboard PDF run on AEV-043, and tomorrow's billing (expect near-zero egress; one-time ~€0.2–0.9 from the migration copy). NEXT: Papercut polish → mockup on website → website UX → E2E → record demo. Full detail in `sessions/2026-06-23-s72.md`.**
 
 ### ▶ NEXT SESSION (Session 73) — pre-demo for the fellowship

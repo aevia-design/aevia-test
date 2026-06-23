@@ -1,3 +1,19 @@
+## 2026-06-23 — A new GCS bucket needs its CORS policy copied, or browser `fetch()` breaks ("Failed to fetch")
+
+S72's EU migration copied 9.22 GiB of photos US→EU but **not the bucket's CORS configuration**. Result (S73): loading a paid order into the staff engine threw *"Failed to fetch"*. Mechanism: order load calls `urlToFile()` → `fetch(signedUrl)` → `.blob()` (template-engine.html:4210) — a **cross-origin read** of a `storage.googleapis.com` URL from the `pages.dev` origin. The browser blocks the response unless the bucket returns CORS headers; the generic TypeError surfaces as "Failed to fetch". The old US bucket had `origin:["*"]` GET/PUT/OPTIONS; the new `aevia-uploads-eu` had none. Fix: `gsutil cors set <same-policy.json> gs://aevia-uploads-eu` (free, no egress, instant). Reusable rules:
+
+1. **CORS is bucket-level config, separate from data + IAM.** Creating/migrating a bucket does NOT carry it over. Copy `gsutil cors get` → `gsutil cors set` as part of any bucket move.
+2. **It hits both reads and writes.** PUT is in the policy because uploads (signed PUT from the order form) are also cross-origin — a missing policy breaks new orders too, not just order-load.
+3. **Easy to misdiagnose.** The frontend never names the bucket (it uses opaque signed URLs), so "Failed to fetch" looks like auth/network/function-down. Distinguish: a real server error resolves with `res.status` ("Server error NNN"); a CORS/network failure rejects `fetch()` itself with TypeError "Failed to fetch". Only `<img src>` is CORS-exempt — JS reading bytes (`fetch`+`blob`, canvas) is not.
+
+## 2026-06-23 — Low-res warnings must measure the ORIGINAL, not the web derivative
+
+Since chunk-023 the engine + customer-preview load the ~1600px web derivative (egress optimisation). The engine's low-res check `Math.min(w,h) < 1500` then false-flagged **every** real-order photo (a 3:2 derivative's short edge ≈ 1066px), even when the upload was high-res — a yellow slot border + "⚠ Low res" badge on everything. Removed both visuals (engine + customer-preview, S73). **Rule: any print-resolution judgement must run on the original, not the derivative.** The genuine safeguard already lives at order-form upload (checks originals, threshold 1575px, warns the customer) and the PDF always renders from originals — so removing the engine/preview flag loses no real protection. If a working in-engine warning is ever wanted back, base it on original dimensions carried in the order payload, not the loaded derivative.
+
+## 2026-06-22 — Papercut overlay z-order is per-spread via `overlayAbovePhotos` (and a single SVG can't be split by it)
+
+`overlayAbovePhotos` is read by all 3 surfaces + PDF from the data file (one change propagates everywhere). Default/true → overlay `z-index:2` (above photos); `false` → `z-index:0` (behind). The **intentional "art behind photo" pages are SP4 + Cover only** — FP1 (heart) shipping with `false` was a stray value (S73 fix: → `true`). Gotcha codified S73: when a single SVG file contains BOTH a photo *backing* and *foreground* decorations (Papercut's `FP Birthday 02 Right.svg` = solid heart `#ddecf0` + balloons/clouds), one z-index flag can't separate them. If the photo is already independently clipped (engine `heartClip`), the solid backing is invisible under the photo → just delete the backing group from the SVG and set `overlayAbovePhotos:true`, rather than splitting the file into two layers across 4 code paths.
+
 ## 2026-06-23 — Async long-job pattern (Cloud Run render + Firestore-polled progress)
 
 A Cloud Function cannot synchronously wait on a multi-minute job: gen-1 caps at 540s, and the PDF render is ~6m43s for 40 pages (≈13 min for 80). The S70 design had `generatePdf` await the render → it hit the 300s timeout while Cloud Run kept going and *succeeded* 2 min later (the browser saw "Failed to fetch"; the PDF was actually in GCS). Reusable fixes:

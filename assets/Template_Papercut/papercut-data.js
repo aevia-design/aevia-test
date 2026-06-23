@@ -314,7 +314,7 @@ window.PAPERCUT_DATA = {
       orderFormPhoto: { count: 1, hint: 'A photo of the birthday child — centrepiece of the birthday page.' },
       orderFormMeta: { textPrompt: 'Birthday wishes', hint: 'A short message or poem for the birthday page.', placeholder: 'e.g. Happy first birthday, Leo! We love you to the moon and back.' },
       type: 'functional', id: 'FP1', label: 'Birthday wishes', textLeft: true,
-      overlayAbovePhotos: false,
+      overlayAbovePhotos: true,
       pages: {
         left: {
           default: {

@@ -1653,12 +1653,9 @@
     nameEl.textContent = photo.name.replace(/\.[^.]+$/, '');
     thumb.appendChild(nameEl);
 
-    if (photo.lowRes) {
-      const badge = document.createElement('div');
-      badge.className = 'warn-badge';
-      badge.textContent = '⚠ Low res';
-      thumb.appendChild(badge);
-    }
+    // Low-res badge intentionally not shown: customer-preview loads the ~1600px web
+    // derivative (chunk-023), not the original, so this false-flagged every photo even
+    // when the upload was high-res. Print-quality warning lives at order-form upload.
 
     return thumb;
   }

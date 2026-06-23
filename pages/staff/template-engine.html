@@ -1601,12 +1601,10 @@
     nameEl.textContent = label.replace(/\.[^.]+$/, '');
     thumb.appendChild(nameEl);
 
-    if (photo.lowRes) {
-      const badge = document.createElement('div');
-      badge.className = 'warn-badge';
-      badge.textContent = '⚠ Low res';
-      thumb.appendChild(badge);
-    }
+    // Low-res badge intentionally not shown: since chunk-023 the engine loads the
+    // ~1600px web derivative (egress optimisation), not the full-res original, so this
+    // would false-flag every real-order photo. The genuine print-quality warning lives
+    // at order-form upload time (checks originals); the PDF always renders from originals.
 
     if (photo.duplicate) {
       const badge = document.createElement('div');
@@ -2618,9 +2616,9 @@
             attachCropDrag(img, slotEl, photo.name, { alwaysOn: true });
           }
 
-          if (photo.lowRes) {
-            slotEl.style.outline = '3px solid #f4ca6f';
-          }
+          // Low-res outline intentionally removed — see note in the sidebar-thumb
+          // builder: the engine renders the web derivative, so this false-flagged
+          // every real-order photo. Print-quality warning stays at order-form upload.
 
           // Special slots are fixed — not draggable or swappable
           if (!isSpecialSlot) {
