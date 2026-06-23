@@ -35,6 +35,10 @@ window.NEWBORN_DATA = {
       spine: { xMm: 200, wMm: 9,   bgColor: '#c0d5ee' },
       front: { xMm: 209, wMm: 200, bgColor: '#142a4f' },
     },
+    // Visible per-surface cover colours used by the mockup composers (scripts/compose-*.mjs)
+    // to tint EXPOSED board edges. Newborn is near-uniform navy; spine is the light blue.
+    // Distinct from sections.bgColor (the render's background fill behind the cover SVG).
+    mockupEdges: { front: '#12264b', spine: '#c0d5ee', back: '#12264b' },
     // Cover coords are WITH-BLEED (18mm) and box-CENTRE, same as Scribble/Wander; the
     // render subtracts COVER_BLEED_MM. The cover photo is clipped to clipShapes.coverFrame.
     slots: [

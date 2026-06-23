@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aevia — 3D book render harness</title>
+<style>
+  html,body { margin:0; height:100%; background:#f4f1ea; }
+  #scene { width:100vw; height:100vh; display:block; }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<!-- pure logic (browser globals) + template data -->
+<script src="../assets/js/book-3d-spec.js"></script>
+<script src="../assets/Template_Newborn/newborn-data.js"></script>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { createBook, studioLighting, groundShadow } from '../assets/js/book-3d-renderer.js';
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, preserveDrawingBuffer:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf4f1ea);
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+
+studioLighting(THREE, scene, renderer);
+
+const spec = window.buildBookSpec(window.NEWBORN_DATA);
+
+// Clean, pixel-exact trim wrap captured from the engine's .cover-canvas element
+// (qa/capture-cover-wrap.mjs). It is EXACTLY back|spine|front with no UI chrome,
+// margin, or bleed — so the spec's UV slicing maps each face correctly. No
+// vertical trim hack needed.
+new THREE.TextureLoader().load('../sessions/qa-runs/cover-wrap-newborn.png', (wrap) => {
+  const { book, fit, dims } = createBook(THREE, scene, renderer, spec, wrap);
+  // Keep the book centred at the origin (frames cleanly from every angle); drop the
+  // shadow-catcher plane to the book's actual base so the contact shadow sits under
+  // it — NOT at y=0, which is the book's vertical middle (that floated a grey slab
+  // across the back view and banded the cover where the plane cut through).
+  const baseY = new THREE.Box3().setFromObject(book).min.y;
+  groundShadow(THREE, scene, baseY);
+  fit(camera);
+  camera.position.y += 0.4;
+  camera.lookAt(0, 0, 0);
+
+  const controls = new OrbitControls(camera, canvas);
+  controls.target.set(0, 0, 0);
+  controls.enableDamping = true;
+  // Debug handles so a headless verifier can orbit to inspect back/spine faces.
+  window.__three = { THREE, scene, camera, controls, book, renderer };
+  window.__ready = true;
+
+  function resize(){
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (canvas.width !== w || canvas.height !== h){
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+  }
+  function loop(){ resize(); controls.update(); renderer.render(scene, camera); requestAnimationFrame(loop); }
+  loop();
+});
+</script>
+</body>
+</html>

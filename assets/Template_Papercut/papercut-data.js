@@ -12,6 +12,11 @@ window.PAPERCUT_DATA = {
       spine: { xMm: 200, wMm: 9,   bgColor: '#8bb8d8' },
       front: { xMm: 209, wMm: 200, bgColor: '#8bb8d8' },
     },
+    // Exposed board-edge colours for the offline mockup composites (compose-all.mjs).
+    // Kept SEPARATE from sections[].bgColor (which drives the real cover render). The
+    // Papercut cover is a uniform blue, so all three edges share it; resample per-surface
+    // if the tinted board edges read off.
+    mockupEdges: { front: '#8bb8d8', spine: '#8bb8d8', back: '#8bb8d8' },
     // Cover coords are WITH-BLEED (18mm) and box-CENTRE; the render subtracts COVER_BLEED_MM.
     slots: [
       { xMm: 328, yMm: 118, wMm: 140, hMm: 100, pool: 'cover', orientation: 'landscape', clipShape: 'coverFrame' }

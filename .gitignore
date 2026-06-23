@@ -11,6 +11,8 @@ functions/node_modules/
 # Large assets — over Cloudflare Pages 25MB limit
 assets/business plan/
 assets/test photos/
+# mockup-template PSDs (46–83MB) + SVGs — local-only source for the offline compose scripts
+assets/mockup example/
 
 # PDF export test output
 pdf-out/

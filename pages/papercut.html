@@ -16,8 +16,13 @@
     .product-tagline{font-family:var(--serif);font-style:italic;color:var(--muted);line-height:1.65;margin-bottom:36px;font-size:16px;max-width:340px;}
     .section-label{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
     .zone{display:grid;grid-template-columns:1fr 400px;gap:72px;max-width:1160px;margin:0 auto;padding:64px 56px;align-items:start;}.panel{position:sticky;top:90px;}
-    .gallery-main{width:100%;aspect-ratio:10/7;border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;}
-    .thumbs{display:flex;gap:8px;margin-top:10px;}.thumb-ph{flex:1;aspect-ratio:10/7;border-radius:4px;background:var(--surface);border:1px solid var(--border);}
+    .gallery-main{width:100%;aspect-ratio:10/7;border-radius:4px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in;}.gallery-main svg{opacity:0.25;}.gallery-main img{width:100%;height:100%;object-fit:contain;}
+    .thumbs{display:flex;gap:8px;margin-top:10px;}.thumb-ph{flex:1;aspect-ratio:10/7;border-radius:4px;background:#fff;border:1px solid var(--border);overflow:hidden;cursor:pointer;padding:3px;}.thumb-ph.on{border-color:var(--text);box-shadow:0 0 0 1px var(--text);}.thumb-ph img{width:100%;height:100%;object-fit:contain;display:block;}
+    .lightbox{position:fixed;inset:0;z-index:200;background:rgba(20,20,20,0.88);display:none;align-items:center;justify-content:center;padding:40px;cursor:zoom-out;}.lightbox.on{display:flex;}.lightbox img{max-width:100%;max-height:100%;border-radius:4px;box-shadow:0 12px 48px rgba(0,0,0,0.4);}
+    .lightbox-close{position:absolute;top:24px;right:32px;width:40px;height:40px;border-radius:100px;background:rgba(255,255,255,0.12);color:#fff;font-size:22px;line-height:40px;text-align:center;}
+    .addon-preview{position:relative;width:160px;height:112px;flex-shrink:0;border-radius:3px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in;}.addon-preview img{width:100%;height:100%;object-fit:contain;}
+    .addon-preview .zoom-hint{position:absolute;bottom:4px;right:4px;background:rgba(20,20,20,0.6);color:#fff;font-size:9px;letter-spacing:0.04em;padding:2px 5px;border-radius:3px;opacity:0;transition:opacity 0.15s;pointer-events:none;}.addon-preview:hover .zoom-hint{opacity:1;}
+    @media(max-width:600px){.addon-preview{width:104px;height:73px;}}
     .page-toggle{margin-bottom:30px;}.chips{display:flex;gap:8px;margin-top:8px;}
     .chip{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 22px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;min-width:108px;background:var(--white);transition:border-color 0.15s,background 0.15s;user-select:none;}.chip:hover{border-color:var(--text);}.chip.on{border-color:var(--text);background:var(--text);color:var(--white);}
     .chip-label{font-size:12px;font-weight:500;letter-spacing:0.03em;}.chip-price{font-family:var(--serif);font-size:15px;}
@@ -53,8 +58,13 @@
 <div class="crumb"><a href="collections.html">Templates</a> <span>›</span> <a href="collections.html#kids">Kids</a> <span>›</span> Papercut</div>
 <div class="zone">
   <div>
-    <div class="gallery-main"><svg width="72" height="72" viewBox="0 0 72 72" fill="none"><rect x="10" y="18" width="52" height="38" rx="3" stroke="#9b8e83" stroke-width="1.8"/><circle cx="25" cy="32" r="6" stroke="#9b8e83" stroke-width="1.8"/><path d="M10 46l14-14 10 10 8-8 12 10 8-10" stroke="#9b8e83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-    <div class="thumbs"><div class="thumb-ph"></div><div class="thumb-ph"></div><div class="thumb-ph"></div></div>
+    <div class="gallery-main" onclick="openLightbox(document.getElementById('gallery-img').src)"><img id="gallery-img" src="../assets/images/mockups/papercut/hero.webp" alt="Papercut photo book"/></div>
+    <div class="thumbs">
+      <button class="thumb-ph on" onclick="pickThumb(this,'hero.webp')"><img src="../assets/images/mockups/papercut/hero.webp" alt="Open flat — back, spine and front"/></button>
+      <button class="thumb-ph" onclick="pickThumb(this,'closed.webp')"><img src="../assets/images/mockups/papercut/closed.webp" alt="Closed book"/></button>
+      <button class="thumb-ph" onclick="pickThumb(this,'spread-1.webp')"><img src="../assets/images/mockups/papercut/spread-1.webp" alt="Inside spread"/></button>
+      <button class="thumb-ph" onclick="pickThumb(this,'spread-2.webp')"><img src="../assets/images/mockups/papercut/spread-2.webp" alt="Inside spread"/></button>
+    </div>
   </div>
   <div class="panel">
     <div class="tag">Kids</div>
@@ -71,30 +81,45 @@
       <div class="section-label">Optional add-ons</div>
 
       <div class="addon" onclick="xtra(this)" data-fp="FP1" data-photos="1">
+        <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/papercut/fp1.webp')">
+          <img src="../assets/images/mockups/papercut/fp1.webp" alt="Birthday spread preview"/><span class="zoom-hint">Click to enlarge</span>
+        </div>
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="addon-body"><div class="addon-name">Birthday spread</div><div class="addon-desc">A dedicated spread for the birthday celebration. Add birthday wishes and one special photo from the day.</div></div>
         <div class="addon-cost">Free</div>
       </div>
 
       <div class="addon" onclick="xtra(this)" data-fp="FP2" data-photos="0">
+        <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/papercut/fp2.webp')">
+          <img src="../assets/images/mockups/papercut/fp2.webp" alt="Funny words spread preview"/><span class="zoom-hint">Click to enlarge</span>
+        </div>
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="addon-body"><div class="addon-name">Funny words</div><div class="addon-desc">A spread for the things they say at this age — words and phrases worth keeping.</div></div>
         <div class="addon-cost">Free</div>
       </div>
 
       <div class="addon" onclick="xtra(this)" data-fp="FP3" data-photos="1">
+        <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/papercut/fp3.webp')">
+          <img src="../assets/images/mockups/papercut/fp3.webp" alt="Favourite toy spread preview"/><span class="zoom-hint">Click to enlarge</span>
+        </div>
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="addon-body"><div class="addon-name">Favourite toy</div><div class="addon-desc">A quiet portrait spread. Add one photo of your child with the toy that went everywhere with them.</div></div>
         <div class="addon-cost">Free</div>
       </div>
 
       <div class="addon" onclick="xtra(this)" data-fp="FP4" data-photos="1">
+        <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/papercut/fp4.webp')">
+          <img src="../assets/images/mockups/papercut/fp4.webp" alt="First steps spread preview"/><span class="zoom-hint">Click to enlarge</span>
+        </div>
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="addon-body"><div class="addon-name">First steps</div><div class="addon-desc">The moment caught on camera. Add one photo and a milestone spread is dedicated entirely to this.</div></div>
         <div class="addon-cost">Free</div>
       </div>
 
       <div class="addon" onclick="xtra(this)" data-fp="FP5" data-photos="2">
+        <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/papercut/fp5.webp')">
+          <img src="../assets/images/mockups/papercut/fp5.webp" alt="Artwork gallery spread preview"/><span class="zoom-hint">Click to enlarge</span>
+        </div>
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="addon-body"><div class="addon-name">Artwork gallery</div><div class="addon-desc">Their drawings, preserved. A gallery spread for up to two pieces of their artwork.</div></div>
         <div class="addon-cost">Free</div>
@@ -112,6 +137,7 @@
   <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Preparing your photos<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>A 40-page book uses 35–50 photos; 80 pages uses 70–90. JPEG or RAW both work.</p><ul><li>Minimum resolution: 2000px on the short edge</li><li>Colour space: sRGB preferred</li><li>We accept Google Drive, Dropbox, or direct upload</li></ul></div></div>
   <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Delivery<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><ul><li>Austria: 2–3 business days</li><li>Germany, Switzerland: 3–4 business days</li><li>Rest of EU: 5–7 business days</li><li>UK, USA: 7–10 business days</li></ul><p>Standard shipping included.</p></div></div>
 </div>
+<div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button><img id="lightbox-img" src="" alt="Spread preview"/></div>
 <footer class="footer">
   <div class="footer-inner">
     <div class="foot-brand"><div class="foot-logo"><img src="../assets/images/aevia_logo_transparent.png" alt="Aevia" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');"/></div><p>A premium photo book studio in Vienna. We design and print; you keep forever.</p><div class="foot-form"><input type="email" placeholder="Email address"/><button>Subscribe</button></div></div>
@@ -183,6 +209,20 @@
   window.addEventListener('scroll', () => {
     nav.style.background = window.scrollY > 80 ? 'rgba(250,250,248,0.97)' : 'rgba(250,250,248,0.92)';
   });
+
+  const MOCKUP_BASE = '../assets/images/mockups/papercut/';
+  function pickThumb(btn, file) {
+    btn.closest('.thumbs').querySelectorAll('.thumb-ph').forEach(t => t.classList.remove('on'));
+    btn.classList.add('on');
+    document.getElementById('gallery-img').src = MOCKUP_BASE + file;
+  }
+  function openLightbox(src) {
+    const lb = document.getElementById('lightbox');
+    document.getElementById('lightbox-img').src = src;
+    lb.classList.add('on');
+  }
+  function closeLightbox() { document.getElementById('lightbox').classList.remove('on'); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 </script>
 </body>
 </html>
