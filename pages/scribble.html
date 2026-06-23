@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Scribble — Aevia</title>
+  <link rel="stylesheet" href="../assets/css/addons.css" />
   <style>
     :root{--bg:#fafaf8;--surface:#f3efe9;--border:#e4dfd8;--text:#1a1a1a;--muted:#7d7570;--accent-dk:#a8895f;--white:#ffffff;--serif:Georgia,'Times New Roman',serif;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}html{scroll-behavior:smooth;}body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}img{display:block;max-width:100%;}button{cursor:pointer;border:none;background:none;font:inherit;}a{color:inherit;text-decoration:none;}
@@ -20,16 +21,9 @@
     .thumbs{display:flex;gap:8px;margin-top:10px;}.thumb-ph{flex:1;aspect-ratio:10/7;border-radius:4px;background:#fff;border:1px solid var(--border);overflow:hidden;cursor:pointer;padding:3px;}.thumb-ph.on{border-color:var(--text);box-shadow:0 0 0 1px var(--text);}.thumb-ph img{width:100%;height:100%;object-fit:contain;display:block;}
     .lightbox{position:fixed;inset:0;z-index:200;background:rgba(20,20,20,0.88);display:none;align-items:center;justify-content:center;padding:40px;cursor:zoom-out;}.lightbox.on{display:flex;}.lightbox img{max-width:100%;max-height:100%;border-radius:4px;box-shadow:0 12px 48px rgba(0,0,0,0.4);}
     .lightbox-close{position:absolute;top:24px;right:32px;width:40px;height:40px;border-radius:100px;background:rgba(255,255,255,0.12);color:#fff;font-size:22px;line-height:40px;text-align:center;}
-    @media(max-width:600px){.addon-preview{width:104px;height:73px;}}
     .page-toggle{margin-bottom:30px;}.chips{display:flex;gap:8px;margin-top:8px;}
     .chip{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 22px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;min-width:108px;background:var(--white);transition:border-color 0.15s,background 0.15s;user-select:none;}.chip:hover{border-color:var(--text);}.chip.on{border-color:var(--text);background:var(--text);color:var(--white);}
     .chip-label{font-size:12px;font-weight:500;letter-spacing:0.03em;}.chip-price{font-family:var(--serif);font-size:15px;}
-    .addons{margin-bottom:30px;}.addon{display:flex;align-items:flex-start;gap:14px;padding:15px;border:1.5px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--white);cursor:pointer;transition:border-color 0.15s;}.addon:hover{border-color:#c4a882;}.addon.on{border-color:var(--text);box-shadow:inset 0 0 0 0.5px var(--text);}
-    .chk{width:20px;height:20px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:background 0.15s,border-color 0.15s;}.addon.on .chk{background:var(--text);border-color:var(--text);}.chk svg{display:none;}.addon.on .chk svg{display:block;}
-    .addon-body{flex:1;}.addon-name{font-size:13px;font-weight:600;margin-bottom:3px;}.addon-desc{font-size:12px;color:var(--muted);line-height:1.5;}
-    .addon-preview{position:relative;width:160px;height:112px;flex-shrink:0;border-radius:3px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in;}.addon-preview img{width:100%;height:100%;object-fit:contain;}
-    .addon-preview .zoom-hint{position:absolute;bottom:4px;right:4px;background:rgba(20,20,20,0.6);color:#fff;font-size:9px;letter-spacing:0.04em;padding:2px 5px;border-radius:3px;opacity:0;transition:opacity 0.15s;pointer-events:none;}.addon-preview:hover .zoom-hint{opacity:1;}
-    .addon-cost{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:3px 9px;border-radius:100px;flex-shrink:0;align-self:flex-start;margin-top:2px;}
     .photo-count{font-size:13px;color:var(--muted);line-height:1.6;padding:12px 14px;background:var(--surface);border-radius:4px;margin-bottom:24px;}
     .price-row{display:flex;align-items:baseline;gap:5px;margin-bottom:22px;}.price-sym{font-family:var(--serif);font-size:22px;color:var(--muted);}.price-val{font-family:var(--serif);font-size:52px;font-weight:400;letter-spacing:-0.03em;line-height:1;}.price-note{font-size:11px;color:var(--muted);}
     .cta{width:100%;background:var(--text);color:var(--white);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;padding:17px 32px;border-radius:3px;transition:background 0.2s;margin-bottom:11px;}.cta:hover{background:#2e2e2e;}.cta-note{text-align:center;font-size:11px;color:var(--muted);}
@@ -79,53 +73,50 @@
     </div>
     <div class="addons">
       <div class="section-label">Optional spreads — all free</div>
+      <div class="addons-note">Add any you'd like; you'll provide their photos and details on the next step.</div>
+      <div class="addons-grid">
 
       <div class="addon" onclick="xtra(this)" data-fp="FP1" data-photos="1">
         <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/scribble/fp1.webp')">
-          <img src="../assets/images/mockups/scribble/fp1.webp" alt="Birthday spread preview"/><span class="zoom-hint">Click to enlarge</span>
+          <img src="../assets/images/mockups/scribble/fp1.webp" alt="Birthday spread preview"/><span class="zoom-hint">Enlarge</span>
         </div>
-        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body"><div class="addon-name">Birthday spread</div><div class="addon-desc">A dedicated spread for the birthday celebration. Add birthday wishes and one special photo from the day.</div></div>
-        <div class="addon-cost">Free</div>
+        <div class="addon-body"><div class="addon-name">Birthday spread</div><div class="addon-desc">Birthday wishes and one photo from the celebration.</div></div>
+        <div class="addon-foot"><span class="addon-add">Add</span></div>
       </div>
 
       <div class="addon" onclick="xtra(this)" data-fp="FP2" data-photos="0">
         <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/scribble/fp2.webp')">
-          <img src="../assets/images/mockups/scribble/fp2.webp" alt="Funny words spread preview"/><span class="zoom-hint">Click to enlarge</span>
+          <img src="../assets/images/mockups/scribble/fp2.webp" alt="Funny words spread preview"/><span class="zoom-hint">Enlarge</span>
         </div>
-        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body"><div class="addon-name">Funny words</div><div class="addon-desc">A spread for the things they say at this age — words and phrases worth keeping.</div></div>
-        <div class="addon-cost">Free</div>
+        <div class="addon-body"><div class="addon-name">Funny words</div><div class="addon-desc">The funny things your child says at this age.</div></div>
+        <div class="addon-foot"><span class="addon-add">Add</span></div>
       </div>
 
       <div class="addon" onclick="xtra(this)" data-fp="FP3" data-photos="1">
         <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/scribble/fp3.webp')">
-          <img src="../assets/images/mockups/scribble/fp3.webp" alt="Favourite toy spread preview"/><span class="zoom-hint">Click to enlarge</span>
+          <img src="../assets/images/mockups/scribble/fp3.webp" alt="Favourite toy spread preview"/><span class="zoom-hint">Enlarge</span>
         </div>
-        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body"><div class="addon-name">Favourite toy</div><div class="addon-desc">A quiet portrait spread. Add one photo of your child with the toy that went everywhere with them.</div></div>
-        <div class="addon-cost">Free</div>
+        <div class="addon-body"><div class="addon-name">Favourite toy</div><div class="addon-desc">A portrait of your child with their favourite toy.</div></div>
+        <div class="addon-foot"><span class="addon-add">Add</span></div>
       </div>
 
       <div class="addon" onclick="xtra(this)" data-fp="FP4" data-photos="1">
         <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/scribble/fp4.webp')">
-          <img src="../assets/images/mockups/scribble/fp4.webp" alt="First steps spread preview"/><span class="zoom-hint">Click to enlarge</span>
+          <img src="../assets/images/mockups/scribble/fp4.webp" alt="First steps spread preview"/><span class="zoom-hint">Enlarge</span>
         </div>
-        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body"><div class="addon-name">First steps</div><div class="addon-desc">The moment caught on camera. Add one photo and a milestone spread is dedicated entirely to this.</div></div>
-        <div class="addon-cost">Free</div>
+        <div class="addon-body"><div class="addon-name">First steps</div><div class="addon-desc">One photo and a spread for those first steps.</div></div>
+        <div class="addon-foot"><span class="addon-add">Add</span></div>
       </div>
 
       <div class="addon" onclick="xtra(this)" data-fp="FP5" data-photos="2">
         <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/scribble/fp5.webp')">
-          <img src="../assets/images/mockups/scribble/fp5.webp" alt="Artwork gallery spread preview"/><span class="zoom-hint">Click to enlarge</span>
+          <img src="../assets/images/mockups/scribble/fp5.webp" alt="Artwork gallery spread preview"/><span class="zoom-hint">Enlarge</span>
         </div>
-        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body"><div class="addon-name">Artwork gallery</div><div class="addon-desc">Their drawings, preserved. A gallery spread for one or two of their best scribbles.</div></div>
-        <div class="addon-cost">Free</div>
+        <div class="addon-body"><div class="addon-name">Artwork gallery</div><div class="addon-desc">A gallery spread for one or two of their drawings.</div></div>
+        <div class="addon-foot"><span class="addon-add">Add</span></div>
+      </div>
       </div>
     </div>
-    <div class="photo-count" id="photo-count">Your 40-page book will need approximately 35–44 photos in total.</div>
     <div class="price-row"><span class="price-sym">€</span><span class="price-val" id="price">70</span><span class="price-note">incl. design &amp; printing</span></div>
     <button class="cta" onclick="goToOrder()">Create your book</button>
     <p class="cta-note">You approve before we print. No charge until you're happy.</p>
@@ -151,11 +142,16 @@
   const BASE_PHOTOS = { '40': [35, 44], '80': [72, 88] };
 
   function updatePhotoCount() {
+    // Photo-count hint removed from the product page (exact count isn't known
+    // until photos are uploaded). Guard kept so the toggle/chip handlers that
+    // still call this are safe no-ops.
+    const box = document.getElementById('photo-count');
+    if (!box) return;
     const pages = document.querySelector('.chip.on .chip-label').textContent.replace(' pages', '');
     const [lo, hi] = BASE_PHOTOS[pages] || [35, 44];
     let extra = 0;
     document.querySelectorAll('.addon.on').forEach(a => { extra += parseInt(a.dataset.photos || 0); });
-    document.getElementById('photo-count').textContent =
+    box.textContent =
       'Your ' + pages + '-page book will need approximately ' + (lo + extra) + '\u2013' + (hi + extra) + ' photos in total.';
   }
 
@@ -182,7 +178,7 @@
 
   function xtra(card) {
     card.classList.toggle('on');
-    card.querySelector('.addon-cost').textContent = card.classList.contains('on') ? 'Added \u2713' : 'Free';
+    card.querySelector('.addon-add').textContent = card.classList.contains('on') ? 'Added \u2713' : 'Add';
     updatePhotoCount();
   }
 

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Newborn — Aevia</title>
+  <link rel="stylesheet" href="../assets/css/addons.css" />
   <style>
     :root {
       --bg: #fafaf8;
@@ -64,30 +65,6 @@
     .chip-label { font-size: 12px; font-weight: 500; letter-spacing: 0.03em; }
     .chip-price { font-family: var(--serif); font-size: 15px; }
 
-    .addons { margin-bottom: 30px; }
-    .addon {
-      display: flex; align-items: flex-start; gap: 14px;
-      padding: 15px; border: 1.5px solid var(--border); border-radius: 6px;
-      margin-bottom: 8px; background: var(--white); cursor: pointer;
-      transition: border-color 0.15s;
-    }
-    .addon:hover { border-color: #c4a882; }
-    .addon.on { border-color: var(--text); box-shadow: inset 0 0 0 0.5px var(--text); }
-    .chk {
-      width: 20px; height: 20px; border: 1.5px solid var(--border); border-radius: 4px;
-      flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .addon.on .chk { background: var(--text); border-color: var(--text); }
-    .chk svg { display: none; } .addon.on .chk svg { display: block; }
-    .addon-body { flex: 1; }
-    .addon-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
-    .addon-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
-    .addon-cost {
-      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--muted); background: var(--surface); padding: 3px 9px;
-      border-radius: 100px; flex-shrink: 0; align-self: center;
-    }
 
     .price-row { display: flex; align-items: baseline; gap: 5px; margin-bottom: 22px; }
     .price-sym { font-family: var(--serif); font-size: 22px; color: var(--muted); }
@@ -107,15 +84,10 @@
     .thumbs button { flex: 1; aspect-ratio: 10/7; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; padding: 3px; background: #fff; cursor: pointer; transition: border-color 0.15s; }
     .thumbs button.on { border-color: var(--text); box-shadow: 0 0 0 1px var(--text); }
     .thumbs img { width: 100%; height: 100%; object-fit: contain; }
-    .addon-preview { position: relative; width: 160px; height: 112px; flex-shrink: 0; border-radius: 3px; background: #fff; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: zoom-in; }
-    .addon-preview img { width: 100%; height: 100%; object-fit: contain; }
-    .addon-preview .zoom-hint { position: absolute; bottom: 4px; right: 4px; background: rgba(20,20,20,0.6); color: #fff; font-size: 9px; letter-spacing: 0.04em; padding: 2px 5px; border-radius: 3px; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
-    .addon-preview:hover .zoom-hint { opacity: 1; }
     .lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(20,20,20,0.88); display: none; align-items: center; justify-content: center; padding: 40px; cursor: zoom-out; }
     .lightbox.on { display: flex; }
     .lightbox img { max-width: 100%; max-height: 100%; border-radius: 4px; box-shadow: 0 12px 48px rgba(0,0,0,0.4); }
     .lightbox-close { position: absolute; top: 24px; right: 32px; width: 40px; height: 40px; border-radius: 100px; background: rgba(255,255,255,0.12); color: #fff; font-size: 22px; line-height: 40px; text-align: center; }
-    @media (max-width: 600px) { .addon-preview { width: 104px; height: 73px; } }
 
     /* ═══════════════════════════════
        LAYOUT A — Sticky split
@@ -267,27 +239,28 @@
 
       <div class="addons">
         <div class="section-label">Special spreads — all free</div>
+        <div class="addons-note">Add any you'd like; you'll provide their photos and details on the next step.</div>
+        <div class="addons-grid">
         <div class="addon" data-fp="FPintro" data-photos="0" onclick="xtra(this)">
           <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/newborn/fpintro.webp')">
-            <img src="../assets/images/mockups/newborn/fpintro.webp" alt="Intro spread preview"/><span class="zoom-hint">Click to enlarge</span>
+            <img src="../assets/images/mockups/newborn/fpintro.webp" alt="Intro spread preview"/><span class="zoom-hint">Enlarge</span>
           </div>
-          <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="addon-body">
             <div class="addon-name">Intro</div>
-            <div class="addon-desc">A short birth story to open the book — composed from a few key details you share (date, time, weight, length).</div>
+            <div class="addon-desc">A short birth story to open the book, from a few details you share.</div>
           </div>
-          <div class="addon-cost">Add</div>
+          <div class="addon-foot"><span class="addon-add">Add</span></div>
         </div>
         <div class="addon" data-fp="FPlabour" data-photos="2" onclick="xtra(this)">
           <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/newborn/fplabour.webp')">
-            <img src="../assets/images/mockups/newborn/fplabour.webp" alt="Labour spread preview"/><span class="zoom-hint">Click to enlarge</span>
+            <img src="../assets/images/mockups/newborn/fplabour.webp" alt="Labour spread preview"/><span class="zoom-hint">Enlarge</span>
           </div>
-          <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="addon-body">
             <div class="addon-name">Labour</div>
-            <div class="addon-desc">A two-page spread from the day — a welcome line and your baby's zodiac constellation on the facing page.</div>
+            <div class="addon-desc">A spread from the day: a welcome line and your baby's zodiac constellation.</div>
           </div>
-          <div class="addon-cost">Add</div>
+          <div class="addon-foot"><span class="addon-add">Add</span></div>
+        </div>
         </div>
       </div>
 
@@ -429,7 +402,7 @@
 
   function xtra(card) {
     card.classList.toggle('on');
-    card.querySelector('.addon-cost').textContent = card.classList.contains('on') ? 'Added ✓' : 'Add';
+    card.querySelector('.addon-add').textContent = card.classList.contains('on') ? 'Added ✓' : 'Add';
   }
 
   // FP slug/input-type metadata. order.html reads the per-page fields from

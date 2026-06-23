@@ -132,3 +132,61 @@ Firebase Cloud Function endpoint:
 
 Handles: order number generation, signed upload URLs, confirmation emails.  
 Do not modify without testing end-to-end.
+
+---
+
+## Optional-spread / add-on cards (product pages)
+
+All product pages style the "Optional spreads" / "Optional add-ons" selector from
+one shared stylesheet: **`assets/css/addons.css`**. Link it in `<head>`:
+
+```html
+<link rel="stylesheet" href="../assets/css/addons.css" />
+```
+
+**Rule: do not redefine `.addon*` styles inline per page.** If a card needs a new
+look, change `addons.css` so every page moves together. This is the guardrail
+against the drift we cleaned up — before this, each page carried its own copy of
+the rules and they diverged.
+
+Two variants share the same JS hooks (`.addon.on` toggle, `data-fp`, `data-photos`):
+
+**1. Photo-card grid** — free functional-page spreads with a preview image
+(Scribble, Papercut, Wander, Newborn). Vertical card: photo on top, name, a
+**one-line** description, and an `.addon-add` pill that flips `Add` → `Added ✓`.
+No per-card "Free" badge — the section header ("Optional spreads — all free")
+already says it. Wrap the cards in `.addons-grid`; add `.cols-1` for a single
+spread (e.g. Wander) so it fills full width.
+
+```html
+<div class="addons">
+  <div class="section-label">Optional spreads — all free</div>
+  <div class="addons-grid">            <!-- add cols-1 if only one card -->
+    <div class="addon" onclick="xtra(this)" data-fp="FP1" data-photos="1">
+      <div class="addon-preview" onclick="event.stopPropagation();openLightbox('…/fp1.webp')">
+        <img src="…/fp1.webp" alt="… preview"/><span class="zoom-hint">Enlarge</span>
+      </div>
+      <div class="addon-body">
+        <div class="addon-name">Birthday spread</div>
+        <div class="addon-desc">Birthday wishes and one photo from the celebration.</div>
+      </div>
+      <div class="addon-foot"><span class="addon-add">Add</span></div>
+    </div>
+    …
+  </div>
+</div>
+```
+
+`xtra()` must flip the pill text:
+```js
+card.querySelector('.addon-add').textContent = card.classList.contains('on') ? 'Added ✓' : 'Add';
+```
+
+**Description copy:** keep it to roughly one line. Long descriptions break the
+uniform card height and read badly on mobile.
+
+**2. Checkbox list** — generic add-ons with no preview image (placeholder product
+pages: Sprout, Vows, Devotion, Terrain, Horizon, Radiance). Add `addons-list` to
+the `.addons` container; each `.addon` keeps its `.chk` checkbox, `.addon-body`,
+and `.addon-cost` badge (e.g. "Included"). Use this when a product has priced or
+non-spread extras rather than free photo spreads.

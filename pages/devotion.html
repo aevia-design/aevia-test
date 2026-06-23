@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Devotion — Aevia</title>
+  <link rel="stylesheet" href="../assets/css/addons.css" />
   <style>
     :root {
       --bg: #fafaf8; --surface: #f3efe9; --border: #e4dfd8;
@@ -45,17 +46,6 @@
     .chip.on { border-color: var(--text); background: var(--text); color: var(--white); }
     .chip-label { font-size: 12px; font-weight: 500; letter-spacing: 0.03em; }
     .chip-price { font-family: var(--serif); font-size: 15px; }
-    .addons { margin-bottom: 30px; }
-    .addon { display: flex; align-items: flex-start; gap: 14px; padding: 15px; border: 1.5px solid var(--border); border-radius: 6px; margin-bottom: 8px; background: var(--white); cursor: pointer; transition: border-color 0.15s; }
-    .addon:hover { border-color: #c4a882; }
-    .addon.on { border-color: var(--text); box-shadow: inset 0 0 0 0.5px var(--text); }
-    .chk { width: 20px; height: 20px; border: 1.5px solid var(--border); border-radius: 4px; flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s; }
-    .addon.on .chk { background: var(--text); border-color: var(--text); }
-    .chk svg { display: none; } .addon.on .chk svg { display: block; }
-    .addon-body { flex: 1; }
-    .addon-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
-    .addon-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
-    .addon-cost { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--surface); padding: 3px 9px; border-radius: 100px; flex-shrink: 0; align-self: center; }
     .price-row { display: flex; align-items: baseline; gap: 5px; margin-bottom: 22px; }
     .price-sym { font-family: var(--serif); font-size: 22px; color: var(--muted); }
     .price-val { font-family: var(--serif); font-size: 52px; font-weight: 400; letter-spacing: -0.03em; line-height: 1; }
@@ -136,7 +126,7 @@
         <div class="chip" onclick="pick(this,100)"><span class="chip-label">80 pages</span><span class="chip-price">€ 100</span></div>
       </div>
     </div>
-    <div class="addons">
+    <div class="addons addons-list">
       <div class="section-label">Optional add-ons</div>
       <div class="addon" data-input-type="text" data-slug="anniversary-caption" onclick="xtra(this)">
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>

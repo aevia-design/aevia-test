@@ -1,0 +1,93 @@
+/* addons.css — canonical optional-spread / add-on cards for product pages.
+   Linked by every product page so the styling can't drift. Do NOT restyle
+   these classes per page (see context/style-guide.md → "Optional-spread cards").
+
+   Two variants:
+   - .addons-grid  : free functional-page spreads with a photo preview
+                     (vertical cards in a grid). Used by Scribble, Papercut,
+                     Wander, Newborn.
+   - .addons-list  : generic add-ons with no preview image (checkbox rows).
+                     Used by the placeholder product pages.
+   Both share .addon / .addon-name / .addon-desc and the JS hooks
+   (.addon.on toggle, data-fp / data-photos). */
+
+.addons { margin-bottom: 30px; }
+
+/* ---- Photo-card grid variant ---- */
+.addons-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+.addons-grid.cols-1 { grid-template-columns: 1fr; }   /* single-spread templates (e.g. Wander) */
+
+/* Small helper line under the section label (grid variant only). */
+.addons-note { font-size: 12px; color: var(--muted); line-height: 1.5; margin: -2px 0 4px; }
+
+.addons-grid .addon {
+  display: flex; flex-direction: column;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  background: var(--white); cursor: pointer; overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.addons-grid .addon:hover { border-color: #c4a882; }
+/* Selected: ring the card from the OUTSIDE so the border reads evenly all round.
+   (An inset shadow gets hidden under the photo at the top, making the bottom look
+   heavier than the top.) */
+.addons-grid .addon.on { border-color: var(--text); box-shadow: 0 0 0 1px var(--text); }
+
+.addon-preview {
+  position: relative; width: 100%; aspect-ratio: 10 / 7;
+  background: #fff; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; cursor: zoom-in;
+}
+.addon-preview img { width: 100%; height: 100%; object-fit: contain; }
+.addon-preview .zoom-hint {
+  position: absolute; bottom: 6px; right: 6px;
+  background: rgba(20,20,20,0.6); color: #fff; font-size: 9px;
+  letter-spacing: 0.04em; padding: 2px 6px; border-radius: 3px;
+  opacity: 0; transition: opacity 0.15s; pointer-events: none;
+}
+.addon-preview:hover .zoom-hint { opacity: 1; }
+
+.addons-grid .addon-body { flex: 1; padding: 11px 13px 0; }
+.addon-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+.addon-desc { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+.addon-foot { display: flex; justify-content: flex-end; padding: 10px 13px 12px; }
+.addon-add {
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); padding: 5px 14px; border-radius: 100px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.addons-grid .addon.on .addon-add { background: var(--text); color: var(--white); border-color: var(--text); }
+
+/* ---- Checkbox-list variant (no preview image) ---- */
+.addons-list { margin-top: 12px; }
+.addons-list .addon {
+  display: flex; align-items: flex-start; gap: 14px; padding: 15px;
+  border: 1.5px solid var(--border); border-radius: 6px; margin-bottom: 8px;
+  background: var(--white); cursor: pointer; transition: border-color 0.15s;
+}
+.addons-list .addon:hover { border-color: #c4a882; }
+.addons-list .addon.on { border-color: var(--text); box-shadow: inset 0 0 0 0.5px var(--text); }
+.addons-list .addon-body { flex: 1; }
+
+.chk {
+  width: 20px; height: 20px; border: 1.5px solid var(--border); border-radius: 4px;
+  flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.addon.on .chk { background: var(--text); border-color: var(--text); }
+.chk svg { display: none; }
+.addon.on .chk svg { display: block; }
+
+/* Cost/state pill kept for the list variant (e.g. "Included", a price). */
+.addon-cost {
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); background: var(--surface); padding: 3px 9px;
+  border-radius: 100px; flex-shrink: 0; align-self: center;
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 600px) {
+  .addons-grid { gap: 8px; }
+}

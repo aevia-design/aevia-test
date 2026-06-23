@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Radiance — Aevia</title>
+  <link rel="stylesheet" href="../assets/css/addons.css" />
   <style>
     :root { --bg:#fafaf8;--surface:#f3efe9;--border:#e4dfd8;--text:#1a1a1a;--muted:#7d7570;--accent-dk:#a8895f;--white:#ffffff;--serif:Georgia,'Times New Roman',serif;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}html{scroll-behavior:smooth;}body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}img{display:block;max-width:100%;}button{cursor:pointer;border:none;background:none;font:inherit;}a{color:inherit;text-decoration:none;}
@@ -22,10 +23,6 @@
     .page-toggle{margin-bottom:30px;}.chips{display:flex;gap:8px;margin-top:8px;}
     .chip{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 22px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;min-width:108px;background:var(--white);transition:border-color 0.15s,background 0.15s;user-select:none;}.chip:hover{border-color:var(--text);}.chip.on{border-color:var(--text);background:var(--text);color:var(--white);}
     .chip-label{font-size:12px;font-weight:500;letter-spacing:0.03em;}.chip-price{font-family:var(--serif);font-size:15px;}
-    .addons{margin-bottom:30px;}.addon{display:flex;align-items:flex-start;gap:14px;padding:15px;border:1.5px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--white);cursor:pointer;transition:border-color 0.15s;}.addon:hover{border-color:#c4a882;}.addon.on{border-color:var(--text);box-shadow:inset 0 0 0 0.5px var(--text);}
-    .chk{width:20px;height:20px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:background 0.15s,border-color 0.15s;}.addon.on .chk{background:var(--text);border-color:var(--text);}.chk svg{display:none;}.addon.on .chk svg{display:block;}
-    .addon-body{flex:1;}.addon-name{font-size:13px;font-weight:600;margin-bottom:3px;}.addon-desc{font-size:12px;color:var(--muted);line-height:1.5;}
-    .addon-cost{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:3px 9px;border-radius:100px;flex-shrink:0;align-self:center;}
     .price-row{display:flex;align-items:baseline;gap:5px;margin-bottom:22px;}.price-sym{font-family:var(--serif);font-size:22px;color:var(--muted);}.price-val{font-family:var(--serif);font-size:52px;font-weight:400;letter-spacing:-0.03em;line-height:1;}.price-note{font-size:11px;color:var(--muted);}
     .cta{width:100%;background:var(--text);color:var(--white);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;padding:17px 32px;border-radius:3px;transition:background 0.2s;margin-bottom:11px;}.cta:hover{background:#2e2e2e;}.cta-note{text-align:center;font-size:11px;color:var(--muted);}
     .acc-wrap{border-top:1px solid var(--border);max-width:1160px;margin:0 auto;padding:0 56px;}.acc-item{border-bottom:1px solid var(--border);}
@@ -67,7 +64,7 @@
         <div class="chip" onclick="pick(this,100)"><span class="chip-label">80 pages</span><span class="chip-price">€ 100</span></div>
       </div>
     </div>
-    <div class="addons">
+    <div class="addons addons-list">
       <div class="section-label">Optional add-ons</div>
       <div class="addon" onclick="xtra(this)">
         <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
