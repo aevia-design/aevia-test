@@ -94,3 +94,20 @@ Captured ideas, most recent at the bottom. Status: Captured | Exploring | Commit
 **Status:** Parked — start after Newborn E2E; needs a proper brief (3D mockup scene + sample-content kit).
 
 ---
+
+## 2026-06-22 — Click-to-preview photo in full resolution
+
+**Context:** In the staff engine, photos placed in slots render at screen resolution (the web-res ~1600px derivative, ~100–300 KB), which can look a bit grainy when the slot is small and the photo is compressed. The photo itself is full quality on disk; the graininess is just the derivative being upscaled into a large slot or compressed to a small preview.
+
+**Core concept:** Click (or long-press on mobile) on any placed photo in the engine or customer-preview to open a full-resolution lightbox — loads the original GCS photo URL for that order, shows it at high quality so staff/customers can inspect sharpness, detail, etc.
+
+**Needs it serves:**
+- Reassures staff that the photo is actually sharp for print (it's the derivative that looks grainy, not the original)
+- Lets customers inspect their own photos before approving
+- Zero change to the print path (PDF still uses originals)
+
+**Implementation sketch:** On click of a `.slot-photo`, open a full-screen overlay with `<img src="${originalUrl}">` (lazy-loaded). Close on click-outside or Escape. `originalUrl` is already in `window.currentOrder.photoUrls` / `photoManifest` on both surfaces. Progressive: show derivative immediately, swap to original once loaded.
+
+**Status:** Captured — nice polish item post-Papercut launch.
+
+---

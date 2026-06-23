@@ -1,3 +1,103 @@
+## 2026-06-23 — A new GCS bucket needs its CORS policy copied, or browser `fetch()` breaks ("Failed to fetch")
+
+S72's EU migration copied 9.22 GiB of photos US→EU but **not the bucket's CORS configuration**. Result (S73): loading a paid order into the staff engine threw *"Failed to fetch"*. Mechanism: order load calls `urlToFile()` → `fetch(signedUrl)` → `.blob()` (template-engine.html:4210) — a **cross-origin read** of a `storage.googleapis.com` URL from the `pages.dev` origin. The browser blocks the response unless the bucket returns CORS headers; the generic TypeError surfaces as "Failed to fetch". The old US bucket had `origin:["*"]` GET/PUT/OPTIONS; the new `aevia-uploads-eu` had none. Fix: `gsutil cors set <same-policy.json> gs://aevia-uploads-eu` (free, no egress, instant). Reusable rules:
+
+1. **CORS is bucket-level config, separate from data + IAM.** Creating/migrating a bucket does NOT carry it over. Copy `gsutil cors get` → `gsutil cors set` as part of any bucket move.
+2. **It hits both reads and writes.** PUT is in the policy because uploads (signed PUT from the order form) are also cross-origin — a missing policy breaks new orders too, not just order-load.
+3. **Easy to misdiagnose.** The frontend never names the bucket (it uses opaque signed URLs), so "Failed to fetch" looks like auth/network/function-down. Distinguish: a real server error resolves with `res.status` ("Server error NNN"); a CORS/network failure rejects `fetch()` itself with TypeError "Failed to fetch". Only `<img src>` is CORS-exempt — JS reading bytes (`fetch`+`blob`, canvas) is not.
+
+## 2026-06-23 — Low-res warnings must measure the ORIGINAL, not the web derivative
+
+Since chunk-023 the engine + customer-preview load the ~1600px web derivative (egress optimisation). The engine's low-res check `Math.min(w,h) < 1500` then false-flagged **every** real-order photo (a 3:2 derivative's short edge ≈ 1066px), even when the upload was high-res — a yellow slot border + "⚠ Low res" badge on everything. Removed both visuals (engine + customer-preview, S73). **Rule: any print-resolution judgement must run on the original, not the derivative.** The genuine safeguard already lives at order-form upload (checks originals, threshold 1575px, warns the customer) and the PDF always renders from originals — so removing the engine/preview flag loses no real protection. If a working in-engine warning is ever wanted back, base it on original dimensions carried in the order payload, not the loaded derivative.
+
+## 2026-06-22 — Papercut overlay z-order is per-spread via `overlayAbovePhotos` (and a single SVG can't be split by it)
+
+`overlayAbovePhotos` is read by all 3 surfaces + PDF from the data file (one change propagates everywhere). Default/true → overlay `z-index:2` (above photos); `false` → `z-index:0` (behind). The **intentional "art behind photo" pages are SP4 + Cover only** — FP1 (heart) shipping with `false` was a stray value (S73 fix: → `true`). Gotcha codified S73: when a single SVG file contains BOTH a photo *backing* and *foreground* decorations (Papercut's `FP Birthday 02 Right.svg` = solid heart `#ddecf0` + balloons/clouds), one z-index flag can't separate them. If the photo is already independently clipped (engine `heartClip`), the solid backing is invisible under the photo → just delete the backing group from the SVG and set `overlayAbovePhotos:true`, rather than splitting the file into two layers across 4 code paths.
+
+## 2026-06-23 — Async long-job pattern (Cloud Run render + Firestore-polled progress)
+
+A Cloud Function cannot synchronously wait on a multi-minute job: gen-1 caps at 540s, and the PDF render is ~6m43s for 40 pages (≈13 min for 80). The S70 design had `generatePdf` await the render → it hit the 300s timeout while Cloud Run kept going and *succeeded* 2 min later (the browser saw "Failed to fetch"; the PDF was actually in GCS). Reusable fixes:
+
+1. **Decouple via fire-and-confirm, not fire-and-await.** The function POSTs to Cloud Run **without awaiting completion** (`.catch(()=>{})`), then polls Firestore until the renderer writes `pdfRender.status='rendering'` (confirms start, absorbs cold starts), then returns 202. Cloud Run keeps running after the function disconnects — **a Cloud Run request handler continues to completion even after the client drops**, with CPU allocated *because the request is still active server-side*. This is why we did NOT need `--no-cpu-throttling` (which would bill idle instance time after a 202 — the real cost trap).
+
+2. **Progress = Firestore field + dashboard poll.** Renderer writes `pdfRender:{status,done,total,sizeBytes,gcsPath}` per spread (throttled ~1/1.5s). New `getPdfStatus` function returns it and, when `done`, signs the preview URL (renderer still can't sign — no key). Dashboard polls every 2.5s → progress bar.
+
+3. **CPU is cost-neutral for CPU-bound jobs.** Cloud Run bills vCPU-seconds, so 4 vCPU finishing in half the time ≈ same cost as 2 vCPU (both ~840 vCPU-s ≈ $0.024/render), just faster. Bumped to `--cpu 4`.
+
+4. **Two unrelated bugs fixed en route to the timeout:** Cloud Run's Compute SA lacked Firestore/GCS roles (granted `datastore.user` + `storage.objectCreator`); and `console.log(...gcsUrlByName.size...)` threw in server mode (`gcsUrlByName` is null when `photoBufferMap` is set) — gate the log on `photoBufferMap` first.
+
+5. **PowerShell comma gotcha:** `firebase deploy --only functions:a,functions:b` fails ("No function matches") because the `firebase.ps1` shim treats the unquoted comma as a PS array. Quote it: `--only "functions:a,functions:b"`, or deploy one at a time.
+
+## 2026-06-23 — Crop offset (#74/#55) silently dropped on customer side for cover + special photos
+
+The drag-to-reposition crop is keyed by photo **basename** (`heartCrop[name]`). The staff engine stores basenames; customer-preview was passing **full GCS paths** for cover + special (FP) photos, so `getHeartCrop('AEV-042/photos/special/fp1.jpg')` never matched the stored `fp1.jpg` key → always defaulted 50/50. Pool photos were already fixed (basename-stripped); cover + special were missed. Fix: wrap their names in the existing `_baseName()` helper at fetch time. **Rule: any photo name used as a crop/caption key must be basename-normalised on BOTH surfaces.**
+
+## 2026-06-22 — Cloud Run signed-URL gotcha + porting a Node CLI to Cloud Run (chunk-024)
+
+Two reusable lessons from moving `export-pdf.js` server-side:
+
+1. **A Cloud Run service's default runtime SA cannot mint v4 signed URLs.** `getSignedUrl({version:'v4'})` with no key file needs the SA to have `roles/iam.serviceAccountTokenCreator` on itself (it doesn't by default) — otherwise it 500s. Two fixes: grant that role, OR don't sign in Cloud Run at all. We chose the latter: the renderer just uploads the PDF, and the `generatePdf` **Cloud Function** signs the URL (it has `serviceAccountKey.json`, a real private key). Cleaner — no IAM change, reuses the proven `getPdfUrl` signing pattern.
+
+2. **`gcloud run deploy --source` only auto-detects a Dockerfile at the build-context ROOT.** A Dockerfile in a subdir (`services/pdf-renderer/`) is ignored → it silently falls back to buildpacks. Put the Dockerfile at repo root. And install npm deps at the image's `/app` root (not a subdir) so sibling required files (`scripts/export-pdf.js` requiring `sharp`/`pdf-lib`) resolve via `/app/node_modules` — Node walks up from each file's dir.
+
+3. **Make the CLI importable without a rewrite:** guard the CLI arg-parsing + `main()` call behind `if (require.main === module)`, lift runtime config to module-level `let`s, add an exported async wrapper that sets them and calls `main()`. A `photoBufferMap` injection hook in `loadPhoto` lets the server pre-fetch photos in-region and bypass the signed-URL fetch. Server mode must also **skip `setupPhotoSource()`** (it would re-call `getOrder` over the internet) — gate it on the injected buffer map, not on `orderNumber`.
+
+## 2026-06-22 — Back-filling web-res derivatives for existing orders (zero-egress recipe)
+
+`generateDerivative` (chunk-023) only fires on NEW uploads (`onFinalize`). To give an
+EXISTING order small previews without re-uploading and without internet egress, re-trigger
+the function with an **in-cloud round-trip copy**:
+
+```
+# 1. Copy the order folder to a temp prefix whose path contains "/previews/"
+#    → the function's isDerivativePath() guard SKIPS it (no junk derivatives made in temp):
+gsutil -m cp -r gs://BUCKET/AEV-XXX gs://BUCKET/_rederive/previews/
+# 2. Copy it BACK onto the real originals → overwrite fires onFinalize → derivatives generated:
+gsutil -m cp -r gs://BUCKET/_rederive/previews/AEV-XXX gs://BUCKET/
+# 3. Delete the temp prefix:
+gsutil -m rm -r gs://BUCKET/_rederive
+```
+
+All three steps are server-side (in-cloud) → **no `Download Worldwide Destinations` egress**,
+only cheap Class-A ops + function invocations. Verify with a 1:1 count of image originals vs
+`/previews/` files. Two gotchas: (a) gsutil refuses an identical src==dst copy (`are the same
+file — abort`), which is why the temp round-trip is needed; (b) the temp prefix MUST contain
+the literal path segment `/previews/` or step 1 generates pointless derivatives in temp.
+On this Windows box, set `CLOUDSDK_PYTHON` to the bundled interpreter first (memory
+`reference_gcloud_python`). Bucket: `gs://aevia-uploads.firebasestorage.app`.
+
+---
+
+## 2026-06-22 — A split feature isn't "live" until BOTH halves are deployed
+
+chunk-023's backend (`generateDerivative` + `getOrder` derivativeUrls) was deployed to
+Firebase, but the FRONTEND that consumes `derivativeUrls` sat on an un-merged branch. The
+live site therefore still served full-res originals — a full day of egress (3.59 GiB / €0.37)
+after we believed the fix was working. The S65 verification looked fine because it was run
+**locally with the branch checked out**, not against the live deployment.
+
+**Rule:** for any feature split across backend (Firebase) and frontend (Cloudflare/main),
+"deployed" means BOTH are live in the same place real users hit. Verify on the actual
+deployed surface, not a local checkout. The deploy-ordering rule (backend first — S40) is
+about safety; this is about not declaring victory at the halfway point.
+
+---
+
+## 2026-06-21 — Template `*-data.js` values that come from a CSV: CSV is source of truth
+
+The `*-data.js` files (`wander-data.js`, `scribble-data.js`, `newborn-data.js`) are
+**hand-synced from Xenia's delivered CSVs** (`assets/Template_*/*.csv`) — there is **no
+CSV→JS generator**. So a value that exists in a CSV column (e.g. caption `halign`/`valign`
+= `captions_Halignment`/`captions_Valignment` in `Wander_sizing_full.csv`) must be changed
+in the **CSV first (or both together)**, never JS-only. A JS-only edit silently diverges
+from the canonical CSV and is lost on the next re-sync, and the CSV stops being trustworthy.
+
+**Rule:** before changing a data value, check if a CSV column holds it. If yes → edit the
+CSV (and re-sync JS); also confirm with Evgeny whether *we* edit Xenia's CSV or hand it back
+to her (she owns those files). Pure engine layout CONSTANTS that live only in JS (never in a
+CSV) are exempt. Concrete instance: Wander itinerary `halign` center→left was done in both
+the CSV and `wander-data.js` this session.
+
 ## 2026-06-17 — PDF dropped blank lines (paragraph spacing collapsed vs engine)
 
 Staff/customers space paragraphs in a text panel (and per-photo captions) with **blank

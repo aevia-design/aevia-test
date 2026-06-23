@@ -312,6 +312,8 @@
 
   // ── Auth (Firebase Email/Password) ─────────────────────────────────────────
   const GET_PDF_URL_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getPdfUrl';
+  const GENERATE_PDF_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/generatePdf';
+  const GET_PDF_STATUS_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getPdfStatus';
   const MARK_SENT_TO_PRINT_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/markSentToPrint';
 
   // Headers for staff Cloud Function calls — sends the current user's Firebase
@@ -466,7 +468,11 @@
               : `<button class="preview-link-btn" onclick="generatePreviewLink('${esc(o.orderNumber)}')">Generate preview link</button>`
             }
           </div>
-          <div class="pdf-links-row" id="pdf-row-${esc(o.orderNumber)}" style="display:none;margin-top:8px;gap:8px;flex-wrap:wrap;"></div>
+          <div class="pdf-links-row" id="pdf-row-${esc(o.orderNumber)}" style="display:flex;margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center;">
+            ${['new','approved','paid'].includes(o.status)
+              ? `<button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(o.orderNumber)}', this)">Generate PDF</button>`
+              : ''}
+          </div>
           <div class="print-action-row" id="print-action-${esc(o.orderNumber)}" style="margin-top:8px;">
             ${o.status === 'paid'
               ? `<button class="pdf-link-btn" onclick="markSentToPrint('${esc(o.orderNumber)}')">Mark approved for print</button>`
@@ -528,6 +534,97 @@
       }
     }
   }
+
+  // ── Generate PDF from dashboard (chunk-024) ──────────────────────────────
+  // Calls the Cloud Run renderer via the generatePdf Cloud Function.
+  // Staff must have saved the book state first — the PDF is built from Firestore.
+  // The render runs async on Cloud Run (3–13 min). generatePdf just triggers it and
+  // confirms it started; we then poll getPdfStatus for live progress and the final
+  // signed URL. A progress bar replaces the old frozen "Generating…" label.
+  window.generatePdfFromDashboard = async function(orderNumber, btn) {
+    const row = document.getElementById(`pdf-row-${esc(orderNumber)}`);
+    const origLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Starting…';
+
+    // Build a small progress bar + label next to the button.
+    const wrap = document.createElement('span');
+    wrap.style.cssText = 'display:inline-flex;align-items:center;gap:8px;margin-left:8px;';
+    const barOuter = document.createElement('span');
+    barOuter.style.cssText = 'display:inline-block;width:120px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;';
+    const barInner = document.createElement('span');
+    barInner.style.cssText = 'display:block;height:100%;width:0%;background:var(--text);transition:width .3s ease;';
+    barOuter.appendChild(barInner);
+    const label = document.createElement('span');
+    label.style.cssText = 'font-size:11px;color:var(--muted);white-space:nowrap;';
+    label.textContent = 'Starting…';
+    wrap.appendChild(barOuter);
+    wrap.appendChild(label);
+    row.appendChild(wrap);
+
+    const cleanup = () => { wrap.remove(); };
+    const fail = (msg) => {
+      cleanup();
+      btn.textContent = origLabel;
+      btn.disabled = false;
+      alert(`PDF generation failed: ${msg}`);
+    };
+
+    try {
+      const res = await fetch(GENERATE_PDF_ENDPOINT, {
+        method: 'POST',
+        headers: await staffHeaders(),
+        body: JSON.stringify({ orderNumber }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+
+      // Render started — poll for progress. ~16 min ceiling (covers an 80-page book).
+      const deadline = Date.now() + 16 * 60 * 1000;
+      const poll = async () => {
+        if (Date.now() > deadline) { fail('timed out waiting for the render'); return; }
+        let st;
+        try {
+          const r = await fetch(GET_PDF_STATUS_ENDPOINT, {
+            method: 'POST',
+            headers: await staffHeaders(),
+            body: JSON.stringify({ orderNumber }),
+          });
+          st = await r.json();
+          if (!r.ok) throw new Error(st.error || `Server error ${r.status}`);
+        } catch (err) {
+          // Transient network hiccup — keep polling rather than aborting the whole render.
+          setTimeout(poll, 3000);
+          return;
+        }
+
+        if (st.status === 'error') { fail(st.error || 'render error'); return; }
+
+        if (st.status === 'done') {
+          barInner.style.width = '100%';
+          const mb = (st.sizeBytes / 1024 / 1024).toFixed(1);
+          cleanup();
+          btn.textContent = 'Preview PDF';
+          btn.onclick = () => window.open(st.previewUrl, '_blank');
+          btn.disabled = false;
+          const sizeSpan = document.createElement('span');
+          sizeSpan.style.cssText = 'font-size:11px;color:var(--muted);margin-left:6px;';
+          sizeSpan.textContent = `${mb} MB`;
+          row.appendChild(sizeSpan);
+          return;
+        }
+
+        // status 'starting' | 'rendering'
+        const pct = (st.total > 0) ? Math.round((st.done / st.total) * 100) : 0;
+        barInner.style.width = `${pct}%`;
+        label.textContent = (st.total > 0) ? `Rendering… ${pct}%` : 'Starting…';
+        setTimeout(poll, 2500);
+      };
+      poll();
+    } catch (err) {
+      fail(err.message);
+    }
+  };
 
   // ── Generate preview link ────────────────────────────────────────────────
   window.generatePreviewLink = async function(orderNumber) {

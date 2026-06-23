@@ -7,6 +7,7 @@
   <script src="../assets/Template_Scribble/scribble-data.js"></script>
   <script src="../assets/Template_Wander/wander-data.js"></script>
   <script src="../assets/Template_Newborn/newborn-data.js"></script>
+  <script src="../assets/Template_Papercut/papercut-data.js"></script>
   <script src="../assets/js/photo-utils.js"></script>
   <script src="../assets/js/book-completeness.js"></script>
   <script src="../assets/js/map-render.js"></script>
@@ -86,6 +87,16 @@
       font-family: 'Baskervville';
       src: url('../assets/fonts/Baskervville-MediumItalic.ttf') format('truetype');
       font-weight: 500; font-style: italic; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Source Sans 3';
+      src: url('../assets/fonts/SourceSans3/SourceSans3-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Source Sans 3';
+      src: url('../assets/fonts/SourceSans3/SourceSans3-Bold.ttf') format('truetype');
+      font-weight: 700; font-style: normal; font-display: swap;
     }
     :root {
       --bg:        #fafaf8;
@@ -823,6 +834,7 @@
     scribble: { data: () => window.SCRIBBLE_DATA, svgBase: '../assets/Template_Scribble/Spreads/' },
     wander:   { data: () => window.WANDER_DATA,   svgBase: '../assets/Template_Wander/' },
     newborn:  { data: () => window.NEWBORN_DATA,  svgBase: '../assets/Template_Newborn/' },
+    papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../assets/Template_Papercut/SVG/' },
   };
 
   let _activeTemplateData = window.SCRIBBLE_DATA; // default
@@ -863,6 +875,7 @@
     { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }], funnyWordsOnly: true },
     { label: 'Twinkle Star',      value: 'Twinkle Star',      styles: [{ label: 'Regular', weight: 400, italic: false }] },
     { label: 'Baskervville',      value: 'Baskervville',      styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Medium Italic', weight: 500, italic: true }] },
+    { label: 'Source Sans 3',    value: 'Source Sans 3',    styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
   ];
 
   // Caption-toolbar fonts scoped to the active template's fontPicker allow-list
@@ -1065,9 +1078,23 @@
   }
 
   async function loadPhotos() {
-    const signedUrls  = window.orderData?.signedUrls;
+    const derivUrls   = window.orderData?.derivativeUrls;
+    const origUrls    = window.orderData?.signedUrls;
     const storedNames = window.orderData?.storedNames;
-    if (!signedUrls) { console.warn('No signed URLs in order data'); return; }
+    if (!origUrls) { console.warn('No signed URLs in order data'); return; }
+
+    // chunk-023: Merge derivatives (web-res for screen) with originals (fallback for legacy orders)
+    const signedUrls = {
+      cover: (derivUrls?.cover || origUrls?.cover) || null,
+      special: {},
+      pool: []
+    };
+    for (const slug of Object.keys(origUrls.special || {})) {
+      const derivArr = Array.isArray(derivUrls?.special?.[slug]) ? derivUrls.special[slug] : [];
+      const origArr = Array.isArray(origUrls.special[slug]) ? origUrls.special[slug] : [];
+      signedUrls.special[slug] = origArr.map((orig, i) => derivArr[i] || orig);
+    }
+    signedUrls.pool = (origUrls.pool || []).map((orig, i) => (derivUrls?.pool || [])[i] || orig);
 
     // Real progress: count every photo we're about to fetch, then tick the bar as each
     // resolves (success or failure). Beats the bare hourglass — the customer sees movement.
@@ -1102,7 +1129,7 @@
     }
 
     // Cover → specialPhotos.cover (mirrors staff engine structure)
-    const coverPhoto = await fetchPhoto(signedUrls.cover, storedNames?.cover || 'cover');
+    const coverPhoto = await fetchPhoto(signedUrls.cover, _baseName(storedNames?.cover) || 'cover');
     if (coverPhoto) window.specialPhotos.cover = [coverPhoto];
 
     // Special (FP) photos → specialPhotos[FPX] (mirrors staff engine structure)
@@ -1112,7 +1139,7 @@
       const nameArr = storedNames?.special?.[slug] || [];
       const urlArr  = Array.isArray(urls) ? urls : [urls];
       const photos  = await Promise.all(urlArr.map((url, i) =>
-        fetchPhoto(url, (Array.isArray(nameArr) ? nameArr[i] : nameArr) || `${slug}-${i}`)
+        fetchPhoto(url, _baseName((Array.isArray(nameArr) ? nameArr[i] : nameArr) || '') || `${slug}-${i}`)
       ));
       if (fpKey && window.specialPhotos[fpKey] !== undefined) {
         window.specialPhotos[fpKey] = photos.filter(Boolean);
@@ -1377,10 +1404,13 @@
       canvas.style.background = `linear-gradient(90deg, ${backColor} 0px ${spineStartPx}px, ${spineColor} ${spineStartPx}px ${frontStartPx}px, ${frontColor} ${frontStartPx}px 100%)`;
     }
 
+    // Cover SVG z-order — mirrors template-engine.html. overlayAbovePhotos:false
+    // (Papercut) drops the SVG below the photo so the photo prints on top.
     const svgImg = document.createElement('img');
     svgImg.className = 'svg-overlay';
     svgImg.src = SVG_BASE + coverDef.svg;
     svgImg.alt = '';
+    if (coverDef.overlayAbovePhotos === false) svgImg.style.zIndex = '0';
     svgImg.onerror = () => { console.warn('Cover SVG failed to load:', svgImg.src); };
     canvas.appendChild(svgImg);
 
@@ -1432,6 +1462,10 @@
         const img = document.createElement('img');
         img.className = 'slot-photo';
         img.src = coverPhoto.url;
+        // Apply the staff-set cover crop (object-position %). Read-only here, like the
+        // regular slots — the crop is part of our layout. Default 50/50 = centred.
+        const hc = getHeartCrop(coverPhoto.name);
+        img.style.objectPosition = hc.x + '% ' + hc.y + '%';
         slot.appendChild(img);
       } else {
         const ph = document.createElement('div');
@@ -1619,12 +1653,9 @@
     nameEl.textContent = photo.name.replace(/\.[^.]+$/, '');
     thumb.appendChild(nameEl);
 
-    if (photo.lowRes) {
-      const badge = document.createElement('div');
-      badge.className = 'warn-badge';
-      badge.textContent = '⚠ Low res';
-      thumb.appendChild(badge);
-    }
+    // Low-res badge intentionally not shown: customer-preview loads the ~1600px web
+    // derivative (chunk-023), not the original, so this false-flagged every photo even
+    // when the upload was high-res. Print-quality warning lives at order-form upload.
 
     return thumb;
   }
@@ -1716,12 +1747,18 @@
       canvas.dataset.variant = variantKey;
       if (variant.bgColor) canvas.style.background = variant.bgColor;
 
+      // SVG overlay z-order — mirrors template-engine.html. Default .svg-overlay
+      // z-index:2 sits above the z-index:1 photo slots (correct for Scribble/Newborn/
+      // Wander and Papercut's overlayAbovePhotos:true spreads). When a spread sets
+      // overlayAbovePhotos:false (Papercut SP4 + cover), drop the overlay below the
+      // photos so they cover it.
       if (variant.svg) {
         const overlay = document.createElement('img');
         overlay.className = 'svg-overlay';
         overlay.src = SVG_BASE + variant.svg;
         overlay.alt = '';
         overlay.decoding = 'async';
+        if (spreadDef.overlayAbovePhotos === false) overlay.style.zIndex = '0';
         canvas.appendChild(overlay);
       }
 
@@ -1810,8 +1847,10 @@
           slotEl.style.height = (slotDef.h * SCALE) + 'px';
         }
         if (slotDef.heartClip) {
-          // Heart path scaled from original 566.93×566.93 SVG space to 600×600 canvas
-          slotEl.style.clipPath = "path('M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z')";
+          const _heartPath = getActiveTemplateData().heartClipPath ||
+            'M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z';
+          slotEl.style.clipPath = `path('${_heartPath}')`;
+
           slotEl.style.background = 'transparent';
         }
 
@@ -2375,6 +2414,9 @@
     document.getElementById('photo-sidebar').classList.remove('hidden');
     document.getElementById('preview-controls').classList.remove('visible');
     document.getElementById('submit-bar').classList.remove('hidden');
+    // Re-assert inline display: visibility is owned by mode state, not a one-time
+    // showBookChrome() clear that a stray resize (scrollbar toggle) can stomp to none.
+    document.getElementById('submit-bar').style.display = '';
     // Preview mode hides all rows but the current spread — restore them all on return to edit.
     document.querySelectorAll('.spread-row').forEach(row => row.classList.remove('preview-hidden'));
     requestAnimationFrame(fitCover);
@@ -2686,6 +2728,10 @@
       document.getElementById('page-body').style.display = '';
       document.getElementById('photo-sidebar').style.display = '';
       document.getElementById('footer').style.display = '';
+      // Restore the two elements the mobile branch hid but previously never brought
+      // back — leaving them inline display:none stranded the submit-bar / preview nav.
+      document.getElementById('submit-bar').style.display = '';
+      document.getElementById('preview-controls').style.display = '';
     }
     fitCover();
   });

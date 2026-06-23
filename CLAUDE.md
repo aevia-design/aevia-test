@@ -52,6 +52,23 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 
 ---
 
+## Cost awareness (cloud spend)
+The owner is non-technical and cannot easily predict cloud costs. Before anything
+that touches Google Cloud / Firebase infra (a new service, region, bucket, function,
+or a change to how data moves), **always reason about cost-efficiency first** — not
+"cheapest", but the most cost-efficient solution for the need — and **flag expected
+cost + the main cost driver in plain language before acting.** Watch especially for:
+- **Egress** (data leaving GCS to the internet, or crossing regions) — the usual
+  surprise. Co-locate compute and storage in the same region (see ADR-0005, ADR-0006).
+- **Region mismatches** — keep storage, functions, and Cloud Run in the same region.
+- **Idle billing** — e.g. Cloud Run `--no-cpu-throttling` / min-instances, always-on.
+- Anything that scales per-photo or per-order on a large book (1–4 GB/order).
+
+Goal: no surprise charges. If a cost can't be predicted, say so and suggest how to
+bound or measure it before committing.
+
+---
+
 ## Local dev
 ```bash
 npx serve . -p 8080   # from project root

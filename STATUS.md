@@ -1,124 +1,154 @@
 # Session Status
-_Last updated: 2026-06-19 (session 63)_
+_Last updated: 2026-06-23 (session 73)_
 
 ## Status
-**Session 63 (2026-06-19) — MOCKUPS WIRED INTO THE WEBSITE + COMMITTED & PUSHED. Branch `mockup-3d-renderer` (NOT main → NOT live yet). 2 commits pushed (`57914b5` pipeline, `750f71b` web). Read `sessions/2026-06-19-s63.md`.**
+**Session 73 (2026-06-23) — Papercut pre-demo polish + a real bug from S72's EU migration. FOUR fixes, all working-tree only EXCEPT one live-infra change; nothing committed. (1) "Failed to fetch" loading a paid order into the staff engine — ROOT-CAUSED: S72's EU migration copied photo DATA but not the bucket's CORS config, so the new `aevia-uploads-eu` had NO CORS and every cross-origin `fetch()` of a photo (urlToFile→blob, template-engine.html:4210) was browser-blocked. FIXED by applying the old bucket's CORS policy to the EU bucket (`gsutil cors set`, free/reversible/live now — also un-breaks new uploads). (2) Papercut Spread 5 left SVGs — Xenia re-uploads; only a decorative shape moved, slot geometry unchanged → no data sync needed. (3) Papercut heart page (FP1) layering — removed the solid-heart backing (group `f`) from `FP Birthday 02 Right.svg` + set `overlayAbovePhotos:true`, so balloons/clouds sit ON TOP of the heart-clipped photo (photo already clipped independently, so the backing was invisible). SP4+Cover `false` untouched (those are the real "art behind" pages). (4) Removed the false low-res yellow border/badge in engine + customer-preview — since chunk-023 they load the ~1600px web derivative so `min(w,h)<1500` false-flagged EVERY real photo; genuine print-res warning still lives at order-form upload (on originals) + PDF renders from originals. Owner verified items 1–3 render well, then broke for lunch. NEXT: commit/push S73 → mockup → website UX → E2E → record demo. Full detail in `sessions/2026-06-23-s73.md`.**
 
-Scribble/Wander/Newborn product pages now show real mockups: hero (open-flat) + 4 thumbs + add-on spread previews with click-to-enlarge lightbox; collections cards show closed-book shots (other 7 = placeholders). New `scripts/web-mockups.mjs` derives 1600px WebP into `assets/images/mockups/<template>/`. `.gitignore` anchored to `/mockups/` (root rule was silently ignoring the web assets). `/reviewing-code`: Accept, 0 console errors desktop+mobile.
+### ▶ NEXT SESSION (Session 74) — resume pre-demo plan
+0. (Optional) **Commit + push** S73's working-tree changes so the Papercut fixes reach live (`papercut-data.js`, `FP Birthday 02 Right.svg`, `SP 09 H/V Left.svg`, `template-engine.html`, `customer-preview.html`; leave `.claude/settings.local.json`).
+1. Polish any other Papercut template moments.
+2. Create a Papercut mockup + add it to the website (`scripts/compose-mockup.mjs` + ag-psd; memory `project_mockup_pipeline`).
+3. Fix a few website UX things before the demo.
+4. One full E2E test.
+5. Record the demo per `docs/naitive-fellowship/walkthrough-script.md`.
 
-### ▶ NEXT (Session 64)
-1. **MERGE TO `main` TO GO LIVE** — the only thing between this work and the live site (Cloudflare deploys main). PR: https://github.com/aevia-design/aevia-test/pull/new/mockup-3d-renderer
-2. **Parked pipeline fixes**: cover "too white" (closed.psd highlight wash; tone down in `compose-closed.mjs`); Scribble cover photo upside-down (EXIF auto-orient missing in live engine cover render — mirror S41 PDF `.rotate()`).
-3. Carried: real-device phone E2E of step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` + deploy `createCheckoutSession`).
+### ⚠ Watch-outs (S73)
+- **Nothing committed this session.** All UI/template changes are working-tree only; the CORS change is live infra (not a file). Items 2–4 reach live only on push (Cloudflare auto-deploys main).
+- **CORS lesson:** a new GCS bucket needs its CORS policy copied too, or browser `fetch()`/uploads fail with the generic "Failed to fetch" — easy to misdiagnose as auth/network (the frontend never names the bucket).
+- Owner still owes (carried from S72): a dashboard PDF run on **AEV-043** + a billing check (egress near-zero; one-time ~€0.2–0.9 migration-copy charge expected).
 
-### Previous: Session 62
-**Session 62 (2026-06-19) — OPEN-SPREAD FIXES + SCRIBBLE ADDED + ALL 3 SETS REGENERATED. Branch `mockup-3d-renderer` (NOT main, NOT pushed). NOTHING COMMITTED. Read `sessions/2026-06-19-s62.md`.**
+### Previous: Session 72
+**Session 72 (2026-06-23) — Two threads. (1) First pass on the nAItive fellowship application: decided the "one concrete thing" = a live, end-to-end automated photo-book production system built solo by a non-engineer via AI orchestration; captured the plan + a demo-video script in `docs/naitive-fellowship/`. (2) Shipped the chunk-024 async dashboard PDF to live (`24d2ead`), then MIGRATED ALL PHOTO STORAGE TO THE EU (`8f5171d`, ADR-0006): the bucket was in US-WEST1 while everything else is EU, causing cross-region egress. Created `aevia-uploads-eu` (europe-west1), copied 9.22 GiB, repointed all code, re-bound the generateDerivative trigger (verified firing), redeployed 17 functions + the renderer. Full EU data residency + in-region PDF reads now free. Added a cost-awareness rule to CLAUDE.md. TWO live checks still owed by owner: a dashboard PDF run on AEV-043, and tomorrow's billing (expect near-zero egress; one-time ~€0.2–0.9 from the migration copy). NEXT: Papercut polish → mockup on website → website UX → E2E → record demo. Full detail in `sessions/2026-06-23-s72.md`.**
 
-**The mockup pipeline now runs clean across all 3 templates (Newborn AEV-039, Wander AEV-040, Scribble AEV-041).**
-1. **Edge colours APPROVED** (Wander AEV-040) — the S61 per-surface `cover.mockupEdges` work verified by Evgeny.
-2. **Open-spread BLANK STRIP fixed** (composer-only). Measured root cause: every capture has ~168px of `.spread-pages` container bg (#fafafa) on the RIGHT edge only, so splitting at width/2 landed ~80px right of the true gutter → right page shoved into fold + blank fore-edge band. FIX in `compose-mockup.mjs`: trim uniform container-bg margins, split the REAL content box. Works on existing captures (no re-capture). **Bonus: also fixed S61's `open-11-fp1` map-spread issue for free.**
-3. **Open-spread CORNER OVERSHOOT fixed.** PSD page silhouettes are curved (perspective) but art slots are axis-aligned rectangles → corners spilled multiply art onto the cover. FIX: `half()` clips each art half's alpha to the page silhouette (union of `Page left/right` base + `Left page `/`Right page` multiply layer); art halves now raw RGBA so the clip bakes on `multiply`. Both pages.
-4. **Fold-seam softening DEFERRED** — fold is already subtle; Evgeny: blank strip mattered more, fold "good enough".
-5. **Scribble AEV-041 added** — Evgeny ran captures, Claude composed (22 mockups). All 3 sets regenerated with both fixes. Evgeny: "stunning". Memory `project_mockup_pipeline` updated.
+### ▶ NEXT SESSION (Session 73) — pre-demo for the fellowship
+1. Polish a couple of Papercut template pages.
+2. Create a Papercut mockup + add it to the website (pipeline: `scripts/compose-mockup.mjs` + ag-psd; memory `project_mockup_pipeline`).
+3. Fix a few website UX things before the demo.
+4. One full E2E test before recording.
+5. Record the demo per `docs/naitive-fellowship/walkthrough-script.md`.
 
-### ▶ NEXT (Session 63)
-1. **Lock the website shot list** — which PNGs per template go on which product page — START HERE.
-2. **Wire chosen PNGs** into `assets/images/mockups/` + product pages.
-3. **Commit** the script + data changes (pipeline now proven across all 3 templates). `.claude/settings.local.json` stays out.
-4. **(Side)** Scribble cover family photo reads upside-down — likely EXIF auto-orient missing in the LIVE engine preview (PDF path already `.rotate()`s since S41). Confirm + mirror the fix if so.
-5. **Carried (not mockup):** real-device phone E2E of step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`).
-
-### ⚠ S62 watch-outs
-- **Split now keys off the trimmed content box, not width/2** — relies on the container bg being `#fafafa` (250,250,248), distinct from page white (255). If the engine bg tone changes, revisit.
-- **Art halves are raw RGBA + alpha-clipped to the page silhouette** — keep it, or the corner overshoot returns (a PNG art half would ignore the clip).
-- **Downsample-in-route (S61) is the load lever** — don't remove it; heavy orders won't load in headless.
-- **`cover.mockupEdges` ≠ `cover.sections[].bgColor`** — never overwrite bgColor (it drives the real cover render).
-- **`compose-all` takes a TEMPLATE NAME** (`node compose-all.mjs <order> <template>`); legacy `#hex` = uniform colour.
-- **Captures need Evgeny's staff password**; `compose-all.mjs` is plain Node (Claude can run it).
-- **mockups/<order>/ + sessions/qa-runs/* gitignored** — regenerate offline.
-- **Branch only, NOT pushed. Nothing committed.** `.claude/settings.local.json` left out as usual.
-
-### Previous: Session 61
-**Session 61 (2026-06-19) — WANDER UNBLOCKED + PER-SURFACE COVER EDGE COLOURS.** Wander AEV-040 headless hang SOLVED (root cause = total image payload size; FIX = downsample each GCS photo to ≤1600px in the Node route). Per-surface `cover.mockupEdges {front,spine,back}` added to all 3 data files; `compose-all.mjs` takes a template name. FP1 map-spread diagnosed but unfixed (→ resolved in S62). Read `sessions/2026-06-19-s61.md`.
+### ⚠ Owner to verify (carried from S72)
+- Run a dashboard PDF on **AEV-043** to confirm the renderer reads the EU bucket end-to-end.
+- Check billing the day after: "Download Worldwide Destinations" should be near-zero; today shows a one-time ~€0.2–0.9 migration-copy charge (expected).
+- Old US bucket retained empty as fallback — can be emptied once billing confirms the win.
 
 ---
 
-### Previous: Session 59
+### Previous: Session 71
+**Session 71 (2026-06-23) — chunk-024 PDF generation RE-ARCHITECTED to async after /systematic-debugging found the dashboard "Generate PDF" was failing on a 300s function timeout (the render works — ~6m43s — but the function was synchronously waiting on it). Now: function fires Cloud Run + returns fast; Cloud Run writes progress to Firestore; dashboard shows a live PROGRESS BAR. Also fixed a customer-side crop bug (cover/special photos). Backend (Cloud Run `--cpu 4` + `generatePdf`/`getPdfStatus` functions) DEPLOYED by Evgeny. NOT committed; dashboard NOT yet pushed to main. Evgeny testing overnight — E2E confirmation is the S72 first task.**
 
-**What shipped (working-tree only):**
-- **`qa/capture-spread.mjs` rewritten** → ONE login dumps EVERY interior spread (`spread-<order>-<NN>.png`) + `spread-<order>-manifest.json` (id/label/flags from `window._bookSequence`). Excludes the cover row (it shares `.spread-pages`); strips low-res outline + blank-page label + placement-warn badge.
-- **`scripts/compose-all.mjs` (NEW)** → reads the manifest, composes open-per-spread + closed + back into a clean per-order folder **`mockups/<order>/`** (gitignored). Usage: `cd scripts && node compose-all.mjs <order> [#coverhex]`.
-- **Newborn AEV-039 = 22 mockups, approved.** Closed lighting softened (Highlights 0.5, brightness→1.0); warning icons stripped; **spine-overhang bug fixed on closed AND back** (root cause via `/systematic-debugging`: the `Edge copy`/`Edge ` spine masks are larger than the book → clip the warped spine to the `Book`/`Pages` silhouette alpha; keep the true constant-width quad — do NOT taper it, that squishes the caption). Accepted residual: a few-px sliver at the closed top corner, invisible at display size.
+### What happened this session (S71)
+1. **Customer-side crop fix** (`pages/customer-preview.html`) — drag-to-reposition crop wasn't applying customer-side for **cover + special (FP)** photos. Crop is keyed by photo basename; customer-preview passed full GCS paths for those two (pool was already fixed). Wrapped both in `_baseName()`. See LEARNINGS 2026-06-23.
+2. **chunk-024 root-caused (3 layers):** (a) Cloud Run Compute SA lacked Firestore/GCS roles → granted `datastore.user` + `storage.objectCreator`; (b) `gcsUrlByName.size` log threw in server mode → gated on `photoBufferMap`; (c) **the real bug** — `generatePdf` synchronously awaited a ~7-min render and died at its 300s cap (render itself succeeded; PDF was in GCS; browser saw "Failed to fetch").
+3. **Async redesign** — `generatePdf` = thin trigger (fire Cloud Run, poll Firestore for `status='rendering'`, return 202, timeout 300→60s); new `getPdfStatus` returns progress + signs the URL when done; Cloud Run writes `pdfRender{status,done,total,sizeBytes,gcsPath}` per spread; dashboard polls every 2.5s → **progress bar**. CPU bumped to 4 (cost-neutral for CPU-bound work; avoided the `--no-cpu-throttling` idle-billing trap). 116/116 tests.
 
-**▶ WANDER AEV-040 BLOCKER:** capture fails — `loadOrderIntoEngine` downloads photos with `Promise.all`, so ONE failed fetch aborts the whole order load → `#order-info-panel` never shows (180s timeout). Headless Chromium drops ~2 of the ~37 heavy parallel GCS fetches with `net::ERR_FAILED` (RANDOM photos each run → not corrupt, not auth; a resource-pressure issue; renders fine in Evgeny's real browser). Timeouts↑180s, fetch retry, and concurrency-throttle-to-6 did NOT fix it. Next-session fix order in the s59 log (lower concurrency 2–3 / scale 3→2 / headed mode / browser flags / last resort `Promise.allSettled` in the engine — needs parity mirror).
+### ▶ NEXT SESSION (Session 72)
+1. **TEST PDF creation from the dashboard** (Evgeny testing overnight). Expect progress bar → Preview PDF link. AEV-043 already has a valid preview PDF in GCS from the earlier "failed" run to eyeball. Confirm a fresh run completes + output is correct, then **commit** the 5 changed files (`functions/index.js`, `scripts/export-pdf.js`, `services/pdf-renderer/index.js`, `pages/customer-preview.html`, `pages/staff/dashboard.html`) and **push** so the dashboard reaches live.
+2. **Review GCC costs for 22.06** — egress + chunk-024 render costs; confirm 4-vCPU Cloud Run is as cheap as predicted (~$0.024/render).
+3. **Generate a Papercut mockup + add visuals to the website** (special-pages check, product-page imagery). Pipeline: `scripts/compose-mockup.mjs` + ag-psd (memory `project_mockup_pipeline`).
 
-**Closed book** (`scripts/compose-closed.mjs`) — front cover warps onto the calibrated top-FACE quad (constant `{top:[1641,361],right:[2465,1086],bot:[1104,1620],left:[410,754]}`). NEW: the spine strip (middle 9mm of the wrap, carrying the caption) warps onto a **spine-face quad** calibrated from the `Edge copy` layer alpha extremes — hinge A`[403,746]`/B`[1107,1627]` (== cover near-left edge), C/D extruded `[-4,+77]`. `Edge copy` multiply softened 0.45→0.18 (light depth only). Spine reads cover-navy + caption, flush.
+### ⚠ Watch-outs (S71)
+- **Nothing committed this session** — all 5 files are working-tree only; `.claude/settings.local.json` left out as usual. Dashboard not on live until pushed.
+- **Backend already deployed** (Cloud Run + both functions) — backend-first ordering satisfied.
+- **Async render relies on Cloud Run continuing after the function disconnects** (CPU stays allocated during the active request — why we did NOT use `--no-cpu-throttling`). Fine for a low-volume internal tool; if renders ever stop mid-way, revisit (min-instances / Cloud Tasks).
+- **Cloud Run URL still public** (`--allow-unauthenticated`) — harden before prod (carried from S70).
+- **PowerShell `--only` comma gotcha** when deploying multiple functions — quote the filter (see LEARNINGS).
+- Untracked `assets/mockup example/` — pre-existing; relevant to task 3.
 
-**Back book** (`scripts/compose-back.mjs`) — `back book.psd` = book laid open flat. Wrap warped as **3 pieces** onto 3 quads taken from the PSD's shading-layer alpha shapes: back 200mm → `Back cover` quad (left page), front 200mm → `Cover` (multiply) quad (right page), middle 9mm spine → `Edge ` quad (fold). The `Pages` layer (real page block) shows underneath → folded depth + cover overhang. Engine spine is genuinely **light blue `#c0d5ee`** (sampled), so the light-blue fold is faithful, not a bug.
+### Previous: Session 70
+**Session 70 (2026-06-22) — chunk-024 (server-side PDF) BUILT, REVIEWED, DEPLOYED + Papercut shipped to main. All on `main` + live infra. NOT yet E2E-tested on a real order by Evgeny — that's the first task next session.**
 
-**Open book** (`scripts/compose-mockup.mjs`) — unchanged geometry; added `neutralize()` (rgb→luminance) on `Shadows` + `Back cover` to kill a warm pink wash that appeared once the backdrop went light.
+### What shipped this session
+1. **Papercut template → main + live** (`3d057d6`). Committed all s67/68/69 work (48 SVGs, 16 Source Sans 3 weights, papercut.html, registry across all surfaces, PDF). Then **Xenia re-exported the oversized `FP Toy 05 H Left.svg`** (67 MB → 1 MB — it had an embedded sample raster that blew past Cloudflare's 25 MiB/file limit); replacement committed (`2f485ea`). Cloudflare deploy unblocked.
+2. **chunk-024 — server-side PDF generation, DEPLOYED.** Moves PDF render off the local CLI to a Cloud Run job triggered from the dashboard. Eliminates the GCS photo egress on the PDF leg (the last egress source after chunk-023).
+   - **Cloud Run service** `aevia-pdf-renderer` (`europe-west1`, 4 GB / 2 CPU / 900s). Reads order from Firestore + photos from GCS **in-region**, calls the ported `export-pdf.js`, uploads `{folder}/pdfs/{AEV}_preview.pdf`. Health check 200. URL: `https://aevia-pdf-renderer-677807969667.europe-west1.run.app`.
+   - **`generatePdf` Cloud Function** (deployed, 300s timeout) — staff-auth gated, validates order status, calls the renderer, **signs the PDF URL itself** (the function has `serviceAccountKey.json`; Cloud Run's SA can't sign).
+   - **Dashboard** — "Generate PDF" button per order (new/approved/paid) → becomes "Preview PDF" link + file size.
+   - **`export-pdf.js`** — made importable (CLI guarded by `require.main===module`), `photoBufferMap` injection, `generatePdfFromFirestore()` export. **CLI (`npm run pdf -- AEV-XXX`) unchanged.**
+   - Data source = Firestore (`staffBook*` fields, written by engine **Save**), NOT `book-state.json`/Export — closes the TO-DO #64 footgun. Data-shape audit passed (assignments/sequence/captions/heartCrop/styles all match; specialPhotos derived from manifest).
+   - 116/116 tests. Commits `b294cdb` (build) + `667d3ae` (review fixes) + `001544f` (timeout bump), merged to main + pushed.
 
-**Backdrop** — all three set to `#f0f0f0` (240). Pure white (255) is brighter than the paper (~247–251) and washed out page edges that lack a cover line behind them; off-white keeps every edge crisp while still reading white.
+### ▶ NEXT SESSION (Session 71 — E2E test chunk-024, then harden)
+1. **TEST the dashboard "Generate PDF"** on a real order that has been **Saved in the engine** (e.g. AEV-042). Click → expect a "Preview PDF" link. Compare output to `npm run pdf -- AEV-XXX` (acceptance criterion #2). First click is slow (Cloud Run cold start + photo fetch + render).
+2. **Confirm the egress win** — check billing the day after a PDF run: Cloud Storage egress should be near-zero where a local CLI run would've shown GB-scale.
+3. **Harden the renderer** — it's currently `--allow-unauthenticated` (public URL) for testing. Lock to private + identity token before it's a permanent prod path. See brief `docs/briefs/chunk-024-server-side-pdf.md`.
+4. **Wire print-mode PDF** to the dashboard (only preview is wired today) — easy follow-up.
 
-### ▶ NEXT (Session 60) — unblock Wander, then Scribble, then wire to site
-1. **Unblock Wander AEV-040** (cheapest first): lower fetch concurrency `MAX` 6→2–3 and/or `deviceScaleFactor` 3→2 in `qa/capture-*.mjs`; else headed mode (`headless:false`); else flags `--disable-dev-shm-usage --disable-gpu`; last resort `Promise.allSettled` in `loadOrderIntoEngine` (NEEDS Evgeny OK + customer-preview parity mirror). Then `node compose-all.mjs AEV-040 '#262262'`.
-2. **Scribble** — get order number from Evgeny; cover hex from `scribble-data.js`; same two captures + `compose-all`.
-3. **Lock the website shot list** + wire chosen PNGs into product pages (`assets/images/mockups/`).
-4. **Commit** the S59 script changes once the pipeline is proven across all 3 templates.
-5. **(Cleanup)** delete retired Three.js files (`book-3d-renderer.js`, `book-3d-spec.js`, prototypes, `qa/verify-3d.mjs`, `qa/verify-open.mjs`); KEEP `qa/capture-cover-wrap.mjs` + `qa/capture-spread.mjs` + `scripts/compose-*.mjs`.
-6. **Carried (not mockup):** real-device phone E2E of step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`).
+### ⚠ Watch-outs (chunk-024)
+- **Renderer reads `staffBook*` Firestore fields** — an order must have been **Saved in the engine** (or approved, which copies customer→staff) or the PDF renders empty. Brand-new never-opened orders won't work.
+- **Cloud Run URL is PUBLIC** (`--allow-unauthenticated`). The dashboard path is still protected (dashboard login → `generatePdf` checks `isStaff`), but the raw `…run.app` URL is directly reachable. Harden before prod (item 3 above).
+- **Function signs, renderer doesn't** — Cloud Run's default SA has no private key for v4 signing, so `generatePdf` mints the signed URL via `serviceAccountKey.json`. Don't move signing back into the renderer without granting `iam.serviceAccountTokenCreator`.
+- **Dockerfile lives at REPO ROOT** (not `services/pdf-renderer/`) because `gcloud run deploy --source` only auto-detects a root Dockerfile. Deps install at `/app` so `scripts/export-pdf.js` resolves sharp/pdf-lib. `.dockerignore` keeps the build context lean.
+- **Redeploy the service** after any change to `export-pdf.js`, `services/pdf-renderer/`, or template assets: `gcloud run deploy aevia-pdf-renderer --source <repo> --region europe-west1 --memory 4Gi --cpu 2 --timeout 900 --allow-unauthenticated --project aevia-uploads` (with the `CLOUDSDK_PYTHON` fix — see memory `reference_gcloud_python`).
+- **Function timeout 300s** — it waits synchronously on the render. If a huge book exceeds it, the function errors but the PDF likely still completed in Cloud Run (900s) → check the existing `getPdfUrl`/PDF link.
 
-### ⚠ S59 watch-outs
-- **Capture needs Evgeny's staff password** (live engine login) — Claude can't run captures itself.
-- **Wander AEV-040 BLOCKED** — headless drops ~2 random heavy GCS photo fetches (`ERR_FAILED`); `Promise.all` then aborts the whole load. See s59 log for the fix order.
-- **`mockups/<order>/` + `sessions/qa-runs/*` gitignored** — regenerate offline; `compose-all.mjs` must run with cwd `scripts/`.
-- **Wander `COVER_HEX = #262262`** (navy back/spine), not the cream front `#f2ede3`.
-- **Closed-book top-corner sliver accepted** — inherent PSD-mask disagreement, invisible at display size; don't re-open.
-- **Spine now clipped to the book silhouette** (`Book` for closed, `Pages` for back) on top of the calibrated quad — the real overhang fix.
+### ⚠ Watch-outs (Papercut, carried)
+- **Cover clip shape path** from `<clipPath id="ac">` in `Cover/Artboard 1.svg` — re-extract if Xenia re-exports.
+- **Spine width is 9mm** for all templates (18mm in the cover CSV is the bleed size).
+- **FP1 overlayAbovePhotos:false** — balloons/clouds behind the heart photo is intentional.
+- **heartClipPath is pre-scaled to 600px canvas** (×1.0584 vs SVG viewBox 566.929). Re-extract `<clipPath id="g">` from FP Birthday 02 Right.svg and rescale if re-exported.
+- **Oversized-SVG trap** — Papercut's FP Toy 05 shipped at 67 MB (embedded sample raster) and silently failed Cloudflare. Any re-exported template SVG >25 MiB freezes the whole deploy. Check file sizes before pushing new template art (see memory `project_cloudflare_file_limit`).
+- **FP special slot crop drag** — alwaysOn:true; any new `pool:'special'/'artwork'/'labour'` slot gets drag automatically.
 
-### ⚠ S58 watch-outs
-- **Closed-book top-face AND spine-face quads are calibrated CONSTANTS** tied to the fixed PSD camera angle. If Xenia re-saves `closed book.psd` at a new angle, re-detect both (top face from `psd.canvas` cream extremes; spine from `Edge copy` alpha extremes).
-- **Back-book's 3 quads auto-detect** from the PSD shading-layer alpha → self-adjust on re-save.
-- **Engine spine is light blue `#c0d5ee`**, not navy — faithful in both closed + back.
-- **Backdrop is `#f0f0f0`, not pure white** — deliberate; 255 washes out paper edges.
-- **To refresh:** re-run `qa/capture-cover-wrap.mjs` (Evgeny) → drop fresh `cover-wrap-newborn.png` in `sessions/qa-runs/` → `cd scripts && node compose-closed.mjs && node compose-back.mjs && node compose-mockup.mjs`.
-- **Mockup PSDs/SVGs NOT in git** (46–83MB > Cloudflare 25MiB limit); `assets/mockup example/` gitignored. `sessions/qa-runs/*` gitignored — composites regenerate offline.
-- **Branch only, NOT pushed.** `.claude/settings.local.json` left out as usual.
-- **Three.js retired but files still present** — deletion still a pending cleanup task.
+### ⚠ S66 watch-outs
+- **chunk-023 is now LIVE on main/Cloudflare.** Old orders only get small previews if back-filled — 039/040/041 done; all other legacy orders still fall back to full-res originals on load (by design, safe). Back-fill recipe in LEARNINGS 2026-06-22.
+- **PDF still serves full-res originals by design** — chunk-024 (not yet built) is what removes the PDF egress leg. A PDF export will still show GB-scale egress until then.
+- **`.claude/settings.local.json`** left out of commits as usual. **`assets/mockup example/`** untracked — pre-existing, not this session's work, left alone.
 
----
+### Previous: Session 65
+**Session 65 (2026-06-21) — chunk-023 DEPLOYED (Firebase) + VERIFIED on a real order; 3 small UX fixes committed on branch `egress-web-res-previews` (NOT merged to main, NOT on Cloudflare). Egress verified working on AEV-042.**
 
-### Previous: Session 53
-**Session 53 (2026-06-17) — 3D RENDERER REFINED INTO A FAITHFUL HARDCOVER. Branch `mockup-3d-renderer` (NOT main, NOT pushed). Committed `87777a6`. Worked the S52 refinement queue + Xenia's "looks softcover → make it hardcover" feedback. Closed-book Newborn render now reads as a premium case-bound hardcover; Evgeny approved across this session's passes. Read `sessions/2026-06-17-s53.md`. Next: back-cover / inside-spread views, then generalize to Scribble/Wander, then wire PNGs into website placeholders.**
+Evgeny deployed `generateDerivative` (Firebase) at the start of the session. I verified the web-res pipeline end-to-end on a real Wander order **AEV-042** (52 photos): the bucket has all 52 derivatives (`AEV-042/photos/previews/`, **11.74 MiB** total vs **1.02 GiB** originals — ~87× smaller), and both engines served them on load.
 
-**What shipped this session (committed `87777a6` on the branch):**
-1. **Texture source fixed** — `qa/capture-cover-wrap.mjs` logs into the LIVE engine, loads a Newborn order (AEV-037), screenshots ONLY the `.cover-canvas` element at 3× → exact trim wrap (back|spine|front, no chrome/bleed). Harness loads `sessions/qa-runs/cover-wrap-newborn.png` directly; the `repeat.y` toolbar hack is gone. **Needs the staff password — Evgeny runs it.**
-2. **Hardcover construction** (`book-3d-renderer.js`) — front/back 2.5mm boards overhang an **inset, striated page block**; flat (straight-back) spine. Board + ~3mm "square" sizes derive from `spec.mm` (universal across templates per printhouse spec). Replaces the flat softcover-looking box.
-3. **Edges/spine** — board rims use a solid cover-edge colour sampled GENERICALLY from the wrap (no smeared photo); spine textured from the wrap; spine→cover junction takes the cover colour (no cream sliver); geometry abuts cleanly (no z-fighting).
-4. **Lighting** — GENERIC ambient floor + key + back fill, tuned ~90% colour-faithful across ALL covers (NOT per-template, per Evgeny); soft contact shadow.
-5. **`spec.mm`** added to `book-3d-spec.js` + test (6/6 green). New QA tool `qa/verify-3d.mjs` (headless multi-angle screenshots). Xenia's hardcover refs in `assets/mockup example/`.
+**Committed this session (`9e52d16`, branch `egress-web-res-previews`):**
+1. **Cover photo reposition** — drag-to-reposition inside the cover frame (staff engine, always-on like the heart slot), saved crop applied read-only in customer-preview, baked into PDF via `coverExtract`. Crop keyed by `photo.name`, consistent across all 3 surfaces. Wander cover (no photo) correctly skipped via the `slotDef` guard. 116/116 tests.
+2. **Wander itinerary left-align** — FP1 text panel `halign` center→left, synced in BOTH `Wander_sizing_full.csv` (source of truth) and `wander-data.js`. (Evgeny edited the CSV; I synced the JS — see new CSV-source-of-truth rule, LEARNINGS 2026-06-21 + memory `feedback_csv_source_of_truth`.)
+3. **customer-preview submit-bar fix** — Save/Approve bar disappearing after Preview→Edit. Root cause: bar visibility relied on a one-time inline `display=''` that the resize handler could stomp and never restore. Fix: edit handler re-asserts the inline display; resize desktop-branch now restores submit-bar + preview-controls (was asymmetric).
 
-### ▶ NEXT SESSION (Session 54) — continue the 3D renderer
-1. **Back-cover + inside-spread views** (Evgeny's chosen next step; one of Xenia's refs is an open book). The closed hardcover is done.
-2. **Generalize to Scribble/Wander** — the real test of the GENERIC lighting (a light/off-white cover). Extend `capture-cover-wrap.mjs` to take a template + order number; Evgeny runs the capture once per template.
-3. Then **wire static PNGs into the website placeholders**.
-4. **Open product question (parked):** is 9mm the real book thickness, and how does it scale with page count? Evgeny: "i don't know honestly." Currently thickness = the spine width sent to the printer (9mm) → reads as a slim hardcover. Option to add a presentation-only thickness multiplier if the marketing hero needs more heft (print files untouched).
-5. **Carried (not 3D):** real-device phone E2E of the step-form; Stripe price split (`STRIPE_PRICE_ID_40/_80` real `price_…` + deploy `createCheckoutSession`).
+**Cost verification (the session's main goal):**
+- Evgeny's debugging activity on AEV-042 = ~4 customer loads + 1 staff load, **no PDF**. Each load pulled ~11.74 MiB derivatives, NOT the 1.02 GiB originals.
+- **Estimated egress today ≈ 5 × 11.74 MiB ≈ 59 MiB ≈ €0.006** (vs ~€0.56 without the fix — same repeated-reload-on-big-order pattern that caused the €5.59 spike).
 
-### ⚠ S53 watch-outs
-- **Branch `mockup-3d-renderer`, NOT main, NOT pushed.** Nothing customer-facing changed.
-- **Lighting is GENERIC, not per-template** — ~90% match from one universal setup; do NOT fine-tune ambient/lights per cover. Codified in `book-3d-renderer.js` comments + memory `project_3d_renderer`. Verify colour objectively by sampling rendered navy vs engine `#142a4f`=(20,42,79).
-- **The texture is faithful to its source** — captured `.cover-canvas` navy = (20,43,80) ≈ engine. Fidelity problems live in the capture, not the 3D code.
-- **TDD split:** `book-3d-spec.js` (pure math) unit-tested; `book-3d-renderer.js` (WebGL scene) screenshot-verified only via `qa/verify-3d.mjs` — don't unit-test the render.
-- **Hardcover features are UNIVERSAL** (2.5mm board, ~3mm square, flat spine) — renderer constants scaled by `spec.mm`; only the printed wrap changes per template.
-- **`sessions/qa-runs/` is gitignored** — `cover-wrap-newborn.png` + `3d-*.png` are NOT committed; regenerate via the QA scripts.
-- **Three.js is a CDN (no-build) dependency** per ADR-0005, deliberate exception to CLAUDE.md's "no frameworks".
-- `.claude/settings.local.json` left out of the commit as usual.
+### ▶ NEXT SESSION (Session 66)
+1. **CHECK BILLING (June 22)** — GCS egress lags ~1 day. Expect today's Cloud Storage egress to be **negligible (tens of MB, ~€0.00–0.01)**, NOT GB-scale. That near-zero IS the confirmation the web-res fix works on a live order. GB-scale would mean originals were served → investigate.
+2. **Merge `egress-web-res-previews` → main** once Evgeny is confident (billing confirms + UX fixes eyeballed). Cloudflare auto-deploys main. The function is ALREADY deployed (Firebase), so backend-first ordering is satisfied.
+3. **Eyeball the 3 UX fixes** on a maximized window: cover reposition (needs an order WITH a cover photo — AEV-042 is Wander/no cover), itinerary left-align (load a Wander order), submit-bar Preview→Edit persistence.
+4. **chunk-024 (server-side in-region PDF)** — still the next cost piece (removes the PDF full-res egress leg; needed for prod ops). Brief not yet written.
 
----
+### ⚠ S65 watch-outs
+- **Branch only — NOT merged, NOT on Cloudflare.** The `generateDerivative` FUNCTION is deployed to Firebase; the 3 UX commits are local to the branch. `.claude/settings.local.json` left OUT (as usual).
+- **"Missing Save/Approve buttons" was a RED HERRING / environmental** — Evgeny's Chrome window was 880px tall on an 816px usable screen (overshoot +64px, 112% display scaling), so the bottom-fixed bar sat behind the taskbar. Win+↑ (proper maximize) fixed it. NOT a code bug. The real bug (Preview→Edit disappearance) IS fixed.
+- **CSV source-of-truth:** don't edit `*-data.js` values that originate from a CSV — see LEARNINGS 2026-06-21 + memory `feedback_csv_source_of_truth`.
+- **PDF cover crop is new + untested in print** — `coverExtract` now honours the cover crop; no PDF was run this session, so verify a cover-reposition carries to the PDF when next exporting a template that has a cover photo (Scribble/Newborn).
+- **Untracked `assets/mockup example/`** — pre-existing, not this session's work; left alone.
 
-### Previous: Session 52
-**Session 52 (2026-06-17) — STARTED THE 3D BOOK RENDERER.** Full pre-build chain (/understanding-the-ask → /solutioning → ADR 0005 Three.js, edit-flat/present-in-3D split → /creating-briefs). TDD cycle 1 GREEN (`book-3d-spec.js` pure texture/proportion math). Renderer module + harness (`prototypes/book-3d-render.html`; throwaway `book-3d-spike.html`) built; Newborn render screenshot-verified; Evgeny approved the direction. Foundation committed on branch. Read `sessions/2026-06-17-s52.md`.
+### Previous: Session 64
+**Session 64 (2026-06-21) — GCS EGRESS COST decided + chunk-023 (web-res previews) BUILT + COMMITTED on branch `egress-web-res-previews` (NOT on main, NOT deployed). No production change yet.** Diagnosed the post-trial bill: 99.7% was GCS **egress** (full-res originals re-downloaded on every engine view + every local PDF run), not storage. Verified the real rate from Evgeny's own billing report: **€0.103/GB** (post-trial: €5.62 / 54.53 GiB). Decision in **ADR-0005**: commit to web-res previews (#1) + in-region server-side PDF (#6, chunk-024); defer CDN (#3); park R2 (#7). Built chunk-023 via developer-agent + reviewed (critic-agent passed the decision; I hand-reviewed the code + fixed a deploy bug). 116/116 tests.
+
+**What was done this session:**
+1. **Decision package committed** (`82f4b9d`): `docs/decisions/0005-…`, `docs/briefs/web-res-previews.md` (revised per critic: explicit PoC gate, firm naming rule, export-pdf.js guard), ROADMAP Phase 5 (chunk-023 + chunk-024 + Decisions Log), ARCHITECTURE **Invariant 8** (engines load derivative, PDF loads original) + egress cost note + Open Questions #5/#7 resolved.
+2. **chunk-023 code committed** (`95ed8e4`): custom GCS `onFinalize` function `generateDerivative` (~1600px JPEG derivative per photo at `<folder>/<cat>/previews/<name>`); `getOrder` returns `derivativeUrls` alongside originals; BOTH engines load the derivative with per-photo fallback to original (legacy orders unchanged); `export-pdf.js` untouched. New `functions/derivative-utils.js` (pure path logic, 14 tests).
+3. **Fixed a real deploy bug** the agent introduced: firebase-functions v4 needs `.storage.object().onFinalize(...)`, not `.storage.onFinalize(...)`. `node -e "require('./index.js')"` now loads clean.
+
+### Cost picture (verified @ €0.103/GB) — egress happens on 4 events/order: staff load, customer load, staff export load, PDF
+- **80-page / 4 GB order:** today €1.65 → after chunk-023 **€0.42** (PDF leg remains) → after 023+024 **€0.008**.
+- **Your testing pattern** (10 reloads of a 4 GB order): €4.12 → **€0.03** after 023. This repeated-reload-on-big-orders is what caused the €5.59 spike.
+- chunk-023 fixes the 3 screen loads (~25×). Step 5 (PDF, full-res originals) only drops with **chunk-024** (in-region render).
+
+### ▶ NEXT SESSION (Session 65)
+1. **Deploy chunk-023:** `firebase deploy --only functions:generateDerivative` (backend-first, per the S40 deploy-ordering rule). The fix only makes derivatives for NEW uploads — existing orders fall back to originals (by design).
+2. **Verify on a real order** (deploy is the gate before merging to main → Cloudflare). You CAN'T make a 5–10 photo order (flow blocks incomplete books); smallest valid is a 40-page order. Test is a ONE-TIME load (~€0.03), not the repeated pattern that ran up the bill. **Two test routes:** (a) place a minimum 40-page order → load it → DevTools Network: photo URLs contain `/previews/` and are ~100–300 KB not multi-MB; or (b) zero-new-order — after deploy, re-trigger derivatives on an existing order with a **server-side** GCS copy (`gsutil cp gs://…/AEV-031/photos/ gs://…/AEV-031/photos/` — in-cloud, no egress), then load AEV-031. Claude can run the bucket check `gsutil ls -l …/AEV-XXX/photos/previews/` to confirm derivatives exist.
+3. **Regression checks:** PDF still full-res/sharp (loads originals, no `/previews/`); a legacy order (AEV-031) still renders with clean console (fallback).
+4. **Merge `egress-web-res-previews` → main** only after Evgeny confirms on a real order (Cloudflare auto-deploys main).
+5. **chunk-024 (server-side in-region PDF)** is the next cost piece — removes the PDF egress leg (step 5) + needed for prod ops (staff can't run a Node CLI per order). Brief not yet written.
+
+### ⚠ S64 watch-outs
+- **NOT deployed, branch only.** `firebase deploy` is required for the function to exist; until then the order pipeline is unchanged. `getOrder` already returns `derivativeUrls` once merged, but every value is null until the function runs on new uploads → engines fall back to originals (safe).
+- **Design note (not a bug):** `getOrder` does a GCS `.exists()` check **per photo** (≈100 HEAD calls on a big order, every load). Works, parallelised; possible follow-up = always sign the derivative URL + let `<img>` onerror fall back, dropping the existence checks.
+- **HEIC:** originals are normally JPEG (browser converts HEIC→JPEG before upload). If a `.heic` original sneaks through, `sharp` in the function may fail to decode it → caught → no derivative → fallback to original. Acceptable.
+- **firebase-functions v4.9.0 + Node 20 are deprecation-warned** (Node 20 decommissioned 2026-10-30). Do NOT upgrade as part of this — it's breaking across ALL functions; separate maintenance session before October.
+- **Worktree isolation didn't hold** — the developer-agent wrote into the MAIN working tree (on the egress branch), not its throwaway worktree. No harm; result is committed. Watch for this if spawning isolated agents again.
+- **chunk-024 will make the PDF egress-free but the web-res fix does NOT touch the PDF** — print genuinely needs originals.
 
 ### Previous: Session 51
 **Session 51 (2026-06-17) — STEP-BASED ORDER FORM UX SHIPPED to `main` (`723fac4`, pushed → Cloudflare auto-deploys). The order form's long single-scroll upload stage is now discrete guided steps — Details → Cover → Special pages → Photos — across all templates, data-driven (Special auto-skips with no add-ons), linear-forward/free-backward nav. Independent /reviewer-agent + /design-review both passed. 102/102 tests. Read `sessions/2026-06-17-s51.md`.**
@@ -129,9 +159,9 @@ Scribble/Wander/Newborn product pages now show real mockups: hero (open-flat) + 
 3. **`0a2a5c9` — logo** aligned to `aevia_logo_transparent.png` (was the lone outlier).
 
 ### ▶ NEXT SESSION (Session 52)
-1. **Verify the step-form order flow on LIVE** — customer-facing AND feeds the staff engine. **Real-device phone E2E still outstanding** (Evgeny: not yet done — design-review only covered the 375px viewport).
-2. ~~Newborn end-to-end through the stepped flow~~ — **DONE (S52): Evgeny ran a full Newborn order, all good.**
-3. ~~Carried S50/S48/S49: #74 crop on live; live Newborn E2E; S47 pt→px caption resize on live Scribble/Wander; S49 no-prompt order-load~~ — **DONE (S52): Evgeny confirmed verified on live.**
+1. **Verify the step-form order flow on LIVE** once Cloudflare deploys — it's customer-facing AND feeds the staff engine. Walk Scribble/Wander/Newborn; **real-device phone test** (Evgeny: not yet done — design-review only covered the 375px viewport).
+2. **Newborn end-to-end** still not eyeballed by Evgeny through the new stepped flow (renders headlessly; do a real Intro+Labour order).
+3. **Carried from S50/S48/S49:** verify #74 crop on live; live Newborn first real E2E; S47 pt→px caption resize on live Scribble/Wander; S49 no-prompt order-load.
 4. **Stripe price split** — confirm `STRIPE_PRICE_ID_40/_80` are real `price_…` IDs + `firebase deploy --only functions:createCheckoutSession`. (Evgeny: "maybe later.")
 5. **Next build candidates** (ideas.md / TO-DOS): engine-driven mockup imagery (needs brief, go-3D); customer "my-orders" dashboard (needs brief + ADR); #73 data-driven cover clipShape (blocked on Xenia's assets). The order-phase "preview my data" panel now has a ready seam in the stepped form (Cover/Special `<section class="form-step">`).
 
@@ -139,7 +169,7 @@ Scribble/Wander/Newborn product pages now show real mockups: hero (open-flat) + 
 - **Step engine invariant:** `advance()` is the ONLY extender of `furthestReached`; `goToStep` refuses any `idx > furthestReached`. Preserve or "can't skip past an invalid step" breaks.
 - **Country select gesture guard:** any new programmatic select-set must set `dataset.touched='1'` first or the change is ignored (intentional anti-autofill).
 - **Region-map previews need a visible panel to size right** — redrawn via `refreshCountryMaps()` when the Special step shows; hidden render falls back to 480px.
-- ~~Untracked `qa/review-step-form.mjs`~~ — **deleted (S52): throwaway design-review script, overlapped `qa/verify-step-form.mjs`.**
+- **Untracked `qa/review-step-form.mjs`** left by the design-review agent — review/delete if unwanted.
 
 ### Previous: Session 50
 **Session 50 (2026-06-17) — TO-DO #74 SHIPPED: drag-to-reposition crop for ALL photo slots. Committed + PUSHED (`f005ea9` + `35f3c13`). Hand-verified all 3 surfaces. Read `sessions/2026-06-17-s50.md`.** ⚠ Watch-outs still live: `photo.name` must stay basename-consistent across staff↔customer↔PDF; PDF `coverExtract()` default 50/50 reproduces `fit:cover`/centre exactly; reposition handle disables `slotEl.draggable` while active (exit handlers must restore it).

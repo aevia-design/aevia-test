@@ -45,6 +45,6 @@ npx http-server . -p 8080 -c-1
 ## 🔧 Other
 
 - **GitHub repo:** https://github.com/aevia-design/aevia-test
-- **Product pages (10):** `…/pages/<template>` where `<template>` = scribble, wonder, sprout, bloom, wander, horizon, terrain, radiance, devotion, vows
+- **Product pages (10):** `…/pages/<template>` where `<template>` = scribble, papercut, sprout, bloom, wander, horizon, terrain, radiance, devotion, vows
 - **PDF export (local CLI):** `cd scripts && npm run pdf -- AEV-XXX`
 - **Target production domain:** https://aevia.at (not live yet)

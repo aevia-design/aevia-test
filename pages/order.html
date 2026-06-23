@@ -221,6 +221,7 @@
 <script src="../assets/Template_Scribble/scribble-data.js"></script>
 <script src="../assets/Template_Wander/wander-data.js"></script>
 <script src="../assets/Template_Newborn/newborn-data.js"></script>
+<script src="../assets/Template_Papercut/papercut-data.js"></script>
 <script src="../assets/js/map-render.js"></script>
 </head>
 <body>
@@ -506,6 +507,7 @@ const TEMPLATE_REGISTRY = {
   scribble: () => window.SCRIBBLE_DATA,
   wander:   () => window.WANDER_DATA,
   newborn:  () => window.NEWBORN_DATA,
+  papercut: () => window.PAPERCUT_DATA,
 };
 function templateData() {
   const key = (ORDER.template || '').toLowerCase();

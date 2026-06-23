@@ -153,7 +153,7 @@ Key functions:
 
 **Current state:** Runs locally on Evgenii's machine only. Input is `book-state.json`; photos are downloaded from GCS signed URLs embedded in the state file. No live Firebase call needed.
 
-**Target state:** Both founders need to be able to run PDF export. Options — hosted as a Cloud Run job triggered from the dashboard, or deployed to a small shared VM. This is an open decision (see Open Questions #5). Until resolved, the script must be runnable by either founder from their own machine with Node.js installed.
+**Target state (chunk-024):** Run the render in-region (`europe-west1`) as a Cloud Function / Cloud Run job triggered from the dashboard, so either founder can generate PDFs without local Node — and so photo reads stay **inside** Google's network (no internet egress for the PDF path). Decided in ADR-0005 (primarily an ops requirement; the egress saving is a side benefit). Until built, the script must be runnable by either founder from their own machine with Node.js installed.
 
 ---
 
@@ -232,7 +232,7 @@ PII stored: customer name, email address, uploaded photos. All in GCS + Firestor
 
 - Upload: `content-visibility: auto` on thumbnails; HEIC conversion sequential. Target: 100-photo batch completes without browser stall.
 - Caption AI: < 5s per suggestion. Currently OpenAI GPT-4o mini — provider may change.
-- Preview load: photos served from GCS via signed URLs. No CDN currently — adequate for MVP volume.
+- Preview load: photos served from GCS via signed URLs. **Cost note:** GCS egress (~€0.11/GB to download out) is the dominant running cost — not storage (~€0.02/GB/mo). The fix is web-resolution previews (Invariant 8, chunk-023): screen surfaces load ~1600px derivatives (~150 KB) instead of ~6 MB originals, cutting per-order egress from ~€1.10 to ~€0.02. CDN deferred and R2 migration parked — both unnecessary once derivatives are in place (ADR-0005).
 
 ---
 
@@ -254,6 +254,8 @@ These rules MUST NOT be broken. Violating them requires an explicit architectura
 
 7. **Do not apply EXIF orientation swap.** Modern browsers auto-rotate on `naturalWidth`/`naturalHeight`. The swap was added and removed — do not re-add it.
 
+8. **Screen surfaces load the web derivative; print loads the original.** The staff engine and customer preview MUST load the ~1600px web-resolution derivative of each photo, never the full-res original — loading originals on screen is the dominant GCS egress cost (see ADR-0005). The PDF script (`export-pdf.js`) is the ONLY surface that loads full-res originals (300 DPI print needs them). Any new render or photo-load path must honour this split or it reintroduces the egress (screen) or degrades print quality (PDF). _Pending chunk-023 — until built, all surfaces still load originals._
+
 ---
 
 ## Dependencies
@@ -262,12 +264,12 @@ These rules MUST NOT be broken. Violating them requires an explicit architectura
 |---|---|---|---|
 | Firebase Cloud Functions | Backend logic | `functions/` | Deployed to `europe-west1` |
 | Firestore | Order storage | via Firebase SDK | Project: `aevia-uploads` |
-| GCS | Photo + PDF storage | via `@google-cloud/storage` | Bucket: `aevia-uploads.firebasestorage.app` |
+| GCS | Photo + PDF storage | via `@google-cloud/storage` | Bucket: `aevia-uploads-eu` (`europe-west1`, EU residency — ADR-0006) |
 | `nodemailer` | Email delivery | `functions/upload.js` | Gmail SMTP |
 | OpenAI API | Caption generation | `functions/caption/` | Switchable — abstracted inside `generateCaption` function |
 | `libheif` WASM | HEIC → JPEG in browser | `template-engine.html`, `order.html` | Sequential only |
 | `pdf-lib` + `@pdf-lib/fontkit` | PDF generation | `scripts/export-pdf.js` | No woff2, no variable fonts |
-| `sharp` | Image processing for PDF | `scripts/export-pdf.js` | Local today; target: shared/hosted |
+| `sharp` | Image processing for PDF (+ likely web-derivative generation) | `scripts/export-pdf.js`; chunk-023 may use it server-side | Local today; target: in-region function (chunk-024) |
 | Stripe | Payment | Not yet integrated | Payment Links for MVP |
 | Elanders / SiteFlow API | Print house | Not yet integrated | P2 |
 | Cloudflare Pages | Frontend hosting | Public website + order form | Free tier |
@@ -282,5 +284,6 @@ See also: `PRD.md` → Open Questions section.
 2. **Staff engine public hosting + auth** — ✅ Decided: Cloudflare Access (Zero Trust, OTP to allowed emails). See ADR-0001.
 3. **"Approved for print" flow** — Dashboard button, CLI flag, or both? Resolve before PDF-to-GCS work begins.
 4. **Stripe account** — Not yet set up. Needed before payment step can be built.
-5. **PDF script shared access** — Both founders need to run PDF export. Options: (a) each installs Node.js and runs locally from their machine (simplest near-term), (b) hosted as a Cloud Run job triggered from the dashboard (better long-term). Resolve before the second founder needs to generate PDFs independently.
+5. **PDF script shared access** — ✅ Decided: in-region Cloud Function / Cloud Run job triggered from the dashboard (chunk-024). Also removes PDF-path egress. See ADR-0005.
+7. **Photo resolution / egress cost** — ✅ Decided: web-resolution previews on screen, originals for print only (chunk-023, Invariant 8). CDN deferred, R2 parked. See ADR-0005.
 6. **PDF-to-GCS** — After generation, should the script auto-upload to GCS? Signed URL returned to staff for QA? Linked to question 5.

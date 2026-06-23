@@ -148,7 +148,7 @@ exports.getOrder = functions
 
       const { Storage } = require('@google-cloud/storage');
       const storage  = new Storage({ keyFilename: './serviceAccountKey.json' });
-      const bucket   = storage.bucket('aevia-uploads.firebasestorage.app');
+      const bucket   = storage.bucket('aevia-uploads-eu');
       const expires  = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
       async function signedReadUrl(storedName) {
@@ -157,12 +157,45 @@ exports.getOrder = functions
         return url;
       }
 
+      // ── Chunk-023: Derive derivative URLs (web-resolution for screen rendering) ──
+      // For each original, derive the derivative path and check if it exists in GCS.
+      // If yes, return signed URL for derivative. If no (legacy orders), return null
+      // so engines fallback to the original.
+      const { deriveDerivativePath } = require('./derivative-utils');
+
+      async function signedDerivativeUrl(originalStoredName) {
+        if (!originalStoredName) return null;
+        const derivativePath = deriveDerivativePath(originalStoredName);
+        if (!derivativePath) return null;
+        try {
+          // Check if derivative exists (GCS file.exists() is fast, uses head request)
+          const [exists] = await bucket.file(derivativePath).exists();
+          if (!exists) return null;
+          // Derivative exists — sign and return its URL
+          const [url] = await bucket.file(derivativePath).getSignedUrl({ action: 'read', version: 'v4', expires });
+          return url;
+        } catch (err) {
+          console.warn(`Error checking derivative for ${originalStoredName}:`, err.message);
+          return null; // Graceful fallback if derivative check fails
+        }
+      }
+
       const signedUrls = { cover: null, special: {}, pool: [] };
+      const derivativeUrls = { cover: null, special: {}, pool: [] };
+
+      // Originals (for PDF export — chunk-023 does not modify this path)
       signedUrls.cover = await signedReadUrl(manifest.cover);
       for (const [slug, paths] of Object.entries(manifest.special || {})) {
         signedUrls.special[slug] = await Promise.all((Array.isArray(paths) ? paths : [paths]).map(p => signedReadUrl(p)));
       }
       signedUrls.pool = await Promise.all((manifest.pool || []).map(p => signedReadUrl(p)));
+
+      // Derivatives (for engine rendering — chunk-023, with fallback to originals)
+      derivativeUrls.cover = await signedDerivativeUrl(manifest.cover);
+      for (const [slug, paths] of Object.entries(manifest.special || {})) {
+        derivativeUrls.special[slug] = await Promise.all((Array.isArray(paths) ? paths : [paths]).map(p => signedDerivativeUrl(p)));
+      }
+      derivativeUrls.pool = await Promise.all((manifest.pool || []).map(p => signedDerivativeUrl(p)));
 
       return res.status(200).json({
         orderNumber:          order.orderNumber,
@@ -189,6 +222,7 @@ exports.getOrder = functions
         customerCaptionStyles:      order.customerCaptionStyles      || null,
         customerCoverCaptionStyles: order.customerCoverCaptionStyles || null,
         signedUrls,
+        derivativeUrls, // chunk-023: web-resolution URLs for engine rendering (fallback to signedUrls)
         storedNames: {
           cover:            manifest.cover            || null,
           special:          manifest.special          || {},
@@ -385,7 +419,7 @@ exports.saveBookState = functions
 
       const { Storage } = require('@google-cloud/storage');
       const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
-      const bucket = storage.bucket('aevia-uploads.firebasestorage.app');
+      const bucket = storage.bucket('aevia-uploads-eu');
       const gcsPath = `${folderName}/book-state.json`;
       const jsonString = JSON.stringify(bookState, null, 2);
 
@@ -394,6 +428,133 @@ exports.saveBookState = functions
       return res.status(200).json({ success: true, gcsPath });
     } catch (err) {
       console.error('saveBookState error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+// ── Generate PDF (chunk-024) ─────────────────────────────────────────────────
+// Staff-triggered from the dashboard. Delegates to the Cloud Run pdf-renderer
+// service which reads photos from GCS in-region (no egress) and renders the PDF.
+// The service URL is configured via the PDF_RENDERER_URL environment variable.
+// generatePdf is a thin TRIGGER, not a synchronous waiter. The render takes
+// 3–13 min depending on book size — far longer than a Cloud Function can stay
+// alive — so we fire the Cloud Run renderer, confirm it has started (by polling
+// the pdfRender.status it writes to Firestore, which covers cold starts), then
+// return immediately. The dashboard polls getPdfStatus for live progress + the
+// final signed URL. Cloud Run keeps rendering after this function disconnects.
+exports.generatePdf = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 60, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (!(await isStaff(req))) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+
+    const rendererUrl = process.env.PDF_RENDERER_URL;
+    if (!rendererUrl) return res.status(500).json({ error: 'PDF_RENDERER_URL not configured' });
+
+    try {
+      // Verify order exists and has valid status
+      const db = admin.firestore();
+      const docRef = db.collection('orders').doc(orderNumber);
+      const doc = await docRef.get();
+      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+      const order = doc.data();
+      if (!['approved', 'paid', 'new'].includes(order.status)) {
+        return res.status(400).json({ error: `Order status '${order.status}' is not eligible for PDF generation` });
+      }
+
+      // Mark queued so the dashboard sees movement instantly, even before Cloud Run
+      // (possibly cold-starting) writes its first 'rendering' status.
+      await docRef.update({ pdfRender: { status: 'starting', updatedAt: new Date() } });
+
+      // Fire the renderer. We deliberately do NOT await it to completion — Cloud Run
+      // continues server-side after we disconnect. .catch swallows the expected
+      // connection drop when this function returns and freezes.
+      fetch(`${rendererUrl}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderNumber }),
+      }).catch(() => {});
+
+      // Confirm the render actually started (Cloud Run sets status='rendering' first
+      // thing). Poll up to ~45s to absorb a cold start, then return.
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      const deadline = Date.now() + 45000;
+      while (Date.now() < deadline) {
+        await sleep(1500);
+        const pr = (await docRef.get()).data().pdfRender || {};
+        if (pr.status === 'error') return res.status(500).json({ error: pr.error || 'Render failed to start' });
+        if (pr.status === 'rendering' || pr.status === 'done') {
+          return res.status(202).json({ started: true });
+        }
+      }
+      return res.status(504).json({ error: 'Renderer did not start in time — try again' });
+    } catch (err) {
+      console.error('generatePdf error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+// ── Get PDF render status (chunk-024, polling) ───────────────────────────────
+// The dashboard polls this for the progress bar. Returns the order's pdfRender
+// field; when status is 'done', also mints the signed preview URL (the renderer
+// can't sign — no private key; this function has serviceAccountKey.json).
+exports.getPdfStatus = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (!(await isStaff(req))) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+
+    try {
+      const db = admin.firestore();
+      const doc = await db.collection('orders').doc(orderNumber).get();
+      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+      const order = doc.data();
+      const pr = order.pdfRender || { status: 'none' };
+
+      const out = {
+        status:    pr.status || 'none',
+        done:      pr.done    || 0,
+        total:     pr.total   || 0,
+        sizeBytes: pr.sizeBytes || 0,
+        error:     pr.error   || null,
+      };
+
+      if (pr.status === 'done') {
+        const folderName = order.folderName;
+        const gcsPath = pr.gcsPath || `${folderName}/pdfs/${orderNumber}_preview.pdf`;
+        const { Storage } = require('@google-cloud/storage');
+        const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
+        const bucket  = storage.bucket('aevia-uploads-eu');
+        const expires = new Date(Date.now() + 60 * 60 * 1000);
+        const [url] = await bucket.file(gcsPath).getSignedUrl({ action: 'read', version: 'v4', expires });
+        out.previewUrl = url;
+      }
+
+      return res.status(200).json(out);
+    } catch (err) {
+      console.error('getPdfStatus error:', err);
       return res.status(500).json({ error: err.message });
     }
   });
@@ -674,7 +835,7 @@ exports.getPdfUrl = functions
 
       const { Storage } = require('@google-cloud/storage');
       const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
-      const bucket = storage.bucket('aevia-uploads.firebasestorage.app');
+      const bucket = storage.bucket('aevia-uploads-eu');
       const gcsPath = `${folderName}/pdfs/${orderNumber}_${type}.pdf`;
 
       // Check if file exists
@@ -745,5 +906,79 @@ exports.markSentToPrint = functions
     } catch (err) {
       console.error('markSentToPrint error:', err);
       return res.status(500).json({ error: err.message });
+    }
+  });
+
+// ── Generate web-resolution photo derivatives (chunk-023) ────────────────────
+// GCS Storage trigger: onFinalize for all files in the bucket.
+// When an original photo is uploaded, generates a ~1600px long-edge JPEG derivative.
+// Skips files already under a 'previews/' path (avoid infinite recursion).
+// Skips non-image objects (avoid crashes on text/JSON/PDF).
+//
+// Derivative spec: ~1600px long edge, JPEG quality ~80 (screen-only, not print).
+// Naming: original `<folder>/<category>/<name>` → derivative `<folder>/<category>/previews/<name>`
+// This allows getOrder to derive the derivative URL from the original's storedName path.
+const { deriveDerivativePath, isDerivativePath, isImageFile } = require('./derivative-utils');
+
+exports.generateDerivative = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 120, memory: '1GB' })
+  .storage.bucket('aevia-uploads-eu').object().onFinalize(async (object, context) => {
+    const storagePath = object.name; // Full path in GCS
+    const bucketName = object.bucket;
+
+    // Guard 1: Skip objects already under a 'previews/' path (avoid infinite recursion)
+    if (isDerivativePath(storagePath)) {
+      console.log(`Skipping derivative path: ${storagePath}`);
+      return;
+    }
+
+    // Guard 2: Skip non-image objects (avoid crashes when sharp decodes them)
+    if (!isImageFile(storagePath)) {
+      console.log(`Skipping non-image file: ${storagePath}`);
+      return;
+    }
+
+    try {
+      const sharp = require('sharp');
+      const { Storage } = require('@google-cloud/storage');
+      const storage = new Storage();
+      const bucket = storage.bucket(bucketName);
+
+      // Download the original photo
+      const originalFile = bucket.file(storagePath);
+      const [originalBuffer] = await originalFile.download();
+
+      // Generate web-resolution derivative (~1600px long edge, JPEG quality 80)
+      const derivativeBuffer = await sharp(originalBuffer)
+        .resize(1600, 1600, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .jpeg({ quality: 80, progressive: true })
+        .toBuffer();
+
+      // Derive the destination path from the original (pure function, no Firestore)
+      const derivativePath = deriveDerivativePath(storagePath);
+      if (!derivativePath) {
+        console.error(`Could not derive derivative path for: ${storagePath}`);
+        return;
+      }
+
+      // Upload the derivative to GCS
+      const derivativeFile = bucket.file(derivativePath);
+      await derivativeFile.save(derivativeBuffer, {
+        contentType: 'image/jpeg',
+        metadata: {
+          cacheControl: 'public, max-age=31536000', // 1 year (content-hash is the version)
+        },
+      });
+
+      const sizeKB = Math.round(derivativeBuffer.length / 1024);
+      console.log(`Generated derivative: ${derivativePath} (${sizeKB} KB)`);
+    } catch (err) {
+      console.error(`Error generating derivative for ${storagePath}:`, err);
+      // Don't re-throw — log and continue so the function doesn't fail completely
+      // (subsequent retries would cause duplicate derivatives)
     }
   });

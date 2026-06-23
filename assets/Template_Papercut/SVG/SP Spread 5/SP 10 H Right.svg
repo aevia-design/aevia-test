@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 566.929 566.929">
+  <defs>
+    <clipPath id="d">
+      <rect id="e" data-name="&amp;lt;Clipping Path&amp;gt;" x="-8.504" y="-8.504" width="583.937" height="583.937" fill="none"/>
+    </clipPath>
+    <filter id="f" data-name="drop-shadow-1" x="110.924" y="90.661" width="101.52" height="48.96" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="g" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="g" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="h" data-name="drop-shadow-2" x="127.244" y="43.141" width="86.88" height="86.4" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="i" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="i" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="b" data-name="SP 10 H Right">
+    <g id="c" data-name="Design 08 Right">
+      <g clip-path="url(#d)">
+        <g filter="url(#f)">
+          <path d="M119.85,100.461c-1.974,1.008-4.643,3.263-4.643,3.263,0,0-3.042,4.453-3.047,7.679-.004,3.295,3.156,7.824,3.156,7.824l4.232,5.684,12.769,6.762,14.348,3.397,30.064-1.322s6.982,1.962,11.568,2.594c4.585.632,11.834.633,11.834.633,0,0,10.475-7.43,9.725-16.258,0,0-5.445-10.591-11.844-13.357-3.872-1.673-10.682-1.6-10.682-1.6l-11.827,1.788s.338-8.467-.328-9.247c-.666-.781-10.669-7.739-22.406-6.199l-4.277.821-5.153,3.584s-3.89,4.312-4.827,4.054c-8.592-2.359-12.174-3.415-18.663-.1Z" fill="#79ba9b"/>
+        </g>
+        <g filter="url(#h)">
+          <polygon points="140.852 75.315 135.394 110.25 191.143 126.959 201.662 87.504 211.557 88.13 199.428 69.468 202.267 58.821 194.647 50.92 191.516 62.663 176.12 44.303 128.483 72.017 140.852 75.315" fill="#914c77"/>
+          <polygon points="150.727 94.885 156.268 79.761 164.159 80.355 161.373 97.724 150.727 94.885" fill="#e7c979"/>
+          <polygon points="178.752 102.357 181.476 86.482 174.336 83.069 169.828 99.978 178.752 102.357" fill="#e7c979"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

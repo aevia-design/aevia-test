@@ -16,7 +16,7 @@ const pages = [
   ['home', `${LOCAL}/home.html`],
   // All 10 product pages
   ['product-scribble', `${LOCAL}/scribble.html`],
-  ['product-wonder', `${LOCAL}/wonder.html`],
+  ['product-papercut', `${LOCAL}/papercut.html`],
   ['product-sprout', `${LOCAL}/sprout.html`],
   ['product-bloom', `${LOCAL}/bloom.html`],
   ['product-wander', `${LOCAL}/wander.html`],
