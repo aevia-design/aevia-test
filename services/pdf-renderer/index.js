@@ -7,7 +7,7 @@ const { Storage }    = require('@google-cloud/storage');
 const { generatePdfFromFirestore } = require('../../scripts/export-pdf.js');
 
 const PORT        = process.env.PORT || 8080;
-const BUCKET_NAME = process.env.GCS_BUCKET || 'aevia-uploads.firebasestorage.app';
+const BUCKET_NAME = process.env.GCS_BUCKET || 'aevia-uploads-eu';
 const PROJECT_ID  = process.env.GOOGLE_CLOUD_PROJECT || 'aevia-uploads';
 
 const db      = new Firestore({ projectId: PROJECT_ID });

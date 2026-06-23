@@ -1095,7 +1095,7 @@ async function fetchBookStateFromGCS() {
   if (!orderNumber || state) return;  // Already loaded or not in --order mode
   const { Storage } = require('@google-cloud/storage');
   const storage = new Storage({ keyFilename: path.join(__dirname, '..', 'functions', 'serviceAccountKey.json') });
-  const bucket = storage.bucket('aevia-uploads.firebasestorage.app');
+  const bucket = storage.bucket('aevia-uploads-eu');
   const bookStateFile = bucket.file(`${folderName}/book-state.json`);
   try {
     const [content] = await bookStateFile.download();
@@ -1358,7 +1358,7 @@ async function uploadAndSignPdf(fileBytes, gcsPath, label) {
   try {
     const { Storage } = require('@google-cloud/storage');
     const storage = new Storage({ keyFilename: path.join(__dirname, '..', 'functions', 'serviceAccountKey.json') });
-    const bucket = storage.bucket('aevia-uploads.firebasestorage.app');
+    const bucket = storage.bucket('aevia-uploads-eu');
 
     // Upload straight from the in-memory bytes — no local file is kept in --order mode.
     await bucket.file(gcsPath).save(fileBytes, { contentType: 'application/pdf' });

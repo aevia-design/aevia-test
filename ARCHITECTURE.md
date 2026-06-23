@@ -264,7 +264,7 @@ These rules MUST NOT be broken. Violating them requires an explicit architectura
 |---|---|---|---|
 | Firebase Cloud Functions | Backend logic | `functions/` | Deployed to `europe-west1` |
 | Firestore | Order storage | via Firebase SDK | Project: `aevia-uploads` |
-| GCS | Photo + PDF storage | via `@google-cloud/storage` | Bucket: `aevia-uploads.firebasestorage.app` |
+| GCS | Photo + PDF storage | via `@google-cloud/storage` | Bucket: `aevia-uploads-eu` (`europe-west1`, EU residency — ADR-0006) |
 | `nodemailer` | Email delivery | `functions/upload.js` | Gmail SMTP |
 | OpenAI API | Caption generation | `functions/caption/` | Switchable — abstracted inside `generateCaption` function |
 | `libheif` WASM | HEIC → JPEG in browser | `template-engine.html`, `order.html` | Sequential only |

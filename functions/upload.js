@@ -7,7 +7,7 @@ const nodemailer = require('nodemailer');
 const admin = require('firebase-admin');
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-const BUCKET_NAME = 'aevia-uploads.firebasestorage.app';
+const BUCKET_NAME = 'aevia-uploads-eu';
 const MIN_UPLOAD_SLOTS = 60;
 
 // Storage client using your service account key

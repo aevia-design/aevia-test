@@ -23,7 +23,7 @@ const storage = new Storage({
   keyFilename: path.join(__dirname, "../serviceAccountKey.json"),
 });
 
-const BUCKET = "aevia-uploads.firebasestorage.app";
+const BUCKET = "aevia-uploads-eu";
 
 async function run() {
   const [url] = await storage.bucket(BUCKET).file(filePath).getSignedUrl({

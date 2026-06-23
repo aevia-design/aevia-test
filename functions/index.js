@@ -148,7 +148,7 @@ exports.getOrder = functions
 
       const { Storage } = require('@google-cloud/storage');
       const storage  = new Storage({ keyFilename: './serviceAccountKey.json' });
-      const bucket   = storage.bucket('aevia-uploads.firebasestorage.app');
+      const bucket   = storage.bucket('aevia-uploads-eu');
       const expires  = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
       async function signedReadUrl(storedName) {
@@ -419,7 +419,7 @@ exports.saveBookState = functions
 
       const { Storage } = require('@google-cloud/storage');
       const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
-      const bucket = storage.bucket('aevia-uploads.firebasestorage.app');
+      const bucket = storage.bucket('aevia-uploads-eu');
       const gcsPath = `${folderName}/book-state.json`;
       const jsonString = JSON.stringify(bookState, null, 2);
 
@@ -546,7 +546,7 @@ exports.getPdfStatus = functions
         const gcsPath = pr.gcsPath || `${folderName}/pdfs/${orderNumber}_preview.pdf`;
         const { Storage } = require('@google-cloud/storage');
         const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
-        const bucket  = storage.bucket('aevia-uploads.firebasestorage.app');
+        const bucket  = storage.bucket('aevia-uploads-eu');
         const expires = new Date(Date.now() + 60 * 60 * 1000);
         const [url] = await bucket.file(gcsPath).getSignedUrl({ action: 'read', version: 'v4', expires });
         out.previewUrl = url;
@@ -835,7 +835,7 @@ exports.getPdfUrl = functions
 
       const { Storage } = require('@google-cloud/storage');
       const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
-      const bucket = storage.bucket('aevia-uploads.firebasestorage.app');
+      const bucket = storage.bucket('aevia-uploads-eu');
       const gcsPath = `${folderName}/pdfs/${orderNumber}_${type}.pdf`;
 
       // Check if file exists
@@ -923,7 +923,7 @@ const { deriveDerivativePath, isDerivativePath, isImageFile } = require('./deriv
 exports.generateDerivative = functions
   .region('europe-west1')
   .runWith({ timeoutSeconds: 120, memory: '1GB' })
-  .storage.object().onFinalize(async (object, context) => {
+  .storage.bucket('aevia-uploads-eu').object().onFinalize(async (object, context) => {
     const storagePath = object.name; // Full path in GCS
     const bucketName = object.bucket;
 
