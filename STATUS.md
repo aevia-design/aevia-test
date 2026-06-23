@@ -1,7 +1,45 @@
 # Session Status
-_Last updated: 2026-06-22 (session 70)_
+_Last updated: 2026-06-23 (session 72)_
 
 ## Status
+**Session 72 (2026-06-23) — Two threads. (1) First pass on the nAItive fellowship application: decided the "one concrete thing" = a live, end-to-end automated photo-book production system built solo by a non-engineer via AI orchestration; captured the plan + a demo-video script in `docs/naitive-fellowship/`. (2) Shipped the chunk-024 async dashboard PDF to live (`24d2ead`), then MIGRATED ALL PHOTO STORAGE TO THE EU (`8f5171d`, ADR-0006): the bucket was in US-WEST1 while everything else is EU, causing cross-region egress. Created `aevia-uploads-eu` (europe-west1), copied 9.22 GiB, repointed all code, re-bound the generateDerivative trigger (verified firing), redeployed 17 functions + the renderer. Full EU data residency + in-region PDF reads now free. Added a cost-awareness rule to CLAUDE.md. TWO live checks still owed by owner: a dashboard PDF run on AEV-043, and tomorrow's billing (expect near-zero egress; one-time ~€0.2–0.9 from the migration copy). NEXT: Papercut polish → mockup on website → website UX → E2E → record demo. Full detail in `sessions/2026-06-23-s72.md`.**
+
+### ▶ NEXT SESSION (Session 73) — pre-demo for the fellowship
+1. Polish a couple of Papercut template pages.
+2. Create a Papercut mockup + add it to the website (pipeline: `scripts/compose-mockup.mjs` + ag-psd; memory `project_mockup_pipeline`).
+3. Fix a few website UX things before the demo.
+4. One full E2E test before recording.
+5. Record the demo per `docs/naitive-fellowship/walkthrough-script.md`.
+
+### ⚠ Owner to verify (carried from S72)
+- Run a dashboard PDF on **AEV-043** to confirm the renderer reads the EU bucket end-to-end.
+- Check billing the day after: "Download Worldwide Destinations" should be near-zero; today shows a one-time ~€0.2–0.9 migration-copy charge (expected).
+- Old US bucket retained empty as fallback — can be emptied once billing confirms the win.
+
+---
+
+### Previous: Session 71
+**Session 71 (2026-06-23) — chunk-024 PDF generation RE-ARCHITECTED to async after /systematic-debugging found the dashboard "Generate PDF" was failing on a 300s function timeout (the render works — ~6m43s — but the function was synchronously waiting on it). Now: function fires Cloud Run + returns fast; Cloud Run writes progress to Firestore; dashboard shows a live PROGRESS BAR. Also fixed a customer-side crop bug (cover/special photos). Backend (Cloud Run `--cpu 4` + `generatePdf`/`getPdfStatus` functions) DEPLOYED by Evgeny. NOT committed; dashboard NOT yet pushed to main. Evgeny testing overnight — E2E confirmation is the S72 first task.**
+
+### What happened this session (S71)
+1. **Customer-side crop fix** (`pages/customer-preview.html`) — drag-to-reposition crop wasn't applying customer-side for **cover + special (FP)** photos. Crop is keyed by photo basename; customer-preview passed full GCS paths for those two (pool was already fixed). Wrapped both in `_baseName()`. See LEARNINGS 2026-06-23.
+2. **chunk-024 root-caused (3 layers):** (a) Cloud Run Compute SA lacked Firestore/GCS roles → granted `datastore.user` + `storage.objectCreator`; (b) `gcsUrlByName.size` log threw in server mode → gated on `photoBufferMap`; (c) **the real bug** — `generatePdf` synchronously awaited a ~7-min render and died at its 300s cap (render itself succeeded; PDF was in GCS; browser saw "Failed to fetch").
+3. **Async redesign** — `generatePdf` = thin trigger (fire Cloud Run, poll Firestore for `status='rendering'`, return 202, timeout 300→60s); new `getPdfStatus` returns progress + signs the URL when done; Cloud Run writes `pdfRender{status,done,total,sizeBytes,gcsPath}` per spread; dashboard polls every 2.5s → **progress bar**. CPU bumped to 4 (cost-neutral for CPU-bound work; avoided the `--no-cpu-throttling` idle-billing trap). 116/116 tests.
+
+### ▶ NEXT SESSION (Session 72)
+1. **TEST PDF creation from the dashboard** (Evgeny testing overnight). Expect progress bar → Preview PDF link. AEV-043 already has a valid preview PDF in GCS from the earlier "failed" run to eyeball. Confirm a fresh run completes + output is correct, then **commit** the 5 changed files (`functions/index.js`, `scripts/export-pdf.js`, `services/pdf-renderer/index.js`, `pages/customer-preview.html`, `pages/staff/dashboard.html`) and **push** so the dashboard reaches live.
+2. **Review GCC costs for 22.06** — egress + chunk-024 render costs; confirm 4-vCPU Cloud Run is as cheap as predicted (~$0.024/render).
+3. **Generate a Papercut mockup + add visuals to the website** (special-pages check, product-page imagery). Pipeline: `scripts/compose-mockup.mjs` + ag-psd (memory `project_mockup_pipeline`).
+
+### ⚠ Watch-outs (S71)
+- **Nothing committed this session** — all 5 files are working-tree only; `.claude/settings.local.json` left out as usual. Dashboard not on live until pushed.
+- **Backend already deployed** (Cloud Run + both functions) — backend-first ordering satisfied.
+- **Async render relies on Cloud Run continuing after the function disconnects** (CPU stays allocated during the active request — why we did NOT use `--no-cpu-throttling`). Fine for a low-volume internal tool; if renders ever stop mid-way, revisit (min-instances / Cloud Tasks).
+- **Cloud Run URL still public** (`--allow-unauthenticated`) — harden before prod (carried from S70).
+- **PowerShell `--only` comma gotcha** when deploying multiple functions — quote the filter (see LEARNINGS).
+- Untracked `assets/mockup example/` — pre-existing; relevant to task 3.
+
+### Previous: Session 70
 **Session 70 (2026-06-22) — chunk-024 (server-side PDF) BUILT, REVIEWED, DEPLOYED + Papercut shipped to main. All on `main` + live infra. NOT yet E2E-tested on a real order by Evgeny — that's the first task next session.**
 
 ### What shipped this session
