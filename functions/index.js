@@ -982,3 +982,69 @@ exports.generateDerivative = functions
       // (subsequent retries would cause duplicate derivatives)
     }
   });
+
+// ── Artist application (Our Artists page "Work with us" form) ────────────────
+// Accepts JSON { name, email, work, note } and emails it to Xenia.
+// Public form → CORS open, no auth. Email-only, no storage, no infra cost.
+// NOTE: recipient hardcoded to xenia@aevia.at for now — fix later if it changes.
+exports.submitArtistApplication = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    try {
+      const { name, email, work, note } = req.body || {};
+
+      // Server-side validation: name, valid email, at least one work link.
+      const nameTrim = (name || '').trim();
+      const emailTrim = (email || '').trim();
+      const workTrim = (work || '').trim();
+      const noteTrim = (note || '').trim();
+
+      if (!nameTrim) return res.status(400).json({ error: 'Please tell us your name.' });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
+        return res.status(400).json({ error: 'Please enter a valid email address.' });
+      }
+      if (!workTrim) return res.status(400).json({ error: 'Please share a link to your work.' });
+
+      const esc = (s) => String(s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+
+      await transporter.sendMail({
+        from: `"Aevia Artists" <${process.env.EMAIL_USER}>`,
+        to: 'xenia@aevia.at',
+        replyTo: emailTrim,
+        subject: `New artist application — ${nameTrim}`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;color:#333">
+            <h2 style="border-bottom:2px solid #eee;padding-bottom:12px">New artist application</h2>
+            <p style="margin:16px 0"><strong>Name:</strong> ${esc(nameTrim)}</p>
+            <p style="margin:16px 0"><strong>Email:</strong> ${esc(emailTrim)}</p>
+            <p style="margin:16px 0"><strong>Work:</strong> ${esc(workTrim)}</p>
+            ${noteTrim ? `<p style="margin:16px 0"><strong>About:</strong><br>${esc(noteTrim).replace(/\n/g, '<br>')}</p>` : ''}
+            <p style="color:#999;font-size:12px;margin-top:24px">
+              Received ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/Vienna' })}
+            </p>
+          </div>
+        `,
+      });
+
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('submitArtistApplication error:', err);
+      return res.status(500).json({ error: 'Something went wrong sending your message. Please try again.' });
+    }
+  });

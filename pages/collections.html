@@ -133,6 +133,12 @@
       font-size: 13px; color: var(--muted); line-height: 1.65;
       margin-bottom: 20px; flex: 1;
     }
+    .template-collab {
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); margin: -2px 0 12px;
+    }
+    .template-collab a { color: var(--accent-dk); }
+    .template-collab a:hover { text-decoration: underline; }
 
     /* Page toggle chips */
     .template-chips {
@@ -189,6 +195,7 @@
     .foot-col a:hover { color: var(--text); }
     .foot-base { max-width: 1160px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
   </style>
+  <link rel="stylesheet" href="../assets/css/type.css">
   <link rel="stylesheet" href="../assets/css/mobile.css">
 </head>
 <body>
@@ -305,6 +312,7 @@
       </div>
       <div class="template-body">
         <div class="template-name">Wander</div>
+        <div class="template-collab">In collaboration with <a href="our-artists.html#kevin-lucbert">Kevin Lucbert</a></div>
         <div class="template-desc">Clean and expansive. For road trips, long journeys, and the landscapes that stay with you.</div>
         <div class="template-chips">
           <button class="chip on" onclick="pickPage(this,'wander',40)">40 pages</button>
@@ -453,6 +461,7 @@
     <div class="foot-col">
       <h5>Company</h5>
       <a href="about.html">Our story</a>
+      <a href="our-artists.html">Our artists</a>
       <a href="home.html#how">How it works</a>
       <a href="#">Quality promise</a>
     </div>

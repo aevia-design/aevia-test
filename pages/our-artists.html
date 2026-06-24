@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Our Artists — Aevia</title>
+  <style>
+    :root{--bg:#fafaf8;--surface:#f3efe9;--border:#e4dfd8;--text:#1a1a1a;--muted:#7d7570;--accent-dk:#a8895f;--white:#ffffff;--serif:Georgia,'Times New Roman',serif;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}html{scroll-behavior:smooth;}body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;}img{display:block;max-width:100%;}button{cursor:pointer;border:none;background:none;font:inherit;}a{color:inherit;text-decoration:none;}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 56px;background:rgba(250,250,248,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+    .nav-logo img{height:28px;width:auto;display:block;}.nav-logo-text{font-family:var(--serif);font-size:18px;}.nav-links{display:flex;gap:32px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}.nav-links a{transition:color 0.15s;}.nav-links a:hover{color:var(--text);}
+    .nav-cta{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;border:1px solid var(--text);padding:8px 20px;border-radius:100px;transition:background 0.15s,color 0.15s;}.nav-cta:hover{background:var(--text);color:var(--white);}
+
+    .wrap{max-width:1160px;margin:0 auto;padding:0 56px;}
+    .hero{padding:140px 0 64px;border-bottom:1px solid var(--border);}
+    .hero .eyebrow{font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent-dk);margin-bottom:18px;}
+    .hero h1{font-family:var(--serif);font-weight:400;letter-spacing:-0.015em;line-height:1.08;font-size:52px;margin-bottom:26px;max-width:640px;}
+    .hero p{font-size:18px;line-height:1.75;color:var(--muted);max-width:620px;text-align:justify;hyphens:auto;}
+    .hero p+p{margin-top:16px;}
+
+    .roster{padding:72px 0;}
+    .roster-label{font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:40px;}
+    .artist{display:grid;grid-template-columns:300px 1fr;gap:56px;align-items:start;padding-bottom:64px;}
+    .artist+.artist{border-top:1px solid var(--border);padding-top:64px;}
+    .artist-portrait{width:100%;border-radius:4px;background:var(--surface);overflow:hidden;}
+    .artist-portrait img{width:100%;height:100%;object-fit:cover;}
+    .artist-name{font-family:var(--serif);font-weight:400;font-size:32px;letter-spacing:-0.01em;margin-bottom:4px;}
+    .artist-meta{font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent-dk);margin-bottom:8px;}
+    .artist-template{font-size:14px;color:var(--muted);margin-bottom:22px;}
+    .artist-template a{color:var(--text);border-bottom:1px solid var(--border);}.artist-template a:hover{border-color:var(--text);}
+    .artist-bio{font-size:16px;line-height:1.8;color:#3a3631;max-width:600px;text-align:justify;hyphens:auto;}.artist-bio p+p{margin-top:14px;}
+    .artist-link{display:inline-block;margin-top:22px;font-size:13px;letter-spacing:0.04em;color:var(--accent-dk);border-bottom:1px solid var(--accent-dk);padding-bottom:1px;}
+
+    .collab-cta{background:var(--surface);border-top:1px solid var(--border);}
+    .collab-inner{max-width:1160px;margin:0 auto;padding:80px 56px;display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:start;}
+    .collab-cta h2{font-family:var(--serif);font-weight:400;font-size:36px;letter-spacing:-0.01em;margin-bottom:20px;}
+    .collab-cta .intro{font-size:17px;line-height:1.75;color:var(--muted);max-width:440px;}
+    .form-field{margin-bottom:18px;}
+    .form-field label{display:block;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+    .form-field input,.form-field textarea{width:100%;background:var(--white);border:1px solid var(--border);border-radius:3px;padding:12px 14px;font-size:15px;font-family:var(--sans);color:var(--text);outline:none;transition:border-color 0.15s;}
+    .form-field input:focus,.form-field textarea:focus{border-color:var(--text);}
+    .form-field textarea{resize:vertical;min-height:96px;}
+    .form-optional{color:var(--muted);text-transform:none;letter-spacing:0;font-size:12px;}
+    .form-submit{background:var(--text);color:var(--white);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;padding:15px 32px;border-radius:3px;transition:background 0.2s;}
+    .form-submit:hover{background:#2e2e2e;}.form-submit:disabled{opacity:0.55;cursor:default;}
+    .form-msg{margin-top:14px;font-size:14px;line-height:1.6;display:none;}
+    .form-msg.show{display:block;}.form-msg.error{color:#a23b3b;}.form-msg.ok{color:var(--accent-dk);}
+    .form-success{display:none;}.form-success.show{display:block;}
+    .form-success p{font-size:16px;line-height:1.75;color:var(--text);max-width:420px;}
+
+    .footer{margin-top:0;background:var(--surface);border-top:1px solid var(--border);padding:64px 56px 48px;}.footer-inner{max-width:1160px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:48px;}
+    .foot-logo{margin-bottom:14px;}.foot-logo img{height:28px;width:auto;}.foot-brand p{font-size:13px;color:var(--muted);line-height:1.7;max-width:220px;}
+    .foot-form{margin-top:20px;display:flex;gap:8px;}.foot-form input{flex:1;background:var(--white);border:1px solid var(--border);border-radius:3px;padding:8px 12px;font-size:12px;font-family:var(--sans);color:var(--text);outline:none;}.foot-form input:focus{border-color:var(--text);}.foot-form button{background:var(--text);color:var(--white);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;padding:8px 16px;border-radius:3px;}
+    .foot-col h5{font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;}.foot-col a{display:block;font-size:14px;color:var(--muted);margin-bottom:8px;transition:color 0.15s;}.foot-col a:hover{color:var(--text);}
+    .foot-base{max-width:1160px;margin:40px auto 0;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;color:var(--muted);}
+
+    @media (max-width:760px){
+      .nav{padding:16px 22px;}
+      .wrap{padding:0 22px;}
+      .hero{padding:110px 0 48px;}
+      .hero h1{font-size:36px;}
+      .hero p{font-size:16px;}
+      .roster{padding:48px 0;}
+      .artist{grid-template-columns:1fr;gap:24px;}
+      .artist-portrait{max-width:240px;}
+      .collab-inner{grid-template-columns:1fr;gap:36px;padding:56px 22px;}
+      .collab-cta h2{font-size:28px;}
+      .footer{padding:48px 22px 40px;}.footer-inner{grid-template-columns:1fr 1fr;gap:32px;}
+      .foot-base{flex-direction:column;gap:8px;}
+    }
+  </style>
+  <link rel="stylesheet" href="../assets/css/type.css">
+  <link rel="stylesheet" href="../assets/css/mobile.css">
+</head>
+<body>
+<nav class="nav">
+  <a href="home.html" class="nav-logo"><img src="../assets/images/aevia_logo_transparent.png" alt="Aevia" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"/><span class="nav-logo-text" style="display:none;">aevia</span></a>
+  <div class="nav-links"><a href="home.html">Home</a><a href="about.html">About us</a><a href="help.html">Help</a></div>
+  <a href="collections.html" class="nav-cta">Our Collections</a>
+  <button class="nav-burger" aria-label="Open menu" onclick="this.closest('.nav').classList.toggle('open')">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Our Artists</div>
+    <h1>The art in your hands</h1>
+    <p>Aevia began with one conviction: a photo book can be a piece of art, not a container for pictures. Something made, not assembled. So we work with artists. An illustrator or designer shapes each template, and you feel their hand on every page that holds your photographs. Every collaboration is its own; every book is unique.</p>
+    <p>We believe the work should be paid for. Our artists are compensated fairly for what they make, for as long as their work lives on in the books people order. Whether you are just beginning or long established, we would like to see what you make.</p>
+  </div>
+</section>
+
+<section class="roster">
+  <div class="wrap">
+    <div class="roster-label">The artists</div>
+
+    <article class="artist" id="kevin-lucbert">
+      <div class="artist-portrait">
+        <img src="../assets/artists/kevin-lucbert/kevin-lucbert-portrait.jpg" alt="Portrait of Kevin Lucbert" />
+      </div>
+      <div class="artist-detail">
+        <h2 class="artist-name">Kevin Lucbert</h2>
+        <div class="artist-meta">Berlin &amp; Paris</div>
+        <p class="artist-template">In collaboration on <a href="wander.html">Wander</a></p>
+        <div class="artist-bio">
+          <p>Kevin Lucbert was born in Paris in 1985 and works between Berlin and Paris. He graduated from the École Nationale Supérieure des Arts Décoratifs (ENSAD) in 2008. He co-founded the artists' collective The Ensaders with Yann Bagot and Nathanaël Mikles, and he takes part in performances and exhibitions and leads drawing workshops.</p>
+          <p>His clients include The New York Times, The New Yorker, Télérama, Les Échos, the Mondadori Group, Foscarini, Starbucks, Hermès, Hennessy, and BIC. BIC acquired several of his works for its contemporary art collection, shown at the Centquatre in Paris in 2018.</p>
+        </div>
+        <a class="artist-link" href="https://www.instagram.com/kevinlucbert/?hl=en" target="_blank" rel="noopener">See Kevin's work &rarr;</a>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<section class="collab-cta" id="work-with-us">
+  <div class="collab-inner">
+    <div>
+      <h2>Work with us</h2>
+      <p class="intro">Whether you are just beginning or long established, we would like to see what you make. Tell us a little about your work — we read every message.</p>
+    </div>
+    <div>
+      <form id="artist-form" novalidate>
+        <div class="form-field">
+          <label for="af-name">Name</label>
+          <input type="text" id="af-name" name="name" autocomplete="name" required />
+        </div>
+        <div class="form-field">
+          <label for="af-email">Email</label>
+          <input type="email" id="af-email" name="email" autocomplete="email" required />
+        </div>
+        <div class="form-field">
+          <label for="af-work">Where can we see your work?</label>
+          <input type="url" id="af-work" name="work" placeholder="A link to your portfolio, Instagram, or site" required />
+        </div>
+        <div class="form-field">
+          <label for="af-note">A few words about you <span class="form-optional">(optional)</span></label>
+          <textarea id="af-note" name="note"></textarea>
+        </div>
+        <button type="submit" class="form-submit" id="af-submit">Send</button>
+        <div class="form-msg" id="af-msg"></div>
+      </form>
+      <div class="form-success" id="af-success">
+        <p>Thank you. We have your work and will be in touch. Every message reaches a real person.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="foot-brand"><div class="foot-logo"><img src="../assets/images/aevia_logo_transparent.png" alt="Aevia" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');"/></div><p>A premium photo book studio in Vienna. We design and print; you keep forever.</p><div class="foot-form"><input type="email" placeholder="Email address"/><button>Subscribe</button></div></div>
+    <div class="foot-col"><h5>Products</h5><a href="collections.html">All templates</a><a href="collections.html#love">Love</a><a href="collections.html#kids">Kids</a><a href="collections.html#adventures">Adventures</a></div>
+    <div class="foot-col"><h5>Company</h5><a href="about.html">Our story</a><a href="our-artists.html">Our artists</a><a href="home.html#how">How it works</a><a href="#">Quality promise</a></div>
+    <div class="foot-col"><h5>Support</h5><a href="help.html">FAQ</a><a href="#">Instagram</a><a href="help.html#contact">Contact</a></div>
+  </div>
+  <div class="foot-base"><span>© 2026 Aevia. All rights reserved.</span><span>Terms of service</span></div>
+</footer>
+
+<script>
+  const SUBMIT_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/submitArtistApplication';
+  const form = document.getElementById('artist-form');
+  const msg = document.getElementById('af-msg');
+  const submitBtn = document.getElementById('af-submit');
+
+  function showMsg(text, kind){
+    msg.textContent = text;
+    msg.className = 'form-msg show ' + kind;
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('af-name').value.trim();
+    const email = document.getElementById('af-email').value.trim();
+    const work = document.getElementById('af-work').value.trim();
+    const note = document.getElementById('af-note').value.trim();
+
+    // Client-side mirror of server validation (server is the source of truth).
+    if (!name) { showMsg('Please tell us your name.', 'error'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showMsg('Please enter a valid email address.', 'error'); return; }
+    if (!work) { showMsg('Please share a link to your work.', 'error'); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending…';
+    msg.className = 'form-msg';
+
+    try {
+      const resp = await fetch(SUBMIT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, work, note }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        showMsg(data.error || 'Something went wrong. Please try again.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send';
+        return;
+      }
+      // Success — swap the form for the confirmation state.
+      form.style.display = 'none';
+      document.getElementById('af-success').classList.add('show');
+    } catch (err) {
+      showMsg('Something went wrong sending your message. Please try again.', 'error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Send';
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+/* Aevia type system — single source of truth.
+   Lora (serif, editorial headings) + Inter (humanist sans, body & UI).
+   Loaded AFTER each page's inline <style> so it overrides the legacy
+   Georgia + system-sans / 15px baseline. Change fonts or base size HERE
+   and every customer page follows. (Session 77 typography rollout.) */
+
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --serif: 'Lora', Georgia, 'Times New Roman', serif;
+  --sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+
+/* Base body bumped 15px -> 17px for legibility / premium feel. Pages with
+   explicit per-element sizes (headings, taglines, captions) keep them. */
+body { font-size: 17px; }
