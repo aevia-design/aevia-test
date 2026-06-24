@@ -35,12 +35,37 @@
 
 ## Fonts
 
+**`assets/css/type.css` is the single source of truth for site fonts + base body size.**
+Change the typeface or base size there and every customer page follows — do **not**
+re-declare `--serif`/`--sans` or `body` font-size per page.
+
 ```css
---serif: Georgia, 'Times New Roman', serif;
---sans:  -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+--serif: 'Lora', Georgia, 'Times New Roman', serif;          /* editorial headings */
+--sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;  /* body & UI */
+body { font-size: 17px; }
 ```
 
-No external fonts are loaded — system fonts only. This keeps the site fast and consistent.
+Lora + Inter load from Google Fonts (`@import` in `type.css`). Georgia/system fonts
+remain as fallbacks.
+
+**Load order rule:** `type.css` MUST be linked **after** each page's inline `<style>`
+(and before `mobile.css`) so it wins the cascade over the legacy Georgia/15px baseline:
+
+```html
+  </style>
+  <link rel="stylesheet" href="../assets/css/type.css">
+  <link rel="stylesheet" href="../assets/css/mobile.css">
+```
+
+A new customer page that omits this link falls back to Georgia/system-sans at 15px.
+
+> The expressive **in-book** fonts (Caveat, Twinkle Star, Baskervville, Source Sans 3,
+> Cormorant Garamond) are **not** part of this — they live in the template engine / PDF,
+> not the site chrome, and are loaded separately per template.
+
+**Form fields** (`.field` in order.html, `.form-field` in our-artists.html) share one look:
+`1px solid var(--border)`, `border-radius: 3px`, `padding: 12px 14px`, `font-size: 15px`,
+focus → `border-color: var(--text)`. Match this for any new form.
 
 ---
 
