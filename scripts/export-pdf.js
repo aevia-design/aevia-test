@@ -1069,12 +1069,26 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
       // Center the glyph line-box on the spine center, matching the engine (which rotates the
       // caption box about its center → text visual-center sits on xMm). After 90° CCW rotation
       // ascenders extend LEFT of the baseline (by ascent) and descenders RIGHT (by descent), so
-      // the line-box horizontal center = baseline_x + (descent − ascent)/2. Solving for the
+      // the content-box horizontal center = baseline_x − (ascent − descent)/2. Solving for the
       // baseline so that center lands on xMm gives the +(ascent − descent)/2 offset below.
-      // (The old + ascent/2 ignored the descender and sat ~descent/2 too far right.)
-      const ascenderPt  = font.heightAtSize(sizePt, { descender: false });
-      const descenderPt = font.heightAtSize(sizePt) - ascenderPt;
-      const spineXPt   = capDef.xMm * MM_TO_PT + (ascenderPt - descenderPt) / 2;
+      //
+      // IMPORTANT: read ascent/descent from the underlying fontkit font, NOT pdf-lib's
+      // heightAtSize. pdf-lib returns INVERTED ascent/descent for some fonts (e.g. Parisienne:
+      // asc 8.05 / desc 16.47 — backwards), which flips this offset negative and shoves the
+      // spine caption ~3mm off the band. fontkit reports correct metrics, and for every other
+      // spine font (Cormorant, Twinkle Star, NT Somic, EB Garamond) it yields the identical
+      // value pdf-lib already gave — so the shipped templates are unchanged.
+      let spineOffsetPt;
+      const fkFont = font.embedder && font.embedder.font;
+      if (fkFont && fkFont.unitsPerEm) {
+        const s = sizePt / fkFont.unitsPerEm;       // fkFont.descent is negative (below baseline)
+        spineOffsetPt = (fkFont.ascent + fkFont.descent) / 2 * s;
+      } else {
+        const ascenderPt  = font.heightAtSize(sizePt, { descender: false });
+        const descenderPt = font.heightAtSize(sizePt) - ascenderPt;
+        spineOffsetPt = (ascenderPt - descenderPt) / 2;
+      }
+      const spineXPt   = capDef.xMm * MM_TO_PT + spineOffsetPt;
       const yCenterPt  = pageSizeHPt - capDef.yMm * MM_TO_PT;
       const totalW     = lines.reduce((sum, l) => sum + measure(l), 0)
                        + (lines.length - 1) * lineSpacing;
