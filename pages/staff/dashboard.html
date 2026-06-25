@@ -274,7 +274,7 @@
           <th>Pages</th>
           <th>Photos</th>
           <th>Price</th>
-          <th>Notes</th>
+          <th>Actions</th>
           <th class="status-cell">Status</th>
           <th>Folder</th>
         </tr>
@@ -505,28 +505,35 @@
       ? allOrders
       : allOrders.filter(o => o.status === currentFilter);
 
-    for (const order of visible) {
+    // One auth token for the whole batch; fan out all existence checks in parallel
+    // (was serial: 2 awaited fetches × every visible order, which lagged the row).
+    const headers = await staffHeaders();
+    await Promise.all(visible.map(async (order) => {
       const row = document.getElementById(`pdf-row-${esc(order.orderNumber)}`);
-      if (!row) continue;
+      if (!row) return;
 
-      // Check both preview and print PDFs
-      const pdfLinks = [];
-      for (const type of ['preview', 'print']) {
+      // Check preview + print PDFs concurrently; preserve order (preview first).
+      const found = await Promise.all(['preview', 'print'].map(async (type) => {
         try {
           const res = await fetch(GET_PDF_URL_ENDPOINT, {
             method: 'POST',
-            headers: await staffHeaders(),
+            headers,
             body: JSON.stringify({ orderNumber: order.orderNumber, type }),
           });
           const data = await res.json();
-          if (data.url) {
-            const label = type === 'preview' ? 'Preview PDF' : 'Print PDF';
-            pdfLinks.push(`<button class="pdf-link-btn" onclick="openPdf('${esc(order.orderNumber)}', '${type}')">${label}</button>`);
-          }
+          return data.url ? type : null;
         } catch (err) {
           console.error(`Error checking ${type} PDF for ${order.orderNumber}:`, err);
+          return null;
         }
-      }
+      }));
+
+      const pdfLinks = [];
+      found.forEach((type) => {
+        if (!type) return;
+        const label = type === 'preview' ? 'Preview PDF' : 'Print PDF';
+        pdfLinks.push(`<button class="pdf-link-btn" onclick="openPdf('${esc(order.orderNumber)}', '${type}')">${label}</button>`);
+      });
 
       if (pdfLinks.length > 0) {
         // A PDF already exists. Still offer a regenerate button (with confirm) for
@@ -537,7 +544,7 @@
         row.innerHTML = pdfLinks.join('');
         row.style.display = 'flex';
       }
-    }
+    }));
   }
 
   // ── Generate PDF from dashboard (chunk-024) ──────────────────────────────
@@ -612,10 +619,20 @@
           barInner.style.width = '100%';
           const mb = (st.sizeBytes / 1024 / 1024).toFixed(1);
           cleanup();
-          btn.textContent = 'Preview PDF';
-          btn.onclick = () => window.open(st.previewUrl, '_blank');
           btn.disabled = false;
+          if (isRegenerate) {
+            // A "Preview PDF" button is already in this row, and openPdf() re-signs
+            // the URL on click — so it serves the freshly regenerated file. Just
+            // restore this button to "Regenerate PDF" instead of adding a duplicate.
+            btn.textContent = origLabel;
+          } else {
+            btn.textContent = 'Preview PDF';
+            btn.onclick = () => window.open(st.previewUrl, '_blank');
+          }
+          // Replace any prior size label so repeated regenerations don't stack them.
+          row.querySelectorAll('.pdf-size').forEach(s => s.remove());
           const sizeSpan = document.createElement('span');
+          sizeSpan.className = 'pdf-size';
           sizeSpan.style.cssText = 'font-size:11px;color:var(--muted);margin-left:6px;';
           sizeSpan.textContent = `${mb} MB`;
           row.appendChild(sizeSpan);
