@@ -76,9 +76,25 @@ on the product page (stage 8), no per-template values. Documented in new `docs/p
   customer-preview + PDF so story/words photos resolve there too.
 
 ## Phase C — Live
-- [ ] 8. Product page (Vows → Tender rename) + Stripe + footer/type links
-- [ ] 9. E2E on a real order
-- [ ] 10. Merge (backend-first if any function/Stripe change)
+- [x] 7. **(S81) PDF VERIFIED + fixed.** Tender renders correctly from the dashboard. Four
+  renderer fixes (all in `scripts/export-pdf.js` unless noted): (1) `setActiveTemplate()` now
+  THROWS on an unknown template instead of silently falling back to Scribble (a stale renderer
+  rendered Tender-as-Scribble — the Cloud Run renderer is a SEPARATE deploy from the website);
+  (2) 4 GiB OOM at page 38/40 (95% freeze) → redeploy with `--memory 8Gi`; (3) spine caption
+  off-band — pdf-lib `heightAtSize()` returns inverted ascent/descent for Parisienne → read
+  fontkit metrics (`font.embedder.font`); (4) SVG raster cache for repeated spread designs.
+  ⚠ Spine fix + cache only live after the owner redeploys the renderer with `--memory 8Gi`.
+- [x] 8. **(S81) Product page DONE.** New `pages/tender.html` (Vows→Tender, Love category,
+  €70/€100 via `prices.js`, 3 functional add-ons Intro/Our story/Words with fpintro/fpstory/
+  fpwords slugs). No mockup imagery yet (placeholder line-art; real mockups drop in later at
+  `assets/images/mockups/tender/`). Updated collections card, home testimonials, docs/templates.md
+  (Tender = Built); deleted vows.html. Stripe = shared standard 40/80 (no per-template ids on the
+  page; price/pages flow to order.html → existing checkout). Verified headless, 0 console errors.
+- [ ] 9. **E2E on a real order** — order → engine Save → customer → PDF. Not yet run. Good moment
+  to drive via `/add-template` (the skill was never invoked across the whole Tender build).
+- [x] 10. **(S81) Merged to `main`** (`27f0e17`…`3126b22`, pushed). Backend-first satisfied — no
+  Firebase function change this session; the only backend action is the owner's pending renderer
+  redeploy (`--memory 8Gi`). Tender mockups (capture pipeline) still outstanding.
 
 ## Fixed in S79 review loop (Phase A eyeball pass 2)
 - **Spine font colour** — data file had spine `color:#7c746e` (taupe) but the cover CSV

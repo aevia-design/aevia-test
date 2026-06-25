@@ -1,7 +1,33 @@
 # Session Status
-_Last updated: 2026-06-24 (session 79)_
+_Last updated: 2026-06-25 (session 81)_
 
 ## Status
+**Session 81 (2026-06-25) — TENDER SHIPPED LIVE + PDF renderer hardened. Tender Phases A–C committed + pushed to `main` (`27f0e17`…`3126b22`, 7 commits) → Cloudflare deploying. Build state: `docs/briefs/tender-build.md`; full log: `sessions/2026-06-25-s81.md`.**
+
+- **Stage 8 product page — DONE.** New `pages/tender.html` (Vows→Tender; Love category; €70/€100 via `prices.js`; 3 functional add-ons Intro/Our story/Words with `fpintro`/`fpstory`/`fpwords` slugs, no mockup imagery yet — placeholder, drops in later). Updated `collections.html` card, `home.html` testimonials, `docs/templates.md` (Tender = Built); deleted `vows.html`. Verified headless 0 console errors; 122/122 tests.
+- **Stage 7 PDF — VERIFIED + fixed.** Tender PDF generates correctly from the dashboard. Four renderer fixes shipped (all in `scripts/export-pdf.js` unless noted):
+  1. **Silent Scribble fallback removed** — `setActiveTemplate()` now THROWS on an unknown-but-specified template (a stale renderer rendered Tender-as-Scribble). Root cause: the Cloud Run renderer is a **separate deploy** from the website (needs `gcloud run deploy`).
+  2. **OOM fix** — preview embeds full-res PNG pages (~177 MB); 4 GiB OOM-killed at page 38/40 (progress froze at 95%). Redeploy with **`--memory 8Gi`** (cost ≈ +$0.002/render). NOT a timeout.
+  3. **Spine caption off-band** — pdf-lib `heightAtSize()` returns INVERTED ascent/descent for Parisienne; spine centring now reads **fontkit** metrics (`font.embedder.font`). Other templates byte-unchanged.
+  4. **SVG raster cache** — repeated spread designs rasterise once (modest speed-up; not yet measured live).
+- **Dashboard polish** (`pages/staff/dashboard.html`): Regenerate-PDF button (+confirm), parallelised PDF existence checks, "Notes"→"Actions" header, no duplicate Preview button.
+- **Learnings codified:** LEARNINGS 2026-06-25 (3 renderer traps), `/add-template` skill (stage 7/10 + traps), memory `project_serverside_pdf` + `project_pdf_font_rules`. **#75 in TO-DOS:** wire print-mode PDF to dashboard (deferred — needs real paid orders).
+
+### ▶ NEXT SESSION (Session 82) — finish Tender
+1. **Owner action pending:** redeploy the renderer with `--memory 8Gi` (picks up the spine fix + SVG cache), then regenerate AEV-044 and eyeball the centred spine. (Owner deferred the regen to "next order".)
+2. **Tender Stage 9 — E2E** on a fresh order (order → engine Save → customer → PDF). **Good moment to actually drive it via `/add-template`** to test whether the skill earns its keep (S81 worked Tender conversationally, never invoked the skill — that gap is why the trap catalogue didn't pre-empt the bugs).
+3. **Tender Stage 10 — already merged** (backend-first satisfied: no Firebase function change this session; the renderer redeploy is the owner's pending action). Tender mockups still to come (separate capture pipeline; page uses placeholder imagery — drop-in later at `assets/images/mockups/tender/`).
+4. **Carried (still owed):** submit the Our Artists form once on the LIVE site to confirm email lands in xenia@aevia.at (real nodemailer path never exercised, from S77).
+
+### ⚠ Watch-outs (S81)
+- **The Cloud Run renderer is a SEPARATE deploy from the website.** Pushing to `main` deploys Cloudflare, NOT `aevia-pdf-renderer`. A new template's dashboard PDF renders wrong (now: errors loud) until `gcloud run deploy aevia-pdf-renderer --source . … --memory 8Gi …`. The owner's renderer redeploy is still pending — Tender PDF on the *current live renderer* may be stale until they redeploy.
+- **Always deploy the renderer with `--memory 8Gi`** now (4 GiB OOMs on 40-page Tender).
+- **Spine fix + SVG cache only take effect after the renderer redeploy** — the live PDF spine stays off-band until then.
+- **`/add-template` was NOT used this session** despite being the exact tool — skills only fire when invoked (`/add-template`) or when Claude proactively calls them. Worth invoking it for Stage 9.
+- Tender product page has **no mockup imagery** (placeholder line-art) — intentional; real mockups are a later drop-in.
+- `.claude/settings.local.json` left out of commits as usual.
+
+### Previous: Session 79
 **Session 79 (2026-06-24) — Tender template build, Phases A + B (via `/add-template`). All UNCOMMITTED working-tree. Build state: `docs/briefs/tender-build.md`; full log: `sessions/2026-06-24-s79.md`.**
 - **Phase A signed off** (engine render). Fixed two eyeball bugs: (1) **spine font colour** — data file had taupe; cover CSV's per-caption `captions_1_fontcolor` for the spine is cream `#fbf8f6` (sits on the `#8a817a` band) → fixed `tender-data.js`. (2) **No upload field for Our-story/Words functional photos** — the engine's special-photo upload UI + slot resolver were hardcoded to Newborn/Scribble pools (`special/artwork/labour`). De-hardcoded in `template-engine.html`: resolver treats any pool except `regular`/`cover` as special (per-side when count≥2); new `ensureFunctionalPhotoZones()` builds upload zones for any functional spread with `orderFormPhoto`; upload handlers switched to delegation. Plus **page border/frame** added to engine + customer-preview (`.page-canvas`: hairline + soft shadow + 2px radius) so pale Tender pages don't blend into the canvas.
 - **Phase B Stages 5–6 done, Stage 7 code-complete awaiting Evgeny's dashboard PDF eyeball.**
