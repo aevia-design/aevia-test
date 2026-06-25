@@ -39,10 +39,16 @@
     .zone { display: grid; grid-template-columns: 1fr 400px; gap: 72px; max-width: 1160px; margin: 0 auto; padding: 64px 56px; align-items: start; }
     .panel { position: sticky; top: 90px; }
 
-    /* Placeholder gallery — no mockup imagery yet (drop real .webp in later). */
-    .gallery-main { width: 100%; aspect-ratio: 1 / 1; border-radius: 4px; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
-    .gallery-main svg { opacity: 0.22; }
-    .gallery-note { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); opacity: 0.7; }
+    .gallery-main { width: 100%; aspect-ratio: 10/7; border-radius: 4px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: zoom-in; }
+    .gallery-main img { width: 100%; height: 100%; object-fit: contain; }
+    .thumbs { display: flex; gap: 8px; margin-top: 10px; }
+    .thumb-ph { flex: 1; aspect-ratio: 10/7; border-radius: 4px; background: #fff; border: 1px solid var(--border); overflow: hidden; cursor: pointer; padding: 3px; }
+    .thumb-ph.on { border-color: var(--text); box-shadow: 0 0 0 1px var(--text); }
+    .thumb-ph img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(20,20,20,0.88); display: none; align-items: center; justify-content: center; padding: 40px; cursor: zoom-out; }
+    .lightbox.on { display: flex; }
+    .lightbox img { max-width: 100%; max-height: 100%; border-radius: 4px; box-shadow: 0 12px 48px rgba(0,0,0,0.4); }
+    .lightbox-close { position: absolute; top: 24px; right: 32px; width: 40px; height: 40px; border-radius: 100px; background: rgba(255,255,255,0.12); color: #fff; font-size: 22px; line-height: 40px; text-align: center; }
 
     .page-toggle { margin-bottom: 30px; }
     .chips { display: flex; gap: 8px; margin-top: 8px; }
@@ -112,14 +118,14 @@
 <div class="crumb"><a href="collections.html">Templates</a> <span>›</span> <a href="collections.html#love">Love</a> <span>›</span> Tender</div>
 
 <div class="zone">
-  <!-- Gallery (placeholder — real mockups drop in later) -->
+  <!-- Gallery -->
   <div>
-    <div class="gallery-main">
-      <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-        <rect x="10" y="14" width="52" height="44" rx="3" stroke="#9b8e83" stroke-width="1.8"/>
-        <path d="M36 50c-9-6-15-11-15-19a8 8 0 0 1 15-3 8 8 0 0 1 15 3c0 8-6 13-15 19z" stroke="#9b8e83" stroke-width="1.8" stroke-linejoin="round"/>
-      </svg>
-      <span class="gallery-note">Preview imagery coming soon</span>
+    <div class="gallery-main" onclick="openLightbox(document.getElementById('gallery-img').src)"><img id="gallery-img" src="../assets/images/mockups/tender/hero.webp" alt="Tender wedding photo book"/></div>
+    <div class="thumbs">
+      <button class="thumb-ph on" onclick="pickThumb(this,'hero.webp')"><img src="../assets/images/mockups/tender/hero.webp" alt="Open flat — back, spine and front"/></button>
+      <button class="thumb-ph" onclick="pickThumb(this,'closed.webp')"><img src="../assets/images/mockups/tender/closed.webp" alt="Closed book"/></button>
+      <button class="thumb-ph" onclick="pickThumb(this,'spread-1.webp')"><img src="../assets/images/mockups/tender/spread-1.webp" alt="Inside spread"/></button>
+      <button class="thumb-ph" onclick="pickThumb(this,'spread-2.webp')"><img src="../assets/images/mockups/tender/spread-2.webp" alt="Inside spread"/></button>
     </div>
   </div>
   <!-- Details -->
@@ -144,31 +150,32 @@
 
     <div class="addons">
       <div class="section-label">Optional spreads — all free</div>
-      <div class="addons-list">
-        <div class="addon" data-fp="FPintro" data-photos="0" onclick="xtra(this)">
-          <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <div class="addon-body">
-            <div class="addon-name">Intro</div>
-            <div class="addon-desc">A short opening note to set the tone of your book.</div>
-          </div>
-          <div class="addon-cost">Free</div>
+      <div class="addons-note">Add any you'd like; you'll provide their photos and details on the next step.</div>
+      <div class="addons-grid">
+
+      <div class="addon" data-fp="FPintro" data-photos="0" onclick="xtra(this)">
+        <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/tender/fpintro.webp')">
+          <img src="../assets/images/mockups/tender/fpintro.webp" alt="Intro spread preview"/><span class="zoom-hint">Enlarge</span>
         </div>
-        <div class="addon" data-fp="FPstory" data-photos="1" onclick="xtra(this)">
-          <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <div class="addon-body">
-            <div class="addon-name">Our story</div>
-            <div class="addon-desc">A photo and a few words on how the two of you began.</div>
-          </div>
-          <div class="addon-cost">Free</div>
+        <div class="addon-body"><div class="addon-name">Intro</div><div class="addon-desc">A short opening note to set the tone of your book.</div></div>
+        <div class="addon-foot"><span class="addon-add">Add</span></div>
+      </div>
+
+      <div class="addon" data-fp="FPstory" data-photos="1" onclick="xtra(this)">
+        <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/tender/fpstory.webp')">
+          <img src="../assets/images/mockups/tender/fpstory.webp" alt="Our story spread preview"/><span class="zoom-hint">Enlarge</span>
         </div>
-        <div class="addon" data-fp="FPwords" data-photos="1" onclick="xtra(this)">
-          <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <div class="addon-body">
-            <div class="addon-name">Words</div>
-            <div class="addon-desc">Your vows or a favourite line, beside a full-bleed photo.</div>
-          </div>
-          <div class="addon-cost">Free</div>
+        <div class="addon-body"><div class="addon-name">Our story</div><div class="addon-desc">A photo and a few words on how the two of you began.</div></div>
+        <div class="addon-foot"><span class="addon-add">Add</span></div>
+      </div>
+
+      <div class="addon" data-fp="FPwords" data-photos="1" onclick="xtra(this)">
+        <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/tender/fpwords.webp')">
+          <img src="../assets/images/mockups/tender/fpwords.webp" alt="Words spread preview"/><span class="zoom-hint">Enlarge</span>
         </div>
+        <div class="addon-body"><div class="addon-name">Words</div><div class="addon-desc">Your vows or a favourite line, beside a full-bleed photo.</div></div>
+        <div class="addon-foot"><span class="addon-add">Add</span></div>
+      </div>
       </div>
     </div>
 
@@ -181,6 +188,8 @@
     <p class="cta-note">You approve before we print. No charge until you're happy.</p>
   </div>
 </div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button><img id="lightbox-img" src="" alt="Spread preview"/></div>
 
 <div class="acc-wrap">
   <div class="acc-item">
@@ -285,9 +294,20 @@
 
   function xtra(card) {
     card.classList.toggle('on');
-    const cost = card.querySelector('.addon-cost');
-    if (cost) cost.textContent = card.classList.contains('on') ? 'Added ✓' : 'Free';
+    card.querySelector('.addon-add').textContent = card.classList.contains('on') ? 'Added ✓' : 'Add';
   }
+
+  const MOCKUP_BASE = '../assets/images/mockups/tender/';
+  function pickThumb(btn, file) {
+    btn.closest('.thumbs').querySelectorAll('.thumb-ph').forEach(t => t.classList.remove('on'));
+    btn.classList.add('on');
+    document.getElementById('gallery-img').src = MOCKUP_BASE + file;
+  }
+  function openLightbox(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('on');
+  }
+  function closeLightbox() { document.getElementById('lightbox').classList.remove('on'); }
 
   // FP slug/input-type metadata. order.html reads the per-page fields from
   // TENDER_DATA.spreads[*].orderFormMeta; inputType keeps story/words off the

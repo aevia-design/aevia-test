@@ -42,6 +42,7 @@ const TEMPLATES = {
   wander:   '../assets/Template_Wander/wander-data.js',
   newborn:  '../assets/Template_Newborn/newborn-data.js',
   papercut: '../assets/Template_Papercut/papercut-data.js',
+  tender:   '../assets/Template_Tender/tender-data.js',
 };
 let EDGES;
 if (ARG3.startsWith('#')) {

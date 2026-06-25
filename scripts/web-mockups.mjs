@@ -40,6 +40,11 @@ const TEMPLATES = {
     'open-14-fp4.png': 'fp4.webp',
     'open-18-fp5.png': 'fp5.webp',
   } },
+  tender: { order: 'AEV-044', map: { ...COMMON,
+    'open-00-fpintro.png': 'fpintro.webp',
+    'open-07-fpstory.png': 'fpstory.webp',
+    'open-14-fpwords.png': 'fpwords.webp',
+  } },
 };
 
 const template = process.argv[2];

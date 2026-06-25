@@ -40,7 +40,10 @@ function withOpacity(raw, op) { const d = raw.buffer; for (let i = 3; i < d.leng
 // instead of dissolving into the background at its edges. The final brightness grade lifts this
 // ~15–20, so the pre-grade value is set low to land on a visible light grey. The contact shadow
 // still renders via the multiply "Shadows" layer.
-const bg = { r: 209, g: 206, b: 200 };
+// Override with BG_GRAY=240 for a near-white backdrop matching the closed/open composers
+// (e.g. Tender, whose cream cover suits a uniform white image set).
+const _g = process.env.BG_GRAY ? Number(process.env.BG_GRAY) : null;
+const bg = _g !== null ? { r: _g, g: _g, b: _g } : { r: 209, g: 206, b: 200 };
 
 // Outer-surface quad from the blank "Pages" layer (axis-extreme corners of the tilted rect).
 function coverQuad(name) {

@@ -1,7 +1,27 @@
 # Session Status
-_Last updated: 2026-06-25 (session 81)_
+_Last updated: 2026-06-25 (session 82)_
 
 ## Status
+**Session 82 (2026-06-25) — TENDER MOCKUPS created + wired into the website. All UNCOMMITTED working-tree (pending Evgeny's eyeball). Full log: `sessions/2026-06-25-s82.md`.**
+
+- **Mockup pipeline run for Tender (order AEV-044).** Evgeny ran the two captures (`qa/capture-cover-wrap.mjs` + `qa/capture-spread.mjs`, `QA_ORDER=AEV-044`); Claude ran `compose-all.mjs AEV-044 tender` (20 open + closed + back) → `web-mockups.mjs tender` → 7 WebPs in `assets/images/mockups/tender/`. **First pale/cream cover the pipeline has handled** — composited cleanly. Added `tender` to the maps in `scripts/compose-all.mjs` + `scripts/web-mockups.mjs`.
+- **back.png backdrop → white.** Made `scripts/compose-back.mjs` backdrop env-overridable (`BG_GRAY`, default unchanged 209 so the 4 live templates are untouched); regenerated Tender's `back.png`/`hero.webp` at `BG_GRAY=240` so the hero matches the white closed+spread shots.
+- **Website wiring (matched Scribble/Papercut pattern):** `pages/tender.html` — real gallery (hero + 4 thumbs + lightbox) replacing placeholder line-art, `.addons-list` → `.addons-grid` photo cards, `xtra`/`pickThumb`/`openLightbox` script. `pages/collections.html` — Tender card → `tender/closed.webp`.
+- **Verified:** 122/122 tests; headless thumb-switch/lightbox/add-toggle all work, 0 console errors; both pages serve 200.
+
+### ▶ NEXT SESSION (Session 83)
+1. Eyeball Tender mockups locally (tender.html + collections.html); decide on the mirror-spine-label polish (below); then **commit + push** the mockup work → Cloudflare.
+2. Resume Tender close-out: owner redeploys the Cloud Run renderer with `--memory 8Gi` (picks up S81 spine fix + SVG cache) → regen AEV-044 → Stage 9 E2E (good moment to actually drive `/add-template`).
+3. Carried (owner, owed since S77): submit the Our Artists form once on the LIVE site to confirm email lands in xenia@aevia.at.
+
+### ⚠ Watch-outs (S82)
+- **Tender mockup work is UNCOMMITTED.** Changed: `pages/tender.html`, `pages/collections.html`, `scripts/{compose-all,web-mockups,compose-back}.mjs`; new `assets/images/mockups/tender/*.webp`. `.claude/settings.local.json` left out as usual.
+- **Closed-book spine label reads mirror-reversed** on `closed.webp` — tiny at display size, present on other templates too; flagged as optional polish, NOT fixed.
+- **`tender-data.js` `mockupEdges` still placeholder** (uniform cream); spine 9mm sliver could be resampled to `#8a817a` if it reads off.
+- **`BG_GRAY` override applied to Tender only** — flip the `compose-back.mjs` default + re-compose if all templates should share white.
+- **`.gitignore` gotcha (memory):** `/mockups/` is anchored so `assets/images/mockups/` is correctly trackable — never revert to bare `mockups/`.
+
+### Previous: Session 81
 **Session 81 (2026-06-25) — TENDER SHIPPED LIVE + PDF renderer hardened. Tender Phases A–C committed + pushed to `main` (`27f0e17`…`3126b22`, 7 commits) → Cloudflare deploying. Build state: `docs/briefs/tender-build.md`; full log: `sessions/2026-06-25-s81.md`.**
 
 - **Stage 8 product page — DONE.** New `pages/tender.html` (Vows→Tender; Love category; €70/€100 via `prices.js`; 3 functional add-ons Intro/Our story/Words with `fpintro`/`fpstory`/`fpwords` slugs, no mockup imagery yet — placeholder, drops in later). Updated `collections.html` card, `home.html` testimonials, `docs/templates.md` (Tender = Built); deleted `vows.html`. Verified headless 0 console errors; 122/122 tests.
