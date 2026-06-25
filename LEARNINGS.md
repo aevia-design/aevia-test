@@ -1,3 +1,45 @@
+## 2026-06-25 — Three PDF-renderer traps a new template hits (Tender, S81)
+
+Bringing Tender live surfaced three issues that will recur for **every** future template. All
+three only show up at the dashboard-PDF stage, never in `npm test` or the engine.
+
+**1. The Cloud Run renderer is a SEPARATE deploy from the website.** Pushing to `main` deploys
+the site (Cloudflare); it does **not** update the `aevia-pdf-renderer` Cloud Run container. A
+newly-added template renders correctly in the engine but the **dashboard PDF comes out as the
+wrong template** until you `gcloud run deploy aevia-pdf-renderer --source .` (it builds from the
+working tree). Root cause was masked by a silent fallback: `setActiveTemplate()` in
+`export-pdf.js` quietly defaulted to **Scribble** when it met an unknown template — so a stale
+renderer produced a plausible-but-wrong PDF instead of an error. **Fixed:** an unknown-but-
+specified template now `throw`s (`Unknown template "X"… renderer needs redeploy`); empty/legacy
+book-state still defaults to Scribble. Lesson: silent "sensible default" fallbacks hide
+deploy-skew — fail loud on an explicitly-requested-but-unknown value.
+
+**2. The preview PDF can OOM Cloud Run on long/heavy books.** Each page is composited to a
+full-resolution **lossless PNG** (~2433² at 300dpi) and embedded via `embedPng`, so the preview
+PDF balloons (Tender 40pp = ~177 MB). The render holds every embedded page in memory; a 40-page
+Tender with heavy 5.8 MB decorative SVGs **OOM-killed the 4 GB container at page 38/40**. The
+signature: progress **freezes at 95%** (per-spread progress ends before the final spread +
+silent `save()`+upload tail) and the log shows the render reaching the last spread then a fresh
+`listening on port 8080` = container restart. **Not** a timeout (it died at ~3.5 min, far under
+the 900s cap). Fix applied: bump `--memory 8Gi` (cost ≈ +$0.002/render — memory is billed per
+GiB-second only during the ~3.5 min request, scales to zero idle). Real lever if it ever needs
+one: embed the **preview** pages as JPEG (captions are vector pdf-lib text, untouched; print
+path is separate) → ~177 MB → ~15-25 MB. Diagnose stall-at-95% from Cloud Run logs (timeout vs
+OOM vs a thrown error swallowed by `onProgress`'s `catch(_){}`) before changing code.
+
+**3. pdf-lib's `heightAtSize()` returns INVERTED ascent/descent for some fonts.** The rotated
+**spine caption** centres across the band by offsetting the baseline by `(ascent−descent)/2`,
+read from pdf-lib. For Parisienne (Tender) pdf-lib reports **asc 8.05 / desc 16.47 — backwards**
+(every other spine font is correct), flipping the offset to −4.2pt and shoving the caption ~3 mm
+off the band. The engine (browser metrics) centred it fine, so engine≠PDF. **Fixed:** read
+ascent/descent from the underlying **fontkit** font (`font.embedder.font.ascent/descent /
+unitsPerEm`) instead of `heightAtSize`. For Cormorant/Twinkle Star/NT Somic/EB Garamond fontkit
+yields the *identical* value pdf-lib gave → shipped templates byte-unchanged; only Parisienne
+corrected. **Method note (reinforces [[feedback_inspect_render_first]]):** I burned time
+reasoning from font math that kept "proving" engine==PDF. The answer came from *measuring* —
+browser `measureText` font/ink metrics, fontkit raw metrics, and pdf-lib `heightAtSize` side by
+side. For any caption-position bug, measure all three renderers' metrics; don't reason from one.
+
 ## 2026-06-24 — Never render a book PDF locally without an explicit per-render go-ahead (egress)
 
 S79 agent-failure: off a vague "let's go with stage 7" I ran a local PDF render
