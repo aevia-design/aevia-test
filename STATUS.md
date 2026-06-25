@@ -1,7 +1,34 @@
 # Session Status
-_Last updated: 2026-06-24 (session 77)_
+_Last updated: 2026-06-24 (session 79)_
 
 ## Status
+**Session 79 (2026-06-24) — Tender template build, Phases A + B (via `/add-template`). All UNCOMMITTED working-tree. Build state: `docs/briefs/tender-build.md`; full log: `sessions/2026-06-24-s79.md`.**
+- **Phase A signed off** (engine render). Fixed two eyeball bugs: (1) **spine font colour** — data file had taupe; cover CSV's per-caption `captions_1_fontcolor` for the spine is cream `#fbf8f6` (sits on the `#8a817a` band) → fixed `tender-data.js`. (2) **No upload field for Our-story/Words functional photos** — the engine's special-photo upload UI + slot resolver were hardcoded to Newborn/Scribble pools (`special/artwork/labour`). De-hardcoded in `template-engine.html`: resolver treats any pool except `regular`/`cover` as special (per-side when count≥2); new `ensureFunctionalPhotoZones()` builds upload zones for any functional spread with `orderFormPhoto`; upload handlers switched to delegation. Plus **page border/frame** added to engine + customer-preview (`.page-canvas`: hairline + soft shadow + 2px radius) so pale Tender pages don't blend into the canvas.
+- **Phase B Stages 5–6 done, Stage 7 code-complete awaiting Evgeny's dashboard PDF eyeball.**
+  - **5 Order form** — registered Tender in `order.html`; routed Our-story/Words through the existing `introFields` mechanic; **de-hardcoded `composeIntroBlock`** (each functional spread carries its own `compose()` in `orderFormMeta`; order.html calls `(textMeta.compose||composeIntroBlock)`); added `orderFormMeta.heading`. Verified headless.
+  - **6 Customer-preview parity** — mirrored the resolver generalisation; confirmed fonts/buckets/text-seeding already work; unified leftover textPanel flags. (Not driven with a live order — full render eyeball at Phase C E2E.)
+  - **7 PDF parity** — **no Tender-specific code changes needed** (cover ellipse via generic `clipShapes.coverFrame`, fullBleed/overlayBelow/Parisienne/textPanel all wired S78; renderer slug-map handles fpstory/fpwords). Renders 40 pages 0 errors but **not visually verified**.
+- **Pricing decided:** Tender = standard €70/€100 (shared `prices.js`); documented in new `docs/pricing.md`.
+- **Order-form copy fix:** `love` album-note placeholder honeymoon→wedding.
+- **AEV-044** = real Tender order Evgeny placed + Saved in engine (good PDF test bed; not approved).
+- **⚠ Process slip (corrected):** I rendered AEV-044's PDF locally off a vague go-ahead → caused GCS egress (the local CLI pulls full-res originals). Rule now hard-coded in the `/add-template` skill + memory `feedback_no_local_pdf`: **never render a PDF locally without an explicit per-render go-ahead; Evgeny generates via the dashboard (in-region, free).**
+
+### ▶ NEXT SESSION (Session 80) — Tender Phase B finish → Phase C
+1. **Evgeny reports PDF eyeball** of AEV-044 (he generates it via the **dashboard** Generate PDF, NOT local). Check: cover ellipse + taupe names + cream spine, intro/story/words Parisienne text, full-bleed Words photo, SP3 under-photo art, caption parity. Fix `scripts/export-pdf.js` from feedback → closes Stage 7.
+2. **Phase C** — Stage 8: product page **Vows→Tender** rename (URL, links, `template` param, optional-spread cards, footer/type-system links, include `prices.js`) + Stripe price wiring (standard 40/80 IDs); update `docs/templates.md` (Vows→Tender, Built). Stage 9: E2E on a real order. Stage 10: merge (backend-first if any function/Stripe change), then handover.
+3. **Carried from S77 (still owed):** submit the Our Artists form once on the LIVE site to confirm the email lands in xenia@aevia.at (real nodemailer path never exercised).
+
+### ⚠ Watch-outs (S79)
+- **Tender is UNCOMMITTED working-tree** (mid-build, not approved). Touched: `assets/Template_Tender/` (incl. `tender-data.js`, `Cover/Artboard 1.svg`), `pages/order.html`, `pages/customer-preview.html`, `pages/staff/template-engine.html`, `docs/briefs/tender-build.md`, `docs/pricing.md`, `qa/debug-tender-render.mjs`, `assets/fonts/Parisienne-Regular.ttf`. The `/add-template` skill is also uncommitted. `.claude/settings.local.json` left out as usual. NOTE `scripts/export-pdf.js` shows modified but Tender PDF wiring was done in S78 — no S79 edits to it.
+- **⛔ Never render the Tender (or any) PDF locally** — egress on Evgeny's bill; he uses the dashboard. See memory `feedback_no_local_pdf`.
+- **Cover SVG edit** (`#c1d5ef`→`none` on the photo-opening rect) must be RE-APPLIED if Xenia re-exports the Tender cover.
+- **Local 177 MB PDF** at `sessions/qa-runs/AEV-044_preview_local.pdf` (gitignored) — already-paid-for, Evgeny may inspect or delete.
+- **`overlayBelow` page flag** (CSV `overlay_position=below`) is the canonical under-photo mechanic now — Tender SP3 + Papercut use it.
+
+### Previous: Session 78
+**Session 78 (2026-06-24)** — (1) Shipped S77 design-review polish (`665abe4`): order.html into Lora/Inter type system, Newborn add-on card heights, form-field unification, style-guide Fonts section. (2) Created the `/add-template` skill + ran Tender **Phase A** (data file, Parisienne fonts +ligature check, registry ×3, render smoke test, CSV-driven `overlayBelow` ×3 surfaces; Words spread swap + cover placeholder fixes). 122/122 tests. Detail: `sessions/2026-06-24-s78.md`.
+
+### Previous: Session 77
 **Session 77 (2026-06-24) — SHIPPED LIVE. Built the full `artist-collaborations` feature, then rolled out a new site-wide typography system + a label-trim, both validated by an independent full-site `/design-review`. Two commits on `main` (`e997df2`, `ea725c0`), pushed → Cloudflare deploying.** (1) **Artist feature** (per `docs/briefs/artist-collaborations.md`, backend-first): new callable `submitArtistApplication` in `functions/index.js` (onRequest + CORS, nodemailer → **xenia@aevia.at**, validates name/email/≥1 work link, no infra cost) — **Evgeny deployed it** (`firebase deploy --only functions:submitArtistApplication`) BEFORE the page reached Cloudflare; new `pages/our-artists.html` (manifesto → Kevin Lucbert profile → working "Work with us" form with on-page success/error states); understated serif-italic "In collaboration with Kevin Lucbert" credit on `pages/wander.html` + the `collections.html` card → `our-artists.html#kevin-lucbert`; "Our artists" footer link on all 15 customer pages; new `docs/templates.md` roster (Wander = first collaboration). (2) **Typography rollout** (P1 from the review): new **`assets/css/type.css`** = single source of truth — **Lora** (serif headings) + **Inter** (body/UI) via Google Fonts `@import`, body **15px → 17px**; linked AFTER each page's inline `<style>` on all 15 customer pages so it overrides the legacy Georgia/system-sans baseline. (3) **Label-trim** (P1): removed the collections hero "COLLECTIONS" eyebrow (dup of title), "per book" under all 9 cards, and the "PAGES" label on the 4 active product pages. Kept the gold `.tag` category eyebrow. 122/122 tests; 0 console errors anywhere; verified desktop + 375px. Full detail in `sessions/2026-06-24-s77.md`.
 
 ### ▶ NEXT SESSION (Session 78)

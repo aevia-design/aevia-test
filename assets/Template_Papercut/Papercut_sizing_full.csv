@@ -1,53 +1,53 @@
-Type;Syb-type;Spread;Page;Slot;photo_Xmm_without bleed;photo_Ymm_without bleed;photo_Xmm_with bleed;photo_Ymm_with bleed;photo_Width_mm;photo_Height_mm;full_bleed;captions allowed;captions_position;captions_Xmm_without bleed;captions_Ymm_without bleed;captions_Xmm_with bleed;captions_Ymm_with bleed;captions_Width_mm;captions_Height_mm;captions_Halignment;captions_Valignment;caption_font;caption_size_pt;caption_style;caption_letter_spacing;caption_line_spacing;functional_photo;functional_text;captions_color;bgColor;Aspect ratio;Orientation;Photo shape;Bleed, mm;Page size
-Standard;n.a;0;Right H;1;105;70;108;73;150;100;no;yes;below (50mm from photo);105;176.5;108;179.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#f3e8dc;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;0;Right V;1;85;100;88;103;120;160;no;yes;upper right (5mm from photo);170;40;173;43;40;40;left;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#f3e8dc;03:04;vertical;rectangle;3;200×200mm
-Standard;n.a;1;Left H;1;95;100;98;103;150;100;no;yes;below (10mm from photo);95;166.5;98;169.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#b5ceb5;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;1;Left V;1;95;90;98;93;120;160;no;yes;below (5mm from photo);95;181.5;98;184.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#b5ceb5;03:04;vertical;rectangle;3;200×200mm
-Standard;n.a;1;Right H;1;105;55;108;58;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;1;Right H;2;105;150;108;153;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;1;Right V;1;60;100;63;103;80;107;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;80:107;vertical;rectangle;3;200×200mm
-Standard;n.a;1;Right V;2;150;100;153;103;80;107;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;80:107;vertical;rectangle;3;200×200mm
-Standard;n.a;2;Left H;1;95;55;98;58;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#ddecf0;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;2;Left H;2;95;145;98;148;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#ddecf0;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;2;Left V;1;50;130;53;133;80;107;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#ddecf0;80:107;vertical;rectangle;3;200×200mm
-Standard;n.a;2;Left V;2;140;70;143;73;80;107;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#ddecf0;80:107;vertical;rectangle;3;200×200mm
-Standard;n.a;2;Right H;1;105;100;108;103;150;100;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#ddecf0;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;2;Right V;1;105;100;108;103;120;160;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#ddecf0;03:04;vertical;rectangle;3;200×200mm
-Standard;n.a;3;Left H;1;95;55;98;58;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;3;Left H;2;95;145;98;148;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;3;Left V;1;50;70;53;73;80;107;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;80:107;vertical;rectangle;3;200×200mm
-Standard;n.a;3;Left V;2;140;130;143;133;80;107;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;80:107;vertical;rectangle;3;200×200mm
-Standard;n.a;3;Right H;1;105;70;108;73;150;100;no;yes;below (50mm from photo);105;176.5;108;179.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#f3e8dc;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;3;Right V;1;85;100;88;103;120;160;no;yes;upper right (5mm from photo);170;40;173;43;40;40;left;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#f3e8dc;03:04;vertical;rectangle;3;200×200mm
-Standard;n.a;4;Left H;1;95;55;98;58;120;80;no;no;;;;;;;;;;;;;;;n.a;n.a;;#8bb8d8;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;4;Left H;2;95;145;98;148;120;80;no;no;;;;;;;;;;;;;;;n.a;n.a;;#8bb8d8;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;4;Left V;1;50;100;53;103;80;107;no;no;;;;;;;;;;;;;;;n.a;n.a;;#8bb8d8;80:107;vertical;rectangle;3;200×200mm
-Standard;n.a;4;Left V;2;140;100;143;103;80;107;no;no;;;;;;;;;;;;;;;n.a;n.a;;#8bb8d8;80:107;vertical;rectangle;3;200×200mm
-Standard;n.a;4;Right H;1;105;100;108;103;150;100;no;yes;below (10mm from photo);105;166.5;108;169.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#8bb8d8;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;4;Right V;1;105;90;108;93;120;160;no;yes;below (5mm from photo);105;181.5;108;184.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#8bb8d8;03:04;vertical;rectangle;3;200×200mm
-Standard;n.a;5;Left H;1;75;55;78;58;120;80;no;no;;;;;;;;;;;;;;;n.a;n.a;;#f3e8dc;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;5;Left H;2;115;145;118;148;120;80;no;no;;;;;;;;;;;;;;;n.a;n.a;;#f3e8dc;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;5;Left V;1;50;70;53;73;80;107;no;no;;;;;;;;;;;;;;;n.a;n.a;;#f3e8dc;80:107;vertical;rectangle;3;200×200mm
-Standard;n.a;5;Left V;2;140;130;143;133;80;107;no;no;;;;;;;;;;;;;;;n.a;n.a;;#f3e8dc;80:107;vertical;rectangle;3;200×200mm
-Standard;n.a;5;Right H;1;105;130;108;133;150;100;no;yes;above (10mm from photo);105;63.5;108;66.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#bb85a7;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;5;Right V;1;105;110;108;113;120;160;no;yes;above (5mm from photo);105;18.5;108;21.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#bb85a7;03:04;vertical;rectangle;3;200×200mm
-Standard;n.a;6;Left H;1;95;100;98;103;150;100;no;yes;below (10mm from photo);95;166.5;98;169.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#ddecf0;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;6;Left V;1;95;90;98;93;120;160;no;yes;below (5mm from photo);95;181.5;98;184.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#ddecf0;03:04;vertical;rectangle;3;200×200mm
-Standard;n.a;6;Right H;1;105;100;108;103;150;100;no;yes;below (10mm from photo);105;166.5;108;169.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#ddecf0;03:02;horizontal;rectangle;3;200×200mm
-Standard;n.a;6;Right V;1;105;90;108;93;120;160;no;yes;below (5mm from photo);105;181.5;108;184.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#ddecf0;03:04;vertical;rectangle;3;200×200mm
-Functional;Birthday wishes;1;-;-;-;-;-;-;-;-;no;yes;center;95;110;98;113;86;140;center;center;Source Sans 3;16pt;Regular;-0.02;1.28;no;yes;#4a4b40;#b5ceb5;n.a;square;;3;200×200mm
-Functional;Heart photo;1;Right V;1;105;100;108;103;165;175;no;no;;;;;;;;;;;;;;;yes;no;;#b5ceb5;33:35:00;vertical;custom;3;200×200mm
-Functional;Funny words;2;-;-;-;-;-;-;-;-;no;yes;center;95;140;98;143;90;80;center;center;FirstTimeWriting;20pt;regular;0;1.2;no;yes;#4a4b40;#f3e8dc;n.a;square;;3;200×200mm
-Functional;n.a;2;Right S;1;100;100;103;103;200;200;yes;no;;;;;;;;;;;;;;;no;no;;no background, full bleed photo;01:01;square;rectangle;3;200×200mm
-Functional;Favourite toy;3;Left H;1;95;130;98;133;150;100;no;yes;above (10mm from photo);95;60;98;63;100;20;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;yes;yes;#4a4b40;#e7c979;03:02;horizontal;rectangle;3;200×200mm
-Functional;Favourite toy;3;Left V;1;76;115;79;118;87;130;no;yes;upper right (10mm from photo);154.5;70;157.5;73;50;40;left;top;Source Sans 3;16pt;Regular;-0.02;1.28;yes;yes;#4a4b40;#e7c979;87:130;vertical;rectangle;3;200×200mm
-Functional;n.a;3;Right H;1;105;100;108;103;150;100;no;no;;;;;;;;;;;;;;;no;no;;#f3e8dc;03:02;horizontal;rectangle;3;200×200mm
-Functional;n.a;3;Right V;1;105;100;108;103;120;160;no;no;;;;;;;;;;;;;;;no;no;;#f3e8dc;03:04;vertical;rectangle;3;200×200mm
-Functional;First steps;4;Left H;1;95;130;98;133;150;100;no;yes;above (25mm from photo);95;50;98;53;100;20;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;yes;yes;#493955;#ddecf0;03:02;horizontal;rectangle;3;200×200mm
-Functional;First steps;4;Left V;1;76;115;79;118;87;130;no;yes;lower right (10mm from photo);154.5;160;157.5;163;50;40;left;bottom;Source Sans 3;16pt;Regular;-0.02;1.28;yes;yes;#493955;#ddecf0;93:139;vertical;rectangle;3;200×200mm
-Functional;n.a;4;Right H;1;105;70;108;73;150;100;no;yes;below (50mm from photo);105;176.5;108;179.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;no;yes;#493955;#ddecf0;03:02;horizontal;rectangle;3;200×200mm
-Functional;n.a;4;Right V;1;105;90;108;93;120;160;no;yes;below (5mm from photo);105;181.5;108;184.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;no;yes;#493955;#ddecf0;03:04;vertical;rectangle;3;200×200mm
-Functional;Art-Gallery;5;Left H;1;95;100;98;103;150;100;no;yes;below (20mm from photo);95;176.5;98;179.5;100;13;center;top;Source Sans 3;16pt;Regular;0.03;1.35;yes;yes;#493955;#f3e8dc;03:02;horizontal;rectangle;3;200×200mm
-Functional;Art-Gallery;5;Right H;1;105;100;108;103;150;100;no;yes;below (20mm from photo);105;176.5;108;179.5;100;13;center;top;Source Sans 3;16pt;Regular;0.03;1.35;yes;yes;#493955;#f3e8dc;03:02;horizontal;rectangle;3;200×200mm
-Functional;Art-Gallery;5;Left V;1;95;100;98;103;110;140;no;yes;below (5mm from photo);95;181.5;98;184.5;100;13;center;top;Source Sans 3;16pt;Regular;0.03;1.35;yes;yes;#493955;#f3e8dc;11:14;vertical;rectangle;3;200×200mm
-Functional;Art-Gallery;5;Right V;1;105;100;108;103;110;140;no;yes;below (5mm from photo);105;181.5;108;184.5;100;13;center;top;Source Sans 3;16pt;Regular;0.03;1.35;yes;yes;#493955;#f3e8dc;11:14;vertical;rectangle;3;200×200mm
+Type;Syb-type;Spread;Page;Slot;photo_Xmm_without bleed;photo_Ymm_without bleed;photo_Xmm_with bleed;photo_Ymm_with bleed;photo_Width_mm;photo_Height_mm;full_bleed;captions allowed;captions_position;captions_Xmm_without bleed;captions_Ymm_without bleed;captions_Xmm_with bleed;captions_Ymm_with bleed;captions_Width_mm;captions_Height_mm;captions_Halignment;captions_Valignment;caption_font;caption_size_pt;caption_style;caption_letter_spacing;caption_line_spacing;functional_photo;functional_text;captions_color;bgColor;Aspect ratio;Orientation;Photo shape;Bleed, mm;overlay_position;Page size
+Standard;n.a;0;Right H;1;105;70;108;73;150;100;no;yes;below (50mm from photo);105;176.5;108;179.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#f3e8dc;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;0;Right V;1;85;100;88;103;120;160;no;yes;upper right (5mm from photo);170;40;173;43;40;40;left;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#f3e8dc;03:04;vertical;rectangle;3;;200×200mm
+Standard;n.a;1;Left H;1;95;100;98;103;150;100;no;yes;below (10mm from photo);95;166.5;98;169.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#b5ceb5;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;1;Left V;1;95;90;98;93;120;160;no;yes;below (5mm from photo);95;181.5;98;184.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#b5ceb5;03:04;vertical;rectangle;3;;200×200mm
+Standard;n.a;1;Right H;1;105;55;108;58;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;1;Right H;2;105;150;108;153;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;1;Right V;1;60;100;63;103;80;107;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;80:107;vertical;rectangle;3;;200×200mm
+Standard;n.a;1;Right V;2;150;100;153;103;80;107;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;80:107;vertical;rectangle;3;;200×200mm
+Standard;n.a;2;Left H;1;95;55;98;58;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#ddecf0;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;2;Left H;2;95;145;98;148;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#ddecf0;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;2;Left V;1;50;130;53;133;80;107;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#ddecf0;80:107;vertical;rectangle;3;;200×200mm
+Standard;n.a;2;Left V;2;140;70;143;73;80;107;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#ddecf0;80:107;vertical;rectangle;3;;200×200mm
+Standard;n.a;2;Right H;1;105;100;108;103;150;100;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#ddecf0;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;2;Right V;1;105;100;108;103;120;160;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#ddecf0;03:04;vertical;rectangle;3;;200×200mm
+Standard;n.a;3;Left H;1;95;55;98;58;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;3;Left H;2;95;145;98;148;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;3;Left V;1;50;70;53;73;80;107;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;80:107;vertical;rectangle;3;;200×200mm
+Standard;n.a;3;Left V;2;140;130;143;133;80;107;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#f3e8dc;80:107;vertical;rectangle;3;;200×200mm
+Standard;n.a;3;Right H;1;105;70;108;73;150;100;no;yes;below (50mm from photo);105;176.5;108;179.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#f3e8dc;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;3;Right V;1;85;100;88;103;120;160;no;yes;upper right (5mm from photo);170;40;173;43;40;40;left;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#f3e8dc;03:04;vertical;rectangle;3;;200×200mm
+Standard;n.a;4;Left H;1;95;55;98;58;120;80;no;no;;;;;;;;;;;;;;;n.a;n.a;;#8bb8d8;03:02;horizontal;rectangle;3;below;200×200mm
+Standard;n.a;4;Left H;2;95;145;98;148;120;80;no;no;;;;;;;;;;;;;;;n.a;n.a;;#8bb8d8;03:02;horizontal;rectangle;3;below;200×200mm
+Standard;n.a;4;Left V;1;50;100;53;103;80;107;no;no;;;;;;;;;;;;;;;n.a;n.a;;#8bb8d8;80:107;vertical;rectangle;3;below;200×200mm
+Standard;n.a;4;Left V;2;140;100;143;103;80;107;no;no;;;;;;;;;;;;;;;n.a;n.a;;#8bb8d8;80:107;vertical;rectangle;3;below;200×200mm
+Standard;n.a;4;Right H;1;105;100;108;103;150;100;no;yes;below (10mm from photo);105;166.5;108;169.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#8bb8d8;03:02;horizontal;rectangle;3;below;200×200mm
+Standard;n.a;4;Right V;1;105;90;108;93;120;160;no;yes;below (5mm from photo);105;181.5;108;184.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#8bb8d8;03:04;vertical;rectangle;3;below;200×200mm
+Standard;n.a;5;Left H;1;75;55;78;58;120;80;no;no;;;;;;;;;;;;;;;n.a;n.a;;#f3e8dc;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;5;Left H;2;115;145;118;148;120;80;no;no;;;;;;;;;;;;;;;n.a;n.a;;#f3e8dc;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;5;Left V;1;50;70;53;73;80;107;no;no;;;;;;;;;;;;;;;n.a;n.a;;#f3e8dc;80:107;vertical;rectangle;3;;200×200mm
+Standard;n.a;5;Left V;2;140;130;143;133;80;107;no;no;;;;;;;;;;;;;;;n.a;n.a;;#f3e8dc;80:107;vertical;rectangle;3;;200×200mm
+Standard;n.a;5;Right H;1;105;130;108;133;150;100;no;yes;above (10mm from photo);105;63.5;108;66.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#bb85a7;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;5;Right V;1;105;110;108;113;120;160;no;yes;above (5mm from photo);105;18.5;108;21.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#bb85a7;03:04;vertical;rectangle;3;;200×200mm
+Standard;n.a;6;Left H;1;95;100;98;103;150;100;no;yes;below (10mm from photo);95;166.5;98;169.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#ddecf0;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;6;Left V;1;95;90;98;93;120;160;no;yes;below (5mm from photo);95;181.5;98;184.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#ddecf0;03:04;vertical;rectangle;3;;200×200mm
+Standard;n.a;6;Right H;1;105;100;108;103;150;100;no;yes;below (10mm from photo);105;166.5;108;169.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#ddecf0;03:02;horizontal;rectangle;3;;200×200mm
+Standard;n.a;6;Right V;1;105;90;108;93;120;160;no;yes;below (5mm from photo);105;181.5;108;184.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;n.a;n.a;#4a4b40;#ddecf0;03:04;vertical;rectangle;3;;200×200mm
+Functional;Birthday wishes;1;-;-;-;-;-;-;-;-;no;yes;center;95;110;98;113;86;140;center;center;Source Sans 3;16pt;Regular;-0.02;1.28;no;yes;#4a4b40;#b5ceb5;n.a;square;;3;;200×200mm
+Functional;Heart photo;1;Right V;1;105;100;108;103;165;175;no;no;;;;;;;;;;;;;;;yes;no;;#b5ceb5;33:35:00;vertical;custom;3;;200×200mm
+Functional;Funny words;2;-;-;-;-;-;-;-;-;no;yes;center;95;140;98;143;90;80;center;center;FirstTimeWriting;20pt;regular;0;1.2;no;yes;#4a4b40;#f3e8dc;n.a;square;;3;;200×200mm
+Functional;n.a;2;Right S;1;100;100;103;103;200;200;yes;no;;;;;;;;;;;;;;;no;no;;no background, full bleed photo;01:01;square;rectangle;3;;200×200mm
+Functional;Favourite toy;3;Left H;1;95;130;98;133;150;100;no;yes;above (10mm from photo);95;60;98;63;100;20;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;yes;yes;#4a4b40;#e7c979;03:02;horizontal;rectangle;3;;200×200mm
+Functional;Favourite toy;3;Left V;1;76;115;79;118;87;130;no;yes;upper right (10mm from photo);154.5;70;157.5;73;50;40;left;top;Source Sans 3;16pt;Regular;-0.02;1.28;yes;yes;#4a4b40;#e7c979;87:130;vertical;rectangle;3;;200×200mm
+Functional;n.a;3;Right H;1;105;100;108;103;150;100;no;no;;;;;;;;;;;;;;;no;no;;#f3e8dc;03:02;horizontal;rectangle;3;;200×200mm
+Functional;n.a;3;Right V;1;105;100;108;103;120;160;no;no;;;;;;;;;;;;;;;no;no;;#f3e8dc;03:04;vertical;rectangle;3;;200×200mm
+Functional;First steps;4;Left H;1;95;130;98;133;150;100;no;yes;above (25mm from photo);95;50;98;53;100;20;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;yes;yes;#493955;#ddecf0;03:02;horizontal;rectangle;3;;200×200mm
+Functional;First steps;4;Left V;1;76;115;79;118;87;130;no;yes;lower right (10mm from photo);154.5;160;157.5;163;50;40;left;bottom;Source Sans 3;16pt;Regular;-0.02;1.28;yes;yes;#493955;#ddecf0;93:139;vertical;rectangle;3;;200×200mm
+Functional;n.a;4;Right H;1;105;70;108;73;150;100;no;yes;below (50mm from photo);105;176.5;108;179.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;no;yes;#493955;#ddecf0;03:02;horizontal;rectangle;3;;200×200mm
+Functional;n.a;4;Right V;1;105;90;108;93;120;160;no;yes;below (5mm from photo);105;181.5;108;184.5;100;13;center;top;Source Sans 3;16pt;Regular;-0.02;1.28;no;yes;#493955;#ddecf0;03:04;vertical;rectangle;3;;200×200mm
+Functional;Art-Gallery;5;Left H;1;95;100;98;103;150;100;no;yes;below (20mm from photo);95;176.5;98;179.5;100;13;center;top;Source Sans 3;16pt;Regular;0.03;1.35;yes;yes;#493955;#f3e8dc;03:02;horizontal;rectangle;3;;200×200mm
+Functional;Art-Gallery;5;Right H;1;105;100;108;103;150;100;no;yes;below (20mm from photo);105;176.5;108;179.5;100;13;center;top;Source Sans 3;16pt;Regular;0.03;1.35;yes;yes;#493955;#f3e8dc;03:02;horizontal;rectangle;3;;200×200mm
+Functional;Art-Gallery;5;Left V;1;95;100;98;103;110;140;no;yes;below (5mm from photo);95;181.5;98;184.5;100;13;center;top;Source Sans 3;16pt;Regular;0.03;1.35;yes;yes;#493955;#f3e8dc;11:14;vertical;rectangle;3;;200×200mm
+Functional;Art-Gallery;5;Right V;1;105;100;108;103;110;140;no;yes;below (5mm from photo);105;181.5;108;184.5;100;13;center;top;Source Sans 3;16pt;Regular;0.03;1.35;yes;yes;#493955;#f3e8dc;11:14;vertical;rectangle;3;;200×200mm

@@ -45,7 +45,19 @@ const stripHtml = s => {
   // trailing space (typically an NBSP inserted before a manual line break, normalised to
   // a space above) inflates the measured line width in the PDF word-wrap and spuriously
   // wraps a line that fits on one line on screen. Newlines are preserved as line breaks.
-  return stripped.split('\n').map(l => l.replace(/[ \t]+/g, ' ').trim()).join('\n');
+  // Decode HTML entities AFTER the tag-mismatch check (so the check compares like-for-like).
+  // contentEditable serialises typed characters as named/numeric entities in innerHTML
+  // (e.g. "&" → "&amp;", "<" → "&lt;"), which the engine saves verbatim; without decoding
+  // they print literally ("Anna &amp; Michael"). Decode numeric forms first, then named
+  // ones, and &amp; LAST so an already-escaped entity like "&amp;lt;" survives as "&lt;"
+  // rather than collapsing to "<".
+  const decodeEntities = t => t
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)))
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
+  return stripped.split('\n').map(l => decodeEntities(l.replace(/[ \t]+/g, ' ').trim())).join('\n');
 };
 
 // ── Runtime config (set by CLI or by generatePdfFromFirestore for server mode) ─
@@ -79,6 +91,7 @@ require(path.resolve(__dirname, '../assets/Template_Scribble/scribble-data.js'))
 require(path.resolve(__dirname, '../assets/Template_Wander/wander-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Newborn/newborn-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Papercut/papercut-data.js'));
+require(path.resolve(__dirname, '../assets/Template_Tender/tender-data.js'));
 DATA = global.window.SCRIBBLE_DATA; // default; will be updated in main() if needed
 
 function initializePrintConstants() {
@@ -126,6 +139,7 @@ const TEMPLATES = {
   scribble: { data: () => global.window.SCRIBBLE_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Scribble/Spreads') },
   wander:   { data: () => global.window.WANDER_DATA,   assetBase: path.resolve(__dirname, '../assets/Template_Wander') },
   newborn:  { data: () => global.window.NEWBORN_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Newborn') },
+  tender:   { data: () => global.window.TENDER_DATA,   assetBase: path.resolve(__dirname, '../assets/Template_Tender') },
   papercut: { data: () => global.window.PAPERCUT_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Papercut/SVG') },
 };
 
@@ -133,7 +147,20 @@ let ASSET_BASE = TEMPLATES.scribble.assetBase; // default
 
 function setActiveTemplate(templateName) {
   const key = String(templateName || '').toLowerCase();
-  const t = (TEMPLATES[key] && TEMPLATES[key].data()) ? TEMPLATES[key] : TEMPLATES.scribble;
+  // Empty/missing template = legacy book-state with no template field → default to scribble.
+  // But a SPECIFIED template that we can't resolve must fail loudly: silently rendering the
+  // wrong template (the old behaviour) produces a plausible-but-wrong PDF and hides real bugs
+  // like a stale renderer deploy that doesn't yet know a newly-added template.
+  let t;
+  if (!key) {
+    t = TEMPLATES.scribble;
+  } else if (TEMPLATES[key] && TEMPLATES[key].data()) {
+    t = TEMPLATES[key];
+  } else {
+    throw new Error(
+      `Unknown template "${templateName}". Known: ${Object.keys(TEMPLATES).join(', ')}. ` +
+      `If this template was added recently, the PDF renderer needs to be redeployed.`);
+  }
   DATA = t.data();
   ASSET_BASE = t.assetBase;
 }
@@ -385,28 +412,25 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
     const sx = slotLeft(slot);
     const sy = slotTop(slot);
 
-    // Determine photo source
+    // Determine photo source. Mirrors the engine's de-hardcoded resolver (S79):
+    // ANY pool except regular/cover is a special functional photo, stored in
+    // specialPhotos[spreadId]. The stored SHAPE encodes per-side-ness: an array
+    // [leftName, rightName] is one photo per page (FP5 art gallery, Newborn Labour);
+    // a scalar (string or {name}) is a single photo on its one side (FP3 toy, FP1
+    // birthday, Tender Our-story / Words). Legacy string-on-array templates fall back
+    // to the same photo on both pages.
     let photo = null;
-    if (slot.pool === 'special') {
-      // Single special photo (FP3 toy, FP4 steps, FP1 birthday) — stored as string or {name}
+    const isSpecialPool = slot.pool && slot.pool !== 'regular' && slot.pool !== 'cover';
+    if (isSpecialPool) {
       const spRaw = specialPhotos[spreadId];
-      const spName = typeof spRaw === 'string' ? spRaw : spRaw?.name;
-      if (spName) photo = { name: spName };
-    } else if (slot.pool === 'artwork' || slot.pool === 'labour') {
-      // Per-side photo pools: FP5 art gallery + Newborn FPlabour. specialPhotos[spreadId]
-      // is an array [leftName, rightName] (one photo per page). Legacy string fallback
-      // below handles old book-state.json (pre-fix) — re-export from the engine to upgrade.
-      const artArr = specialPhotos[spreadId];
-      const artIdx = side === 'left' ? 0 : 1;
-      let artName;
-      if (Array.isArray(artArr)) {
-        const entry = artArr[artIdx];
-        artName = typeof entry === 'string' ? entry : entry?.name;
+      let spName;
+      if (Array.isArray(spRaw)) {
+        const entry = spRaw[side === 'left' ? 0 : 1];
+        spName = typeof entry === 'string' ? entry : entry?.name;
       } else {
-        // Legacy / single-photo fallback — same photo on both pages
-        artName = typeof artArr === 'string' ? artArr : artArr?.name;
+        spName = typeof spRaw === 'string' ? spRaw : spRaw?.name;
       }
-      if (artName) photo = { name: artName };
+      if (spName) photo = { name: spName };
     } else {
       photo = toPhotoObj(assignedPhotos[i]) || null;
     }
@@ -485,8 +509,10 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
         // matching overlayAbovePhotos:true. When a spread sets overlayAbovePhotos:false
         // (Papercut SP4), the photos must sit ON TOP, so insert the SVG BEFORE them.
         // Scribble/Wander/Newborn omit the flag (undefined) → unchanged push behaviour.
+        // overlayBelow (per page, CSV overlay_position=below) OR spread-level
+        // overlayAbovePhotos:false → SVG paints BEFORE photos so the photos sit on top.
         const _spreadDef = DATA.spreads[spreadId] || {};
-        if (_spreadDef.overlayAbovePhotos === false) {
+        if (_spreadDef.overlayAbovePhotos === false || pageDef.overlayBelow) {
           composites.unshift({ input: svgBuffer, left: 0, top: 0 });
         } else {
           composites.push({ input: svgBuffer, left: 0, top: 0 });
@@ -579,6 +605,7 @@ const FONT_FILE_MAP = {
   'Cormorant Garamond_semibold': 'CormorantGaramond-SemiBold.ttf',
   'Cormorant Garamond_bold':     'CormorantGaramond-Bold.ttf',
   'Twinkle Star_regular':        'TwinkleStar-Regular.ttf',
+  'Parisienne_regular':          'Parisienne-Regular.ttf',
   'Baskervville_regular':        'Baskervville-Regular.ttf',
   'Baskervville_italic':         'Baskervville-Italic.ttf',
   'Baskervville_mediumitalic':   'Baskervville-MediumItalic.ttf',
@@ -613,7 +640,7 @@ async function embedAllFonts(pdfDoc) {
 // Newborn print can't ship with mid-word gaps; confirm visually at E2E (Stage 7).
 // Source Sans 3 forms fi/fl/ff ligatures (verified: 26 chars → 23 glyphs via fontkit.layout),
 // so it hits the same advance-width bug → per-character draw workaround.
-const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star', 'Source Sans 3']);
+const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star', 'Source Sans 3', 'Parisienne']);
 // EB Garamond additionally suppresses letter-spacing in the char-by-char path; the shaping
 // context loss caused irregular gaps when spacing was also applied. Cormorant Garamond keeps
 // its defined letter-spacing because the -0.02em tightening is aesthetically required.
@@ -940,7 +967,17 @@ async function renderCoverImage(coverDef, coverPhotoName, heartCrop = {}) {
       try {
         const svgStr      = fs.readFileSync(svgPath, 'utf8');
         const svgShrunk   = await shrinkOversizedSvg(svgStr, COVER_FULL_W_PX);
-        const svgExpanded = expandSvgViewBox(svgShrunk, COVER_SVG_BLEED_UNITS);
+        // Strip the root <svg> width/height (e.g. width="409mm" height="200mm") so the
+        // (bleed-expanded) viewBox alone governs the coordinate mapping. The cover is
+        // NON-square (409×200mm), so once we widen the viewBox by 18mm bleed its aspect
+        // (1.886) no longer matches the mm box's aspect (2.045); with width/height present,
+        // librsvg applies preserveAspectRatio "meet" and letterboxes the artwork, shifting
+        // the decorative frame off the photo clip (the clip is computed directly in px and
+        // stays put). Removing width/height makes the viewBox stretch to fill — matching the
+        // photo clip exactly. (Square spread SVGs are unaffected; Scribble's cover, which
+        // ships without width/height, was always correct — this brings the others in line.)
+        const svgExpanded = expandSvgViewBox(svgShrunk, COVER_SVG_BLEED_UNITS)
+          .replace(/<svg\b[^>]*>/i, t => t.replace(/\s(?:width|height)="[^"]*"/gi, ''));
         const svgBuffer   = await sharp(Buffer.from(svgExpanded))
           .resize(COVER_FULL_W_PX, COVER_FULL_H_PX, { fit: 'fill' })
           .png().toBuffer();

@@ -1,3 +1,15 @@
+## 2026-06-24 — Never render a book PDF locally without an explicit per-render go-ahead (egress)
+
+S79 agent-failure: off a vague "let's go with stage 7" I ran a local PDF render
+(`generatePdfFromFirestore` in a temp script). The local path downloads the order's
+**full-resolution originals** from GCS = real **egress on Evgeny's Google bill** — exactly
+what chunk-024's in-region Cloud Run renderer exists to avoid. PDF generation is the user's
+job via the **dashboard "Generate PDF"** (in-region = egress-free). Rule (now also in the
+`/add-template` skill + memory `feedback_no_local_pdf`): treat any local PDF render as a
+billable action — "continue / go ahead with the stage" is NOT permission; require an explicit,
+per-render go-ahead for the specific order. Generalises the CLAUDE.md cost-awareness rule to
+the PDF leg. Engines are safe (they load cheap ~1600px derivatives); only the PDF needs originals.
+
 ## 2026-06-23 — A new GCS bucket needs its CORS policy copied, or browser `fetch()` breaks ("Failed to fetch")
 
 S72's EU migration copied 9.22 GiB of photos US→EU but **not the bucket's CORS configuration**. Result (S73): loading a paid order into the staff engine threw *"Failed to fetch"*. Mechanism: order load calls `urlToFile()` → `fetch(signedUrl)` → `.blob()` (template-engine.html:4210) — a **cross-origin read** of a `storage.googleapis.com` URL from the `pages.dev` origin. The browser blocks the response unless the bucket returns CORS headers; the generic TypeError surfaces as "Failed to fetch". The old US bucket had `origin:["*"]` GET/PUT/OPTIONS; the new `aevia-uploads-eu` had none. Fix: `gsutil cors set <same-policy.json> gs://aevia-uploads-eu` (free, no egress, instant). Reusable rules:

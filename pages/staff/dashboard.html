@@ -529,6 +529,11 @@
       }
 
       if (pdfLinks.length > 0) {
+        // A PDF already exists. Still offer a regenerate button (with confirm) for
+        // generatable statuses, so staff can re-render after editing the book.
+        if (['new','approved','paid'].includes(order.status)) {
+          pdfLinks.push(`<button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(order.orderNumber)}', this, true)">Regenerate PDF</button>`);
+        }
         row.innerHTML = pdfLinks.join('');
         row.style.display = 'flex';
       }
@@ -541,7 +546,10 @@
   // The render runs async on Cloud Run (3–13 min). generatePdf just triggers it and
   // confirms it started; we then poll getPdfStatus for live progress and the final
   // signed URL. A progress bar replaces the old frozen "Generating…" label.
-  window.generatePdfFromDashboard = async function(orderNumber, btn) {
+  window.generatePdfFromDashboard = async function(orderNumber, btn, isRegenerate) {
+    if (isRegenerate && !confirm(`A PDF already exists for ${orderNumber}. Regenerate and overwrite it?`)) {
+      return;
+    }
     const row = document.getElementById(`pdf-row-${esc(orderNumber)}`);
     const origLabel = btn.textContent;
     btn.disabled = true;

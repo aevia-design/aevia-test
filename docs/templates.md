@@ -7,7 +7,7 @@ the product page + collections card (see `docs/briefs/artist-collaborations.md`)
 
 | Template | Category    | Status      | Artist collaboration |
 |----------|-------------|-------------|----------------------|
-| Vows     | Love        | Placeholder | —                    |
+| Tender   | Love        | Built       | —                    |
 | Devotion | Love        | Placeholder | —                    |
 | Radiance | Love        | Placeholder | —                    |
 | Wander   | Adventures  | Built       | **Kevin Lucbert** — in collaboration (first collaboration; see Our Artists) |

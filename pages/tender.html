@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vows — Aevia</title>
+  <title>Tender — Aevia</title>
   <link rel="stylesheet" href="../assets/css/addons.css" />
   <style>
     :root {
@@ -39,12 +39,10 @@
     .zone { display: grid; grid-template-columns: 1fr 400px; gap: 72px; max-width: 1160px; margin: 0 auto; padding: 64px 56px; align-items: start; }
     .panel { position: sticky; top: 90px; }
 
-    .gallery-main { width: 100%; aspect-ratio: 5/4; border-radius: 4px; background: var(--surface); display: flex; align-items: center; justify-content: center; }
-    .gallery-main svg { opacity: 0.25; }
-    .thumbs { display: flex; gap: 8px; margin-top: 10px; }
-    .thumb-ph { flex: 1; aspect-ratio: 1; border-radius: 3px; background: var(--surface); border: 2px solid transparent; display: flex; align-items: center; justify-content: center; }
-    .thumb-ph.on { border-color: var(--text); }
-    .thumb-ph svg { opacity: 0.2; }
+    /* Placeholder gallery — no mockup imagery yet (drop real .webp in later). */
+    .gallery-main { width: 100%; aspect-ratio: 1 / 1; border-radius: 4px; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+    .gallery-main svg { opacity: 0.22; }
+    .gallery-note { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); opacity: 0.7; }
 
     .page-toggle { margin-bottom: 30px; }
     .chips { display: flex; gap: 8px; margin-top: 8px; }
@@ -53,7 +51,6 @@
     .chip.on { border-color: var(--text); background: var(--text); color: var(--white); }
     .chip-label { font-size: 12px; font-weight: 500; letter-spacing: 0.03em; }
     .chip-price { font-family: var(--serif); font-size: 15px; }
-
 
     .price-row { display: flex; align-items: baseline; gap: 5px; margin-bottom: 22px; }
     .price-sym { font-family: var(--serif); font-size: 22px; color: var(--muted); }
@@ -112,28 +109,23 @@
   </button>
 </nav>
 
-<div class="crumb"><a href="collections.html">Templates</a> <span>›</span> <a href="collections.html#love">Love</a> <span>›</span> Vows</div>
+<div class="crumb"><a href="collections.html">Templates</a> <span>›</span> <a href="collections.html#love">Love</a> <span>›</span> Tender</div>
 
 <div class="zone">
-  <!-- Gallery -->
+  <!-- Gallery (placeholder — real mockups drop in later) -->
   <div>
     <div class="gallery-main">
       <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-        <rect x="10" y="18" width="52" height="38" rx="3" stroke="#9b8e83" stroke-width="1.8"/>
-        <circle cx="25" cy="32" r="6" stroke="#9b8e83" stroke-width="1.8"/>
-        <path d="M10 46l14-14 10 10 8-8 12 10 8-10" stroke="#9b8e83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="10" y="14" width="52" height="44" rx="3" stroke="#9b8e83" stroke-width="1.8"/>
+        <path d="M36 50c-9-6-15-11-15-19a8 8 0 0 1 15-3 8 8 0 0 1 15 3c0 8-6 13-15 19z" stroke="#9b8e83" stroke-width="1.8" stroke-linejoin="round"/>
       </svg>
-    </div>
-    <div class="thumbs">
-      <div class="thumb-ph on"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="4" y="6" width="20" height="16" rx="2" stroke="#9b8e83" stroke-width="1.3"/></svg></div>
-      <div class="thumb-ph"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="4" y="6" width="20" height="16" rx="2" stroke="#9b8e83" stroke-width="1.3"/></svg></div>
-      <div class="thumb-ph"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="4" y="6" width="20" height="16" rx="2" stroke="#9b8e83" stroke-width="1.3"/></svg></div>
+      <span class="gallery-note">Preview imagery coming soon</span>
     </div>
   </div>
   <!-- Details -->
   <div class="panel">
     <div class="tag">Love</div>
-    <h1 class="product-title">Vows</h1>
+    <h1 class="product-title">Tender</h1>
     <p class="product-tagline">Your wedding day, composed with the stillness it deserves.</p>
 
     <div class="page-toggle">
@@ -150,29 +142,39 @@
       </div>
     </div>
 
-    <div class="addons addons-list">
-      <div class="section-label">Optional add-ons</div>
-      <div class="addon" onclick="xtra(this)">
-        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body">
-          <div class="addon-name">Cover message</div>
-          <div class="addon-desc">A personalised inscription printed on the inside cover</div>
+    <div class="addons">
+      <div class="section-label">Optional spreads — all free</div>
+      <div class="addons-list">
+        <div class="addon" data-fp="FPintro" data-photos="0" onclick="xtra(this)">
+          <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="addon-body">
+            <div class="addon-name">Intro</div>
+            <div class="addon-desc">A short opening note to set the tone of your book.</div>
+          </div>
+          <div class="addon-cost">Free</div>
         </div>
-        <div class="addon-cost">Included</div>
-      </div>
-      <div class="addon" onclick="xtra(this)">
-        <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="addon-body">
-          <div class="addon-name">Envelope lining</div>
-          <div class="addon-desc">Gift-ready presentation with a printed tissue-lined envelope</div>
+        <div class="addon" data-fp="FPstory" data-photos="1" onclick="xtra(this)">
+          <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="addon-body">
+            <div class="addon-name">Our story</div>
+            <div class="addon-desc">A photo and a few words on how the two of you began.</div>
+          </div>
+          <div class="addon-cost">Free</div>
         </div>
-        <div class="addon-cost">Included</div>
+        <div class="addon" data-fp="FPwords" data-photos="1" onclick="xtra(this)">
+          <div class="chk"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="addon-body">
+            <div class="addon-name">Words</div>
+            <div class="addon-desc">Your vows or a favourite line, beside a full-bleed photo.</div>
+          </div>
+          <div class="addon-cost">Free</div>
+        </div>
       </div>
     </div>
 
     <div class="price-row">
       <span class="price-sym">€</span>
-      <span class="price-val" id="price">70</span>
+      <span class="price-val" id="a-price">70</span>
       <span class="price-note">incl. design &amp; printing</span>
     </div>
     <button class="cta" onclick="goToOrder()">Create your book</button>
@@ -186,8 +188,8 @@
       <svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
     </button>
     <div class="acc-body">
-      <p>Vows is built around the ceremony — a formal, considered structure that opens with portraits and moves through the day in chronological order. Clean margins and restrained typography give every image the space to speak.</p>
-      <p>We handle all design and typesetting. You supply the photos and any captions or notes, and our team composes the final layout for your approval before printing.</p>
+      <p>Tender is built around your wedding day — a soft, considered structure that opens with the two of you and moves through the day in chronological order. Generous margins and a delicate hand-script accent give every image the space to speak.</p>
+      <p>We handle all design and typesetting. You supply the photos and any vows, captions or notes, and our team composes the final layout for your approval before printing.</p>
     </div>
   </div>
   <div class="acc-item">
@@ -197,7 +199,7 @@
     <div class="acc-body">
       <p>Printed on 170gsm FSC-certified matte art paper. Hardcover case-bound with linen-texture finish. Produced in Vienna, dispatched within 5–7 business days of approval.</p>
       <ul>
-        <li>Format: 30 × 21 cm (landscape)</li>
+        <li>Format: 20 × 20 cm (square)</li>
         <li>Cover: Matte linen hardcover, ivory</li>
         <li>Paper: 170gsm matte, archival quality</li>
         <li>Binding: Case-bound, sewn signatures</li>
@@ -278,23 +280,42 @@
   function pick(el, p) {
     el.closest('.chips').querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
     el.classList.add('on');
-    document.getElementById('price').textContent = p;
+    document.getElementById('a-price').textContent = p;
   }
+
   function xtra(card) {
     card.classList.toggle('on');
     const cost = card.querySelector('.addon-cost');
-    cost.textContent = card.classList.contains('on') ? 'Added \u2713' : 'Included';
+    if (cost) cost.textContent = card.classList.contains('on') ? 'Added ✓' : 'Free';
   }
+
+  // FP slug/input-type metadata. order.html reads the per-page fields from
+  // TENDER_DATA.spreads[*].orderFormMeta; inputType keeps story/words off the
+  // legacy text-addon path. Slugs are lowercased spread ids.
+  const FP_META = {
+    FPintro: { name: 'Intro',     inputType: 'intro',   slug: 'fpintro' },
+    FPstory: { name: 'Our story', inputType: 'special', slug: 'fpstory' },
+    FPwords: { name: 'Words',     inputType: 'special', slug: 'fpwords' },
+  };
+
   function goToOrder() {
-    const price = document.getElementById('price').textContent;
+    const price = document.getElementById('a-price').textContent;
     const selectedChip = document.querySelector('.chip.on');
     const pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
-    const addonNames = [];
-    document.querySelectorAll('.addon.on').forEach(a => addonNames.push(a.querySelector('.addon-name').textContent));
-    const params = new URLSearchParams({ template: 'Vows', category: 'love', pages, price: price, backUrl: 'vows.html' });
-    addonNames.forEach(n => params.append('addonName', n));
+    const selected = [];
+    document.querySelectorAll('.addon.on').forEach(a => {
+      const meta = FP_META[a.dataset.fp];
+      if (meta) selected.push(meta);
+    });
+    const params = new URLSearchParams({ template: 'Tender', category: 'love', pages, price, back: 'tender.html' });
+    if (selected.length) {
+      params.set('addons',       selected.map(m => m.name).join(','));
+      params.set('addon_inputs', selected.map(m => m.inputType).join(','));
+      params.set('addon_slugs',  selected.map(m => m.slug).join(','));
+    }
     window.location.href = 'order.html?' + params.toString();
   }
+
   function acc(btn) {
     const item = btn.closest('.acc-item');
     const open = item.classList.contains('open');

@@ -223,6 +223,7 @@
 <script src="../assets/Template_Wander/wander-data.js"></script>
 <script src="../assets/Template_Newborn/newborn-data.js"></script>
 <script src="../assets/Template_Papercut/papercut-data.js"></script>
+<script src="../assets/Template_Tender/tender-data.js"></script>
 <script src="../assets/js/map-render.js"></script>
 </head>
 <body>
@@ -458,7 +459,7 @@ const CONFIRM_URL = 'https://europe-west1-aevia-uploads.cloudfunctions.net/confi
 
 const ALBUM_NOTE_PLACEHOLDERS = {
   kids:        "e.g. Ann's first year — born 14 March 2023. We'd love to see the early mornings, first smiles, and bath time chaos.",
-  love:        "e.g. Our honeymoon in Japan, May 2024 — three weeks, too much ramen, and zero regrets.",
+  love:        "e.g. Our wedding day — 14 June 2026, Vienna. The vows, the first dance, and everyone we love in one room.",
   wedding:     "e.g. Our wedding day, 12 June 2025, Vienna. Ceremony at 4pm, dancing until 2am.",
   travel:      "e.g. Six weeks in Patagonia, autumn 2023. Torres del Paine circuit, dawn to dusk.",
   adventures:  "e.g. Six weeks in Patagonia, autumn 2023. Torres del Paine circuit, dawn to dusk.",
@@ -509,6 +510,7 @@ const TEMPLATE_REGISTRY = {
   wander:   () => window.WANDER_DATA,
   newborn:  () => window.NEWBORN_DATA,
   papercut: () => window.PAPERCUT_DATA,
+  tender:   () => window.TENDER_DATA,
 };
 function templateData() {
   const key = (ORDER.template || '').toLowerCase();
@@ -1077,7 +1079,7 @@ function renderIntroFields(slug, meta) {
     rows += `</div>`;
   }
   return `
-    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Intro details</div>
+    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${escHtml(meta.heading || 'Intro details')}</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.55;">${escHtml(meta.hint || '')}</div>
     ${rows}`;
 }
@@ -1989,7 +1991,9 @@ async function submitOrder() {
       (textMeta.fields || []).forEach(f => {
         vals[f.key] = (document.getElementById(`intro-${a.slug}-${f.key}`) || {}).value?.trim() || '';
       });
-      const block = composeIntroBlock(vals);
+      // Per-spread composer if the template provides one (Tender intro/story/words);
+      // else the Newborn birth-story default.
+      const block = (textMeta.compose || composeIntroBlock)(vals);
       if (block) {
         fpTexts[a.slug] = block;
         addonNoteLines.push(`${a.name}: ${block.replace(/\n/g, ' · ')}`);

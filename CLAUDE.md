@@ -34,6 +34,7 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 - Design principles: `context/design-principles.md` (website + staff engine)
 - Customer engine design spec: `.interface-design/system.md`
 - Style guide: `context/style-guide.md`
+- Pricing (summary; `assets/js/prices.js` is canonical): `docs/pricing.md`
 - Customer journey: `context/customer-journey-v1.md`
 - Session logs: `sessions/`
 - ADRs: `docs/decisions/`

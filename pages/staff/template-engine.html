@@ -8,6 +8,7 @@
   <script src="../../assets/Template_Wander/wander-data.js"></script>
   <script src="../../assets/Template_Newborn/newborn-data.js"></script>
   <script src="../../assets/Template_Papercut/papercut-data.js"></script>
+  <script src="../../assets/Template_Tender/tender-data.js"></script>
   <script src="../../assets/js/photo-utils.js"></script>
   <script src="../../assets/js/book-completeness.js"></script>
   <script src="../../assets/js/map-render.js"></script>
@@ -99,6 +100,11 @@
     @font-face {
       font-family: 'Twinkle Star';
       src: url('../../assets/fonts/TwinkleStar-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Parisienne';
+      src: url('../../assets/fonts/Parisienne-Regular.ttf') format('truetype');
       font-weight: 400; font-style: normal; font-display: swap;
     }
     @font-face {
@@ -571,6 +577,12 @@
       background: #FDF1E5;
       flex-shrink: 0;
       overflow: hidden;
+      /* Frame each page as a printed sheet so pale templates (e.g. Tender, cream on
+         warm-white) don't blend into the canvas. Soft shadow does the work; the hairline
+         crisps the edge. Template-agnostic — barely visible on colourful templates. */
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 2px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 8px 28px rgba(0,0,0,0.05);
     }
     .cover-canvas {
       width: 1227px !important; /* (200 + 9 + 200)mm × 3px/mm */
@@ -865,6 +877,7 @@
       <option value="Wander">Wander</option>
       <option value="Newborn">Newborn</option>
       <option value="Papercut">Papercut</option>
+      <option value="Tender">Tender</option>
     </select>
     <button class="config-export-btn" id="export-state-btn">Export State</button>
     <button class="config-upload-btn" id="upload-btn">+ Add Photos</button>
@@ -1166,6 +1179,7 @@
     wander:   { data: () => window.WANDER_DATA,   svgBase: '../../assets/Template_Wander/' },
     newborn:  { data: () => window.NEWBORN_DATA,  svgBase: '../../assets/Template_Newborn/' },
     papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../../assets/Template_Papercut/SVG/' },
+    tender:   { data: () => window.TENDER_DATA,   svgBase: '../../assets/Template_Tender/' },
   };
 
   let _activeTemplateData = window.SCRIBBLE_DATA; // default
@@ -1926,6 +1940,7 @@
     { label: 'Cormorant Garamond', value: 'Cormorant Garamond', styles: [{ label: 'Light', weight: 300, italic: false }, { label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }, { label: 'Semi-Bold', weight: 600, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
     { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }], funnyWordsOnly: true },
     { label: 'Twinkle Star',      value: 'Twinkle Star',      styles: [{ label: 'Regular', weight: 400, italic: false }] },
+    { label: 'Parisienne',        value: 'Parisienne',        styles: [{ label: 'Regular', weight: 400, italic: false }] },
     { label: 'Baskervville',      value: 'Baskervville',      styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Medium Italic', weight: 500, italic: true }] },
     { label: 'Source Sans 3',    value: 'Source Sans 3',    styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
   ];
@@ -2451,7 +2466,9 @@
           console.warn('SVG overlay failed to load:', overlay.src);
           overlay.style.outline = '3px solid #e05252';
         };
-        if (spreadDef.overlayAbovePhotos === false) overlay.style.zIndex = '0';
+        // overlayBelow (per page, from the CSV overlay_position=below column) OR a
+        // spread-level overlayAbovePhotos:false (Papercut) drops the art UNDER the photos.
+        if (spreadDef.overlayAbovePhotos === false || variant.overlayBelow) overlay.style.zIndex = '0';
         canvas.appendChild(overlay);
       }
 
@@ -2518,19 +2535,24 @@
         let photo = null;
         let isSpecialSlot = false;
         let regularPoolIdx = null;   // pool index for regular photos (null for special) — used for the placement-warning badge
-        if (slotDef.pool === 'special' || slotDef.pool === 'artwork' || slotDef.pool === 'labour') {
+        // Special pool = any pool that draws from window.specialPhotos rather than the
+        // main grid. That's every named pool EXCEPT 'regular' (main grid) and 'cover'
+        // (rendered on a separate surface). Keeping it exclusion-based means a new
+        // template's new special pool (e.g. Tender's 'story'/'words') works with no
+        // code change — see add-template skill, de-hardcoding direction.
+        if (slotDef.pool && slotDef.pool !== 'regular' && slotDef.pool !== 'cover') {
           isSpecialSlot = true;
           // Record this position so checkBookComplete() doesn't count its (intentional)
           // null assignment as an empty slot. Mirrors customer-preview.html.
           (window._specialSlots = window._specialSlots || []).push(`${spreadIndex}:${side}:${slotIdx}`);
-          const spKey = spreadId; // e.g. 'FP3', 'FP4', 'FP5'
+          const spKey = spreadId; // e.g. 'FP3', 'FP5', 'FPstory'
           const spArr = window.specialPhotos[spKey] || [];
-          // Artwork spreads (FP5) place one photo per PAGE — left = artwork 0,
-          // right = artwork 1. Each page has a single slot (slotIdx 0), so slotIdx
-          // can't tell the pages apart; index by side. Other special pools (FP3/FP4,
-          // one photo total) keep slotIdx.
-          // Artwork (FP5) and Labour place one photo per PAGE → index by side.
-          const photoIdx = (slotDef.pool === 'artwork' || slotDef.pool === 'labour') ? (side === 'left' ? 0 : 1) : slotIdx;
+          // Two-photo spreads (count >= 2, e.g. Newborn Labour / Scribble FP5 artwork)
+          // place one photo per PAGE — each page has a single slot (slotIdx 0) so we
+          // index by side. One-photo spreads (FP3/FP4, Tender story/words) keep slotIdx.
+          const sp = getActiveTemplateData()?.spreads?.[spreadId];
+          const perSide = slotDef.pool === 'artwork' || slotDef.pool === 'labour' || (sp?.orderFormPhoto?.count >= 2);
+          const photoIdx = perSide ? (side === 'left' ? 0 : 1) : slotIdx;
           photo = spArr[photoIdx] || null;
         } else {
           const poolIdx = sideSlice[slotIdx] !== undefined ? sideSlice[slotIdx] : null;
@@ -3703,25 +3725,61 @@
      SPECIAL PHOTO PANEL — SHOW/HIDE ZONES
   ═══════════════════════════════════════════ */
 
+  // Create an upload zone for every functional spread of the ACTIVE template that takes
+  // a photo (orderFormPhoto) and doesn't already have a static zone in the HTML. The
+  // original FP1/FP3/FP4/FP5/FPlabour zones are authored in markup with hand-tuned
+  // labels; templates with new functional photo spreads (Tender's Our-story/Words) get
+  // their zones built here so the engine local-tester can upload to them. Idempotent.
+  function ensureFunctionalPhotoZones() {
+    const panel = document.getElementById('special-panel');
+    const data = getActiveTemplateData();
+    Object.values((data && data.spreads) || {}).forEach(s => {
+      if (s.type !== 'functional' || !s.orderFormPhoto) return;
+      if (document.getElementById('special-zone-' + s.id)) return; // static zone already present
+      const count = s.orderFormPhoto.count || 1;
+      const label = s.orderFormPhoto.label || s.label || s.id;
+      const zone = document.createElement('div');
+      zone.className = 'special-zone';
+      zone.id = 'special-zone-' + s.id;
+      zone.style.display = 'none';
+      zone.innerHTML =
+        '<span class="special-zone-label">' + label + (count > 1 ? ' (' + count + ')' : '') + '</span>' +
+        '<button class="special-upload-btn" data-fp="' + s.id + '" data-max="' + count + '">+ Upload ' + (count > 1 ? count + ' photos' : 'photo') + '</button>' +
+        '<div class="special-thumbs" id="special-thumbs-' + s.id + '"></div>' +
+        '<input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden ' + (count > 1 ? 'multiple ' : '') + 'data-fp-input="' + s.id + '" />';
+      panel.appendChild(zone);
+      if (!SPECIAL_LABELS[s.id]) SPECIAL_LABELS[s.id] = label;
+    });
+  }
+
   function updateSpecialPanel() {
+    ensureFunctionalPhotoZones();
     const checked = new Set(
       Array.from(document.querySelectorAll('input[name="fp"]:checked')).map(cb => cb.value)
     );
     const panel = document.getElementById('special-panel');
+    const data = getActiveTemplateData();
     // Cover zone shown only when the active template has a cover photo slot
     // (Scribble does; Wander's cover is free-text only).
-    const hasCoverPhoto = (getActiveTemplateData().cover?.slots || []).length > 0;
-    ['FP1', 'FP3', 'FP4', 'FP5'].forEach(fp => {
-      document.getElementById('special-zone-' + fp).style.display = checked.has(fp) ? 'flex' : 'none';
-    });
+    const hasCoverPhoto = (data.cover?.slots || []).length > 0;
     document.getElementById('special-zone-cover').style.display = hasCoverPhoto ? 'flex' : 'none';
-    // Newborn Labour: photo zone + zodiac selector, shown when the Labour page is on.
+    // Every functional spread that takes a photo: toggle its zone by its checkbox.
+    let anyFpChecked = false;
+    Object.values(data.spreads || {}).forEach(s => {
+      if (s.type !== 'functional' || !s.orderFormPhoto) return;
+      const zone = document.getElementById('special-zone-' + s.id);
+      if (!zone) return;
+      const on = checked.has(s.id);
+      zone.style.display = on ? 'flex' : 'none';
+      if (on) anyFpChecked = true;
+    });
+    // Newborn Labour: zodiac selector rides alongside the Labour photo zone.
     const hasLabour = checked.has('FPlabour');
-    document.getElementById('special-zone-FPlabour').style.display = hasLabour ? 'flex' : 'none';
-    document.getElementById('special-zone-zodiac').style.display = hasLabour ? 'flex' : 'none';
+    const zodiacZone = document.getElementById('special-zone-zodiac');
+    if (zodiacZone) zodiacZone.style.display = hasLabour ? 'flex' : 'none';
     if (hasLabour) populateZodiacSelect();
-    // Panel is needed if the cover photo zone or any FP zone is showing.
-    const needPanel = hasCoverPhoto || checked.has('FP1') || checked.has('FP3') || checked.has('FP4') || checked.has('FP5') || hasLabour;
+    // Panel is needed if the cover photo zone or any FP photo zone is showing.
+    const needPanel = hasCoverPhoto || anyFpChecked;
     panel.classList.toggle('visible', needPanel);
     document.documentElement.style.setProperty('--special-h', needPanel ? '68px' : '0px');
   }
@@ -3937,44 +3995,47 @@
     countEl.textContent = total;
   }
 
-  document.querySelectorAll('.special-upload-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const fp = btn.dataset.fp;
-      document.querySelector('[data-fp-input="' + fp + '"]').click();
-    });
+  // Delegated on the panel so zones created later by ensureFunctionalPhotoZones()
+  // (e.g. Tender's Our-story/Words) get the same upload behaviour as the static ones.
+  const specialPanelEl = document.getElementById('special-panel');
+
+  specialPanelEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('.special-upload-btn');
+    if (!btn) return;
+    document.querySelector('[data-fp-input="' + btn.dataset.fp + '"]').click();
   });
 
-  document.querySelectorAll('[data-fp-input]').forEach(input => {
-    input.addEventListener('change', async function () {
-      const fp = this.dataset.fpInput;
-      const max = parseInt(document.querySelector('.special-upload-btn[data-fp="' + fp + '"]').dataset.max);
-      const files = Array.from(this.files);
-      if (!files.length) return;
+  specialPanelEl.addEventListener('change', async (e) => {
+    const input = e.target.closest('[data-fp-input]');
+    if (!input) return; // ignores the zodiac <select> change (handled separately)
+    const fp = input.dataset.fpInput;
+    const max = parseInt(document.querySelector('.special-upload-btn[data-fp="' + fp + '"]').dataset.max);
+    const files = Array.from(input.files);
+    if (!files.length) return;
 
-      const slots = max - (window.specialPhotos[fp]?.length || 0);
-      if (slots <= 0) {
-        alert('Remove the existing photo first before uploading a new one.');
-        this.value = '';
-        return;
-      }
+    const slots = max - (window.specialPhotos[fp]?.length || 0);
+    if (slots <= 0) {
+      alert('Remove the existing photo first before uploading a new one.');
+      input.value = '';
+      return;
+    }
 
-      const toProcess = files.slice(0, slots);
-      for (const file of toProcess) {
-        const result = await processOneFile(file);
-        if (result) {
-          if (!window.specialPhotos[fp]) window.specialPhotos[fp] = [];
-          window.specialPhotos[fp].push(result);
-        }
+    const toProcess = files.slice(0, slots);
+    for (const file of toProcess) {
+      const result = await processOneFile(file);
+      if (result) {
+        if (!window.specialPhotos[fp]) window.specialPhotos[fp] = [];
+        window.specialPhotos[fp].push(result);
       }
-      renderSpecialThumbs(fp);
-      renderSpecialSidebar();
-      if (fp === 'cover') {
-        rerenderCover();
-      } else if (window.photoPool.length) {
-        renderBook();
-      }
-      this.value = '';
-    });
+    }
+    renderSpecialThumbs(fp);
+    renderSpecialSidebar();
+    if (fp === 'cover') {
+      rerenderCover();
+    } else if (window.photoPool.length) {
+      renderBook();
+    }
+    input.value = '';
   });
 
   /* ═══════════════════════════════════════════
