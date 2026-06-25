@@ -260,6 +260,7 @@ let SPREAD_SVG_BLEED_UNITS;
 // compressed versions. URLs come from getOrder and are fresh (1h expiry).
 const GET_ORDER_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getOrder';
 const photoCache  = new Map();   // name → Buffer (avoids re-downloading a photo used twice)
+const svgRasterCache = new Map(); // svgPath|FULL_PX → rasterised PNG Buffer (a book reuses ~7 spread designs across 40 pages; rasterising heavy SVGs once instead of per-page is the main speed lever)
 let gcsUrlByName  = null;        // basename → signed URL (built by setupPhotoSource)
 let folderName    = null;        // derived from storedNames in setupPhotoSource
 let gcsOrder      = null;        // full order object from getOrder (for book-state.json fetch in --order mode)
@@ -498,13 +499,23 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
     const svgPath = path.join(ASSET_BASE, svg);
     if (fs.existsSync(svgPath)) {
       try {
-        const svgStr     = fs.readFileSync(svgPath, 'utf8');
-        const svgShrunk  = await shrinkOversizedSvg(svgStr, FULL_PX);
-        const svgExpanded = expandSvgViewBox(svgShrunk, SPREAD_SVG_BLEED_UNITS);
-        const svgBuffer  = await sharp(Buffer.from(svgExpanded))
-          .resize(FULL_PX, FULL_PX, { fit: 'fill' })
-          .png()
-          .toBuffer();
+        // The decorative SVG for a given file rasterises to the same image every time it
+        // appears, but a book reuses ~7 spread designs across its pages — so cache the
+        // rasterised PNG by path+canvas-size and reuse it, instead of re-running librsvg
+        // (slow on heavy SVGs, e.g. Tender's 5.8 MB SP5) once per page. Cache is cleared
+        // between requests (see generatePdfFromFirestore) so book sizes can't cross over.
+        const svgCacheKey = `${svgPath}|${FULL_PX}`;
+        let svgBuffer = svgRasterCache.get(svgCacheKey);
+        if (!svgBuffer) {
+          const svgStr      = fs.readFileSync(svgPath, 'utf8');
+          const svgShrunk   = await shrinkOversizedSvg(svgStr, FULL_PX);
+          const svgExpanded = expandSvgViewBox(svgShrunk, SPREAD_SVG_BLEED_UNITS);
+          svgBuffer = await sharp(Buffer.from(svgExpanded))
+            .resize(FULL_PX, FULL_PX, { fit: 'fill' })
+            .png()
+            .toBuffer();
+          svgRasterCache.set(svgCacheKey, svgBuffer);
+        }
         // Z-order: composites paint in array order. Default (push) = SVG on top of photos,
         // matching overlayAbovePhotos:true. When a spread sets overlayAbovePhotos:false
         // (Papercut SP4), the photos must sit ON TOP, so insert the SVG BEFORE them.
@@ -1473,6 +1484,7 @@ async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, p
   outDir         = '/tmp/pdf-out';
   Object.assign(photoCache, new Map()); // clear photo cache between requests
   photoCache.clear();
+  svgRasterCache.clear();               // clear SVG raster cache between requests (book size / template may change)
 
   fs.mkdirSync(outDir, { recursive: true });
   setActiveTemplate(stateData.template || '');
