@@ -4634,7 +4634,22 @@
   // Show the engine only when signed in as staff; otherwise show the gate.
   onAuthStateChanged(auth, (user) => {
     document.getElementById('eng-lock').style.display = user ? 'none' : 'flex';
+    if (user) maybeDeepLinkOrder();
   });
+
+  // Deep-link support: a `?order=AEV-044` param (e.g. the dashboard "Open in
+  // engine" link) switches to Order mode, fills the input, and loads it. Runs
+  // once, after sign-in, so the auth token is ready for the getOrder call.
+  let _deepLinkHandled = false;
+  function maybeDeepLinkOrder() {
+    if (_deepLinkHandled) return;
+    const ord = (new URLSearchParams(location.search).get('order') || '').trim();
+    if (!ord) return;
+    _deepLinkHandled = true;
+    document.getElementById('mode-order-btn').click();   // switch to Order mode
+    document.getElementById('order-number-input').value = ord.toUpperCase();
+    document.getElementById('order-load-btn').click();   // trigger the load
+  }
 </script>
 
 </body>

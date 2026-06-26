@@ -91,6 +91,19 @@
     }
     .filter-btn:hover { color: var(--text); border-color: var(--text); }
     .filter-btn.active { background: var(--text); color: var(--white); border-color: var(--text); }
+    .search-input {
+      margin-left: auto; min-width: 220px; padding: 7px 14px; font-size: 12px;
+      font-family: var(--sans); background: var(--white); border: 1px solid var(--border);
+      border-radius: 100px; outline: none; color: var(--text); transition: border-color 0.15s;
+    }
+    .search-input:focus { border-color: var(--text); }
+
+    /* ── Preview-sent nudge ── */
+    .sent-nudge { font-size: 11px; margin-top: 6px; color: var(--muted); }
+    .sent-nudge.stale { color: var(--accent); font-weight: 500; }
+
+    /* ── Copy feedback ── */
+    .preview-url-copy.copied { color: #166534; }
 
     /* ── Table ── */
     .table-wrap { padding: 0 40px 60px; overflow-x: auto; }
@@ -218,6 +231,7 @@
       <span class="topbar-label">Orders</span>
     </div>
     <div class="topbar-right">
+      <a class="refresh-btn" href="template-engine.html" title="Open the staff template engine">Template engine</a>
       <button class="refresh-btn" onclick="loadOrders()">Refresh</button>
       <button class="logout-btn" onclick="logout()">Log out</button>
     </div>
@@ -261,6 +275,8 @@
     <button class="filter-btn" onclick="setFilter('printing', this)">Printing</button>
     <button class="filter-btn" onclick="setFilter('in_delivery', this)">In delivery</button>
     <button class="filter-btn" onclick="setFilter('delivered', this)">Delivered</button>
+    <input id="search-input" class="search-input" type="search" autocomplete="off"
+           placeholder="Search order, name, email…" oninput="setSearch(this.value)" />
   </div>
 
   <!-- Table -->
@@ -366,6 +382,7 @@
 
   // ── Filter state ──────────────────────────────────────────────────────────
   let currentFilter = 'all';
+  let searchTerm = '';
   let allOrders = [];
 
   window.setFilter = function(status, btn) {
@@ -374,6 +391,28 @@
     btn.classList.add('active');
     renderTable();
   };
+
+  // Live text search across order number, customer name, and email.
+  window.setSearch = function(value) {
+    searchTerm = value.trim().toLowerCase();
+    renderTable();
+  };
+
+  // Single source of truth for which orders are on screen — status filter AND
+  // search term. Used by both renderTable and updatePdfLinks so they never drift.
+  function getVisibleOrders() {
+    let list = currentFilter === 'all'
+      ? allOrders
+      : allOrders.filter(o => o.status === currentFilter);
+    if (searchTerm) {
+      list = list.filter(o =>
+        [o.orderNumber, o.customerName, o.email]
+          .filter(Boolean)
+          .some(f => String(f).toLowerCase().includes(searchTerm))
+      );
+    }
+    return list;
+  }
 
   // ── Load orders ───────────────────────────────────────────────────────────
   window.loadOrders = async function() {
@@ -412,12 +451,11 @@
   // ── Render table ──────────────────────────────────────────────────────────
   function renderTable() {
     const tbody   = document.getElementById('orders-body');
-    const visible = currentFilter === 'all'
-      ? allOrders
-      : allOrders.filter(o => o.status === currentFilter);
+    const visible = getVisibleOrders();
 
     if (visible.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9"><div class="state-msg">No orders here yet.</div></td></tr>';
+      const msg = searchTerm ? `No orders match “${esc(searchTerm)}”.` : 'No orders here yet.';
+      tbody.innerHTML = `<tr><td colspan="9"><div class="state-msg">${msg}</div></td></tr>`;
       return;
     }
 
@@ -444,6 +482,19 @@
         ? `https://aevia-test.pages.dev/pages/customer-preview.html?token=${esc(o.previewToken)}`
         : null;
 
+      // Nudge signal: how long ago the preview was sent, while still awaiting a
+      // customer response. sentSnapshot.sentAt is stamped by generatePreviewLink;
+      // once the customer approves, the status leaves the pre-approval set and the
+      // nudge disappears (the badge tells the story from there).
+      const PRE_APPROVAL = ['uploading','new','designing','needs_info','review_sent'];
+      const sentMs = (o.sentSnapshot && o.sentSnapshot.sentAt) ? o.sentSnapshot.sentAt.seconds * 1000 : null;
+      let nudge = '';
+      if (previewUrl && sentMs && PRE_APPROVAL.includes(o.status)) {
+        const days  = Math.floor((Date.now() - sentMs) / 86400000);
+        const stale = days >= 3;
+        nudge = `<div class="sent-nudge${stale ? ' stale' : ''}">Preview sent ${timeAgo(sentMs)}${stale ? ' — nudge the customer?' : ' — awaiting response'}</div>`;
+      }
+
       return `<tr>
         <td>
           <div class="order-num">${esc(o.orderNumber)}</div>
@@ -460,14 +511,19 @@
         <td>${esc(price)}</td>
         <td>
           <div class="notes-text" title="${esc(notes)}">${esc(notes)}</div>
+          <div class="engine-link-row" style="margin-top:8px;">
+            <a class="pdf-link-btn" href="template-engine.html?order=${esc(o.orderNumber)}"
+               title="Open ${esc(o.orderNumber)} in the staff template engine">Open in engine →</a>
+          </div>
           <div class="preview-link-row">
             ${previewUrl
-              ? `<div class="preview-url">${esc(previewUrl)}</div>
-                 <span class="preview-url-copy" onclick="copyToClipboard('${esc(previewUrl).replace(/'/g, "\\'")}')">copy</span>
+              ? `<a class="preview-link-btn" href="${esc(previewUrl)}" target="_blank" rel="noopener">Open preview ↗</a>
+                 <span class="preview-url-copy" onclick="copyToClipboard('${esc(previewUrl).replace(/'/g, "\\'")}', this)">copy link</span>
                  <button class="preview-link-btn revoke" onclick="revokePreviewLink('${esc(o.orderNumber)}')">Revoke</button>`
               : `<button class="preview-link-btn" onclick="generatePreviewLink('${esc(o.orderNumber)}')">Generate preview link</button>`
             }
           </div>
+          ${nudge}
           <div class="pdf-links-row" id="pdf-row-${esc(o.orderNumber)}" style="display:flex;margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center;">
             ${['new','approved','paid'].includes(o.status)
               ? `<button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(o.orderNumber)}', this)">Generate PDF</button>`
@@ -501,9 +557,7 @@
 
   // ── Update PDF links (check existence and show/hide) ─────────────────────
   async function updatePdfLinks() {
-    const visible = currentFilter === 'all'
-      ? allOrders
-      : allOrders.filter(o => o.status === currentFilter);
+    const visible = getVisibleOrders();
 
     // One auth token for the whole batch; fan out all existence checks in parallel
     // (was serial: 2 awaited fetches × every visible order, which lagged the row).
@@ -711,11 +765,15 @@
   };
 
   // ── Copy to clipboard helper ──────────────────────────────────────────────
-  window.copyToClipboard = async function(text) {
+  window.copyToClipboard = async function(text, el) {
     try {
       await navigator.clipboard.writeText(text);
-      // Brief visual feedback
-      alert('Copied to clipboard!');
+      if (el) {
+        const orig = el.textContent;
+        el.textContent = 'copied ✓';
+        el.classList.add('copied');
+        setTimeout(() => { el.textContent = orig; el.classList.remove('copied'); }, 1500);
+      }
     } catch (err) {
       alert('Could not copy: ' + err.message);
     }
@@ -733,7 +791,7 @@
       if (data.url) {
         window.open(data.url, '_blank');
       } else {
-        alert('PDF not found. Run the export script first.');
+        alert('PDF not generated yet — use the Generate PDF button.');
       }
     } catch (err) {
       alert('Could not fetch PDF: ' + err.message);
@@ -782,7 +840,25 @@
   };
 
   // ── Update status + log event ─────────────────────────────────────────────
+  // Linear workflow order for the progression guard. 'needs_info' is intentionally
+  // omitted — it's a triage side-state you toggle in/out of at any point.
+  const STATUS_SEQUENCE = ['uploading','new','designing','review_sent','approved','paid','sent_to_print','printing','in_delivery','delivered'];
+
   window.updateStatus = async function(orderNumber, newStatus) {
+    // Guard against accidental out-of-sequence jumps (a stray scroll on the <select>
+    // landing on a far-ahead or earlier status). Adjacent forward steps pass silently.
+    const current = allOrders.find(o => o.orderNumber === orderNumber)?.status;
+    if (current && current !== newStatus && current !== 'needs_info' && newStatus !== 'needs_info') {
+      const fi = STATUS_SEQUENCE.indexOf(current);
+      const ti = STATUS_SEQUENCE.indexOf(newStatus);
+      if (fi !== -1 && ti !== -1 && (ti < fi || ti > fi + 1)) {
+        const dir = ti < fi ? 'back to' : 'ahead to';
+        if (!confirm(`Move ${orderNumber} ${dir} “${statusLabel(newStatus)}”?\nThat skips the normal order (currently “${statusLabel(current)}”).`)) {
+          renderTable(); // revert the dropdown to the stored status
+          return;
+        }
+      }
+    }
     try {
       const event = {
         status:    newStatus,
