@@ -31,7 +31,7 @@ Captured ideas, most recent at the bottom. Status: Captured | Exploring | Commit
 
 **Related to:** ADR-0003 (retire my-order tracking page); `docs/briefs/order-flow-hardening.md` (foundation); TO-DOS #17 (delivery tracking → my-order page), #19 (repeat-order prompt); chunk-018 (staff Firebase Auth — the auth machinery to reuse).
 
-**Status:** Committed — build after `order-flow-hardening` chunks. Needs its own brief + likely an ADR superseding/extending 0003 when started.
+**Status:** Committed — scoped 2026-06-26 (S84) via /understanding-the-ask → /solutioning → ADR + brief. Decision: `docs/decisions/0007-optional-customer-accounts.md`; brief (2 phases): `docs/briefs/customer-accounts.md`. Forks resolved: optional accounts, Firebase email+password **+ Google** (chosen for scale over passwordless), augment-the-token-flow, match-by-verified-email, explicit retention boundary (no "never delete" promise). Promo hook split to TO-DO #76. Still build on `order-flow-hardening` foundation. Next: build Phase 1.
 
 ---
 
