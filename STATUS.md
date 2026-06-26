@@ -1,7 +1,30 @@
 # Session Status
-_Last updated: 2026-06-26 (session 83)_
+_Last updated: 2026-06-26 (session 84)_
 
 ## Status
+**Session 84 (2026-06-26) — PLANNING ONLY (no code). Scoped the OPTIONAL CUSTOMER ACCOUNTS feature end to end and committed planning artefacts to `main` (`ab98a1a`). Will be built in a nearest future session — not now.**
+
+- Ran `/understanding-the-ask` → `/solutioning` → wrote **ADR-0007** (`docs/decisions/0007-optional-customer-accounts.md`) + a **2-phase brief** (`docs/briefs/customer-accounts.md`).
+- **Researched** Papier + Milk Books account UX via web tools (declined to create real trial accounts on their live systems — studied public flows instead; Evgeny also shared Papier account screenshots). Findings: both use **password + social** (not passwordless), both lead registration with a **first-order discount**, account IA = left-rail Personal info / Orders / Address book.
+- **Forks resolved:** (1) **auth = Firebase email+password + Google** — flipped from passwordless because Evgeny wants it to scale beyond photo books; Firebase makes adding passwordless later migration-free. (2) **Augment the token flow** — `customer-preview.html` + edit/approve functions stay token-based and untouched; the account is a directory in front of them. (3) **Match orders by verified email** (no schema migration; feeds the promo gate). (4) **Scope = phased** (P1 auth+Orders+status+preview button; P2 address-into-checkout + promo).
+- **Retention boundary made explicit** (Evgeny's catch): we do NOT store books forever, so order *metadata* persists in history but editable preview/photo assets have a retention window — NO "we never delete your projects" promise.
+- **Promo-code system split to TO-DO #76** (shares the email↔order lookup dependency).
+- **No shipping address is stored today** — order form takes email only; address is collected by Stripe at checkout → address-in-account is net-new plumbing (P2).
+- ideas.md "Customer account area" idea updated to point at the ADR + brief.
+
+### ▶ NEXT SESSION (Session 85)
+1. **(If building accounts)** start **Phase 1** from `docs/briefs/customer-accounts.md`: Firebase customer auth (email+password + Google), `pages/account.html` (Personal info / Orders / Address-book-placeholder), `getMyOrders` admin-SDK function (verified ID token, match by email), status line from `statusHistory`, server-side "Preview" button into the untouched `customer-preview.html`. **Backend-first.** **First confirm order-flow-hardening status** (the Orders view depends on clean status data — see brief's Known Risks).
+2. **Otherwise** — resume the S83 website copy pass: hero (home) + remaining customer pages (5 product pages, collections, our-artists, order form, help), to co-review with Kseniia; replace fabricated home testimonials; confirm "hardcover binding" + print-location copy facts.
+3. **Carried owner actions:** redeploy Cloud Run renderer at `--memory 8Gi` → regen AEV-044 (Tender spine fix); submit Our Artists form once on LIVE to confirm email lands at xenia@aevia.at.
+
+### ⚠ Watch-outs (S84)
+- **Accounts are PLANNED, not built.** Only docs were committed (`ab98a1a`). No auth, no functions, no pages exist yet.
+- **Auth decision is email+password + Google, NOT passwordless** — earlier sessions/ideas.md leaned passwordless; ADR-0007 supersedes that reasoning (scale). Don't revert without re-reading the ADR.
+- **Build must AUGMENT, not modify, the token preview flow** — touching `customer-preview.html` auth or the edit/approve functions is out of scope by design (risk to the delicate path).
+- **Order-flow-hardening is the assumed foundation** — confirm its state before Phase 1 or the Orders view shows the very flakiness we're escaping.
+- `.claude/settings.local.json` left out of the commit as usual.
+
+### Previous: Session 83
 **Session 83 (2026-06-26) — WEBSITE COPY PASS (home + about) shipped LIVE. Two commits on `main` (`865657a` docs, `48c16c6` home+about), pushed → Cloudflare deploying. Planning files brought up to date. /design-review APPROVED across desktop/tablet/mobile.**
 
 - **Confirmed S82 was already done.** The "uncommitted" Tender-mockup work from S82 was in fact committed + pushed (`1bdc0f2`), and the Cloud Run renderer is already at `--memory 8Gi`. No action needed — STATUS S82 was stale.
