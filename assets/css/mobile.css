@@ -98,8 +98,8 @@
   .collections-grid { grid-template-columns: 1fr; }
 
 
-  /* ── Home — How it works (4-col → 2-col) ── */
-  .steps      { grid-template-columns: 1fr 1fr; gap: 32px; }
+  /* ── Home — How it works (5-col → 1-col list) ── */
+  .steps      { grid-template-columns: 1fr; gap: 28px; }
   .steps-line { display: none; }
 
 

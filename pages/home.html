@@ -157,7 +157,7 @@
     .collection-body { padding: 24px; }
     .collection-tag { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-dk); margin-bottom: 8px; }
     .collection-name { font-family: var(--serif); font-size: 26px; font-weight: 400; letter-spacing: -0.01em; margin-bottom: 6px; }
-    .collection-desc { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+    .collection-desc { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; text-wrap: balance; }
     .collection-price { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
     .collection-link {
       display: inline-block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
@@ -170,7 +170,7 @@
        C — HOW IT WORKS
     ══════════════════════════════════════════ */
     .how { background: var(--surface); }
-    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; }
+    .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 28px; }
     .step { text-align: center; }
     .step-num {
       width: 48px; height: 48px; border-radius: 50%;
@@ -183,11 +183,11 @@
       font-family: var(--serif); font-size: 18px; font-weight: 400;
       letter-spacing: -0.01em; margin-bottom: 10px;
     }
-    .step-desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
+    .step-desc { font-size: 13px; color: var(--muted); line-height: 1.7; text-wrap: balance; }
     /* Connector line between steps */
     .steps-wrap { position: relative; }
     .steps-line {
-      position: absolute; top: 24px; left: calc(12.5% + 24px); right: calc(12.5% + 24px);
+      position: absolute; top: 24px; left: calc(10% + 24px); right: calc(10% + 24px);
       height: 1px; background: var(--border); z-index: 0;
     }
     .steps { position: relative; z-index: 1; }
@@ -200,16 +200,17 @@
     .touch-card {
       padding: 32px 24px; border: 1px solid var(--border);
       border-radius: 6px; background: var(--white);
+      text-align: center;
     }
-    .touch-icon {
-      width: 40px; height: 40px; margin-bottom: 20px;
-      color: var(--accent-dk);
+    .touch-rule {
+      width: 32px; height: 2px; margin: 0 auto 22px;
+      background: var(--accent-dk);
     }
     .touch-name {
       font-family: var(--serif); font-size: 18px; font-weight: 400;
       letter-spacing: -0.01em; margin-bottom: 10px;
     }
-    .touch-desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
+    .touch-desc { font-size: 13px; color: var(--muted); line-height: 1.7; text-wrap: balance; }
 
     /* ══════════════════════════════════════════
        E — TESTIMONIALS (Instagram style)
@@ -365,7 +366,7 @@
         </div>
         <div class="collection-body">
           <div class="collection-name">Love</div>
-          <div class="collection-desc">Warm templates for your love stories — weddings, engagements, anniversaries, and every tender moment in between.</div>
+          <div class="collection-desc">Warm templates for weddings, engagements, anniversaries, and the moments in between.</div>
           <div class="collection-price">From € 60</div>
           <a href="collections.html#love" class="collection-link">View collection</a>
         </div>
@@ -381,7 +382,7 @@
         </div>
         <div class="collection-body">
           <div class="collection-name">Adventure</div>
-          <div class="collection-desc">Open layouts for your open roads — travel diaries, road trips, and the places that stay with you long after you've left.</div>
+          <div class="collection-desc">Open layouts for travel diaries, road trips, and the places that stay with you.</div>
           <div class="collection-price">From € 60</div>
           <a href="collections.html#adventures" class="collection-link">View collection</a>
         </div>
@@ -397,7 +398,7 @@
         </div>
         <div class="collection-body">
           <div class="collection-name">Kids</div>
-          <div class="collection-desc">Gentle templates for the moments that pass too fast — newborns, first years, and the tiny details worth holding onto.</div>
+          <div class="collection-desc">Gentle templates for newborns, first years, and the small details you don't want to forget.</div>
           <div class="collection-price">From € 70</div>
           <a href="collections.html#kids" class="collection-link">View collection</a>
         </div>
@@ -415,31 +416,36 @@
   <div class="section-inner">
     <div class="section-header">
       <div class="section-tag">Process</div>
-      <h2 class="section-title">Your memories, beautifully bound<br>— without the effort</h2>
-      <p class="section-sub">Four steps. No design skills required.</p>
+      <h2 class="section-title">Your memories, beautifully bound,<br>without the effort</h2>
+      <p class="section-sub">Five steps. No design skills required.</p>
     </div>
     <div class="steps-wrap">
       <div class="steps-line"></div>
       <div class="steps">
         <div class="step">
           <div class="step-num">1</div>
-          <div class="step-name">Choose a template</div>
-          <div class="step-desc">Pick the occasion and page count that fits your story. Every template is designed in-house.</div>
+          <div class="step-name">Choose your template</div>
+          <div class="step-desc">Pick the one made for your occasion, each designed in-house with artists and illustrators.</div>
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <div class="step-name">Upload your photos</div>
-          <div class="step-desc">Share via Google Drive, Dropbox, or direct upload. Add notes, captions, dates — as much or as little as you like.</div>
+          <div class="step-name">Send your photos</div>
+          <div class="step-desc">Upload your photos and share a little about them: names, dates, a few words.</div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <div class="step-name">We design it</div>
-          <div class="step-desc">Our team composes each spread by hand. You receive a full PDF preview to review and request any changes.</div>
+          <div class="step-name">We make your book</div>
+          <div class="step-desc">Our team lays out every spread by hand and sends you a full preview.</div>
         </div>
         <div class="step">
           <div class="step-num">4</div>
-          <div class="step-name">Approve &amp; receive</div>
-          <div class="step-desc">Happy with the design? We print and ship. No payment until you approve — guaranteed.</div>
+          <div class="step-name">Approve it</div>
+          <div class="step-desc">Swap a photo or tweak a caption if you like, then approve. You only pay when you're happy.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-name">Receive your book</div>
+          <div class="step-desc">We print, bind, and ship it to your door.</div>
         </div>
       </div>
     </div>
@@ -455,55 +461,32 @@
     <div class="section-header">
       <div class="section-tag">Why Aevia</div>
       <h2 class="section-title">The Aevia touch</h2>
-      <p class="section-sub">We believe a photo book should feel like something worth passing down.</p>
+      <p class="section-sub">A photo book should feel like something worth passing down.</p>
     </div>
     <div class="touch-grid">
 
       <div class="touch-card">
-        <!-- Magic wand icon -->
-        <svg class="touch-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10 30L26 14"/>
-          <path d="M26 14l3-7 3 7-7-3 7-3-3 6z"/>
-          <path d="M8 14h2M14 8v2M8 20l1.5-1.5M20 8l-1.5 1.5"/>
-          <path d="M14 30l16-16"/>
-          <circle cx="10" cy="30" r="2" fill="currentColor" stroke="none"/>
-        </svg>
+        <div class="touch-rule"></div>
         <div class="touch-name">Done for you</div>
-        <div class="touch-desc">You supply the memories. We handle every design decision — layout, spacing, typesetting, sequence.</div>
+        <div class="touch-desc">You design nothing. Send your photos and a few words; we handle layout, sequence and typography.</div>
       </div>
 
       <div class="touch-card">
-        <!-- Fingertip / touch icon -->
-        <svg class="touch-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 8c-3.3 0-6 2.7-6 6v10l-2-2c-1-1-2.5-0.8-3 0.5-0.4 1 0 2 0.8 2.8l5.2 5.2c1.5 1.5 3.5 2.5 5.8 2.5 4.4 0 8-3.6 8-8v-11c0-3.3-2.7-6-6-6h-2.8z"/>
-          <path d="M20 8v12M25 10v10M15 10v10"/>
-        </svg>
+        <div class="touch-rule"></div>
+        <div class="touch-name">Designed, not generated</div>
+        <div class="touch-desc">Every template is built in-house with artists and illustrators, purpose-made for one occasion.</div>
+      </div>
+
+      <div class="touch-card">
+        <div class="touch-rule"></div>
         <div class="touch-name">Tactile &amp; lasting</div>
-        <div class="touch-desc">170gsm matte art paper. Linen hardcover. Sewn-bound signatures. Built to be kept for decades.</div>
+        <div class="touch-desc">Thick matte art paper and a hardcover binding, made to be handled often and kept for years.</div>
       </div>
 
       <div class="touch-card">
-        <!-- Designer / pen-nib icon -->
-        <svg class="touch-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 8l8 8-12 16-8-8 12-16z"/>
-          <path d="M28 16l4 4-4-4z"/>
-          <path d="M8 24l-2 8 8-2"/>
-          <circle cx="20" cy="20" r="2.5"/>
-          <path d="M24 12l4 4"/>
-        </svg>
-        <div class="touch-name">Curated templates</div>
-        <div class="touch-desc">Every layout is designed for its occasion — not adapted from a generic grid. Proportions, pacing, and whitespace are all considered.</div>
-      </div>
-
-      <div class="touch-card">
-        <!-- Leaf icon -->
-        <svg class="touch-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 30c0 0 2-14 16-20 0 0-2 16-16 20z"/>
-          <path d="M12 30 L20 22"/>
-          <path d="M20 22 Q22 30 20 34"/>
-        </svg>
+        <div class="touch-rule"></div>
         <div class="touch-name">Produced responsibly</div>
-        <div class="touch-desc">FSC-certified paper. Printed and bound in Vienna. Short supply chain — lower carbon, higher quality control.</div>
+        <div class="touch-desc">Printed on FSC-certified paper from responsibly managed forests.</div>
       </div>
 
     </div>
@@ -519,7 +502,7 @@
     <div class="section-header">
       <div class="section-tag">What people say</div>
       <h2 class="section-title">Real customers, real books</h2>
-      <p class="section-sub">From our first orders — shared with permission.</p>
+      <p class="section-sub">From our first orders, shared with permission.</p>
     </div>
 
     <div class="testi-grid">
@@ -621,7 +604,7 @@
     </div>
 
     <div class="testi-cta">
-      <p style="font-family:var(--serif);font-style:italic;font-size:16px;color:var(--muted);margin-bottom:18px;">Share your review — tag <strong style="font-style:normal;color:var(--text);">@aevia</strong> and receive a <strong style="font-style:normal;color:var(--text);">€15 voucher</strong> on your next order.</p>
+      <p style="font-family:var(--serif);font-style:italic;font-size:16px;color:var(--muted);margin-bottom:18px;">Share your review: tag <strong style="font-style:normal;color:var(--text);">@aevia</strong> and get a <strong style="font-style:normal;color:var(--text);">€15 voucher</strong> on your next order.</p>
       <a href="https://instagram.com/aevia" target="_blank" class="ig-link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <rect x="2" y="2" width="20" height="20" rx="5"/>
@@ -660,7 +643,7 @@
         <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia" style="height:28px; width:auto; "
              onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');" />
       </div>
-      <p>A premium photo book studio in Vienna. We design and print; you keep forever.</p>
+      <p>A premium photo book studio in Vienna. We design and make your book; it's yours to keep.</p>
       <div class="foot-form">
         <input type="email" placeholder="Email address" />
         <button>Subscribe</button>
