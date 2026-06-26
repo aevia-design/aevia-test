@@ -1,7 +1,32 @@
 # Session Status
-_Last updated: 2026-06-25 (session 82)_
+_Last updated: 2026-06-26 (session 83)_
 
 ## Status
+**Session 83 (2026-06-26) — WEBSITE COPY PASS (home + about) shipped LIVE. Two commits on `main` (`865657a` docs, `48c16c6` home+about), pushed → Cloudflare deploying. Planning files brought up to date. /design-review APPROVED across desktop/tablet/mobile.**
+
+- **Confirmed S82 was already done.** The "uncommitted" Tender-mockup work from S82 was in fact committed + pushed (`1bdc0f2`), and the Cloud Run renderer is already at `--memory 8Gi`. No action needed — STATUS S82 was stale.
+- **Planning housekeeping (`865657a`).** ROADMAP: chunks 011/012/013 filled in as Papercut/Newborn/Tender (done), chunk-024 marked done, mockup pipeline recorded in the Completed table. ideas.md: "engine-driven mockup imagery" flipped Parked → ✅ SHIPPED.
+- **Home copy + UX pass (`48c16c6`).** Process section 4 → **5 steps** (Choose / Send / We make / Approve / Receive); 5-col band desktop, single-column list mobile. **Aevia touch** dropped the 4 line-art icons (felt cheap) for a centered **gold hairline rule** per card = "option A, typographic". **Removed the false "Printed and bound in Vienna"** line + unconfirmed material specs (170gsm/linen/sewn). Tightened collections/step/touch copy, purged em-dashes, added `text-wrap: balance` to kill orphan words. Ran `/stop-slop`.
+- **About rewrite (`48c16c6`, via `/ideating`).** Re-spined the story from the old permanence/nostalgia thesis to the **curation thesis** in **founder first-person voice**: pain (blank editor, "just ok" result, no design eye) → philosophy (too much choice; fewer options, ensured quality + a one-line kitchen analogy) → how quality is earned (real designers + approve-before-pay) → **Aevum/permanence as the closing payoff** (name stays up front via the sticky label). Closing: "Fewer choices. A book worth keeping."
+- **Replicate/icons decision:** diffusion is the wrong tool for a *consistent icon set* (independent generations won't look like siblings; raster not SVG). Custom motif → Kseniia's job later, or stay with option A (shipped A).
+- **Process note:** agreed with Evgeny that the website copy exercise deserves **Kseniia's review** (she's stronger at communication). This pass is a first draft for her to refine.
+
+### ▶ NEXT SESSION (Session 84) — continue the copy pass
+1. **HERO (home) — deferred to the Kseniia review.** Untouched this session. The 3 rotating headlines lead on *quality/materials* (not a differentiator) and never say *done-for-you* (differentiator #1). Re-prioritise with Kseniia: lead with done-for-you / artist-designed.
+2. **Remaining customer pages** need the same copy + stop-slop pass: the 5 product pages (scribble/wander/papercut/newborn/tender), `collections.html`, `our-artists.html`, the order form, `help.html`. Co-review wording with Kseniia.
+3. **Confirm two copy FACTS before launch-true:** is **"hardcover binding"** actually locked (Aevia touch card 3)? Print location for card 4 (decided NOT to claim "Printed in EU" — too vague; left as FSC-only).
+4. **Replace the fabricated home testimonials** (fake handles/locations/quotes) with real ones — trust/legal risk before real launch.
+5. Pre-launch copy/legal still open in TO-DOS: VAT (#16), T&C (#25), post-payment customer email (#56), OG tags (#11), real product copy (#14/#15).
+
+### ⚠ Watch-outs (S83)
+- **Home HERO copy is untouched** (deferred to Kseniia) — still em-dashed and materials-led; don't assume it got the stop-slop treatment.
+- **Home testimonials are fabricated** — invented @handles, locations, and 5-star quotes. Replace before launch.
+- **`text-wrap: balance`** (used on home step/touch/collection descriptions) needs a modern browser; older ones fall back to normal wrapping (no breakage, just possible orphans).
+- **"Tactile & lasting" card now claims "a hardcover binding"** — confirm it's locked or soften (materials were flagged unconfirmed).
+- **Aevia touch cards are now CENTER-aligned** (not left) — deliberate, matches the centered process steps; revert is `text-align`/rule-margin if Evgeny changes his mind.
+- `.claude/settings.local.json` left out of commits as usual.
+
+### Previous: Session 82
 **Session 82 (2026-06-25) — TENDER MOCKUPS created + wired into the website. All UNCOMMITTED working-tree (pending Evgeny's eyeball). Full log: `sessions/2026-06-25-s82.md`.**
 
 - **Mockup pipeline run for Tender (order AEV-044).** Evgeny ran the two captures (`qa/capture-cover-wrap.mjs` + `qa/capture-spread.mjs`, `QA_ORDER=AEV-044`); Claude ran `compose-all.mjs AEV-044 tender` (20 open + closed + back) → `web-mockups.mjs tender` → 7 WebPs in `assets/images/mockups/tender/`. **First pale/cream cover the pipeline has handled** — composited cleanly. Added `tender` to the maps in `scripts/compose-all.mjs` + `scripts/web-mockups.mjs`.
