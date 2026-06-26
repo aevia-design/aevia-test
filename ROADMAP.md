@@ -30,7 +30,12 @@ All foundation, template engine, and order intake work is complete. See `session
 | Bleed coords, caption coord system (Phase 13) | ✅ done |
 | chunk-001: `getOrder` customer token path + `saveOrderState` | ✅ done |
 | chunk-002: Dashboard generate/revoke preview link | ✅ done |
-| chunk-003: `customer-preview.html` — limited customer engine | ✅ done (needs live test) |
+| chunk-003: `customer-preview.html` — limited customer engine | ✅ done |
+| chunk-011: Papercut template (Template 3) | ✅ done |
+| chunk-012: Newborn template (Template 4) | ✅ done |
+| chunk-013: Tender template (Template 5) | ✅ done |
+| chunk-024: Server-side PDF generation (Cloud Run, 8 GiB, async + progress bar) | ✅ done |
+| Mockup pipeline (PSD composite, all 5 live templates) | ✅ done |
 
 ---
 
@@ -391,42 +396,42 @@ _Goal: Staff tool accessible remotely; full 9-template catalogue ready for launc
 
 ---
 
-### chunk-011: Template 3 digitisation
+### chunk-011: Papercut template (Template 3)
 
 **Type:** feature
 **Component:** Template data + product pages
-**Status:** pending
+**Status:** ✅ done (S67–S70, S73–S74, committed + live on main)
 **Size:** M
 **Depends on:** —
-**Files:** `assets/Template_<Name>/`, `pages/<name>.html`
+**Files:** `assets/Template_Papercut/`, `pages/papercut.html`
 
-**Description:** Same pattern as chunk-010. Independent of all other template chunks.
+**Description:** Papercut template digitised end-to-end: data file, 48 SVGs, Source Sans 3 fonts, registry across all 3 surfaces, FP birthday spreads (heart clip, overlayAbovePhotos), FP toy spreads, PDF verified. Mockups generated (AEV-043) and wired into the website (hero gallery + lightbox). CORS bug on EU bucket fixed during this template's E2E (S73).
 
 ---
 
-### chunk-012: Template 4 digitisation
+### chunk-012: Newborn template (Template 4)
 
 **Type:** feature
 **Component:** Template data + product pages
-**Status:** pending
+**Status:** ✅ done (S43–S48, committed + live on main `fc972d0`)
 **Size:** M
 **Depends on:** —
-**Files:** `assets/Template_<Name>/`, `pages/<name>.html`
+**Files:** `assets/Template_Newborn/`, `pages/newborn.html`
 
-**Description:** Same pattern as chunk-010. Independent of all other template chunks.
+**Description:** Newborn (square 200×200mm) digitised end-to-end: data file, Twinkle Star + Baskervville fonts (ligature-checked), FPintro (text panel), FPlabour (2 photos + zodiac), registry across all 3 surfaces, PDF verified (AEV-037). De-hardcoded functional-photo upload zones and fp-key resolver so any template can carry its own functional spreads.
 
 ---
 
-### chunk-013: Template 5 digitisation
+### chunk-013: Tender template (Template 5)
 
 **Type:** feature
 **Component:** Template data + product pages
-**Status:** pending
+**Status:** ✅ done (S78–S82, committed + live on main `1bdc0f2`)
 **Size:** M
 **Depends on:** —
-**Files:** `assets/Template_<Name>/`, `pages/<name>.html`
+**Files:** `assets/Template_Tender/`, `pages/tender.html`
 
-**Description:** Same pattern as chunk-010. Independent of all other template chunks.
+**Description:** Tender digitised end-to-end: data file, Parisienne font (ligature-checked), FPintro/FPstory/FPwords functional spreads, full-bleed Words photo, overlayBelow mechanic (CSV `overlay_position=below`), registry across all 3 surfaces. PDF renderer hardened: silent Scribble fallback removed (throws on unknown template), OOM fixed (`--memory 8Gi`), spine caption fixed via fontkit metrics, SVG raster cache added. Mockups generated (AEV-044) and wired into website (hero gallery + lightbox + collections card). Vows page renamed to Tender.
 
 ---
 
@@ -547,7 +552,7 @@ _Goal: keep GCS egress (the dominant cost) negligible per order. See ADR-0005._
 
 **Type:** infrastructure
 **Component:** PDF export + Staff dashboard + Firebase backend
-**Status:** DEPLOYED 2026-06-22 (s70) — pending E2E verification on a real order + prod hardening (lock the public Cloud Run URL to private + identity token). See STATUS.md s70 + brief `docs/briefs/chunk-024-server-side-pdf.md`.
+**Status:** ✅ DONE — deployed + E2E verified + memory upgraded. Cloud Run `aevia-pdf-renderer` (europe-west1, `--memory 8Gi`). Dashboard triggers async render with live progress bar; signed preview PDF URL returned on completion. Spine caption fixed (fontkit metrics); SVG raster cache added; renderer throws loud on unknown template. See STATUS.md S70–S82 + brief `docs/briefs/chunk-024-server-side-pdf.md`.
 **Size:** L
 **Priority:** Pre-launch ops requirement (ADR-0005). Also removes PDF egress.
 **Depends on:** chunk-007

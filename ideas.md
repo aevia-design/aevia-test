@@ -91,7 +91,7 @@ Captured ideas, most recent at the bottom. Status: Captured | Exploring | Commit
 
 **Related to:** the special-page add-on UI on every product page (`pages/scribble.html`/`wander.html`/`newborn.html`); [[Step-based order form UX]] (③ order-phase preview WITH the customer's own data — à la Wander's map page — would slot into Step 2; documented deferred in `docs/briefs/newborn-template.md`); `scripts/export-pdf.js` + `qa/` Playwright (the two render pipelines); `project_qa_scripts`.
 
-**Status:** Parked — start after Newborn E2E; needs a proper brief (3D mockup scene + sample-content kit).
+**Status:** ✅ SHIPPED — S63 (Scribble/Wander/Newborn), S74 (Papercut), S82 (Tender). Full pipeline live: `qa/capture-cover-wrap.mjs` + `qa/capture-spread.mjs` (Evgeny captures); `scripts/compose-all.mjs` → `web-mockups.mjs` (Claude composes); WebPs in `assets/images/mockups/<template>/`. All 5 live templates have hero gallery + thumbs + lightbox on their product pages. Collections cards updated. Pipeline registered in `scripts/compose-all.mjs` + `web-mockups.mjs` per template.
 
 ---
 
