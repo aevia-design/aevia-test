@@ -1,7 +1,27 @@
 # Session Status
-_Last updated: 2026-06-26 (session 84)_
+_Last updated: 2026-06-27 (session 85)_
 
 ## Status
+**Session 85 (2026-06-27) — STAFF DASHBOARD tweaks + a `/evaluating-as-user` pass. Shipped LIVE — one commit on `main` (`7838135`), pushed → Cloudflare deploying. Files: `pages/staff/dashboard.html` + `pages/staff/template-engine.html`. No backend change. Full log: `sessions/2026-06-27-s85.md`.**
+
+- **Engine deep-link.** Dashboard now has a per-order **"Open in engine →"** button + a topbar **Template engine** link; `template-engine.html` reads `?order=AEV-044` after sign-in (`maybeDeepLinkOrder`) and auto-loads it via the existing Order-mode load path (one-shot guard).
+- **`/evaluating-as-user` → built 5 fixes + 1 stale-text fix** (could NOT drive live — staff-auth + live Firestore; code-grounded walkthrough): (1) **order search box** (number/name/email, composes with status chips; shared `getVisibleOrders()`); (2) **preview-sent nudge** ("sent Nd ago — awaiting response", gold + "nudge?" at ≥3d, from real `sentSnapshot.sentAt`); (3) clickable **"Open preview ↗"** (dropped the always-on URL string; copy kept); (4) **status progression guard** (confirm on backward/skip-ahead jumps; `needs_info` exempt); (5) inline **"copied ✓"** replacing the blocking alert. Plus fixed `openPdf`'s stale **"Run the export script first"** → **"use the Generate PDF button"**.
+- **No "viewed" telemetry exists** — confirmed `customer-preview.html` writes nothing on view; approval recorded in `statusHistory` via `approveOrder`. The nudge is "sent N days ago", not "customer opened it".
+- **Email-send-to-customer automation deferred** by Evgeny (testing phase) — the manual "Open preview ↗" is the stand-in.
+- 122/122 tests. **NOT driven live** (staff-auth gated) → needs Evgeny's eyeball on the deploy.
+
+### ▶ NEXT SESSION (Session 86)
+1. **Eyeball S85 on live** (only unverified path): Open-in-engine deep-link loading AEV-044; search; the nudge line; the progression-guard confirm; inline copy feedback.
+2. **Then the two standing forks from S84** (untouched): either **optional customer accounts Phase 1** (`docs/briefs/customer-accounts.md`; backend-first; confirm order-flow-hardening first) **or** resume the **S83 website copy pass** (home hero + remaining customer pages, co-review with Kseniia; replace fabricated home testimonials).
+3. **Carried owner actions:** redeploy Cloud Run renderer at `--memory 8Gi` → regen AEV-044 (Tender spine fix); submit Our Artists form once on LIVE to confirm email lands at xenia@aevia.at.
+
+### ⚠ Watch-outs (S85)
+- **S85 dashboard/engine changes are LIVE but UNVERIFIED in the real UI** — they're staff-auth-gated so Claude couldn't drive them; eyeball on Cloudflare.
+- **Deep-link relies on the existing button-click load path** — if the Order-mode load button IDs (`mode-order-btn`, `order-load-btn`, `order-number-input`) are ever renamed, `maybeDeepLinkOrder` silently no-ops.
+- **Nudge has no "viewed" data** — don't read it as "customer saw it"; it only means "staff generated/sent the preview N days ago".
+- `.claude/settings.local.json` left out of the commit as usual.
+
+### Previous: Session 84
 **Session 84 (2026-06-26) — PLANNING ONLY (no code). Scoped the OPTIONAL CUSTOMER ACCOUNTS feature end to end and committed planning artefacts to `main` (`ab98a1a`). Will be built in a nearest future session — not now.**
 
 - Ran `/understanding-the-ask` → `/solutioning` → wrote **ADR-0007** (`docs/decisions/0007-optional-customer-accounts.md`) + a **2-phase brief** (`docs/briefs/customer-accounts.md`).
