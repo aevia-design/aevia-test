@@ -216,6 +216,30 @@
     .confirm-actions { display:flex;gap:12px;justify-content:flex-end; }
     .confirm-actions button { font-family:var(--sans);font-size:13.5px;padding:11px 20px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:var(--white);color:var(--text); }
     .confirm-actions .confirm-proceed { background:var(--text);color:var(--white);border-color:var(--text); }
+
+    /* Sign-in convenience bar + inline modal */
+    .signin-bar { display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--surface,#f6f2ec);border:1px solid var(--border,#e6ddd2);border-radius:6px;padding:14px 16px;margin:0 0 24px;font-size:14px;color:var(--text); }
+    .signin-bar.signed { background:#f1f5ee;border-color:#d9e3d2; }
+    .signin-bar .signin-or { color:var(--muted); }
+    .signin-link { font-family:var(--sans);font-size:14px;font-weight:600;color:var(--accent-dk);background:none;border:none;border-bottom:1.5px solid var(--accent-dk);padding:0 0 1px;cursor:pointer; }
+    .signin-link:hover { color:var(--text);border-color:var(--text); }
+
+    .signin-modal { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10001;align-items:center;justify-content:center;padding:24px; }
+    .signin-modal.open { display:flex; }
+    .signin-card { background:var(--white);max-width:400px;width:100%;border-radius:6px;padding:30px 30px 26px;box-shadow:0 12px 48px rgba(0,0,0,0.28);position:relative; }
+    .signin-card h3 { font-family:var(--serif);font-size:22px;font-weight:400;margin:0 0 6px; }
+    .signin-card .signin-sub { font-size:13px;color:var(--muted);margin:0 0 20px; }
+    .signin-card .signin-close { position:absolute;top:16px;right:18px;font-size:22px;line-height:1;color:var(--muted);background:none;border:none;cursor:pointer; }
+    .signin-card label { display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px; }
+    .signin-card input { width:100%;font-family:var(--sans);font-size:15px;padding:11px 13px;border:1px solid var(--border);border-radius:4px;margin-bottom:14px;box-sizing:border-box; }
+    .signin-card .btn-primary { margin-top:2px; }
+    .signin-divider { display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:18px 0; }
+    .signin-divider::before, .signin-divider::after { content:"";flex:1;height:1px;background:var(--border); }
+    .signin-google { width:100%;font-family:var(--sans);font-size:14px;padding:12px;border:1px solid var(--border);border-radius:4px;background:var(--white);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px; }
+    .signin-google:hover { background:var(--surface,#f6f2ec); }
+    .signin-error { font-size:13px;color:#b42318;margin:0 0 12px;min-height:1em; }
+    .signin-guest { text-align:center;font-size:13px;color:var(--muted);margin:16px 0 0; }
+    .signin-guest button { font-family:var(--sans);font-size:13px;color:var(--accent-dk);background:none;border:none;border-bottom:1px solid var(--accent-dk);padding:0 0 1px;cursor:pointer; }
   </style>
 <link rel="stylesheet" href="../assets/css/type.css">
 <link rel="stylesheet" href="../assets/css/mobile.css">
@@ -268,6 +292,16 @@
       <div>
         <h1 class="form-heading">Your details</h1>
         <p class="form-sub">We use these to send your confirmation and contact you when your preview is ready.</p>
+
+        <div class="signin-bar" id="signin-prompt" style="display:none;">
+          <span>Have an Aevia account?</span>
+          <button type="button" class="signin-link" id="signin-open">Sign in to autofill</button>
+          <span class="signin-or">— or just continue below as a guest.</span>
+        </div>
+        <div class="signin-bar signed" id="signin-confirm" style="display:none;">
+          <span>Signed in as <strong id="signin-email"></strong>.</span>
+          <button type="button" class="signin-link" id="signin-out">Not you? Sign out</button>
+        </div>
 
         <div class="field-row">
           <div class="field">
@@ -2494,5 +2528,109 @@ function preSubmitConfirm() {
     <div style="font-size:12px;color:var(--muted);margin-top:16px;">Please don't close this tab while your photos upload.</div>
   </div>
 </div>
+
+<!-- Inline sign-in modal: sign in without leaving the order form. -->
+<div class="signin-modal" id="signin-modal">
+  <div class="signin-card">
+    <button type="button" class="signin-close" id="signin-modal-close">&times;</button>
+    <h3>Sign in</h3>
+    <p class="signin-sub">We'll fill in your name and email so you don't have to.</p>
+    <div class="signin-error" id="signin-modal-error"></div>
+    <label for="signin-modal-email">Email</label>
+    <input type="email" id="signin-modal-email" autocomplete="email" placeholder="anna@example.com" />
+    <label for="signin-modal-password">Password</label>
+    <input type="password" id="signin-modal-password" autocomplete="current-password" />
+    <button type="button" class="btn-primary" id="signin-modal-submit">Sign in</button>
+    <div class="signin-divider">or</div>
+    <button type="button" class="signin-google" id="signin-modal-google">Continue with Google</button>
+    <p class="signin-guest"><button type="button" id="signin-modal-guest">Continue as guest instead</button></p>
+  </div>
+</div>
+
+<!-- Optional account convenience: pre-fill name/email for signed-in customers.
+     Guest ordering is the default and is never blocked. -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+  import {
+    getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence,
+    signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut
+  } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAki1W4N3xVvHSTZl77uTVukeiA3yqO1K4",
+    authDomain:        "aevia-uploads.firebaseapp.com",
+    projectId:         "aevia-uploads",
+    storageBucket:     "aevia-uploads.firebasestorage.app",
+    messagingSenderId: "677807969667",
+    appId:             "1:677807969667:web:b92b02a38bda89161652b6",
+    measurementId:     "G-2QZ4MBKG2B"
+  };
+
+  const auth = getAuth(initializeApp(firebaseConfig));
+  setPersistence(auth, browserLocalPersistence).catch(() => {});
+
+  const $ = (id) => document.getElementById(id);
+  const modal = $('signin-modal');
+  const errEl = $('signin-modal-error');
+
+  function openModal()  { errEl.textContent = ''; modal.classList.add('open'); }
+  function closeModal() { modal.classList.remove('open'); }
+
+  function friendlyError(code) {
+    const map = {
+      'auth/invalid-email': 'That email looks off — please check it.',
+      'auth/invalid-credential': 'Email or password is incorrect.',
+      'auth/wrong-password': 'Email or password is incorrect.',
+      'auth/user-not-found': 'No account found for that email.',
+      'auth/too-many-requests': 'Too many attempts — please try again shortly.',
+      'auth/popup-closed-by-user': 'Sign-in was cancelled.',
+    };
+    return map[code] || 'Could not sign in — please try again.';
+  }
+
+  $('signin-open')?.addEventListener('click', openModal);
+  $('signin-modal-close')?.addEventListener('click', closeModal);
+  $('signin-modal-guest')?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+  $('signin-out')?.addEventListener('click', () => signOut(auth).catch(() => {}));
+
+  $('signin-modal-submit')?.addEventListener('click', async () => {
+    errEl.textContent = '';
+    const email = $('signin-modal-email').value.trim();
+    const pass  = $('signin-modal-password').value;
+    if (!email || !pass) { errEl.textContent = 'Please enter your email and password.'; return; }
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      closeModal();
+    } catch (e) { errEl.textContent = friendlyError(e.code); }
+  });
+
+  $('signin-modal-google')?.addEventListener('click', async () => {
+    errEl.textContent = '';
+    try {
+      await signInWithPopup(auth, new GoogleAuthProvider());
+      closeModal();
+    } catch (e) { errEl.textContent = friendlyError(e.code); }
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    const prompt  = $('signin-prompt');
+    const confirm = $('signin-confirm');
+    // Only treat a verified account as "signed in" — matches getMyOrders gating.
+    if (user && user.emailVerified) {
+      const nameEl  = $('inp-name');
+      const emailEl = $('inp-email');
+      // Pre-fill only empty fields so we never clobber what a customer typed.
+      if (nameEl  && !nameEl.value  && user.displayName) nameEl.value  = user.displayName;
+      if (emailEl && !emailEl.value && user.email)       emailEl.value = user.email;
+      $('signin-email').textContent = user.email || '';
+      if (prompt)  prompt.style.display  = 'none';
+      if (confirm) confirm.style.display = 'flex';
+    } else {
+      if (prompt)  prompt.style.display  = 'flex';
+      if (confirm) confirm.style.display = 'none';
+    }
+  });
+</script>
 </body>
 </html>
