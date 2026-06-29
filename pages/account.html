@@ -74,8 +74,9 @@
     .order-actions a.view:hover{background:var(--text);color:var(--white);}
     .empty{font-size:16px;color:var(--muted);line-height:1.7;padding:24px 0;}
     .empty a{color:var(--accent-dk);border-bottom:1px solid var(--accent-dk);}
-    .coming-soon{font-size:15px;color:var(--muted);line-height:1.7;}
     .loading{font-size:15px;color:var(--muted);padding:24px 0;}
+    address.saved-address{font-style:normal;font-size:16px;line-height:1.8;color:var(--text);}
+    .delivery-note{margin-top:24px;font-size:14px;color:var(--muted);line-height:1.6;}
 
     .verify-card{max-width:480px;margin:0 auto;text-align:center;background:var(--white);border:1px solid var(--border);border-radius:6px;padding:40px 36px;}
     .verify-card h2{font-family:var(--serif);font-weight:400;font-size:26px;margin-bottom:12px;}
@@ -193,7 +194,8 @@
           </section>
           <section class="panel" id="panel-address">
             <h2>Address book</h2>
-            <p class="coming-soon">Saved shipping addresses are coming soon. For now, you'll enter your address securely at checkout.</p>
+            <div id="address-body"><div class="loading">Loading…</div></div>
+            <p class="delivery-note">Currently delivering to Austria only. More countries coming soon.</p>
           </section>
         </div>
       </div>
@@ -231,7 +233,8 @@
     measurementId:     "G-2QZ4MBKG2B"
   };
 
-  const GET_MY_ORDERS = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getMyOrders';
+  const GET_MY_ORDERS   = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getMyOrders';
+  const GET_MY_ADDRESS  = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getMyAddress';
 
   const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -408,6 +411,32 @@
     }
   }
 
+  async function loadAddress(user) {
+    const body = $('address-body');
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(GET_MY_ADDRESS, {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      if (!res.ok) { body.innerHTML = `<div class="empty">Could not load your address.</div>`; return; }
+      const { address } = await res.json();
+      if (!address) {
+        body.innerHTML = `<div class="empty">Your shipping address will appear here after your first order.</div>`;
+        return;
+      }
+      const lines = [
+        address.line1,
+        address.line2,
+        [address.postal_code, address.city].filter(Boolean).join(' '),
+        address.state,
+        address.country,
+      ].filter(Boolean);
+      body.innerHTML = `<address class="saved-address">${lines.map(escapeHtml).join('<br>')}</address>`;
+    } catch (e) {
+      body.innerHTML = `<div class="empty">Could not load your address. Please try again.</div>`;
+    }
+  }
+
   function fillInfo(user) {
     const name = user.displayName || (user.email ? user.email.split('@')[0] : '—');
     $('rail-name').textContent = name;
@@ -423,6 +452,7 @@
     fillInfo(user);
     show('account');
     loadOrders(user);
+    loadAddress(user);
   }
 
   onAuthStateChanged(auth, route);

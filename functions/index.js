@@ -682,22 +682,39 @@ exports.createCheckoutSession = functions
       const price80 = process.env.STRIPE_PRICE_ID_80 || price40;
       const priceId = (Number(order.pageCount) >= 80) ? price80 : price40;
 
-      // Create Stripe Checkout Session
-      const session = await stripe.checkout.sessions.create({
+      // Look up saved address for pre-fill (best-effort — never blocks checkout)
+      let savedAddress = null;
+      const customerEmail = normalizeEmail(order.email);
+      if (customerEmail) {
+        try {
+          const custDoc = await db.collection('customers').doc(customerEmail).get();
+          if (custDoc.exists) savedAddress = custDoc.data().shippingAddress || null;
+        } catch (e) {
+          console.warn('createCheckoutSession: address pre-fill lookup failed', e.message);
+        }
+      }
+
+      const sessionParams = {
         mode: 'payment',
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
+        line_items: [{ price: priceId, quantity: 1 }],
         success_url: successUrl,
         cancel_url: cancelUrl,
+        shipping_address_collection: { allowed_countries: ['AT'] },
         metadata: {
           orderNumber: orderNum,
           token: token || order.previewToken,
         },
-      });
+      };
+
+      if (savedAddress) {
+        sessionParams.shipping_details = {
+          address: savedAddress,
+          name: order.customerName || '',
+        };
+      }
+
+      // Create Stripe Checkout Session
+      const session = await stripe.checkout.sessions.create(sessionParams);
 
       return res.status(200).json({ url: session.url });
     } catch (err) {
@@ -752,15 +769,32 @@ exports.stripeWebhook = functions
           return res.status(200).json({ received: true });
         }
 
-        // Update order status to 'paid' and append to statusHistory
-        await orderRef.update({
+        // Save shipping address from Stripe session
+        const shippingAddress = session.shipping_details?.address || null;
+        const orderUpdate = {
           status: 'paid',
           paidAt: admin.firestore.FieldValue.serverTimestamp(),
           statusHistory: admin.firestore.FieldValue.arrayUnion({
             status: 'paid',
             timestamp: admin.firestore.Timestamp.now(),
           }),
-        });
+        };
+        if (shippingAddress) orderUpdate.shippingAddress = shippingAddress;
+
+        // Update order status to 'paid' and append to statusHistory
+        await orderRef.update(orderUpdate);
+
+        // Persist address to customer record for future pre-fill
+        if (shippingAddress && order.email) {
+          const customerEmail = normalizeEmail(order.email);
+          if (customerEmail) {
+            const db2 = admin.firestore();
+            await db2.collection('customers').doc(customerEmail).set(
+              { shippingAddress, updatedAt: admin.firestore.FieldValue.serverTimestamp() },
+              { merge: true }
+            );
+          }
+        }
 
         // Send staff notification email
         const nodemailer = require('nodemailer');
@@ -1098,5 +1132,44 @@ exports.getMyOrders = functions
     } catch (err) {
       console.error('getMyOrders error:', err);
       return res.status(500).json({ error: 'Could not load your orders. Please try again.' });
+    }
+  });
+
+// ── Get saved shipping address (customer) ────────────────────────────────────
+exports.getMyAddress = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 10, memory: '128MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'GET') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const auth = req.headers.authorization || '';
+    const m = auth.match(/^Bearer (.+)$/);
+    if (!m) return res.status(401).json({ error: 'Unauthorised' });
+
+    let decoded;
+    try {
+      decoded = await admin.auth().verifyIdToken(m[1]);
+    } catch (e) {
+      return res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
+    }
+
+    const email = normalizeEmail(decoded.email);
+    if (!email) return res.status(400).json({ error: 'No email on this account.' });
+    if (!decoded.email_verified) {
+      return res.status(403).json({ error: 'unverified' });
+    }
+
+    try {
+      const db = admin.firestore();
+      const doc = await db.collection('customers').doc(email).get();
+      const address = doc.exists ? (doc.data().shippingAddress || null) : null;
+      return res.status(200).json({ address });
+    } catch (err) {
+      console.error('getMyAddress error:', err);
+      return res.status(500).json({ error: 'Could not load your address.' });
     }
   });
