@@ -699,7 +699,6 @@ exports.createCheckoutSession = functions
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: successUrl,
         cancel_url: cancelUrl,
-        shipping_address_collection: { allowed_countries: ['AT'] },
         metadata: {
           orderNumber: orderNum,
           token: token || order.previewToken,
@@ -707,10 +706,26 @@ exports.createCheckoutSession = functions
       };
 
       if (savedAddress) {
-        sessionParams.shipping_details = {
-          address: savedAddress,
-          name: order.customerName || '',
+        // Signed-in customer with an Aevia-owned saved address: pass it straight to
+        // the PaymentIntent so they never retype it, and skip Stripe's address form.
+        // shipping_details is read-only on create — payment_intent_data.shipping is
+        // the valid create-time param (verified against Stripe docs, S91).
+        sessionParams.payment_intent_data = {
+          shipping: {
+            address: savedAddress,
+            name: order.customerName || order.email || 'Customer',
+          },
         };
+        // Because we skip shipping_address_collection, the webhook won't see an
+        // address on the session — stamp it onto the order now so staff/print have it.
+        try {
+          await db.collection('orders').doc(orderNum).update({ shippingAddress: savedAddress });
+        } catch (e) {
+          console.warn('createCheckoutSession: could not stamp saved address on order', e.message);
+        }
+      } else {
+        // Guests: Stripe's hosted checkout collects the shipping address (Austria only).
+        sessionParams.shipping_address_collection = { allowed_countries: ['AT'] };
       }
 
       // Create Stripe Checkout Session
@@ -1166,10 +1181,81 @@ exports.getMyAddress = functions
     try {
       const db = admin.firestore();
       const doc = await db.collection('customers').doc(email).get();
-      const address = doc.exists ? (doc.data().shippingAddress || null) : null;
-      return res.status(200).json({ address });
+      const data = doc.exists ? doc.data() : {};
+      const address = data.shippingAddress || null;
+      const name = data.shippingName || '';
+      return res.status(200).json({ address, name });
     } catch (err) {
       console.error('getMyAddress error:', err);
       return res.status(500).json({ error: 'Could not load your address.' });
+    }
+  });
+
+// ── Save shipping address (customer) ─────────────────────────────────────────
+// Aevia-owned address form (account settings) writes here. Same auth gate as
+// getMyAddress (verified ID token + email_verified). Stores to the same
+// customers/{normalizedEmail} doc that getMyAddress reads and createCheckoutSession
+// pre-fills from. Austria-only for now (trial phase) — enforced server-side.
+exports.saveMyAddress = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 10, memory: '128MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const m = (req.headers.authorization || '').match(/^Bearer (.+)$/);
+    if (!m) return res.status(401).json({ error: 'Unauthorised' });
+
+    let decoded;
+    try {
+      decoded = await admin.auth().verifyIdToken(m[1]);
+    } catch (e) {
+      return res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
+    }
+
+    const email = normalizeEmail(decoded.email);
+    if (!email) return res.status(400).json({ error: 'No email on this account.' });
+    if (!decoded.email_verified) {
+      return res.status(403).json({ error: 'unverified' });
+    }
+
+    // Build a clean address from the request — only the fields we store, all strings.
+    const a = (req.body && req.body.address) || {};
+    const str = (v) => (typeof v === 'string' ? v.trim() : '');
+    const name = str(req.body && req.body.name);
+    const address = {
+      line1: str(a.line1),
+      line2: str(a.line2),
+      city: str(a.city),
+      postal_code: str(a.postal_code),
+      state: str(a.state),
+      country: str(a.country).toUpperCase(),
+    };
+
+    // Required fields + Austria-only (trial phase).
+    if (!name || !address.line1 || !address.city || !address.postal_code) {
+      return res.status(400).json({ error: 'Please fill in your name, street, city and postal code.' });
+    }
+    if (address.country !== 'AT') {
+      return res.status(400).json({ error: 'We currently ship to Austria only.' });
+    }
+
+    try {
+      const db = admin.firestore();
+      await db.collection('customers').doc(email).set(
+        {
+          shippingName: name,
+          shippingAddress: address,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+      return res.status(200).json({ ok: true, address });
+    } catch (err) {
+      console.error('saveMyAddress error:', err);
+      return res.status(500).json({ error: 'Could not save your address. Please try again.' });
     }
   });
