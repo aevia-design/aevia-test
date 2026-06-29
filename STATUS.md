@@ -1,7 +1,46 @@
 # Session Status
-_Last updated: 2026-06-27 (session 85)_
+_Last updated: 2026-06-29 (session 87)_
 
 ## Status
+**Session 87 (2026-06-29) — SHIPPED LIVE the Wander cover edge-sliver fix. One commit on `main` (`f695f97`), pushed → Cloudflare deploying. Took three diagnostic passes; `/systematic-debugging` with live-DOM Playwright inspection found the real root cause after two wrong guesses. Full log: `sessions/2026-06-29-s87.md`.**
+
+- **Wander cover edge sliver — FIXED + LIVE.** A 1px dark line on the front-cover right edge (and spine top/bottom). **Root cause (two layers):** (1) the cover's background gradient bleeds under the 1px `.cover-canvas` page-frame border because `background-clip` defaults to `border-box`; (2) the gradient is set in JS via the `background` **shorthand**, which resets `background-clip` to border-box *inline* — so a stylesheet `padding-box` rule never wins. **Fix:** set `canvas.style.backgroundClip = 'padding-box'` inline right after the gradient line, in both `template-engine.html` + `customer-preview.html`. Plus S86's back/spine bg colours (navy → maroon `#6F454C` / green `#86A37B`). Evgeny confirmed it works locally.
+- **Two wrong guesses first** (both reverted): the page-frame border/box-shadow, and the front bgColor (`#f2ede3` → `#E7DED3`) — neither was the cause. Lesson reinforced: inspect the live render before changing code (memory `feedback_inspect_render_first`).
+- **Walkthrough script v2 + S86 log** — committed alongside the fix.
+- **AEV-045** = the Wander order used for testing this session (Evgeny had accidentally Approved it pre-recording in S86; revert path = dashboard status dropdown → `review_sent`).
+
+### ▶ NEXT SESSION (Session 88)
+1. **Eyeball the cover fix on the live Cloudflare deploy** (verified locally + on the live DOM via injection, not yet on the deployed build).
+2. **Record the demo** — `docs/naitive-fellowship/walkthrough-script-v2.md` is ready.
+3. Then the two standing forks from S84: **optional customer accounts Phase 1** (`docs/briefs/customer-accounts.md`, backend-first) **or** resume the **website copy pass** (home hero + remaining customer pages, co-review with Kseniia, replace fabricated home testimonials).
+4. **Carried owner actions:** redeploy Cloud Run renderer at `--memory 8Gi` → regen AEV-044 (Tender spine fix); submit Our Artists form once on LIVE to confirm email lands at xenia@aevia.at.
+
+### ⚠ Watch-outs (S87)
+- **The `background` shorthand resets `background-clip`.** Any future change to the cover background via `canvas.style.background = …` must re-set `backgroundClip = 'padding-box'` after it, or the edge sliver returns. This is the real gotcha, not the colour values.
+- **Cover edge slivers are a general pattern** — any template whose cover background is darker than the page shows the same 1px sliver if the padding-box clip is dropped. The fix is in the shared render path, so all templates benefit.
+- **Live render debugging via `@playwright/test`** (already installed) driving the no-auth customer-preview token URL is a repeatable way to inspect the live DOM without staff auth.
+- `.claude/settings.local.json` left out of the commit as usual.
+
+### Previous: Session 86
+**Session 86 (2026-06-29) — Mostly nAItive FELLOWSHIP APPLICATION writing (not code). Nothing committed. Two product touches: (1) UNCOMMITTED Wander cover bug fix, (2) advice-only revert path for an accidental AEV-045 approval. One new doc: `docs/naitive-fellowship/walkthrough-script-v2.md`. Full log: `sessions/2026-06-29-s86.md`.**
+
+- **Wander cover fix (UNCOMMITTED).** Dark/black sliver on the back+spine edges of the Wander cover in the staff engine. Root cause: the render's background-fill gradient (behind the cover SVG) used stale navy `#262262` for back+spine while the real artwork is maroon/green; where the SVG doesn't bleed fully to the canvas edge, the navy showed through. Fixed `assets/Template_Wander/wander-data.js:19-20` → back `#6F454C`, spine `#86A37B` (matching the correct `mockupEdges`). Shared data file → covers engine + customer-preview + PDF. **Needs Evgeny's eyeball, then commit.**
+- **Walkthrough script v2** — longer (~2:35–2:55), in Evgeny's voice, read-aloud, two-column + timings; "non-engineer orchestrating AI" frame at front+close. Original v1 kept as reference. Untracked — commit when ready.
+- **AEV-045** — Evgeny accidentally hit Approve in customer-preview pre-recording. Revert = dashboard status dropdown → `review_sent` (S85 progression-guard confirm expected). Editing re-enables (read-only gated only on `approved`/`paid`). Advice only, no code.
+- **nAItive answers** — drafted ~9 application answers (CV bio, "most significant thing", "what drew you", "right person", superpower, "visible difference" moment, "wrong call", "decision that hurt someone", one-line). They live in the application form, NOT the repo. Framing notes captured in the session log. Application reported **done** by Evgeny.
+
+### ▶ NEXT SESSION (Session 87)
+1. Eyeball the Wander cover fix on a reloaded order; **commit** it + `walkthrough-script-v2.md`.
+2. **Record the demo** (script ready in v2).
+3. Then the two standing forks from S84: optional customer accounts Phase 1, or resume the website copy pass.
+4. **Carried owner actions:** redeploy Cloud Run renderer at `--memory 8Gi` → regen AEV-044 (Tender spine fix); submit Our Artists form once on LIVE to confirm email lands at xenia@aevia.at.
+
+### ⚠ Watch-outs (S86)
+- **Wander cover fix is UNCOMMITTED** — background fill only (not artwork); verify on a reloaded Wander order before committing.
+- **Application answers are not versioned in the repo** — only the S86 log captures the framing. If Evgeny wants them saved, put them in `docs/naitive-fellowship/`.
+- `.claude/settings.local.json` modified as usual (left out of commits).
+
+### Previous: Session 85
 **Session 85 (2026-06-27) — STAFF DASHBOARD tweaks + a `/evaluating-as-user` pass. Shipped LIVE — one commit on `main` (`7838135`), pushed → Cloudflare deploying. Files: `pages/staff/dashboard.html` + `pages/staff/template-engine.html`. No backend change. Full log: `sessions/2026-06-27-s85.md`.**
 
 - **Engine deep-link.** Dashboard now has a per-order **"Open in engine →"** button + a topbar **Template engine** link; `template-engine.html` reads `?order=AEV-044` after sign-in (`maybeDeepLinkOrder`) and auto-loads it via the existing Order-mode load path (one-shot guard).
