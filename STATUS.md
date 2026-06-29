@@ -1,25 +1,39 @@
 # Session Status
-_Last updated: 2026-06-29 (session 89)_
+_Last updated: 2026-06-29 (session 91)_
 
 ## Status
-**Session 89 (2026-06-29) — ACCOUNT NAV LINK shipped live. One commit on `main` (`2e7841d`), pushed → Cloudflare deploying. Full log: `sessions/2026-06-29-s89.md`.**
+**Session 91 (2026-06-29) — CUSTOMER ACCOUNTS PHASE 2b SHIPPED (code). One commit pushed to main (`653e492`) → Cloudflare deploying. Aevia now owns an editable address form + Geoapify autocomplete. Functions NOT yet deployed (owner action). Full log: `sessions/2026-06-29-s91.md`.**
 
-- **Account link in primary nav** — `assets/css/mobile.css` (shared `.nav-actions` + `.nav-account` styles) + 16 customer pages now show `Account · [Our Collections]` in the top-right header cluster. On mobile it folds into the burger menu. `account.html` self-routes (signed out → sign-in; signed in → Orders). Verified with Playwright at 1280px + 390px.
-- `order.html` and `spread-preview.html` deliberately excluded (stripped/token-based flows).
+- **Phase 2b built + committed (`653e492`, pushed):** the corrected, Aevia-owned address model from the S90 rethink.
+  - New **`saveMyAddress`** Cloud Function — verified ID-token + `email_verified` gate (same as `getMyOrders`/`getMyAddress`); validates required fields + `country==='AT'`; writes `shippingName` + `shippingAddress` to `customers/{normalizedEmail}` (merge).
+  - **`getMyAddress`** now also returns the saved `name`.
+  - **`account.html`** Address book is now an **editable form** (country-first, Austria fixed; pre-filled from `getMyAddress`; inline save feedback). Reuses existing `.field`/`.btn-primary` styles.
+  - **Geoapify address autocomplete** (MIT lib `@geoapify/geocoder-autocomplete@3` via unpkg CDN) layered on the form — Austria-filtered (`addFilterByCountry(['at'])`), fills street/postcode/city on select, **degrades gracefully** if the CDN/key fails. Public frontend key in the page source (by design); secured by domain restriction in the Geoapify dashboard. Evgeny confirmed it works locally.
+  - **`createCheckoutSession`:** removed the dead `shipping_details` block; for a saved-address customer it now passes `payment_intent_data.shipping` (verified valid create-time param) **and stamps `shippingAddress` onto the order** (because skipping collection means the webhook won't see it); **guests keep `shipping_address_collection:['AT']`** unchanged.
+- **Verified the Stripe open question against official docs:** `payment_intent_data.shipping` works without `shipping_address_collection`, but `session.shipping_details` is populated ONLY by collection → hence the order-stamp at create time. (Skipped collection for saved-address users so they never retype.)
+- **Geoapify chosen over OSM Photon** (via `/solutioning` + `/verifying-claims`): managed, free tier 3,000/day, no credit card, EU (Cyprus) → GDPR; public Photon endpoint isn't production-safe, self-hosting is over-engineering for a one-country trial. Free tier requires "Powered by Geoapify" attribution (added to the form).
 
-### ▶ NEXT SESSION (Session 90)
-**Customer Accounts Phase 2 — address-into-checkout.** Arch question to decide first: **Firestore vs Stripe** for address storage (no address stored today; Stripe collects it at checkout). Start with `/solutioning` on that fork, then brief + build.
+### ▶ NEXT SESSION (Session 92)
+1. **OWNER MUST DEPLOY (backend-first) — until then the live Address book + Save error:** `firebase deploy --only "functions:createCheckoutSession,functions:getMyAddress,functions:saveMyAddress"` (note: `getMyAddress` was never deployed in S90 either). Then eyeball on live: sign in (verified email) → Address book → autocomplete fills fields → Save → reload persists; place a test order signed-in with a saved address and confirm checkout doesn't ask for the address again (guest path still does).
+2. **Still UNDECIDED — order-form sign-in (`pages/order.html`):** done + approved in S90, still UNCOMMITTED working tree. Safe to ship (uses live Phase-1 auth, no new fn). Decide commit/push.
+3. **Adding a country later = ~6 edits, no rebuild** (documented in S91 log): `functions/index.js` L728 (`allowed_countries`) + L1242 (validation); `account.html` L445 (country → dropdown), L494 (`country:'AT'` reads dropdown), L471 (Geoapify filter), L202/L455 (copy). Country is real data, not baked into the schema.
+4. **Email-journey** (Evgeny flagged) — map customer email journey, mailboxes to buy, brand the Firebase auth sender (`noreply@aevia-uploads.firebaseapp.com` → branded).
+5. **Carried owner actions:** redeploy Cloud Run renderer at `--memory 8Gi` → regen AEV-044 (Tender spine fix); submit Our Artists form once on LIVE to confirm email lands at xenia@aevia.at.
 
-Other open items:
-- **Email-journey** (Evgeny flagged) — map customer email journey, which mailboxes to buy, brand the Firebase auth sender (`noreply@aevia-uploads.firebaseapp.com` → branded). Prerequisite for the "preview ready" email linking to account.
-- **Carried owner actions:** redeploy Cloud Run renderer at `--memory 8Gi` → regen AEV-044 (Tender spine fix); submit Our Artists form once on LIVE to confirm email lands at xenia@aevia.at.
+### ⚠ Watch-outs (S91)
+- **Functions NOT deployed** — `653e492` is on main/Cloudflare, but `saveMyAddress`/`getMyAddress`/updated `createCheckoutSession` are not live until the owner runs `firebase deploy`. The Address book Save + autocomplete-then-save will fail on live until then. **Backend-first.**
+- **Geoapify key is public in the page source** (`account.html` `GEOAPIFY_KEY`) — that's fine ONLY because the key is domain-restricted in the dashboard (allowed origins: `aevia-test.pages.dev`, `aevia.at`, `localhost:8080`; + referrers with `/*`). If the live domain changes or adds `www`, add it in the dashboard or autocomplete silently stops working.
+- **Saved-address checkout skips Stripe's address form by design** — the address is passed via `payment_intent_data.shipping` and stamped on the order at create time. If a saved address is wrong, the customer edits it in account settings, NOT at checkout.
+- **Guest address still comes via Stripe** by design (augment-only invariant) — don't "fix" by editing the token/preview flow.
+- **Austria-only** is intentional (trial) — see item 3 above for the expand recipe.
+- **PowerShell `--only` comma gotcha:** quote the filter string when deploying multiple functions.
+- `.claude/settings.local.json` left out of commits as usual; `pages/order.html`, `docs/briefs/customer-accounts-phase2.md`, `sessions/2026-06-29-s90.md` remain uncommitted/untracked (pre-S91 leftovers).
 
-### ⚠ Watch-outs (S89)
-- **Footer "Account" link is now redundant** (also in nav) but harmless — leave it.
-- **Token-staleness gotcha (S88 fix still in place):** `account.html` uses `getIdToken(true)`. If 403s recur, sign-out/in.
-- **Backend-first held** — `getMyOrders` deployed; if removed/redeployed-broken, live account page breaks.
-- **Old mixed-case emails** may not match `getMyOrders` (Firestore `==` case-sensitive) — accepted Phase-1 limitation.
-- `.claude/settings.local.json` left out of commits as usual.
+### Previous: Session 90
+**Session 90 (2026-06-29) — Phase 2 (address capture) built + order-form sign-in. Commit `cd74bc8` pushed (functions never deployed). A design rethink found Stripe was owning the address form + the pre-fill was dead (`shipping_details` read-only) → Phase 2b (S91) corrected it. Order-form sign-in modal still uncommitted. Full log: `sessions/2026-06-29-s90.md`.**
+
+### Previous: Session 89
+**Session 89 (2026-06-29) — ACCOUNT NAV LINK shipped live (`2e7841d`). Account link in primary nav across 16 customer pages via shared `mobile.css` `.nav-actions`/`.nav-account`. Full log: `sessions/2026-06-29-s89.md`.**
 
 ### Previous: Session 88
 ### Previous: Session 87
