@@ -2,6 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createUploadSessionHandler, confirmUploadHandler } = require('./upload');
+const { normalizeEmail, projectOrderForCustomer, sortOrdersNewestFirst } = require('./account-utils');
 
 admin.initializeApp();
 
@@ -1046,5 +1047,56 @@ exports.submitArtistApplication = functions
     } catch (err) {
       console.error('submitArtistApplication error:', err);
       return res.status(500).json({ error: 'Something went wrong sending your message. Please try again.' });
+    }
+  });
+
+// ── Customer account: list the signed-in customer's orders (Phase 1) ─────────
+// Auth: verified Firebase ID token (Authorization: Bearer <idToken>). Ownership
+// = orders whose `email` equals the token's verified email (normalised). We
+// REQUIRE email_verified so a freshly-signed-up password user can't read orders
+// for an address they haven't proven they own (Google sign-ins are verified).
+// Returns a minimal, safe projection per order (see account-utils.js); the
+// previewToken is handed back only for orders that have a viewable preview, so
+// the account can deep-link into the existing customer-preview.html without the
+// customer ever hunting a token. This AUGMENTS the token flow — getOrder and the
+// edit/approve functions are untouched (ADR-0007).
+exports.getMyOrders = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    // Verify the Firebase ID token.
+    const m = (req.headers.authorization || '').match(/^Bearer (.+)$/);
+    if (!m) return res.status(401).json({ error: 'Sign in to view your orders.' });
+
+    let decoded;
+    try {
+      decoded = await admin.auth().verifyIdToken(m[1]);
+    } catch (e) {
+      return res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
+    }
+
+    const email = normalizeEmail(decoded.email);
+    if (!email) return res.status(400).json({ error: 'No email on this account.' });
+
+    // Require a verified email before exposing any orders for that address.
+    if (!decoded.email_verified) {
+      return res.status(403).json({ error: 'unverified', message: 'Please verify your email to see your orders.' });
+    }
+
+    try {
+      const db = admin.firestore();
+      const snap = await db.collection('orders').where('email', '==', email).get();
+      const orders = snap.docs.map((d) => projectOrderForCustomer({ orderNumber: d.id, ...d.data() }));
+      sortOrdersNewestFirst(orders);
+      return res.status(200).json({ email, orders });
+    } catch (err) {
+      console.error('getMyOrders error:', err);
+      return res.status(500).json({ error: 'Could not load your orders. Please try again.' });
     }
   });
