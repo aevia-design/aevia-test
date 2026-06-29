@@ -1,29 +1,27 @@
 # Session Status
-_Last updated: 2026-06-29 (session 88)_
+_Last updated: 2026-06-29 (session 89)_
 
 ## Status
-**Session 88 (2026-06-29) — CUSTOMER ACCOUNTS PHASE 1 built, independently reviewed (clean ACCEPT), and SHIPPED LIVE. One commit on `main` (`af25dca`), pushed → Cloudflare deploying. `getMyOrders` function deployed by owner (backend-first held). Full log: `sessions/2026-06-29-s88.md`.**
+**Session 89 (2026-06-29) — ACCOUNT NAV LINK shipped live. One commit on `main` (`2e7841d`), pushed → Cloudflare deploying. Full log: `sessions/2026-06-29-s89.md`.**
 
-- **Optional customer account (Phase 1 = auth + Orders + status + preview deep-link)** per `docs/briefs/customer-accounts.md` + ADR-0007.
-  - **`pages/account.html`** (new) — Firebase **email+password + Google** sign-in, email-verification gate, **first/last name** on register, show/hide password; left-rail **Personal info · Orders · Address book**(placeholder). Orders list with customer-facing status labels + a **Review & approve / View preview** deep-link into the existing `customer-preview.html?token=…` (relative → domain-agnostic).
-  - **`functions/getMyOrders`** (`europe-west1`) — verifies Firebase ID token, **requires `email_verified`**, matches `orders` by **normalized email**, returns a **leak-guarded projection** (previewToken only for ready statuses). **Augment-only:** `getOrder`/edit/approve/`customer-preview.html` untouched.
-  - **`functions/account-utils.js`** + **16 unit tests** (`tests/account-utils.test.js`); **138/138 green**. "Account" footer link across 16 customer pages.
-- **Firebase config:** owner enabled Google provider + authorized domains + deployed the function. **Password policy set via Identity Platform Admin API** (Claude, using `serviceAccountKey.json`): **ENFORCE, min 8, no composition rules** (NIST 800-63B Rev 4).
-- **Verified end-to-end** by Evgeny (incognito): register → verify email → orders load — incl. his **pre-feature guest orders** (ownership-by-email continuity working). Independent `/reviewer-agent`: **ACCEPT, 0 findings.**
+- **Account link in primary nav** — `assets/css/mobile.css` (shared `.nav-actions` + `.nav-account` styles) + 16 customer pages now show `Account · [Our Collections]` in the top-right header cluster. On mobile it folds into the burger menu. `account.html` self-routes (signed out → sign-in; signed in → Orders). Verified with Playwright at 1280px + 390px.
+- `order.html` and `spread-preview.html` deliberately excluded (stripped/token-based flows).
 
-### ▶ NEXT SESSION (Session 89)
-Phase 1 shipped. Two forks (pick one):
-1. **Email-journey `/ideating` session** (Evgeny flagged) — map the customer journey + email plan: mailboxes to buy (only `xenia@aevia.at` today), which email fires where, and **branding the auth sender** (Firebase verification sends unbranded `noreply@aevia-uploads.firebaseapp.com`; brand free via Auth Templates display-name, full via custom SMTP `@aevia.at`). **Prerequisite for the one remaining Phase-1 bullet** (registered-customer "preview ready" email links to account; guests keep raw token link).
-2. **Customer Accounts Phase 2** — address-into-checkout (decide first: Firestore vs Stripe — open arch question, no address stored today), retention policy (purge window + copy fix), first-order promo (TO-DO #76, uses email-match lookup built in S88).
-3. **Carried owner actions:** redeploy Cloud Run renderer at `--memory 8Gi` → regen AEV-044 (Tender spine fix); submit Our Artists form once on LIVE to confirm email lands at xenia@aevia.at.
+### ▶ NEXT SESSION (Session 90)
+**Customer Accounts Phase 2 — address-into-checkout.** Arch question to decide first: **Firestore vs Stripe** for address storage (no address stored today; Stripe collects it at checkout). Start with `/solutioning` on that fork, then brief + build.
 
-### ⚠ Watch-outs (S88)
-- **Token-staleness gotcha (fixed):** just-verified email → cached ID token still says `email_verified:false` → `getMyOrders` 403s. Fix in place: `account.html` uses `getIdToken(true)`. If it recurs, sign-out/in.
-- **Backend-first held** — `getMyOrders` is deployed; if it's ever removed/redeployed-broken, the live account page breaks.
-- **Old mixed-case emails** (pre-hardening) may not match (Firestore `==` is case-sensitive) — accepted Phase-1 limitation.
-- **Google sign-in on an email with an existing password account** may throw `auth/account-exists-with-different-credential` (Firebase "one account per email") — not a bug.
-- `.claude/settings.local.json` left out of the commit as usual.
+Other open items:
+- **Email-journey** (Evgeny flagged) — map customer email journey, which mailboxes to buy, brand the Firebase auth sender (`noreply@aevia-uploads.firebaseapp.com` → branded). Prerequisite for the "preview ready" email linking to account.
+- **Carried owner actions:** redeploy Cloud Run renderer at `--memory 8Gi` → regen AEV-044 (Tender spine fix); submit Our Artists form once on LIVE to confirm email lands at xenia@aevia.at.
 
+### ⚠ Watch-outs (S89)
+- **Footer "Account" link is now redundant** (also in nav) but harmless — leave it.
+- **Token-staleness gotcha (S88 fix still in place):** `account.html` uses `getIdToken(true)`. If 403s recur, sign-out/in.
+- **Backend-first held** — `getMyOrders` deployed; if removed/redeployed-broken, live account page breaks.
+- **Old mixed-case emails** may not match `getMyOrders` (Firestore `==` case-sensitive) — accepted Phase-1 limitation.
+- `.claude/settings.local.json` left out of commits as usual.
+
+### Previous: Session 88
 ### Previous: Session 87
 **Session 87 (2026-06-29) — SHIPPED LIVE the Wander cover edge-sliver fix. One commit on `main` (`f695f97`), pushed → Cloudflare deploying. Took three diagnostic passes; `/systematic-debugging` with live-DOM Playwright inspection found the real root cause after two wrong guesses. Full log: `sessions/2026-06-29-s87.md`.**
 
