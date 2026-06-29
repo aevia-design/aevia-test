@@ -7,6 +7,15 @@
 /* Hamburger button — hidden on desktop */
 .nav-burger { display: none; }
 
+/* Right-side nav cluster: quiet Account link + the Our Collections CTA pill.
+   Desktop styling lives here (shared) since pages don't define these inline. */
+.nav-actions { display: flex; align-items: center; gap: 24px; }
+.nav-account {
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); transition: color 0.15s;
+}
+.nav-account:hover { color: var(--text); }
+
 
 /* ═══════════════════════════════════════════════════
    MOBILE  (≤ 768px)
@@ -47,9 +56,26 @@
     margin-bottom: 6px;
   }
 
+  /* Right-side cluster collapses into the burger menu, below the links */
+  .nav-actions {
+    display: none;
+    order: 4;
+    width: 100%;
+    flex-direction: column;
+    gap: 0;
+  }
+  .nav-account {
+    display: block;
+    width: 100%;
+    padding: 12px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+
   /* Open state */
-  .nav.open .nav-links { display: flex; }
-  .nav.open .nav-cta   { display: block; }
+  .nav.open .nav-links   { display: flex; }
+  .nav.open .nav-actions { display: flex; }
+  .nav.open .nav-cta     { display: block; }
 
   /* Hamburger button */
   .nav-burger {
