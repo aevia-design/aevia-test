@@ -16,8 +16,8 @@ window.WANDER_DATA = {
   cover: {
     svg: 'Cover/Cover.svg',
     sections: {
-      back:  { xMm: 0,   wMm: 200, bgColor: '#262262' },
-      spine: { xMm: 200, wMm: 9,   bgColor: '#262262' },
+      back:  { xMm: 0,   wMm: 200, bgColor: '#6F454C' },
+      spine: { xMm: 200, wMm: 9,   bgColor: '#86A37B' },
       front: { xMm: 209, wMm: 200, bgColor: '#f2ede3' },
     },
     // Visible per-surface cover colours (sampled from the real cover) used by the mockup

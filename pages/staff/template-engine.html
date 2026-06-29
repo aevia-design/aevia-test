@@ -1766,6 +1766,10 @@
       const spineColor = secs.spine.bgColor || '#fdd16f';
       const frontColor = secs.front.bgColor || '#f8ead9';
       canvas.style.background = `linear-gradient(90deg, ${backColor} 0px ${spineStartPx}px, ${spineColor} ${spineStartPx}px ${frontStartPx}px, ${frontColor} ${frontStartPx}px 100%)`;
+      // Clip the gradient to the padding box so it doesn't bleed under the 1px page
+      // frame as a dark sliver at the cover edges. Must be set AFTER the `background`
+      // shorthand above, which resets background-clip back to border-box.
+      canvas.style.backgroundClip = 'padding-box';
     }
 
     // SVG overlay. Default .svg-overlay z-index:2 sits above the z-index:1 photo slot —
