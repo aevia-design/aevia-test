@@ -1,25 +1,36 @@
 # Session Status
-_Last updated: 2026-06-29 (session 87)_
+_Last updated: 2026-06-29 (session 88)_
 
 ## Status
+**Session 88 (2026-06-29) — CUSTOMER ACCOUNTS PHASE 1 built, independently reviewed (clean ACCEPT), and SHIPPED LIVE. One commit on `main` (`af25dca`), pushed → Cloudflare deploying. `getMyOrders` function deployed by owner (backend-first held). Full log: `sessions/2026-06-29-s88.md`.**
+
+- **Optional customer account (Phase 1 = auth + Orders + status + preview deep-link)** per `docs/briefs/customer-accounts.md` + ADR-0007.
+  - **`pages/account.html`** (new) — Firebase **email+password + Google** sign-in, email-verification gate, **first/last name** on register, show/hide password; left-rail **Personal info · Orders · Address book**(placeholder). Orders list with customer-facing status labels + a **Review & approve / View preview** deep-link into the existing `customer-preview.html?token=…` (relative → domain-agnostic).
+  - **`functions/getMyOrders`** (`europe-west1`) — verifies Firebase ID token, **requires `email_verified`**, matches `orders` by **normalized email**, returns a **leak-guarded projection** (previewToken only for ready statuses). **Augment-only:** `getOrder`/edit/approve/`customer-preview.html` untouched.
+  - **`functions/account-utils.js`** + **16 unit tests** (`tests/account-utils.test.js`); **138/138 green**. "Account" footer link across 16 customer pages.
+- **Firebase config:** owner enabled Google provider + authorized domains + deployed the function. **Password policy set via Identity Platform Admin API** (Claude, using `serviceAccountKey.json`): **ENFORCE, min 8, no composition rules** (NIST 800-63B Rev 4).
+- **Verified end-to-end** by Evgeny (incognito): register → verify email → orders load — incl. his **pre-feature guest orders** (ownership-by-email continuity working). Independent `/reviewer-agent`: **ACCEPT, 0 findings.**
+
+### ▶ NEXT SESSION (Session 89)
+Phase 1 shipped. Two forks (pick one):
+1. **Email-journey `/ideating` session** (Evgeny flagged) — map the customer journey + email plan: mailboxes to buy (only `xenia@aevia.at` today), which email fires where, and **branding the auth sender** (Firebase verification sends unbranded `noreply@aevia-uploads.firebaseapp.com`; brand free via Auth Templates display-name, full via custom SMTP `@aevia.at`). **Prerequisite for the one remaining Phase-1 bullet** (registered-customer "preview ready" email links to account; guests keep raw token link).
+2. **Customer Accounts Phase 2** — address-into-checkout (decide first: Firestore vs Stripe — open arch question, no address stored today), retention policy (purge window + copy fix), first-order promo (TO-DO #76, uses email-match lookup built in S88).
+3. **Carried owner actions:** redeploy Cloud Run renderer at `--memory 8Gi` → regen AEV-044 (Tender spine fix); submit Our Artists form once on LIVE to confirm email lands at xenia@aevia.at.
+
+### ⚠ Watch-outs (S88)
+- **Token-staleness gotcha (fixed):** just-verified email → cached ID token still says `email_verified:false` → `getMyOrders` 403s. Fix in place: `account.html` uses `getIdToken(true)`. If it recurs, sign-out/in.
+- **Backend-first held** — `getMyOrders` is deployed; if it's ever removed/redeployed-broken, the live account page breaks.
+- **Old mixed-case emails** (pre-hardening) may not match (Firestore `==` is case-sensitive) — accepted Phase-1 limitation.
+- **Google sign-in on an email with an existing password account** may throw `auth/account-exists-with-different-credential` (Firebase "one account per email") — not a bug.
+- `.claude/settings.local.json` left out of the commit as usual.
+
+### Previous: Session 87
 **Session 87 (2026-06-29) — SHIPPED LIVE the Wander cover edge-sliver fix. One commit on `main` (`f695f97`), pushed → Cloudflare deploying. Took three diagnostic passes; `/systematic-debugging` with live-DOM Playwright inspection found the real root cause after two wrong guesses. Full log: `sessions/2026-06-29-s87.md`.**
 
 - **Wander cover edge sliver — FIXED + LIVE.** A 1px dark line on the front-cover right edge (and spine top/bottom). **Root cause (two layers):** (1) the cover's background gradient bleeds under the 1px `.cover-canvas` page-frame border because `background-clip` defaults to `border-box`; (2) the gradient is set in JS via the `background` **shorthand**, which resets `background-clip` to border-box *inline* — so a stylesheet `padding-box` rule never wins. **Fix:** set `canvas.style.backgroundClip = 'padding-box'` inline right after the gradient line, in both `template-engine.html` + `customer-preview.html`. Plus S86's back/spine bg colours (navy → maroon `#6F454C` / green `#86A37B`). Evgeny confirmed it works locally.
 - **Two wrong guesses first** (both reverted): the page-frame border/box-shadow, and the front bgColor (`#f2ede3` → `#E7DED3`) — neither was the cause. Lesson reinforced: inspect the live render before changing code (memory `feedback_inspect_render_first`).
 - **Walkthrough script v2 + S86 log** — committed alongside the fix.
 - **AEV-045** = the Wander order used for testing this session (Evgeny had accidentally Approved it pre-recording in S86; revert path = dashboard status dropdown → `review_sent`).
-
-### ▶ NEXT SESSION (Session 88)
-1. **Eyeball the cover fix on the live Cloudflare deploy** (verified locally + on the live DOM via injection, not yet on the deployed build).
-2. **Record the demo** — `docs/naitive-fellowship/walkthrough-script-v2.md` is ready.
-3. Then the two standing forks from S84: **optional customer accounts Phase 1** (`docs/briefs/customer-accounts.md`, backend-first) **or** resume the **website copy pass** (home hero + remaining customer pages, co-review with Kseniia, replace fabricated home testimonials).
-4. **Carried owner actions:** redeploy Cloud Run renderer at `--memory 8Gi` → regen AEV-044 (Tender spine fix); submit Our Artists form once on LIVE to confirm email lands at xenia@aevia.at.
-
-### ⚠ Watch-outs (S87)
-- **The `background` shorthand resets `background-clip`.** Any future change to the cover background via `canvas.style.background = …` must re-set `backgroundClip = 'padding-box'` after it, or the edge sliver returns. This is the real gotcha, not the colour values.
-- **Cover edge slivers are a general pattern** — any template whose cover background is darker than the page shows the same 1px sliver if the padding-box clip is dropped. The fix is in the shared render path, so all templates benefit.
-- **Live render debugging via `@playwright/test`** (already installed) driving the no-auth customer-preview token URL is a repeatable way to inspect the live DOM without staff auth.
-- `.claude/settings.local.json` left out of the commit as usual.
 
 ### Previous: Session 86
 **Session 86 (2026-06-29) — Mostly nAItive FELLOWSHIP APPLICATION writing (not code). Nothing committed. Two product touches: (1) UNCOMMITTED Wander cover bug fix, (2) advice-only revert path for an accidental AEV-045 approval. One new doc: `docs/naitive-fellowship/walkthrough-script-v2.md`. Full log: `sessions/2026-06-29-s86.md`.**
