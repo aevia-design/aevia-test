@@ -4,43 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wander — Aevia</title>
-  <link rel="stylesheet" href="../assets/css/addons.css" />
-  <style>
-    :root{--bg:#fafaf8;--surface:#f3efe9;--border:#e4dfd8;--text:#1a1a1a;--muted:#7d7570;--accent-dk:#a8895f;--white:#ffffff;--serif:Georgia,'Times New Roman',serif;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;}
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}html{scroll-behavior:smooth;}body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}img{display:block;max-width:100%;}button{cursor:pointer;border:none;background:none;font:inherit;}a{color:inherit;text-decoration:none;}
-    .nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 56px;background:rgba(250,250,248,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
-    .nav-logo img{height:28px;width:auto;display:block;}.nav-logo-text{font-family:var(--serif);font-size:18px;}.nav-links{display:flex;gap:32px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}.nav-links a{transition:color 0.15s;}.nav-links a:hover{color:var(--text);}
-    .nav-cta{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;border:1px solid var(--text);padding:8px 20px;border-radius:100px;transition:background 0.15s,color 0.15s;}.nav-cta:hover{background:var(--text);color:var(--white);}
-    .crumb{margin-top:69px;padding:13px 56px;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}.crumb span{margin:0 8px;opacity:0.35;}
-    .tag{display:inline-block;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent-dk);margin-bottom:12px;}
-    .product-title{font-family:var(--serif);font-weight:400;letter-spacing:-0.02em;line-height:1.04;margin-bottom:14px;font-size:54px;}
-    .product-tagline{font-family:var(--serif);font-style:italic;color:var(--muted);line-height:1.65;margin-bottom:36px;font-size:16px;max-width:340px;}
-    .section-label{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
-    .collab{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--muted);margin:-4px 0 30px;}.collab a{font-style:normal;font-weight:500;color:var(--accent-dk);border-bottom:1px solid var(--accent-dk);padding-bottom:1px;transition:opacity 0.15s;}.collab a:hover{opacity:0.7;}
-    .zone{display:grid;grid-template-columns:1fr 400px;gap:72px;max-width:1160px;margin:0 auto;padding:64px 56px;align-items:start;}.panel{position:sticky;top:90px;}
-    .gallery-main{width:100%;aspect-ratio:10/7;border-radius:4px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in;}.gallery-main svg{opacity:0.25;}.gallery-main img{width:100%;height:100%;object-fit:contain;}
-    .thumbs{display:flex;gap:8px;margin-top:10px;}.thumb-ph{flex:1;aspect-ratio:10/7;border-radius:4px;background:#fff;border:1px solid var(--border);overflow:hidden;cursor:pointer;padding:3px;}.thumb-ph.on{border-color:var(--text);box-shadow:0 0 0 1px var(--text);}.thumb-ph img{width:100%;height:100%;object-fit:contain;display:block;}
-    .lightbox{position:fixed;inset:0;z-index:200;background:rgba(20,20,20,0.88);display:none;align-items:center;justify-content:center;padding:40px;cursor:zoom-out;}.lightbox.on{display:flex;}.lightbox img{max-width:100%;max-height:100%;border-radius:4px;box-shadow:0 12px 48px rgba(0,0,0,0.4);}
-    .lightbox-close{position:absolute;top:24px;right:32px;width:40px;height:40px;border-radius:100px;background:rgba(255,255,255,0.12);color:#fff;font-size:22px;line-height:40px;text-align:center;}
-    .page-toggle{margin-bottom:30px;}.chips{display:flex;gap:8px;margin-top:8px;}
-    .chip{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 22px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;min-width:108px;background:var(--white);transition:border-color 0.15s,background 0.15s;user-select:none;}.chip:hover{border-color:var(--text);}.chip.on{border-color:var(--text);background:var(--text);color:var(--white);}
-    .chip-label{font-size:12px;font-weight:500;letter-spacing:0.03em;}.chip-price{font-family:var(--serif);font-size:15px;}
-    .photo-count{font-size:13px;color:var(--muted);line-height:1.6;padding:12px 14px;background:var(--surface);border-radius:4px;margin-bottom:24px;}
-    .price-row{display:flex;align-items:baseline;gap:5px;margin-bottom:22px;}.price-sym{font-family:var(--serif);font-size:22px;color:var(--muted);}.price-val{font-family:var(--serif);font-size:52px;font-weight:400;letter-spacing:-0.03em;line-height:1;}.price-note{font-size:11px;color:var(--muted);}
-    .cta{width:100%;background:var(--text);color:var(--white);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;padding:17px 32px;border-radius:3px;transition:background 0.2s;margin-bottom:11px;}.cta:hover{background:#2e2e2e;}.cta-note{text-align:center;font-size:11px;color:var(--muted);}
-    .acc-wrap{border-top:1px solid var(--border);max-width:1160px;margin:0 auto;padding:0 56px;}.acc-item{border-bottom:1px solid var(--border);}
-    .acc-btn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:20px 0;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;text-align:left;transition:color 0.15s;}.acc-btn:hover{color:var(--muted);}
-    .acc-ico{width:16px;height:16px;flex-shrink:0;transition:transform 0.24s;}.acc-item.open .acc-ico{transform:rotate(45deg);}
-    .acc-body{display:none;padding-bottom:24px;font-size:14px;line-height:1.8;color:var(--muted);max-width:600px;}.acc-body ul{padding-left:16px;margin-top:10px;}.acc-body li{margin-bottom:4px;}.acc-body p+p{margin-top:10px;}.acc-item.open .acc-body{display:block;}
-    .footer{margin-top:96px;background:var(--surface);border-top:1px solid var(--border);padding:64px 56px 48px;}.footer-inner{max-width:1160px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:48px;}
-    .foot-logo{margin-bottom:14px;}.foot-logo img{height:28px;width:auto;}.foot-brand p{font-size:13px;color:var(--muted);line-height:1.7;max-width:220px;}
-    .foot-form{margin-top:20px;display:flex;gap:8px;}.foot-form input{flex:1;background:var(--white);border:1px solid var(--border);border-radius:3px;padding:8px 12px;font-size:12px;font-family:var(--sans);color:var(--text);outline:none;}.foot-form input:focus{border-color:var(--text);}.foot-form button{background:var(--text);color:var(--white);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;padding:8px 16px;border-radius:3px;}
-    .foot-col h5{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;}.foot-col a{display:block;font-size:13px;color:var(--muted);margin-bottom:8px;transition:color 0.15s;}.foot-col a:hover{color:var(--text);}
-    .foot-base{max-width:1160px;margin:40px auto 0;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;color:var(--muted);}
-  </style>
+  <link rel="stylesheet" href="../assets/css/product.css">
   <link rel="stylesheet" href="../assets/css/type.css">
   <link rel="stylesheet" href="../assets/css/mobile.css">
-  <script defer src="../assets/js/prices.js"></script>
 </head>
 <body>
 <nav class="nav">
@@ -54,12 +20,19 @@
 <div class="crumb"><a href="collections.html">Templates</a> <span>›</span> <a href="collections.html#adventures">Adventures</a> <span>›</span> Wander</div>
 <div class="zone">
   <div>
-    <div class="gallery-main" onclick="openLightbox(document.getElementById('gallery-img').src)"><img id="gallery-img" src="../assets/images/mockups/wander/hero.webp" alt="Wander photo book"/></div>
-    <div class="thumbs">
-      <button class="thumb-ph on" onclick="pickThumb(this,'hero.webp')"><img src="../assets/images/mockups/wander/hero.webp" alt="Open flat — back, spine and front"/></button>
-      <button class="thumb-ph" onclick="pickThumb(this,'closed.webp')"><img src="../assets/images/mockups/wander/closed.webp" alt="Closed book"/></button>
-      <button class="thumb-ph" onclick="pickThumb(this,'spread-1.webp')"><img src="../assets/images/mockups/wander/spread-1.webp" alt="Inside spread"/></button>
-      <button class="thumb-ph" onclick="pickThumb(this,'spread-2.webp')"><img src="../assets/images/mockups/wander/spread-2.webp" alt="Inside spread"/></button>
+    <div class="gallery-wrap">
+      <button class="gallery-arrow prev" onclick="navArrow(-1)" aria-label="Previous image"><svg viewBox="0 0 16 16"><polyline points="10,3 5,8 10,13"/></svg></button>
+      <div class="gallery-main" onclick="openLightbox(document.getElementById('gallery-img').src)"><img id="gallery-img" src="../assets/images/mockups/exp2/wander/front.webp" alt="Wander photo book — front cover"/></div>
+      <button class="gallery-arrow next" onclick="navArrow(1)" aria-label="Next image"><svg viewBox="0 0 16 16"><polyline points="6,3 11,8 6,13"/></svg></button>
+    </div>
+    <div class="thumbs" id="thumbs">
+      <button class="thumb-ph on" data-src="front.webp" onclick="setHero(this)"><img src="../assets/images/mockups/exp2/wander/front.webp" alt="Front cover"/></button>
+      <button class="thumb-ph" data-src="back.webp"  onclick="setHero(this)"><img src="../assets/images/mockups/exp2/wander/back.webp"  alt="Back cover"/></button>
+      <button class="thumb-ph" data-src="sp1.webp" onclick="setHero(this)"><img src="../assets/images/mockups/exp2/wander/sp1.webp" alt="Inside spread"/></button>
+      <button class="thumb-ph" data-src="sp2.webp" onclick="setHero(this)"><img src="../assets/images/mockups/exp2/wander/sp2.webp" alt="Inside spread"/></button>
+      <button class="thumb-ph" data-src="sp3.webp" onclick="setHero(this)"><img src="../assets/images/mockups/exp2/wander/sp3.webp" alt="Inside spread"/></button>
+      <button class="thumb-ph" data-src="sp4.webp" onclick="setHero(this)"><img src="../assets/images/mockups/exp2/wander/sp4.webp" alt="Inside spread"/></button>
+      <button class="thumb-ph" data-src="fp1.webp" onclick="setHero(this)"><img src="../assets/images/mockups/exp2/wander/fp1.webp" alt="Travel map spread"/></button>
     </div>
   </div>
   <div class="panel">
@@ -75,16 +48,13 @@
     </div>
     <div class="addons">
       <div class="section-label">Optional spreads — all free</div>
-      <div class="addons-note">Add it if you'd like; you'll provide the details on the next step.</div>
-      <div class="addons-grid cols-1">
-
-      <div class="addon" onclick="xtra(this)" data-fp="FP1" data-photos="0">
-        <div class="addon-preview" onclick="event.stopPropagation();openLightbox('../assets/images/mockups/wander/fp1.webp')">
-          <img src="../assets/images/mockups/wander/fp1.webp" alt="Travel map spread preview"/><span class="zoom-hint">Enlarge</span>
+      <div class="addons-note">Add it if you'd like; tap the image to preview it above.</div>
+      <div class="sp-list">
+        <div class="sp-card" onclick="xtra(this)" data-fp="FP1" data-photos="0">
+          <div class="sp-thumb" onclick="event.stopPropagation();setHeroFile('fp1.webp')"><img src="../assets/images/mockups/exp2/wander/fp1.webp" alt="Travel map spread"/></div>
+          <div class="sp-body"><div class="sp-name">Travel map &amp; itinerary</div><div class="sp-desc">The countries you travelled and your route, illustrated on a map spread.</div></div>
+          <span class="sp-add">Add</span>
         </div>
-        <div class="addon-body"><div class="addon-name">Travel map &amp; itinerary</div><div class="addon-desc">The countries you travelled and your route, illustrated on a map spread.</div></div>
-        <div class="addon-foot"><span class="addon-add">Add</span></div>
-      </div>
       </div>
     </div>
     <div class="price-row"><span class="price-sym">€</span><span class="price-val" id="price">70</span><span class="price-note">incl. design &amp; printing</span></div>
@@ -109,54 +79,12 @@
   <div class="foot-base"><span>© 2026 Aevia. All rights reserved.</span><span>Terms of service</span></div>
 </footer>
 <script>
-  const BASE_PHOTOS = { '40': [38, 48], '80': [76, 92] };
-
-  function updatePhotoCount() {
-    // Photo-count hint removed from the product page; guard keeps callers safe.
-    const box = document.getElementById('photo-count');
-    if (!box) return;
-    const pages = document.querySelector('.chip.on .chip-label').textContent.replace(' pages', '');
-    const [lo, hi] = BASE_PHOTOS[pages] || [38, 48];
-    let extra = 0;
-    document.querySelectorAll('.addon.on').forEach(a => { extra += parseInt(a.dataset.photos || 0); });
-    box.textContent =
-      'Your ' + pages + '-page book will need approximately ' + (lo + extra) + '\u2013' + (hi + extra) + ' photos in total.';
-  }
-
-  const MOCKUP_BASE='../assets/images/mockups/wander/';
-  function pickThumb(btn,file){btn.closest('.thumbs').querySelectorAll('.thumb-ph').forEach(t=>t.classList.remove('on'));btn.classList.add('on');document.getElementById('gallery-img').src=MOCKUP_BASE+file;}
-  function openLightbox(src){document.getElementById('lightbox-img').src=src;document.getElementById('lightbox').classList.add('on');}
-  function closeLightbox(){document.getElementById('lightbox').classList.remove('on');}
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox();});
-  function pick(el,p){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');document.getElementById('price').textContent=p;updatePhotoCount();}
-  function xtra(card){card.classList.toggle('on');card.querySelector('.addon-add').textContent=card.classList.contains('on')?'Added \u2713':'Add';updatePhotoCount();}
-
-  // FP slug/input-type metadata (mirrors Scribble's contract; order.html reads orderFormMeta from wander-data.js)
-  const FP_META = {
-    FP1: { name: 'Travel map & itinerary', inputType: 'map', slug: 'fp1' },
+  window.PRODUCT = {
+    base:'../assets/images/mockups/exp2/wander/', template:'Wander', category:'adventures', back:'wander.html',
+    fp:{ FP1:{name:'Travel map & itinerary',inputType:'map',slug:'fp1'} }
   };
-
-  function goToOrder() {
-    const price = document.getElementById('price').textContent;
-    const selectedChip = document.querySelector('.chip.on');
-    const pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
-    const selected = [];
-    document.querySelectorAll('.addon.on').forEach(a => {
-      const meta = FP_META[a.dataset.fp];
-      if (meta) selected.push(meta);
-    });
-    const urlParams = new URLSearchParams({
-      template: 'Wander', category: 'adventures', pages, price, back: 'wander.html',
-    });
-    if (selected.length) {
-      urlParams.set('addons',       selected.map(m => m.name).join(','));
-      urlParams.set('addon_inputs', selected.map(m => m.inputType).join(','));
-      urlParams.set('addon_slugs',  selected.map(m => m.slug).join(','));
-    }
-    window.location.href = 'order.html?' + urlParams.toString();
-  }
-  function acc(btn){const item=btn.closest('.acc-item');const open=item.classList.contains('open');document.querySelectorAll('.acc-item').forEach(i=>i.classList.remove('open'));if(!open)item.classList.add('open');}
-  const nav=document.querySelector('.nav');window.addEventListener('scroll',()=>{nav.style.background=window.scrollY>80?'rgba(250,250,248,0.97)':'rgba(250,250,248,0.92)';});
 </script>
+<script defer src="../assets/js/prices.js"></script>
+<script defer src="../assets/js/product.js"></script>
 </body>
 </html>

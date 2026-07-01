@@ -54,7 +54,11 @@ async function pngFromRaw(r) {
 
 // Backdrop: soft off-white (#f0f0f0, just below the paper tone so page/cover edges stay crisp on it), shared across all three mockups (closed/open/back). The contact shadow
 // still renders via the multiply "Shadows" layer; "BG Highlights" (screen) is a no-op on white.
-const bg = { r: 240, g: 240, b: 240 };
+// Override with BG_R/BG_G/BG_B (pre-grade values) for a warm-grey backdrop matching
+// front-new/back-new (#E3DFDA ≈ 227,223,218 post-grade). Default stays near-white.
+const bg = (process.env.BG_R !== undefined)
+  ? { r: Number(process.env.BG_R), g: Number(process.env.BG_G), b: Number(process.env.BG_B) }
+  : { r: 240, g: 240, b: 240 };
 
 // The two artwork slots. Each edge is sourced from whichever layer is correct for it:
 //  - OUTER (fore) edges from the WHITE PAGE BASE ("Page left"/"Page right") — the multiply

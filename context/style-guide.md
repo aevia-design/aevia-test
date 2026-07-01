@@ -160,6 +160,61 @@ Do not modify without testing end-to-end.
 
 ---
 
+## Product pages — the standard layout (S99)
+
+Every built template's product page (`pages/scribble.html`, `wander.html`,
+`papercut.html`, `tender.html`, `newborn.html`) shares **one layout, one
+stylesheet, and one script**. A new template's page is copy-and-fill: change the
+content and a small config, never the CSS or JS.
+
+**The three shared files:**
+- **`assets/css/product.css`** — all layout/chrome (nav, crumb, hero + balanced
+  thumbnail grid, sticky right panel, horizontal special-spread cards, accordion,
+  footer). Load order in `<head>`: `product.css` → `type.css` → `mobile.css`.
+- **`assets/js/product.js`** — all behaviour (thumbnail balancing, hero/arrow/
+  keyboard nav, lightbox, page-toggle, card toggle, accordion, order handoff).
+- Per page you set only a tiny **`window.PRODUCT`** config before loading
+  `product.js`:
+  ```html
+  <script>
+    window.PRODUCT = {
+      base:'../assets/images/mockups/exp2/<template>/',
+      template:'Scribble', category:'kids', back:'scribble.html',
+      fp:{ FP1:{name:'Birthday spread',inputType:'photo',slug:'fp1'}, … }
+    };
+  </script>
+  <script defer src="../assets/js/prices.js"></script>
+  <script defer src="../assets/js/product.js"></script>
+  ```
+
+**Markup contract** (same across every template — only content differs):
+`#gallery-img` hero, `#thumbs` with `.thumb-ph[data-src]` buttons, `.sp-card[data-fp]`
+special-spread cards, `#price`, and the `#lightbox`/`#lightbox-img` overlay.
+
+**Image contract:** each page reads its mockups from
+`assets/images/mockups/exp2/<template>/` — `front.webp`, `back.webp`, `sp1..N.webp`
+(regular spreads), and one webp per special spread named for its slug
+(`fp1.webp`, or `fpintro.webp`/`fpstory.webp` etc.). These are generated on the warm-grey
+backdrop by `scripts/compose-all.mjs` (`BG_R=216 BG_G=212 BG_B=207`) → cropped by
+`scripts/exp2-images.mjs` (add a per-template entry there first). See the S99 session
+log and the flat-mockup recipe for the full pipeline.
+
+**Thumbnail balance rule** (in `product.js`, automatic for any count): thumbs keep a
+fixed size (the width of one thumb in a full 6-across row). ≤6 thumbs → one centred
+row; 7+ → two equal rows of `ceil(count/2)`, both centred, so an uneven bottom row
+(4+3, 5+4, 6+5) sits centred rather than left-aligned with an orphan.
+
+**Special-spread cards:** horizontal and compact — thumb left, name + one-line
+description centre, Add pill right. Tapping the card thumb sets it as the hero.
+Keep descriptions to ~one line.
+
+**Adding a page for a new template** = duplicate any existing product page, swap the
+tag/title/tagline/crumb, the thumbnail + special-card markup, the accordion copy, and
+the `window.PRODUCT` config. Nothing else. (Templates without a book yet stay on the
+legacy checkbox-list pattern below until they have real mockups.)
+
+---
+
 ## Optional-spread / add-on cards (product pages)
 
 All product pages style the "Optional spreads" / "Optional add-ons" selector from
