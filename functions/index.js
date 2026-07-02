@@ -222,6 +222,7 @@ exports.getOrder = functions
         customerCaptions:           order.customerCaptions           || null,
         customerCaptionStyles:      order.customerCaptionStyles      || null,
         customerCoverCaptionStyles: order.customerCoverCaptionStyles || null,
+        customerHeartCrop:          order.customerHeartCrop          || null,
         signedUrls,
         derivativeUrls, // chunk-023: web-resolution URLs for engine rendering (fallback to signedUrls)
         storedNames: {
@@ -249,7 +250,7 @@ exports.saveOrderState = functions
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    const { token, bookAssignments, captions, spreadCaptionStyles, coverCaptionStyles } = req.body;
+    const { token, bookAssignments, captions, spreadCaptionStyles, coverCaptionStyles, heartCrop } = req.body;
     if (!token) return res.status(403).json({ error: 'Token required' });
 
     try {
@@ -266,6 +267,7 @@ exports.saveOrderState = functions
         customerCaptions:        captions        || null,
         customerCaptionStyles:   spreadCaptionStyles || null,
         customerCoverCaptionStyles: coverCaptionStyles || null,
+        customerHeartCrop:       heartCrop || null,
         customerUpdatedAt:       admin.firestore.FieldValue.serverTimestamp(),
       });
 
@@ -332,6 +334,9 @@ exports.approveOrder = functions
       }
       if (orderData.customerBookSequence != null) {
         updates.staffBookSequence = orderData.customerBookSequence;
+      }
+      if (orderData.customerHeartCrop != null) {
+        updates.staffHeartCrop = orderData.customerHeartCrop;
       }
 
       await orderRef.update(updates);

@@ -351,6 +351,38 @@
       image-rendering: -webkit-optimize-contrast;
       image-rendering: smooth;
     }
+    .photo-slot img.slot-photo.crop-dragging {
+      cursor: grabbing;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    /* Reposition handle (#74, ported from the staff engine): small affordance on hover
+       over a placed regular slot. Click it to enter reposition-mode (drag the photo
+       inside its frame). */
+    .photo-slot .reposition-handle {
+      position: absolute;
+      top: 5px; left: 5px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(30, 30, 30, 0.55);
+      color: #fff;
+      font-size: 13px; line-height: 22px; text-align: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.12s ease;
+      z-index: 4;
+      user-select: none;
+    }
+    .photo-slot:hover .reposition-handle { opacity: 1; }
+    .photo-slot.repositioning .reposition-handle {
+      opacity: 1;
+      background: #c98a2a;
+    }
+    .photo-slot.repositioning {
+      outline: 2px solid #c98a2a;
+      outline-offset: -2px;
+    }
+    .photo-slot.repositioning img.slot-photo { cursor: move; }
     .photo-slot .slot-placeholder {
       width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
@@ -696,6 +728,7 @@
   <div class="edit-hint" id="edit-hint" style="display:none">
     <strong>Drag</strong> a photo to swap it with another &nbsp;·&nbsp;
     <strong>Double-click</strong> a photo to return it to the sidebar &nbsp;·&nbsp;
+    Click <strong>✥</strong> on a photo to move it inside its frame &nbsp;·&nbsp;
     <strong>Click</strong> any caption to edit the text &nbsp;·&nbsp;
     Use the <strong>sidebar</strong> to place unplaced photos &nbsp;·&nbsp;
     Switch to <strong>Preview</strong> to flip through your finished book
@@ -713,6 +746,9 @@
       </div>
     </div>
   </div>
+  <p class="quality-note" id="quality-note" style="display:none;max-width:680px;margin:18px auto 4px;text-align:center;font-size:12.5px;line-height:1.5;color:var(--muted);">
+    Photos can look softer here than in print. We show a lighter version so your preview loads fast, then print your book from your original, full-resolution photos. <a href="help.html#preview-quality" target="_blank" rel="noopener" style="color:var(--accent-dk);border-bottom:1px solid currentColor;text-decoration:none;white-space:nowrap;">Learn more</a>
+  </p>
 </div>
 
 <!-- ── PREVIEW MODE CONTROLS ── -->
@@ -821,15 +857,70 @@
   // Shown when a customer tries to move/remove/replace a Story-page photo (fixed at order time).
   const SPECIAL_LOCK_MSG = 'This photo was chosen for your Story page when you ordered, so it can’t be moved here. Contact us if you’d like to change it.';
   window.spreadCaptionStyles = {};
-  window.heartCrop          = {};   // { photoName: { x, y } } — staff-set object-position % crop offset for any slot, heart or regular (#74); read-only here
+  window.heartCrop          = {};   // { photoName: { x, y } } — object-position % crop offset for any slot, heart or regular (#74); customer-editable (S101), saved as customerHeartCrop
   window.orderData          = null;
 
-  // Crop offset keyed by photo name (heart slot + regular slots, #74). Read-only in the
-  // customer engine — the crop is part of our layout. Mirrors the staff engine's getHeartCrop.
+  // Crop offset keyed by photo name (heart slot + regular slots, #74). Mirrors the
+  // staff engine's getHeartCrop/setHeartCrop; edits persist via saveBookState.
   function getHeartCrop(name) {
     const c = window.heartCrop[name];
     return { x: (c && typeof c.x === 'number') ? c.x : 50,
              y: (c && typeof c.y === 'number') ? c.y : 50 };
+  }
+  function setHeartCrop(name, x, y) {
+    const clamp = v => Math.max(0, Math.min(100, v));
+    window.heartCrop[name] = { x: clamp(x), y: clamp(y) };
+  }
+
+  // Pointer-drag to reposition a photo inside its slot (ported from the staff engine).
+  // The photo tracks the cursor 1:1: a drag of dx px moves the displayed image by dx px,
+  // which maps to a change in object-position %. Only the axis that overflows the slot
+  // moves. Works for any slot shape since overflow is derived from real slot dims.
+  // alwaysOn=true → drag is always live (cover/heart/story slots, not swap-draggable).
+  // alwaysOn=false → drag only fires while the slot has the 'repositioning' class
+  //   (regular slots, so the default gesture stays slot→slot swap-drag).
+  // No-op under window._readOnly (approved/paid) — checked per-drag so it also holds
+  // after an in-session approval without a re-render.
+  function attachCropDrag(img, slotEl, photoName, { alwaysOn = false } = {}) {
+    img.addEventListener('pointerdown', e => {
+      if (window._readOnly) return;
+      if (!alwaysOn && !slotEl.classList.contains('repositioning')) return;
+      // natural dims needed to know the cover-scaled image size; bail if not loaded yet
+      const natW = img.naturalWidth, natH = img.naturalHeight;
+      if (!natW || !natH) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const slotW = slotEl.clientWidth, slotH = slotEl.clientHeight;
+      const scale = Math.max(slotW / natW, slotH / natH);   // object-fit: cover
+      const imgW = natW * scale, imgH = natH * scale;
+      // overflow = how far the image extends beyond the slot on each axis (≥0)
+      const overflowX = imgW - slotW, overflowY = imgH - slotH;
+
+      const start = getHeartCrop(photoName);
+      const startX = e.clientX, startY = e.clientY;
+      img.setPointerCapture(e.pointerId);
+      img.classList.add('crop-dragging');
+
+      const onMove = ev => {
+        // object-position offset = -(overflow) * pct/100. Moving the image by +d px
+        // means offset += d, so pct -= d / overflow * 100.
+        let x = start.x, y = start.y;
+        if (overflowX > 0.5) x = start.x - (ev.clientX - startX) / overflowX * 100;
+        if (overflowY > 0.5) y = start.y - (ev.clientY - startY) / overflowY * 100;
+        setHeartCrop(photoName, x, y);
+        const hc = getHeartCrop(photoName);
+        img.style.objectPosition = hc.x + '% ' + hc.y + '%';
+      };
+      const onUp = ev => {
+        img.releasePointerCapture(e.pointerId);
+        img.classList.remove('crop-dragging');
+        img.removeEventListener('pointermove', onMove);
+        img.removeEventListener('pointerup', onUp);
+      };
+      img.addEventListener('pointermove', onMove);
+      img.addEventListener('pointerup', onUp);
+    });
   }
   window.previewSpreadIndex = 0;
 
@@ -1045,7 +1136,8 @@
         || od.staffCoverCaptionStyles || od.coverCaptionStyles || {};
       window.spreadCaptionStyles = od.customerCaptionStyles
         || od.staffSpreadCaptionStyles || {};
-      window.heartCrop = od.staffHeartCrop || {};
+      // Crop offsets: the customer's own saved crop wins, then staff's (S101).
+      window.heartCrop = od.customerHeartCrop || od.staffHeartCrop || {};
       stopLoadHumour();
       renderBook();
       showBookChrome();
@@ -1083,7 +1175,7 @@
   }
 
   function showBookChrome() {
-    ['photo-sidebar', 'edit-hint', 'submit-bar', 'preview-controls'].forEach(id => {
+    ['photo-sidebar', 'edit-hint', 'submit-bar', 'preview-controls', 'quality-note'].forEach(id => {
       const el = document.getElementById(id); if (el) el.style.display = '';
     });
     const toggle = document.getElementById('mode-toggle');
@@ -1479,10 +1571,17 @@
         const img = document.createElement('img');
         img.className = 'slot-photo';
         img.src = coverPhoto.url;
-        // Apply the staff-set cover crop (object-position %). Read-only here, like the
-        // regular slots — the crop is part of our layout. Default 50/50 = centred.
+        img.draggable = false;   // suppress native image drag-ghost; we drive our own
+        // Apply the saved crop offset + let the customer drag the photo inside the cover
+        // frame (S101, mirrors the staff engine). The cover slot isn't swap-draggable,
+        // so the drag is always live. Default 50/50 = centred.
         const hc = getHeartCrop(coverPhoto.name);
         img.style.objectPosition = hc.x + '% ' + hc.y + '%';
+        if (!window._readOnly) {
+          img.style.cursor = 'move';
+          img.title = 'Drag to reposition inside the cover frame';
+          attachCropDrag(img, slot, coverPhoto.name, { alwaysOn: true });
+        }
         slot.appendChild(img);
       } else {
         const ph = document.createElement('div');
@@ -1888,16 +1987,57 @@
           // dragstart with a native image drag (no JSON payload), so slot→slot
           // moves silently fail. Disable it so the slotEl drag handler fires.
           img.draggable = false;
-          // Apply the staff-set crop offset (object-position %) to every placed photo —
-          // heart slot AND regular slots (#74). Read-only: crop is part of our layout,
-          // not customer-editable. Mirrors the staff engine's render-apply. Default 50/50.
+          // Apply the saved crop offset (object-position %) to every placed photo —
+          // heart slot AND regular slots (#74). Customer-editable since S101; mirrors
+          // the staff engine's render-apply. Default 50/50 = centred.
           {
             const hc = getHeartCrop(photo.name);
             img.style.objectPosition = hc.x + '% ' + hc.y + '%';
           }
+
+          // Reposition-drag (S101, ported from the staff engine). Heart + Story slots
+          // aren't swap-draggable, so their drag is always live; regular slots use the
+          // ✥ handle toggle below so the default gesture stays slot→slot swap-drag.
+          if (!window._readOnly && (slotDef.heartClip || isSpecialSlot)) {
+            img.style.cursor = 'move';
+            img.title = slotDef.heartClip
+              ? 'Drag to reposition inside the heart'
+              : 'Drag to reposition inside the frame';
+            attachCropDrag(img, slotEl, photo.name, { alwaysOn: true });
+          }
           slotEl.appendChild(img);
           if (!isSpecialSlot) {
             slotEl.draggable = true;
+
+            // Reposition handle (S101): click toggles a per-slot "reposition mode"
+            // where the photo can be nudged inside its frame (swap-drag disabled so
+            // the two gestures don't clash). Esc or an outside click exits.
+            if (!window._readOnly && !slotDef.heartClip) {
+              const handle = document.createElement('div');
+              handle.className = 'reposition-handle';
+              handle.textContent = '✥';
+              handle.title = 'Reposition photo inside the frame';
+              attachCropDrag(img, slotEl, photo.name, { alwaysOn: false });
+              const exitReposition = () => {
+                slotEl.classList.remove('repositioning');
+                slotEl.draggable = true;
+                document.removeEventListener('pointerdown', onOutside, true);
+                document.removeEventListener('keydown', onEsc);
+              };
+              const onOutside = ev => { if (!slotEl.contains(ev.target)) exitReposition(); };
+              const onEsc = ev => { if (ev.key === 'Escape') exitReposition(); };
+              handle.addEventListener('pointerdown', e => { e.stopPropagation(); });
+              handle.addEventListener('click', e => {
+                e.stopPropagation();
+                if (window._readOnly) return;
+                if (slotEl.classList.contains('repositioning')) { exitReposition(); return; }
+                slotEl.classList.add('repositioning');
+                slotEl.draggable = false;   // disable swap-drag while repositioning
+                document.addEventListener('pointerdown', onOutside, true);
+                document.addEventListener('keydown', onEsc);
+              });
+              slotEl.appendChild(handle);
+            }
             slotEl.addEventListener('dragstart', e => {
               e.stopPropagation();
               window._dragType = 'slot';
@@ -2471,6 +2611,7 @@
       captions: window.bookCaptions || {},
       spreadCaptionStyles: window.spreadCaptionStyles || {},
       coverCaptionStyles: window.coverCaptionStyles || {},
+      heartCrop: window.heartCrop || {},
     };
 
     // POST to Firestore via Cloud Function
@@ -2511,6 +2652,11 @@
   function lockForApproval() {
     document.querySelectorAll('[contenteditable="true"]').forEach(el => el.setAttribute('contenteditable', 'false'));
     document.querySelectorAll('[draggable="true"]').forEach(el => el.draggable = false);
+    // Reposition tool (S101): remove handles + move cursors/tooltips. attachCropDrag
+    // also checks _readOnly per-drag, so this is belt-and-braces for the visuals.
+    document.querySelectorAll('.reposition-handle').forEach(h => h.remove());
+    document.querySelectorAll('.photo-slot.repositioning').forEach(s => s.classList.remove('repositioning'));
+    document.querySelectorAll('.photo-slot img.slot-photo').forEach(i => { i.style.cursor = ''; i.removeAttribute('title'); });
     const approveBtn = document.getElementById('approve-btn');
     const saveBtn    = document.getElementById('save-btn');
     const notice     = document.getElementById('approved-notice');
