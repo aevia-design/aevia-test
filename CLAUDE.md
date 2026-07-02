@@ -53,6 +53,15 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 
 ---
 
+## Customer-facing copy
+Any new or edited **customer-facing** copy — anything a customer reads: product and
+marketing pages, the order form, `customer-preview`, `help`/FAQ, and transactional
+emails — gets a **`/stop-slop` pass before it ships** (cut filler, remove em dashes,
+prefer active voice). Staff-only screens (`pages/staff/**`, the dashboard, the engine
+UI) are exempt.
+
+---
+
 ## Cost awareness (cloud spend)
 The owner is non-technical and cannot easily predict cloud costs. Before anything
 that touches Google Cloud / Firebase infra (a new service, region, bucket, function,
