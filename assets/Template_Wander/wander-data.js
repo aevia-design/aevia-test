@@ -323,7 +323,7 @@ window.WANDER_DATA = {
     //   this is the data contract for that work.
     FP1: {
       orderFormPhoto: null,
-      orderFormMeta: { countrySelect: true, sameRegionOnly: true, textPrompt: 'Your route', hint: 'List the places on your trip, in order — staff will format the itinerary.', placeholder: 'e.g. Vienna → Hallstatt → Salzburg → Innsbruck' },
+      orderFormMeta: { countrySelect: true, sameRegionOnly: true, textPrompt: 'Your route', hint: 'List the places on your trip, in order, and we\'ll lay out the itinerary for you.', placeholder: 'e.g. Vienna → Hallstatt → Salzburg → Innsbruck' },
       type: 'functional', id: 'FP1', label: 'Travel map', mapPage: true,
       pin: { png: 'FP Spread 1 - Special Files/GEO PIN.png', wMm: 12, hMm: 23, anchor: 'center' },
       // region code (from mapCoordinates) → left-page map SVG

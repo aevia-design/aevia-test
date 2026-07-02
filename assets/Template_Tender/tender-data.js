@@ -234,7 +234,7 @@ window.TENDER_DATA = {
           { key: 'bride', label: "One name",      placeholder: 'Anna' },
           { key: 'groom', label: 'Partner name',  placeholder: 'Michael' },
         ],
-        hint: 'A few details about your day — we weave these into a short opening on the intro page.',
+        hint: 'A few details about your day. We weave these into a short opening on the intro page.',
         // Composes the customer's fields into the opening block. Staff can refine the
         // wording in the engine afterwards (like the Newborn intro / Wander itinerary).
         compose: (v) => `We said "I do"\non ${v.date},\nin ${v.place}.\n\n${v.bride} & ${v.groom}`
@@ -262,7 +262,7 @@ window.TENDER_DATA = {
           { key: 'meet',    label: 'How you met',             placeholder: 'Through work and mutual friends…' },
           { key: 'started', label: 'How your relationship started', placeholder: 'A simple hello that became coffee, long walks…' },
         ],
-        hint: 'Tell us how you met — we shape it into the Our-story page; staff polish the wording.',
+        hint: 'Tell us how you met. We shape it into the Our-story page and polish the wording.',
         compose: (v) => `${v.meet}\n\n${v.started}`
       },
       pages: {
@@ -287,7 +287,7 @@ window.TENDER_DATA = {
         fields: [
           { key: 'words', label: 'Vows, toasts or wishes', placeholder: 'A line or two you want to keep.' },
         ],
-        hint: 'A few words — vows, a toast, a wish; staff set them on the Words page.',
+        hint: 'A few words: vows, a toast, a wish. We set them on the Words page.',
         compose: (v) => v.words
       },
       pages: {

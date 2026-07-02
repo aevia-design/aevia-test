@@ -304,7 +304,7 @@ window.SCRIBBLE_DATA = {
     },
 
     FP1: {
-      orderFormPhoto: {"count":1,"hint":"A photo of the birthday child — used as the centrepiece of the birthday page."},
+      orderFormPhoto: {"count":1,"hint":"A photo of the birthday child for the centrepiece of the birthday page."},
       orderFormMeta: {"textPrompt":"Birthday wishes","hint":"A short message or poem for the birthday page.","placeholder":"e.g. Happy first birthday, Leo! We love you to the moon and back."},
       type: 'functional', id: 'FP1', label: 'Birthday wishes', textLeft: true,
       pages: {
@@ -353,7 +353,7 @@ window.SCRIBBLE_DATA = {
     },
 
     FP3: {
-      orderFormPhoto: {"count":1,"hint":"A photo of the favourite toy — placed on the left page with a caption."},
+      orderFormPhoto: {"count":1,"hint":"A photo of the favourite toy for the left page, with a caption."},
       orderFormMeta: {"textPrompt":"Caption","hint":"Name the toy and add a word or two about it.","placeholder":"e.g. Bunny — Leo's constant companion since day one."},
       type: 'functional', id: 'FP3', label: 'Favourite toy', specialLeft: true,
       pages: {
@@ -393,7 +393,7 @@ window.SCRIBBLE_DATA = {
     },
 
     FP4: {
-      orderFormPhoto: {"count":1,"hint":"A photo capturing those first steps — placed on the left page with a caption."},
+      orderFormPhoto: {"count":1,"hint":"A photo of those first steps for the left page, with a caption."},
       orderFormMeta: {"textPrompt":"Caption","hint":"A short note about the moment.","placeholder":"e.g. First wobbly steps — 14 March 2024, at home in the kitchen."},
       type: 'functional', id: 'FP4', label: 'First steps', specialLeft: true,
       pages: {
@@ -433,7 +433,7 @@ window.SCRIBBLE_DATA = {
     },
 
     FP5: {
-      orderFormPhoto: {"count":2,"hint":"Two pieces of artwork — one per page. Scan or photograph flat on a surface."},
+      orderFormPhoto: {"count":2,"hint":"Two pieces of artwork, one per page. Scan or photograph them flat on a surface."},
       orderFormMeta: {"count":2,"labels":["Left page caption","Right page caption"],"placeholder":"e.g. Autumn leaves, October 2024"},
       type: 'functional', id: 'FP5', label: 'Art-Gallery', allArtwork: true,
       pages: {

@@ -61,7 +61,7 @@ window.NEWBORN_DATA = {
     captions: [
       { key: 'name',     xMm: 327, yMm: 175, wMm: 115, hMm: 20, font: 'Twinkle Star', sizePt: 44, align: 'center', color: '#c0d5ee', label: 'Front — name', placeholder: 'Nico', maxLength: 24 },
       { key: 'subtitle', xMm: 327, yMm: 193, wMm: 100, hMm: 12, font: 'Baskervville', sizePt: 17, align: 'center', color: '#c0d5ee', italic: true, weight: 500, label: 'Front — subtitle / date', placeholder: 'Your First Months', maxLength: 40 },
-      { key: 'spine',    xMm: 222.5, yMm: 118, wMm: 45,  hMm: 8,  font: 'Twinkle Star', sizePt: 20, align: 'center', color: '#21386e', rotate: 270, label: 'Spine — name / phrase', placeholder: 'Our Nico', maxLength: 24 },
+      { key: 'spine',    xMm: 222.5, yMm: 118, wMm: 65,  hMm: 8,  font: 'Twinkle Star', sizePt: 20, align: 'center', color: '#21386e', rotate: 270, label: 'Spine — name / phrase', placeholder: 'Our Nico', maxLength: 24 },
     ]
   },
 
@@ -237,7 +237,7 @@ window.NEWBORN_DATA = {
           { key: 'length', label: 'Length',        placeholder: '53 cm' },
           { key: 'gender', label: 'Gender', placeholder: 'boy / girl' },
         ],
-        hint: 'A few key details about your little one — we weave these into a short birth story on the intro page.'
+        hint: 'A few key details about your little one. We weave these into a short birth story on the intro page.'
       },
       pages: {
         // Single page (one side). svg is the fixed Intro artwork; no orientation variants.
@@ -263,7 +263,11 @@ window.NEWBORN_DATA = {
     // Photos are dedicated Labour uploads (pool 'labour'), not from the main grid.
     FPlabour: {
       type: 'functional', id: 'FPlabour', label: 'Labour',
-      orderFormPhoto: { pool: 'labour', count: 2, label: 'Labour photos', hint: 'Two photos from the day — one for each page of the labour spread.' },
+      orderFormPhoto: { pool: 'labour', count: 2, label: 'Labour photos', hint: 'Two photos from the day, one for each page of the labour spread.',
+        slotHints: [
+          'We recommend a photo of mum, or the whole family, with the baby around the birth.',
+          'We recommend a portrait of the baby in the first hours or days.',
+        ] },
       // Left page: collect just the baby's name; composeLabourLeft() in order.html
       // builds "Welcome to this world, {name}!". Right page: the chosen zodiac drives
       // both the constellation overlay AND a default caption (zodiac.copy below) that

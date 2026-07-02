@@ -316,7 +316,7 @@
 
         <div class="field">
           <label for="album-notes">Tell us about this album <span style="color:#c5bdb5;font-style:italic;letter-spacing:0;text-transform:none;font-size:10px;">optional</span></label>
-          <textarea id="album-notes" rows="4" placeholder="Your child's name, their personality, a favourite toy or game — anything you'd love us to weave through the design."></textarea>
+          <textarea id="album-notes" rows="4" placeholder="Your child's name, their personality, a favourite toy or game. Anything you'd love us to weave through the design."></textarea>
         </div>
 
         <div class="error-msg" id="err-step1"></div>
@@ -410,7 +410,7 @@
         <input type="file" accept=".jpg,.jpeg,.png,.heic" multiple onchange="handleMainFiles(this.files); this.value=''" />
         <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <div class="dz-text"><strong>Choose photos</strong> or drag here</div>
-        <div class="dz-formats">JPG · PNG · HEIC — multiple files OK</div>
+        <div class="dz-formats">JPG · PNG · HEIC. Add several at once.</div>
       </div>
 
       <div class="photo-grid" id="photo-grid"></div>
@@ -725,10 +725,10 @@ function coverHasPhoto() {
 function coverPhotoHint(slot) {
   const o = (slot?.orientation || '').toLowerCase();
   if (o === 'landscape' || o === 'horizontal')
-    return 'One photo for the cover. Choose a <strong>landscape (horizontal)</strong> photo so it fills the frame, and pick something that sets the mood.';
+    return 'One photo for the cover. Choose a <strong>landscape (horizontal)</strong> photo so it fills the frame.';
   if (o === 'portrait' || o === 'vertical')
-    return 'One photo for the cover. Choose a <strong>portrait (vertical)</strong> photo so it fills the frame, and pick something that sets the mood.';
-  return 'One photo for the cover. Pick something that sets the mood.';
+    return 'One photo for the cover. Choose a <strong>portrait (vertical)</strong> photo so it fills the frame.';
+  return 'One photo for the cover.';
 }
 
 // Non-blocking orientation warning. Returns the message to show when the
@@ -776,7 +776,7 @@ function renderCoverSection() {
     html += `
       <div style="margin-top:${coverHasPhoto() ? '20px' : '0'};">
         <div class="upload-label">Cover text</div>
-        <div class="upload-hint" style="margin-bottom:14px;">Optional — appears printed on your book cover and spine.</div>`;
+        <div class="upload-hint" style="margin-bottom:14px;">Appears printed on your book cover and spine. You can change this later when you review your preview.</div>`;
     // Two caption fields per row.
     for (let i = 0; i < captions.length; i += 2) {
       const pair = captions.slice(i, i + 2);
@@ -918,6 +918,15 @@ function composeLabourLeft(name) {
   return `Welcome to this world, ${name}!`;
 }
 
+// The baby's name for the labour welcome comes from the cover text (first cover
+// caption), so the customer only types it once. Empty until the cover step is filled.
+function coverNameValue() {
+  const caps = templateData()?.cover?.captions || [];
+  if (!caps.length) return '';
+  const el = document.getElementById(`cover-cap-${caps[0].key}`);
+  return (el && el.value.trim()) || '';
+}
+
 // Live-update only the itinerary (right) page of the spread preview, so typing
 // doesn't reload the map image. Falls back to a full render if the page isn't shown.
 function updateItinPreview(slug) {
@@ -1013,8 +1022,11 @@ function initFPSections() {
         const slotLabel = count > 1
           ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:500;">${i === 0 ? 'Photo 1 — left page' : 'Photo 2 — right page'}</div>`
           : '';
+        const slotHint = (photoMeta.slotHints && photoMeta.slotHints[i])
+          ? `<div style="font-size:12px;color:var(--muted);margin:-2px 0 10px;line-height:1.5;">${photoMeta.slotHints[i]}</div>`
+          : '';
         html += `
-          ${slotLabel}
+          ${slotLabel}${slotHint}
           <div class="drop-zone" id="dz-special-${slotKey}" style="${count > 1 && i < count - 1 ? 'margin-bottom:16px;' : ''}">
             <input type="file" accept=".jpg,.jpeg,.png,.heic" onchange="handleSpecialFile('${slotKey}', this.files[0])" />
             <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1128,12 +1140,9 @@ function renderLabourFields(slug, meta, fpData) {
   const inputStyle = 'width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;';
   let html = '';
   if (meta.leftName) {
-    const ln = meta.leftName;
+    // Name comes from the cover text (typed once at the cover step) — no separate field here.
     html += `
-      <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${escHtml(ln.label || "Baby's name")}</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">We'll print "Welcome to this world, [your baby's name]" on the left page.</div>
-      <input type="text" id="labour-name-${slug}" placeholder="${escHtml(ln.placeholder || '')}"
-        style="${inputStyle}margin-bottom:22px;" />`;
+      <div style="font-size:12px;color:var(--muted);margin-bottom:22px;line-height:1.55;">We'll print "Welcome to this world, [name]" on the left page, using the name from your cover.</div>`;
   }
   const signs = fpData?.zodiac?.signs || [];
   if (meta.zodiacSelect && signs.length) {
@@ -1412,6 +1421,14 @@ function validateCoverStep() {
   if (coverHasPhoto() && !coverFile) {
     return { ok: false, message: 'Please upload a cover photo before continuing.' };
   }
+  // Primary cover caption is required (customer can still refine it at preview).
+  const caps = templateData()?.cover?.captions || [];
+  if (caps.length) {
+    const el = document.getElementById(`cover-cap-${caps[0].key}`);
+    if (el && !el.value.trim()) {
+      return { ok: false, message: 'Please add your cover text before continuing.' };
+    }
+  }
   return { ok: true };
 }
 
@@ -1446,11 +1463,10 @@ function validateSpecialStep() {
         return { ok: false, message: `Please complete all intro details (${missing.label}) for "${addon.name}", or remove this page.` };
       }
     } else if (textMeta && (textMeta.leftName || textMeta.zodiacSelect)) {
-      // Labour: require the baby's name (zodiac is optional, defaults to None).
+      // Labour: the left-page welcome uses the cover name, so require the cover text.
       if (textMeta.leftName) {
-        const nm = (document.getElementById(`labour-name-${addon.slug}`) || {}).value?.trim() || '';
-        if (!nm) {
-          return { ok: false, message: `Please add the baby's name for "${addon.name}", or remove this page.` };
+        if (!coverNameValue()) {
+          return { ok: false, message: `Please add your cover text — the labour page's welcome uses it.` };
         }
       }
     } else if (textMeta && textMeta.countrySelect) {
@@ -1885,6 +1901,16 @@ function buildThumbEl(f) {
   rm.onclick = () => removeMainFile(idx);
   thumb.appendChild(rm);
 
+  // Re-add the resolution badge so a grid rebuild (e.g. after deleting one photo)
+  // preserves every photo's badge — not just the freshly checked ones. Mirrors
+  // refreshThumbBadge: insert before the remove button so it paints over the name bar.
+  if (!f._converting && f._lowRes !== undefined) {
+    const badge = document.createElement('div');
+    badge.className = f._lowRes ? 'low-res-badge' : 'res-ok-badge';
+    badge.textContent = f._lowRes ? 'LOW RES' : '✓ OK';
+    thumb.insertBefore(badge, rm);
+  }
+
   return thumb;
 }
 
@@ -1920,12 +1946,13 @@ function updatePhotoStatusBar() {
       if (diff > 0) countText += ` · Add ${diff} more photo${diff !== 1 ? 's' : ''}`;
       else if (diff < 0) countText += ` · Remove ${Math.abs(diff)} photo${Math.abs(diff) !== 1 ? 's' : ''}`;
     }
-    if (lowResCount > 0) countText += ` · ${lowResCount} may be too low-resolution for print (shortest side under ~1575px — may print soft, especially if used large)`;
+    if (lowResCount > 0) countText += ` · ${lowResCount} may be too low-resolution for print (shortest side under ~1575px, so it may print soft if used large)`;
     countEl.textContent = countText;
     countEl.className = 'photo-count' + (lowResCount > 0 ? ' low-res-note' : '');
     countEl.style.display = 'block';
     addMore.style.display = 'inline-flex';
-    document.getElementById('dz-main').style.display = 'none';
+    // Keep the drop zone available so drag & drop still works mid-upload (e.g. 40/51).
+    document.getElementById('dz-main').style.display = '';
   } else {
     countEl.style.display = 'none';
     addMore.style.display = 'none';
@@ -2034,7 +2061,7 @@ async function submitOrder() {
       }
     } else if (textMeta.leftName || textMeta.zodiacSelect) {
       if (textMeta.leftName) {
-        const nm = (document.getElementById(`labour-name-${a.slug}`) || {}).value?.trim() || '';
+        const nm = coverNameValue();
         if (nm) {
           const cap = composeLabourLeft(nm);
           fpTexts[a.slug] = cap;
