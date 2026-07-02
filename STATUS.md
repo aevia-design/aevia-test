@@ -1,7 +1,100 @@
 # Session Status
-_Last updated: 2026-06-29 (session 91)_
+_Last updated: 2026-07-02 (session 100)_
 
 ## Status
+**Session 100 (2026-07-02) — SHIPPED a batch of Newborn-testing-round order-flow fixes + a full `/stop-slop` copy pass across all templates. Pushed to `main` (`29737c3`, `bdc26d4`) → Cloudflare deploying. Also pushed the carried S99 exp2 redesign (`27d83e8`) + S97 flat mockups (`361b9b1`) live at the start of the session. Order form (`pages/order.html`): cover text now REQUIRED (first cover caption, template-agnostic); removed "sets the mood" copy; Labour drops the baby's-name field and auto-fills the welcome from the cover name (`coverNameValue()`) + adds per-page photo hints via new `orderFormPhoto.slotHints`; FIXED the low-res badge bug (badges vanished on delete — `buildThumbEl` now re-adds them); drop zone stays visible mid-upload; `text-wrap: pretty` on hints. Copy: owner-approved stop-slop of every field hint across newborn/wander/scribble/papercut/tender + shared strings ("staff"→"we", em dashes out); art-gallery product copy → "two of their drawings". Newborn spine caption `wMm 45→65` synced from the Cover CSV. Verified 138/138 tests + Playwright newborn-form smoke (0 console errors); owner eyeballed live. Full log: `sessions/2026-07-02-s100.md`.**
+
+- **NEXT (S101) = Phase 4: customer photo repositioning (BACKEND-FIRST).** Port the staff reposition tool ("✥" `.reposition-handle`) to `customer-preview.html`. The customer engine already LOADS + APPLIES `heartCrop` read-only but has no edit UI and `saveBookState()` omits it. Extend the `saveOrderState` Cloud Fn + order model to persist a customer crop (owner deploys), then port handle+CSS+drag, add heartCrop to the save payload, disable under `_readOnly`, and add a `#edit-hint` bullet + tooltip (point 9). Mirror in both engines. Details: `sessions/2026-07-02-s100.md` + plan `C:\Users\evgmy\.claude\plans\cool-thanks-will-share-lovely-sedgewick.md` (Phase 4).
+- **Generate-caption button** — diagnosed as OpenAI out-of-credit (billing, not a bug); owner topped up balance. If still failing after propagation, redeploy `functions:generateCaption` (deployed fn may hold an older key).
+- **Print-house colour thread (open):** our PDFs are RGB; printer quoted 4/0+4/4 CMYK. Email drafted (ask printer who converts RGB→CMYK before we build a CMYK pipeline) + min-orders + API access. Launch timeline saved to memory `project_launch_timeline`.
+- Carried: `.claude/skills/add-template/SKILL.md` (whole skill uncommitted); S96–S99 throwaway probe-script pile in `scripts/` still uncleaned; owner S91 backend deploy (`firebase deploy` address fns) still pending.
+- **exp2 + flat mockups now LIVE** — the old "not pushed" caveats from S97–S99 are resolved.
+- Orders: 039 newborn, 040 wander, 041 scribble, 043 papercut, 044 tender; cover-wraps in `sessions/qa-runs/cover-wrap-<order>.png`; local render PNGs in gitignored `mockups/<order>/`.
+
+### Previous: Session 99
+**Session 99 (2026-07-01) — SHIPPED the exp2 product-page redesign to ALL FIVE built templates (`27d83e8`; pushed in S100). Shared `assets/css/product.css` + `assets/js/product.js`; each page carries a small `window.PRODUCT` config. Grey mockups under `assets/images/mockups/exp2/<template>/`. Thumbnail balance rule in `product.js` (≤6 → one centred row; 7+ → two rows of `ceil(n/2)`). Hero 4:3 locked. Full log: `sessions/2026-07-01-s99.md`.**
+
+### Previous: Session 98
+**Session 98 (2026-07-01) — PRODUCT-PAGE REDESIGN, Scribble exp2 (iterated live with owner over ~5 rounds; NOTHING committed). New self-contained `pages/scribble-exp2.html` using the flat mockups on a warm-grey backdrop. Hero = zoomed front cover (front cover is also thumbnail #1 + default hero, AU pattern); 6+5 thumbnail grid (row1 covers+spreads, row2 the 5 specials); right column = horizontal special-spread cards (image left, name/desc/Add); click a special thumb → it becomes the hero; prev/next arrows + keyboard ←/→ (works in the full-screen lightbox too). Grey backdrop is baked at the compositor (`scripts/compose-mockup.mjs` now takes `BG_R/G/B`; DEFAULT UNCHANGED so live templates untouched); web images cropped tight-but-centred to the book via new `scripts/exp2-images.mjs` → scratch `assets/images/mockups/exp2/scribble/`. `/design-review` = approved-with-fixes (all applied: width 1160→1400, hero scale, cover-as-thumb-#1). Owner is reviewing with Kseniia and will return with comments. Full log: `sessions/2026-07-01-s98.md`.**
+
+- **NEXT (S99):** (1) apply Kseniia's comments on scribble-exp2; (2) **decide 4:3 vs 5:4 hero** (comparison shots made — owner deferred); (3) **roll to the other 4 templates** (regen spreads on grey `BG_R=216 BG_G=212 BG_B=207 node compose-all.mjs <order> <template>` → add slot map + crop rects to `exp2-images.mjs` → build `<template>-exp2.html`); (4) then decide what to commit + whether exp2 pages replace the real product pages (interplays with the S93 uncommitted gallery rework).
+- **Nothing committed.** Only tracked change = `scripts/compose-mockup.mjs` (backdrop env; default unchanged → safe). `scribble-exp2.html`, `exp2-images.mjs`, `assets/images/mockups/exp2/**` untracked. exp2 images are scratch; production `front-new`/`back-new`/spreads untouched.
+- **Grey backdrop default is OFF** (240 near-white); grey spreads exist only after regenerating a template with `BG_R/G/B`. Raw captures for all 5 orders are local (no re-capture / staff pw / egress needed).
+- Carried: `361b9b1` (S97 flat mockups) still NOT pushed; S93 product-page rework still uncommitted; S96 throwaway probe-script pile in `scripts/` still uncleaned.
+- Orders: 039 newborn, 040 wander, 041 scribble, 043 papercut, 044 tender; cover-wraps in `sessions/qa-runs/cover-wrap-<order>.png`; local render PNGs in gitignored `mockups/<order>/`.
+
+### Previous: Session 97
+**Session 97 (2026-07-01) — FLAT MOCKUPS FINALISED + COMMITTED (`361b9b1`, on main, NOT pushed). The "last dance on the front" is done: the book's left edge now reads as a real hardcover binding joint. Two fixes to `scripts/compose-flat-mockup.mjs`: (1) spine colour is auto-sampled per template from the engine cover-wrap's centre strip — deleted the hardcoded `SPINE_COLORS` table (it was wrong: papercut was blue-grey ≈ cover → invisible; real spine is mint `121,186,155`); (2) the hinge is a scene-fixed Gaussian profile — spine → soft recessed groove (shadow) → subtle highlight → flat cover, gradient-based, one rule for all 5 fronts. Newborn reproduction gate held at 3.09 (≈ S96's 3.06). All 10 final webps regenerated + committed to `assets/images/mockups/{template}/{front,back}-new.webp` (overwrote S95-broken ones). Housekeeping: cleared `temp-screenshots/review/`, removed the `.s96.mjs` backup. Recipe updated in memory `project_svg_flat_mockups`. Full log: `sessions/2026-07-01-s97.md`.**
+
+- **Not pushed** — `361b9b1` is local only.
+- Orders: 039 newborn, 040 wander, 041 scribble, 043 papercut, 044 tender; cover-wraps in `sessions/qa-runs/cover-wrap-<order>.png`; local render PNGs in gitignored `mockups/<order>/`.
+
+### Previous: Session 96
+**Session 96 (2026-07-01) — FLAT MOCKUP COMPOSITOR BUILT + working across all 5 templates; almost done. Rewrote `scripts/compose-flat-mockup.mjs` per the S95 brief. Newborn reproduces the approved render exactly (interior diff 3.06, zero shift) = the correctness gate. Fronts recolour the spine correctly; bottom-edge navy bleed fixed; backs are face-swap only (a back-spine-recolour experiment was tried + REVERTED — Xenia rejected it). Owner + Xenia reviewed and want ONE more FRONT change (specifics not yet given) that will likely touch every template → handed over to start clean. NOTHING written to `assets/`, nothing committed (every run used `--scratch`). Previews in `temp-screenshots/review/`. Full log: `sessions/2026-07-01-s96.md`.**
+
+- **How it works:** base = PSD `psd.canvas` composite; overwrite the Main-Image region [935,436]1128×1127 with the order cover face + reapply Layer 1 (multiply) + Highlight (screen×0.15); recolour the thin front spine sliver (x~930-938) light-blue→template via luminance; recolour the bottom-edge cool-navy bevel→cover colour; back = no spine recolour. Spine colours: newborn `#c0d5ee`, wander `#86A37B`, scribble `#fdd16f`, papercut `#8bb8d8`, tender `#fbf8f6`.
+- **PSD model (verified by per-layer render):** scene FIXED; per template change ONLY cover face + front spine colour. `Main Image`=white 3D-lit book form (swap target); `111`/`""`=flat artwork wrap `[back|spine|front]`; `Layer 1`+`Highlight`=lighting; `Shadow`+`BG texture`=drop shadow+backdrop.
+- **Backs have no template spine colour** — Xenia's mockup doesn't expose one (right edge = cover-colour fold → backdrop). Accepted; don't re-attempt the back-fold recolour.
+- **NEXT (S97):** ASK owner what the front change is (don't guess) → apply → re-verify newborn reproduction → FINALISE by running each template WITHOUT `--scratch` to write `assets/images/mockups/{scribble,wander,papercut,tender}/{front,back}-new.webp` (overwrites S95 broken artifacts; decide whether to regenerate newborn) → resolve white-edge-lines keep/suppress → update memory `project_svg_flat_mockups` → clean up throwaway probe scripts. Product-page wiring is a separate step.
+- Orders: 039 newborn, 040 wander, 041 scribble, 043 papercut, 044 tender; cover-wraps in `sessions/qa-runs/cover-wrap-<order>.png`.
+
+### Previous: Session 95
+**Session 95 (2026-06-30) — FLAT MOCKUPS: stopped brute-forcing, wrote a proper BRIEF. Attempts to recolor scribble's spine all failed (wide band → flat strip → detached floating bar); owner halted the guessing. `/systematic-debugging` + per-layer PSD inspection found the architecture + root cause; `/understanding-the-ask` + `/creating-briefs` produced `docs/briefs/flat-mockup-compositor.md`. NOT implemented — next session builds from the brief. Nothing committed, website untouched, newborn approved files intact. Full log: `sessions/2026-06-30-s95.md`; recipe + root cause in memory `project_svg_flat_mockups`.**
+
+- **Architecture (decisive):** newborn PSD scene is FIXED. `Main Image` = cover-face swap target; `111`/empty-named layer = full baked newborn book (spine `#c0d5ee` baked in, above Main Image); `Layer 1` multiply + `Highlight` screen = lighting. Per template change ONLY cover-face content + spine colors.
+- **Root cause of all failures:** recolored spine in the FLAT `111` coordinate space → misaligned with the 3D-lit composite → detached strip. Fix must work in the approved newborn render's coordinate space.
+- **Spine = 2 parts:** (1) face color hue-swap; (2) hinge crease APPROXIMATED via edge-darken-by-factor (owner-agreed) — neutral on light covers, deeper on dark.
+- `scripts/compose-flat-mockup.mjs` exists but is BROKEN — rewrite per brief. Scribble outputs are broken test artifacts.
+- **NEXT (S96):** implement the brief → verify scribble vs newborn (full image + pixel probe, not a crop) → confirm order-independence → roll out wander/papercut/tender → then product-page wiring. Capture closed/hero lessons in memory (still owed).
+
+### Previous: Session 93
+**Session 93 (2026-06-30) — PRODUCT-PAGE GALLERY/LAYOUT EXPLORATION. ALL UNCOMMITTED, nothing pushed (owner instruction — revisit after mockups are re-done). Reworked the product-page layout (originally inspired by Artifact Uprising — confirmed via founding `Brief.md`). Direct edits to `pages/newborn.html`; 3 experimental copies (`newborn-exp.html`, `scribble-exp.html`, `wander-exp.html`). Full log: `sessions/2026-06-30-s93.md`.**
+
+- **Wider gallery + taller hero + small thumbs + arrow/keyboard nav + wider accordion** applied to `pages/newborn.html` (real, uncommitted) and mirrored in the 3 `-exp` pages. Newborn-exp direction (taller hero, single thin thumb row à la Artifact Uprising) is **liked by owner — treat as reference.**
+- **Scribble-exp NOT yet ideal.** Templates with many special pages have a tall panel → unresolved trade-off: (A) bigger thumbs to fill dead space vs (B) keep thumbs small (current) and accept dead space even with 2 rows. Owner accepts some dead space over inconsistent thumb sizes. Gallery shows only 6 images (1 special-page example, not the full catalogue). Addon cards compacted (2-line clamp, smaller ADD, trimmed copy); **Option A "ADD inline with title" tried and rejected** (button oversized, title/desc wrapped at ~145px card width).
+- **BLOCKED ON MOCKUPS.** Owner wants to re-do the closed-book + back-cover mockup views (dislikes them) before finalising; the whole gallery exercise should be re-tested with new imagery.
+- **Shared `addons.css` NOT touched** — all addon-card tweaks are page-local overrides in `scribble-exp.html`. Rolling the winning pattern into `addons.css` + every product page is a later step.
+- Origin answered + saved to memory `project_product_page_origin`: layout inspired by **Artifact Uprising's hardcover PDP** (founding `Brief.md`, commit `2fc79e8`).
+
+### ▶ NEXT SESSION (Session 94)
+1. **GATED ON NEW MOCKUPS** — owner is re-doing closed-book + back-cover mockup views. Once new mockups exist, **re-test the gallery exercise** and resolve the scribble thumbnail trade-off (bigger thumbs to fill dead space vs keep small + accept dead space).
+2. **Decide fate of S93 uncommitted work:** keep/refine `pages/newborn.html` edits; promote the winning layout from the `-exp` pages into the real product pages + shared `assets/css/addons.css`; then commit across all templates in one pass.
+3. **Git hygiene (S93 leftovers):** many throwaway files were created this session (`measure.js`, `measure-gallery.mjs`, `test-layout-vars.mjs`, `screenshot.png`, `temp-screenshots/`, `qa-runs/`, several `qa/*.mjs` measurement scripts) + the 3 `-exp` pages. Decide what to delete vs gitignore vs keep.
+4. **CARRIED FROM S92 (still open):** owner reviews `context/tone-of-voice.md` + wires it into design-principles/CLAUDE.md; owner signs off the a–h Help-page rewrites (drafts in S92 chat only, not on disk) then apply + `/design-review` Help page; commit the S92 print-quality reassurance + CLAUDE.md stop-slop rule + approved Help copy.
+5. **CARRIED FROM S91 (owner backend deploy STILL pending):** `firebase deploy --only "functions:createCheckoutSession,functions:getMyAddress,functions:saveMyAddress"` (live Address book Save/autocomplete errors until then), then signed-in test order. Plus: Cloud Run `--memory 8Gi` regen AEV-044; Our Artists live form test.
+
+### ⚠ Watch-outs (S93)
+- **EVERYTHING from S93 is uncommitted** — incl. the REAL `pages/newborn.html` (not just exp pages). If reverting, note newborn.html changed too.
+- **`-exp` pages are throwaway test copies**, not linked from nav/collections. Don't ship them as-is; the patterns get folded into the real pages later.
+- **Don't touch `assets/css/addons.css` yet** — scribble-exp uses page-local overrides on purpose so the shared file (used by all product pages) stays stable until the pattern is locked.
+- **Scribble thumbnail trade-off is unresolved** — do not pick A or B until new mockups are in.
+- Pre-existing untracked leftovers persist (S90/S92 logs, customer-accounts-phase2 brief, settings.local.json) — left alone as usual.
+
+### Previous: Session 92
+**Session 92 (2026-06-30) — Three threads. (1) Committed the order-form inline sign-in (`414a183`, pushed). (2) Added a photo print-quality reassurance (customer-preview note + new help FAQ), researched first. (3) Set up an auto stop-slop reminder (CLAUDE.md rule + PostToolUse hook) and drafted a tone-of-voice doc. Then began a Help-page copy + UX review: research + claim-verification done, 8 rewrites DRAFTED (not applied), awaiting owner sign-off. Full log: `sessions/2026-06-30-s92.md`.**
+
+- **Order-form sign-in shipped** (`414a183`, pushed) — the S90-approved inline sign-in; pre-fills name/email for verified accounts, guests never blocked, no new backend.
+- **Print-quality reassurance (UNCOMMITTED).** `/conducting-research` confirmed: previews are deliberately compressed everywhere (Aevia = 1600px/JPEG-80 derivative on screen, originals to PDF); "looks soft" is a universal complaint fixed with copy + the existing upload-time low-res warning, NOT a full-res magnifier (egress cost + backfire risk). Added `#quality-note` in `customer-preview.html` + `#preview-quality` FAQ in `help.html`, both stop-slopped.
+- **Auto stop-slop (UNCOMMITTED + local).** `CLAUDE.md` "Customer-facing copy" rule; `.claude/settings.local.json` PostToolUse hook → `.claude/hooks/stop-slop-reminder.cjs` (verified: nudges on non-staff `pages/*.html`, silent on staff/JS). A reminder, not an enforcer.
+- **Tone-of-voice doc drafted** `context/tone-of-voice.md` — AWAITING OWNER REVIEW; supersedes the buried "Copy Tone" note in `design-principles.md`.
+- **Help copy review — DRAFTS ONLY (not on disk):** claim-verified q1 (emit-vs-reflect TRUE; drop the "50% brightness" tip; soften "always"). Drafted stop-slopped rewrites for the hero subtitle (fixes "book" orphan) + 8 FAQ items a–h: a print-look, b preview-soft (fix misleading "before print" → flagged at upload), c photo-quality (trim), d photo-count (per-template, exact at assembly), e ordering (24h, single preview not "two layouts", change loop), f payment (warmer), g delivery (Austria-only now), h delivery cost (TBD + no-surprise reassurance).
+
+### ▶ NEXT SESSION (Session 93)
+1. **Owner reviews `context/tone-of-voice.md`** — open calls: ban "curated" as filler-only or outright? "concierge" vs more "editorial/art-forward"? Then wire `design-principles.md` + CLAUDE.md Key references to it.
+2. **Owner signs off the a–h Help rewrites** (or tweaks) → apply them + the hero subtitle fix.
+3. **Run `/design-review` on the updated Help page** (needs local dev server) — look/feel needs work beyond the orphan word.
+4. **Commit** the print-quality reassurance + CLAUDE.md rule + approved Help copy together (hook + settings.local stay local).
+5. **CARRIED — owner backend deploy still pending from S91:** `firebase deploy --only "functions:createCheckoutSession,functions:getMyAddress,functions:saveMyAddress"` (live Address book Save/autocomplete-save errors until then), then eyeball + signed-in test order.
+6. Carried owner actions: Cloud Run `--memory 8Gi` regen AEV-044; Our Artists live form test.
+
+### ⚠ Watch-outs (S92)
+- **a–h Help rewrites are DRAFTS in the chat only** — not in any file. The only copy changed on disk this session: the new `#preview-quality` FAQ + the customer-preview `#quality-note`.
+- **Tone doc is unreviewed** — don't wire it into CLAUDE.md/design-principles until the owner approves.
+- **Phase-2b functions STILL UNDEPLOYED** (carried from S91) — the whole address feature errors on live until the owner runs `firebase deploy`. See S91 watch-outs below for the Geoapify-key + saved-address-checkout caveats (all still apply).
+- **Stop-slop hook is a reminder, not an enforcer** — fires on every non-staff `pages/*.html` edit incl. code-only ones (message says ignore if code-only); the rewrite is still a manual `/stop-slop` pass.
+- `.claude/settings.local.json` + `.claude/hooks/stop-slop-reminder.cjs` are local-only (not committed). Untracked leftovers persist: `docs/briefs/customer-accounts-phase2.md`, `sessions/2026-06-29-s90.md`.
+
+### Previous: Session 91
 **Session 91 (2026-06-29) — CUSTOMER ACCOUNTS PHASE 2b SHIPPED (code). One commit pushed to main (`653e492`) → Cloudflare deploying. Aevia now owns an editable address form + Geoapify autocomplete. Functions NOT yet deployed (owner action). Full log: `sessions/2026-06-29-s91.md`.**
 
 - **Phase 2b built + committed (`653e492`, pushed):** the corrected, Aevia-owned address model from the S90 rethink.
