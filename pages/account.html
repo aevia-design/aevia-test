@@ -365,14 +365,33 @@
   });
 
   // ── verify view actions ──
+  // Cooldown so mashing "Resend" can't trip Firebase's per-email link throttle.
+  function cooldownResend(seconds) {
+    const btn = $('resend-btn');
+    const label = 'Resend the email';
+    btn.disabled = true;
+    let left = seconds;
+    btn.textContent = `Resend the email (${left})`;
+    const t = setInterval(() => {
+      left -= 1;
+      if (left <= 0) { clearInterval(t); btn.disabled = false; btn.textContent = label; }
+      else { btn.textContent = `Resend the email (${left})`; }
+    }, 1000);
+  }
   $('resend-btn').addEventListener('click', async () => {
     const vm = $('verify-msg');
+    const btn = $('resend-btn');
+    btn.disabled = true;
     try {
       const token = await auth.currentUser.getIdToken();
       const r = await fetch(RESEND_VERIFY, { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
       if (!r.ok) throw new Error('resend failed');
       vm.textContent = 'Sent — check your inbox.'; vm.className = 'auth-msg show ok';
-    } catch (e) { vm.textContent = 'Could not resend just now — try again shortly.'; vm.className = 'auth-msg show error'; }
+      cooldownResend(30);
+    } catch (e) {
+      vm.textContent = 'Could not resend just now — try again shortly.'; vm.className = 'auth-msg show error';
+      cooldownResend(30);
+    }
   });
   $('verify-refresh').addEventListener('click', async () => {
     await auth.currentUser.reload();
