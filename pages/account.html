@@ -38,6 +38,8 @@
     .btn-google{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--white);border:1px solid var(--border);border-radius:3px;padding:13px;font-size:14px;color:var(--text);transition:border-color 0.15s,background 0.15s;}
     .btn-google:hover{border-color:var(--text);background:#fbfbf9;}
     .btn-google svg{width:18px;height:18px;}
+    .forgot-wrap{text-align:center;margin-top:14px;}
+    .forgot-wrap button{font-size:13px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:1px;background:none;}
     .auth-toggle{text-align:center;margin-top:22px;font-size:14px;color:var(--muted);}
     .auth-toggle button{color:var(--accent-dk);border-bottom:1px solid var(--accent-dk);padding-bottom:1px;}
     .auth-msg{margin-top:16px;font-size:14px;line-height:1.6;display:none;}
@@ -147,6 +149,7 @@
             <div class="pw-hint" id="pw-hint">At least 8 characters. A password manager is welcome.</div>
           </div>
           <button class="btn-primary" id="email-submit" type="submit">Sign in</button>
+          <div class="forgot-wrap" id="forgot-wrap"><button type="button" id="forgot-btn">Forgot your password?</button></div>
         </form>
         <div class="auth-msg" id="auth-msg"></div>
         <div class="auth-toggle" id="auth-toggle-wrap">
@@ -240,6 +243,8 @@
   const GET_MY_ORDERS   = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getMyOrders';
   const GET_MY_ADDRESS  = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getMyAddress';
   const SAVE_MY_ADDRESS = 'https://europe-west1-aevia-uploads.cloudfunctions.net/saveMyAddress';
+  const RESEND_VERIFY   = 'https://europe-west1-aevia-uploads.cloudfunctions.net/resendVerificationEmail';
+  const SEND_RESET      = 'https://europe-west1-aevia-uploads.cloudfunctions.net/sendPasswordResetEmail';
   const GEOAPIFY_KEY    = '9fae15e78a364df9a2453018cdecf1c5'; // public frontend key — secured by domain restriction in the Geoapify dashboard
 
   const app  = initializeApp(firebaseConfig);
@@ -260,6 +265,7 @@
     // new-password lets the browser/password-manager offer a generated strong password on register.
     $('password').setAttribute('autocomplete', signin ? 'current-password' : 'new-password');
     $('pw-hint').classList.toggle('show', !signin);
+    $('forgot-wrap').style.display = signin ? '' : 'none';
     $('name-fields').style.display = signin ? 'none' : '';
     $('auth-toggle-wrap').innerHTML = signin
       ? `New to Aevia? <button type="button" id="auth-toggle">Create an account</button>`
@@ -282,6 +288,7 @@
       'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
       'auth/popup-closed-by-user': 'Sign-in was cancelled.',
       'auth/popup-blocked': 'Your browser blocked the sign-in popup — please allow popups and try again.',
+      'auth/unauthorized-domain': 'This site isn\'t authorised for sign-in yet. Please let us know at hello@aevia.at.',
     };
     return map[code] || 'Something went wrong. Please try again.';
   }
@@ -300,7 +307,8 @@
         if (!first || !last) { setMsg('Please enter your first and last name.', 'error'); btn.disabled = false; return; }
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         try { await updateProfile(cred.user, { displayName: `${first} ${last}` }); } catch (_) {}
-        try { await sendEmailVerification(cred.user); } catch (_) {}
+        // The onUserCreated Cloud Function sends the branded verification email via
+        // Brevo — we no longer call the client-side sendEmailVerification() here.
         // onAuthStateChanged will route to the verify view.
       } else {
         await signInWithEmailAndPassword(auth, email, password);
@@ -323,6 +331,29 @@
     inp.focus();
   });
 
+  // ── forgot password ──
+  // Sends a reset link via the branded Brevo email. The backend always returns
+  // success (it never reveals whether the address is registered), so we show the
+  // same confirmation regardless.
+  $('forgot-btn').addEventListener('click', async () => {
+    clearMsg();
+    const email = $('email').value.trim().toLowerCase();
+    if (!email) { setMsg('Enter your email above first, then try again.', 'error'); return; }
+    const btn = $('forgot-btn'); btn.disabled = true;
+    try {
+      await fetch(SEND_RESET, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      setMsg('If that email has an account, a reset link is on its way. Check your inbox.', 'ok');
+    } catch (e) {
+      setMsg('Something went wrong. Please try again.', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   // ── Google ──
   $('google-btn').addEventListener('click', async () => {
     clearMsg();
@@ -336,8 +367,12 @@
   // ── verify view actions ──
   $('resend-btn').addEventListener('click', async () => {
     const vm = $('verify-msg');
-    try { await sendEmailVerification(auth.currentUser); vm.textContent = 'Sent — check your inbox.'; vm.className = 'auth-msg show ok'; }
-    catch (e) { vm.textContent = 'Could not resend just now — try again shortly.'; vm.className = 'auth-msg show error'; }
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const r = await fetch(RESEND_VERIFY, { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
+      if (!r.ok) throw new Error('resend failed');
+      vm.textContent = 'Sent — check your inbox.'; vm.className = 'auth-msg show ok';
+    } catch (e) { vm.textContent = 'Could not resend just now — try again shortly.'; vm.className = 'auth-msg show error'; }
   });
   $('verify-refresh').addEventListener('click', async () => {
     await auth.currentUser.reload();
