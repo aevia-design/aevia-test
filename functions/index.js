@@ -3,6 +3,11 @@ const admin = require('firebase-admin');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createUploadSessionHandler, confirmUploadHandler } = require('./upload');
 const { normalizeEmail, projectOrderForCustomer, sortOrdersNewestFirst } = require('./account-utils');
+const { createTransporter, FROM, renderEmail, emailButton } = require('./email');
+
+// Where the auth-email links send the customer back to after they click. Must be
+// an Authorised Domain in Firebase Console → Authentication → Settings.
+const ACCOUNT_URL = 'https://aevia-test.pages.dev/pages/account.html';
 
 admin.initializeApp();
 
@@ -817,17 +822,10 @@ exports.stripeWebhook = functions
         }
 
         // Send staff notification email
-        const nodemailer = require('nodemailer');
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
+        const transporter = createTransporter();
 
         await transporter.sendMail({
-          from: `"Aevia Orders" <${process.env.EMAIL_USER}>`,
+          ...FROM.orders,
           to: process.env.EMAIL_NOTIFY,
           subject: `[${orderNumber}] Payment received — ready for print`,
           html: `
@@ -844,6 +842,32 @@ exports.stripeWebhook = functions
             </div>
           `,
         });
+
+        // Customer payment confirmation (TO-DO #56 — previously missing)
+        if (order.email) {
+          await transporter.sendMail({
+            ...FROM.customer,
+            to: order.email,
+            subject: `Payment received for your Aevia order ${orderNumber}`,
+            html: `
+              <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;color:#333;background:#ffffff">
+                <div style="background:#f5f5f5;padding:32px;text-align:center;border-bottom:1px solid #e0e0e0">
+                  <img src="https://cdn.prod.website-files.com/69b2a5d685caeaf8e1c11985/69b2a8dcbb742c4b653bd15b_ff02171a590b8dd9f5be28995c86baf1_Logo-wide-p-2000.png"
+                       width="140" alt="Aevia" style="display:block;margin:0 auto">
+                </div>
+                <div style="background:#ffffff;padding:40px">
+                  <p style="margin:0 0 16px">Hi ${order.customerName || ''},</p>
+                  <p style="margin:0 0 24px">Thank you — your payment for order <strong>${orderNumber}</strong> is confirmed. Your book is now on its way to print.</p>
+                  <hr style="border:none;border-top:1px solid #e0e0e0;margin:0 0 24px">
+                  <p style="font-size:13px;margin:0">Questions? Write to <a href="mailto:orders@aevia.at" style="color:#333">orders@aevia.at</a> with <strong>${orderNumber}</strong> in the subject line.</p>
+                </div>
+                <div style="background:#f5f5f5;padding:20px;text-align:center">
+                  <p style="color:#999;font-size:14px;margin:0">— The Aevia team</p>
+                </div>
+              </div>
+            `,
+          });
+        }
 
         console.log('Order paid:', orderNumber);
       }
@@ -1039,9 +1063,9 @@ exports.generateDerivative = functions
   });
 
 // ── Artist application (Our Artists page "Work with us" form) ────────────────
-// Accepts JSON { name, email, work, note } and emails it to Xenia.
+// Accepts JSON { name, email, work, note } and emails it to hello@aevia.at.
 // Public form → CORS open, no auth. Email-only, no storage, no infra cost.
-// NOTE: recipient hardcoded to xenia@aevia.at for now — fix later if it changes.
+// Recipient is set in email.js FROM.artists — change there if it moves.
 exports.submitArtistApplication = functions
   .region('europe-west1')
   .runWith({ timeoutSeconds: 30, memory: '256MB' })
@@ -1069,18 +1093,10 @@ exports.submitArtistApplication = functions
 
       const esc = (s) => String(s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
 
-      const nodemailer = require('nodemailer');
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-      });
+      const transporter = createTransporter();
 
       await transporter.sendMail({
-        from: `"Aevia Artists" <${process.env.EMAIL_USER}>`,
-        to: 'xenia@aevia.at',
+        ...FROM.artists,
         replyTo: emailTrim,
         subject: `New artist application — ${nameTrim}`,
         html: `
@@ -1263,4 +1279,150 @@ exports.saveMyAddress = functions
       console.error('saveMyAddress error:', err);
       return res.status(500).json({ error: 'Could not save your address. Please try again.' });
     }
+  });
+
+// ── Signup verification email (Brevo-branded) ────────────────────────────────
+// Auth onCreate trigger, NOT a public callable: no endpoint to spray means no
+// account-existence enumeration, and Firebase retries it on failure so an account
+// can't be created without its verification email being attempted. Fires for every
+// new account; we skip anyone who is already verified (Google sign-in gives a
+// verified email, so those users get nothing). account.html no longer calls the
+// client-side sendEmailVerification() on signup — this owns it.
+exports.onUserCreated = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '128MB' })
+  .auth.user()
+  .onCreate(async (user) => {
+    if (!user.email || user.emailVerified) return; // Google/social already verified
+    try {
+      const link = await admin.auth().generateEmailVerificationLink(user.email, {
+        url: `${ACCOUNT_URL}?verify=1`,
+        handleCodeInApp: false,
+      });
+      const transporter = createTransporter();
+      const name = (user.displayName || '').split(' ')[0];
+      await transporter.sendMail({
+        ...FROM.customer,
+        to: user.email,
+        subject: 'Confirm your Aevia account',
+        html: renderEmail(`
+          <p style="margin:0 0 18px">Hi${name ? ' ' + name : ''},</p>
+          <p style="margin:0 0 22px">Welcome to Aevia. Please confirm your email address to activate your account and see your orders.</p>
+          ${emailButton(link, 'Confirm my email')}
+          <p style="margin:22px 0 0;font-size:14px;color:#6a6a6a">If you didn't create an Aevia account, you can ignore this email.</p>
+        `),
+      });
+    } catch (err) {
+      // Logged, not thrown — Firebase retries onCreate on a thrown error, but a
+      // bad/duplicate email would loop forever. Owner can watch logs for failures.
+      console.error('onUserCreated verification email failed for', user.email, err);
+    }
+  });
+
+// ── Resend verification email (Brevo-branded) ───────────────────────────────
+// Authenticated callable for the "Resend the email" button. Safe without a
+// throttle beyond Firebase's own token rate-limiting: it can only ever email the
+// signed-in user's OWN address (from the verified token), so it can't enumerate
+// or spam a third party.
+exports.resendVerificationEmail = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 20, memory: '128MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const m = (req.headers.authorization || '').match(/^Bearer (.+)$/);
+    if (!m) return res.status(401).json({ error: 'Unauthorised' });
+    let decoded;
+    try {
+      decoded = await admin.auth().verifyIdToken(m[1]);
+    } catch (e) {
+      return res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
+    }
+    if (decoded.email_verified) return res.status(200).json({ ok: true }); // already done
+    const email = decoded.email;
+    if (!email) return res.status(400).json({ error: 'No email on this account.' });
+
+    try {
+      const link = await admin.auth().generateEmailVerificationLink(email, {
+        url: `${ACCOUNT_URL}?verify=1`,
+        handleCodeInApp: false,
+      });
+      const transporter = createTransporter();
+      const name = (decoded.name || '').split(' ')[0];
+      await transporter.sendMail({
+        ...FROM.customer,
+        to: email,
+        subject: 'Confirm your Aevia account',
+        html: renderEmail(`
+          <p style="margin:0 0 18px">Hi${name ? ' ' + name : ''},</p>
+          <p style="margin:0 0 22px">Here's your confirmation link again. Please confirm your email address to activate your account.</p>
+          ${emailButton(link, 'Confirm my email')}
+          <p style="margin:22px 0 0;font-size:14px;color:#6a6a6a">If you didn't create an Aevia account, you can ignore this email.</p>
+        `),
+      });
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('resendVerificationEmail error for', email, err);
+      return res.status(500).json({ error: 'Could not resend just now — try again shortly.' });
+    }
+  });
+
+// ── Password reset email (Brevo-branded) ─────────────────────────────────────
+// Must be user-initiated (they're locked out, can't be signed in), so it IS a
+// public callable. Two safeguards against abuse: (1) always returns the same
+// success response whether or not the email is registered (no account-existence
+// disclosure); (2) per-email throttle of 3 requests/hour via a Firestore doc.
+exports.sendPasswordResetEmail = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 20, memory: '128MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const email = normalizeEmail((req.body && req.body.email) || '');
+    // Constant response — never reveal whether the address exists.
+    const ok = () => res.status(200).json({ ok: true });
+    if (!email) return ok();
+
+    try {
+      const db = admin.firestore();
+      const ref = db.collection('resetThrottle').doc(email);
+      const now = Date.now();
+      const hourAgo = now - 60 * 60 * 1000;
+      const snap = await ref.get();
+      const recent = ((snap.exists && snap.data().times) || []).filter((t) => t > hourAgo);
+      if (recent.length >= 3) return ok(); // silently throttled
+      recent.push(now);
+      await ref.set({ times: recent }, { merge: true });
+
+      const link = await admin.auth().generatePasswordResetLink(email, {
+        url: `${ACCOUNT_URL}`,
+        handleCodeInApp: false,
+      });
+      const transporter = createTransporter();
+      await transporter.sendMail({
+        ...FROM.customer,
+        to: email,
+        subject: 'Reset your Aevia password',
+        html: renderEmail(`
+          <p style="margin:0 0 18px">Hi,</p>
+          <p style="margin:0 0 22px">We received a request to reset the password for your Aevia account. Click below to choose a new one.</p>
+          ${emailButton(link, 'Reset my password')}
+          <p style="margin:22px 0 0;font-size:14px;color:#6a6a6a">If you didn't ask for this, you can ignore this email.</p>
+        `),
+      });
+    } catch (err) {
+      // auth/user-not-found lands here — swallow it so the response stays constant.
+      if (err.code !== 'auth/user-not-found') {
+        console.error('sendPasswordResetEmail error for', email, err);
+      }
+    }
+    return ok();
   });
