@@ -70,7 +70,7 @@ window.TENDER_DATA = {
     captions: [
       { key: 'name',     xMm: 328, yMm: 175, wMm: 150, hMm: 20, font: 'Parisienne', sizePt: 48, align: 'center', color: '#7c746e', letterSpacing: 0.01, label: 'Front — names',    placeholder: 'Our wedding',   maxLength: 60 },
       { key: 'subtitle', xMm: 328, yMm: 195, wMm: 150, hMm: 12, font: 'Parisienne', sizePt: 18, align: 'center', color: '#7c746e', letterSpacing: 0.01, label: 'Front — subtitle',  placeholder: 'We found love', maxLength: 60 },
-      { key: 'spine',    xMm: 222.5, yMm: 118, wMm: 45,  hMm: 8,  font: 'Parisienne', sizePt: 18, align: 'center', color: '#fbf8f6', letterSpacing: 0.01, rotate: 270, label: 'Spine — label', placeholder: 'Our wedding', maxLength: 60 },
+      { key: 'spine',    xMm: 222, yMm: 118, wMm: 45,  hMm: 8,  font: 'Parisienne', sizePt: 18, align: 'center', color: '#fbf8f6', letterSpacing: 0.01, rotate: 270, label: 'Spine — label', placeholder: 'Our wedding', maxLength: 60 },
     ]
   },
 

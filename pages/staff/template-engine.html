@@ -1165,6 +1165,39 @@
     });
   }
 
+  // Reposition handle (#74): the ✥ affordance + per-slot "reposition mode" toggle.
+  // Shared by regular slots (where it also suspends swap-drag while active) and special
+  // slots (story/toy/steps/artwork/words — not swap-draggable, but they get the same
+  // visible button so the reposition gesture is discoverable and consistent). Restores
+  // the slot's prior `draggable` on exit so special slots never become swap-draggable.
+  function attachRepositionHandle(img, slotEl, photoName) {
+    const handle = document.createElement('div');
+    handle.className = 'reposition-handle';
+    handle.textContent = '✥';
+    handle.title = 'Reposition photo inside the frame';
+    attachCropDrag(img, slotEl, photoName, { alwaysOn: false });
+    let prevDraggable = false;
+    const exitReposition = () => {
+      slotEl.classList.remove('repositioning');
+      slotEl.draggable = prevDraggable;
+      document.removeEventListener('pointerdown', onOutside, true);
+      document.removeEventListener('keydown', onEsc);
+    };
+    const onOutside = ev => { if (!slotEl.contains(ev.target)) exitReposition(); };
+    const onEsc = ev => { if (ev.key === 'Escape') exitReposition(); };
+    handle.addEventListener('pointerdown', e => { e.stopPropagation(); });
+    handle.addEventListener('click', e => {
+      e.stopPropagation();
+      if (slotEl.classList.contains('repositioning')) { exitReposition(); return; }
+      prevDraggable = slotEl.draggable;
+      slotEl.classList.add('repositioning');
+      slotEl.draggable = false;   // suspend swap-drag while repositioning (no-op for special slots)
+      document.addEventListener('pointerdown', onOutside, true);
+      document.addEventListener('keydown', onEsc);
+    });
+    slotEl.appendChild(handle);
+  }
+
   const SCALE    = 3;            // px per mm
   const BLEED_MM = 3;            // spread bleed (mm); caption/slot CSV coords are with-bleed
   const HEIC_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/convertHeic';
@@ -2634,12 +2667,11 @@
             img.title = 'Drag to reposition inside the heart';
             attachCropDrag(img, slotEl, photo.name, { alwaysOn: true });
           } else if (isSpecialSlot) {
-            // Special photo slots (toy, first steps, artwork) aren't swap-draggable,
-            // so reposition is always live — no toggle handle needed.
-            img.style.cursor = 'move';
+            // Special photo slots (toy, first steps, artwork, story, words) aren't
+            // swap-draggable. They still get the same ✥ reposition button as regular
+            // slots so the gesture is visible and consistent across the book.
             img.draggable = false;
-            img.title = 'Drag to reposition inside the frame';
-            attachCropDrag(img, slotEl, photo.name, { alwaysOn: true });
+            attachRepositionHandle(img, slotEl, photo.name);
           }
 
           // Low-res outline intentionally removed — see note in the sidebar-thumb
@@ -2651,31 +2683,8 @@
             slotEl.draggable = true;
 
             // Reposition handle (#74): the default gesture stays slot→slot swap-drag;
-            // the handle toggles a per-slot "reposition mode" where the photo can be
-            // nudged inside its frame (and swap-drag is disabled so the two don't clash).
-            const handle = document.createElement('div');
-            handle.className = 'reposition-handle';
-            handle.textContent = '✥';
-            handle.title = 'Reposition photo inside the frame';
-            attachCropDrag(img, slotEl, photo.name, { alwaysOn: false });
-            const exitReposition = () => {
-              slotEl.classList.remove('repositioning');
-              slotEl.draggable = true;
-              document.removeEventListener('pointerdown', onOutside, true);
-              document.removeEventListener('keydown', onEsc);
-            };
-            const onOutside = ev => { if (!slotEl.contains(ev.target)) exitReposition(); };
-            const onEsc = ev => { if (ev.key === 'Escape') exitReposition(); };
-            handle.addEventListener('pointerdown', e => { e.stopPropagation(); });
-            handle.addEventListener('click', e => {
-              e.stopPropagation();
-              if (slotEl.classList.contains('repositioning')) { exitReposition(); return; }
-              slotEl.classList.add('repositioning');
-              slotEl.draggable = false;   // disable swap-drag while repositioning
-              document.addEventListener('pointerdown', onOutside, true);
-              document.addEventListener('keydown', onEsc);
-            });
-            slotEl.appendChild(handle);
+            // the handle toggles a per-slot "reposition mode" (see attachRepositionHandle).
+            attachRepositionHandle(img, slotEl, photo.name);
 
             slotEl.addEventListener('dragstart', e => {
               e.stopPropagation();
