@@ -22,8 +22,17 @@ function createTransporter() {
 // (docs/briefs/email-communication.md) so a customer replying to an
 // automated email lands in an inbox someone reads, not at Brevo.
 const FROM = {
+  // Internal staff notifications (new order / payment received) → EMAIL_NOTIFY.
   orders: { from: '"Aevia Orders" <orders@aevia.at>', replyTo: 'orders@aevia.at' },
-  customer: { from: '"Aevia" <orders@aevia.at>', replyTo: 'orders@aevia.at' },
+  // Customer-facing order + payment emails. Sent from orders@ (recognisable,
+  // good for trust/deliverability) but replies route to the monitored support@
+  // inbox. orders@ still receives, so writing to it directly also works.
+  customer: { from: '"Aevia" <orders@aevia.at>', replyTo: 'support@aevia.at' },
+  // Account/security emails (verification, password reset, password-changed).
+  // Sent from noreply@ because they're system-generated; the body tells the
+  // customer not to reply and to contact support@ instead, and replyTo points
+  // there too so a stray reply still reaches a human.
+  account: { from: '"Aevia" <noreply@aevia.at>', replyTo: 'support@aevia.at' },
   artists: { from: '"Aevia Artists" <partners@aevia.at>', to: 'partners@aevia.at' },
 };
 
@@ -43,7 +52,16 @@ function emailButton(href, label) {
 }
 
 // Wrap body HTML in the approved shell. `body` is the inner HTML (already escaped).
-function renderEmail(body) {
+// Footer contact line varies by email type:
+//   { noReply: true }  → account/security: "automated, don't reply, contact support@"
+//   { support: true }  → order/payment: repliable, questions go to support@
+//   (default)          → general: hello@
+function renderEmail(body, opts = {}) {
+  const contactLine = opts.noReply
+    ? `This is an automated message, so please don't reply. If you need help, write to us at <a href="mailto:support@aevia.at" style="color:#8a8a8a">support@aevia.at</a>`
+    : opts.support
+      ? `Questions? Write to us at <a href="mailto:support@aevia.at" style="color:#8a8a8a">support@aevia.at</a>`
+      : `Questions? Write to us at <a href="mailto:hello@aevia.at" style="color:#8a8a8a">hello@aevia.at</a>`;
   return `
   <div style="font-family:Georgia,'Times New Roman',serif;max-width:600px;margin:0 auto;background:#ffffff;color:#2a2a2a">
     <div style="padding:44px 44px 8px;font-size:16px;line-height:1.7">
@@ -54,7 +72,7 @@ function renderEmail(body) {
       <p style="font-style:italic;color:#6a6a6a;font-size:14px;line-height:1.6;margin:0 0 18px">A premium photo book studio in Vienna. We design and make your book; it's yours to keep.</p>
       <hr style="border:none;border-top:1px solid #e2e2e2;margin:0 0 16px">
       <p style="font-family:Arial,Helvetica,sans-serif;color:#8a8a8a;font-size:12px;line-height:1.6;margin:0 0 10px">Bloch-Bauer-Promenade 20/18, 1100 Vienna, Austria &nbsp;&middot;&nbsp; GISA 39598240</p>
-      <p style="font-family:Arial,Helvetica,sans-serif;color:#8a8a8a;font-size:12px;line-height:1.6;margin:0 0 10px">Questions? Write to us at <a href="mailto:hello@aevia.at" style="color:#8a8a8a">hello@aevia.at</a></p>
+      <p style="font-family:Arial,Helvetica,sans-serif;color:#8a8a8a;font-size:12px;line-height:1.6;margin:0 0 10px">${contactLine}</p>
       <p style="font-family:Arial,Helvetica,sans-serif;color:#8a8a8a;font-size:12px;line-height:1.6;margin:0">&copy; 2026 Aevia. All rights reserved. &middot; Aevia&trade;</p>
     </div>
   </div>`;

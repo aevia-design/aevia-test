@@ -849,23 +849,12 @@ exports.stripeWebhook = functions
             ...FROM.customer,
             to: order.email,
             subject: `Payment received for your Aevia order ${orderNumber}`,
-            html: `
-              <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;color:#333;background:#ffffff">
-                <div style="background:#f5f5f5;padding:32px;text-align:center;border-bottom:1px solid #e0e0e0">
-                  <img src="https://cdn.prod.website-files.com/69b2a5d685caeaf8e1c11985/69b2a8dcbb742c4b653bd15b_ff02171a590b8dd9f5be28995c86baf1_Logo-wide-p-2000.png"
-                       width="140" alt="Aevia" style="display:block;margin:0 auto">
-                </div>
-                <div style="background:#ffffff;padding:40px">
-                  <p style="margin:0 0 16px">Hi ${order.customerName || ''},</p>
-                  <p style="margin:0 0 24px">Thank you — your payment for order <strong>${orderNumber}</strong> is confirmed. Your book is now on its way to print.</p>
-                  <hr style="border:none;border-top:1px solid #e0e0e0;margin:0 0 24px">
-                  <p style="font-size:13px;margin:0">Questions? Write to <a href="mailto:orders@aevia.at" style="color:#333">orders@aevia.at</a> with <strong>${orderNumber}</strong> in the subject line.</p>
-                </div>
-                <div style="background:#f5f5f5;padding:20px;text-align:center">
-                  <p style="color:#999;font-size:14px;margin:0">— The Aevia team</p>
-                </div>
-              </div>
-            `,
+            html: renderEmail(`
+              <p style="margin:0 0 18px">Hi ${order.customerName || ''},</p>
+              <p style="margin:0 0 22px">Thank you. We've received your payment for order <strong>${orderNumber}</strong>, and your book is on its way to print.</p>
+              <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a8a8a">What happens next</p>
+              <p style="margin:0;font-size:15px;color:#6a6a6a;line-height:1.7">We'll email you again with tracking as soon as your book ships.</p>
+            `, { support: true }),
           });
         }
 
@@ -1302,7 +1291,7 @@ exports.onUserCreated = functions
       const transporter = createTransporter();
       const name = (user.displayName || '').split(' ')[0];
       await transporter.sendMail({
-        ...FROM.customer,
+        ...FROM.account,
         to: user.email,
         subject: 'Confirm your Aevia account',
         html: renderEmail(`
@@ -1310,7 +1299,7 @@ exports.onUserCreated = functions
           <p style="margin:0 0 22px">Welcome to Aevia. Please confirm your email address to activate your account and see your orders.</p>
           ${emailButton(link, 'Confirm my email')}
           <p style="margin:22px 0 0;font-size:14px;color:#6a6a6a">If you didn't create an Aevia account, you can ignore this email.</p>
-        `),
+        `, { noReply: true }),
       });
     } catch (err) {
       // Logged, not thrown — Firebase retries onCreate on a thrown error, but a
@@ -1366,7 +1355,7 @@ exports.resendVerificationEmail = functions
       const transporter = createTransporter();
       const name = (decoded.name || '').split(' ')[0];
       await transporter.sendMail({
-        ...FROM.customer,
+        ...FROM.account,
         to: email,
         subject: 'Confirm your Aevia account',
         html: renderEmail(`
@@ -1374,7 +1363,7 @@ exports.resendVerificationEmail = functions
           <p style="margin:0 0 22px">Here's your confirmation link again. Please confirm your email address to activate your account.</p>
           ${emailButton(link, 'Confirm my email')}
           <p style="margin:22px 0 0;font-size:14px;color:#6a6a6a">If you didn't create an Aevia account, you can ignore this email.</p>
-        `),
+        `, { noReply: true }),
       });
       return res.status(200).json({ ok: true });
     } catch (err) {
@@ -1426,7 +1415,7 @@ exports.sendPasswordResetEmail = functions
       const link = `${ACCOUNT_URL}?mode=resetPassword&oobCode=${encodeURIComponent(oobCode)}`;
       const transporter = createTransporter();
       await transporter.sendMail({
-        ...FROM.customer,
+        ...FROM.account,
         to: email,
         subject: 'Reset your Aevia password',
         html: renderEmail(`
@@ -1434,7 +1423,7 @@ exports.sendPasswordResetEmail = functions
           <p style="margin:0 0 22px">We received a request to reset the password for your Aevia account. Click below to choose a new one.</p>
           ${emailButton(link, 'Reset my password')}
           <p style="margin:22px 0 0;font-size:14px;color:#6a6a6a">If you didn't ask for this, you can ignore this email.</p>
-        `),
+        `, { noReply: true }),
       });
     } catch (err) {
       // auth/user-not-found lands here — swallow it so the response stays constant.
@@ -1479,14 +1468,14 @@ exports.sendPasswordChangedEmail = functions
       const transporter = createTransporter();
       const name = (decoded.name || '').split(' ')[0];
       await transporter.sendMail({
-        ...FROM.customer,
+        ...FROM.account,
         to: email,
         subject: 'Your Aevia password was changed',
         html: renderEmail(`
           <p style="margin:0 0 18px">Hi${name ? ' ' + name : ''},</p>
           <p style="margin:0 0 22px">Your Aevia account password was changed on ${when} (Vienna time).</p>
-          <p style="margin:0 0 22px">If this was you, there's nothing to do. If it wasn't, please write to us at hello@aevia.at right away and we'll help you secure your account.</p>
-        `),
+          <p style="margin:0 0 22px">If this was you, there's nothing to do. If it wasn't, please write to us at support@aevia.at right away and we'll help you secure your account.</p>
+        `, { noReply: true }),
       });
       return res.status(200).json({ ok: true });
     } catch (err) {

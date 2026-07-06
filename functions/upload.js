@@ -3,8 +3,8 @@ const { Storage } = require('@google-cloud/storage');
 const cors = require('cors')({
   origin: ['https://aevia.at', 'https://www.aevia.at', 'https://aevia-v1.webflow.io', /\.webflow\.io$/, /^http:\/\/localhost(:\d+)?$/, /\.pages\.dev$/],
 });
-const nodemailer = require('nodemailer');
 const admin = require('firebase-admin');
+const { createTransporter, FROM, renderEmail } = require('./email');
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const BUCKET_NAME = 'aevia-uploads-eu';
@@ -12,17 +12,6 @@ const MIN_UPLOAD_SLOTS = 60;
 
 // Storage client using your service account key
 const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
-
-// ─── Email transporter ────────────────────────────────────────────────────────
-function createTransporter() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-}
 
 // ─── Order number (AEV-001, AEV-002 …) ───────────────────────────────────────
 async function getNextOrderNumber() {
@@ -183,7 +172,7 @@ async function handler(req, res) {
     const transporter = createTransporter();
 
     await transporter.sendMail({
-      from:    `"Aevia Orders" <${process.env.EMAIL_USER}>`,
+      ...FROM.orders,
       to:      process.env.EMAIL_NOTIFY,
       subject: `[${orderNumber}] New Order — ${customerName} (${templateName})`,
       html: `
@@ -316,62 +305,34 @@ async function confirmUploadHandler(req, res) {
     const price = order.price;
 
     await transporter.sendMail({
-      from:     `"Aevia" <${process.env.EMAIL_USER}>`,
-      replyTo:  'xenia@aevia.at',
+      ...FROM.customer,
       to:       customerEmail,
       subject:  `Your Aevia order ${orderNumber} is confirmed`,
-      html: `
-        <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;color:#333;background:#ffffff">
+      html: renderEmail(`
+        <p style="margin:0 0 18px">Hi ${customerName},</p>
+        <p style="margin:0 0 22px">Thank you. Your order <strong>${orderNumber}</strong> is confirmed, and we've started designing your book.</p>
 
-          <!-- Header -->
-          <div style="background:#f5f5f5;padding:32px;text-align:center;border-bottom:1px solid #e0e0e0">
-            <img src="https://cdn.prod.website-files.com/69b2a5d685caeaf8e1c11985/69b2a8dcbb742c4b653bd15b_ff02171a590b8dd9f5be28995c86baf1_Logo-wide-p-2000.png"
-                 width="140" alt="Aevia" style="display:block;margin:0 auto">
-          </div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e2e2;border-radius:4px;margin:0 0 22px">
+          <tr><td style="padding:16px 20px 4px">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a8a8a">Book</td>
+                <td style="padding:6px 0;font-size:16px;color:#2a2a2a;text-align:right">${templateName}</td>
+              </tr>
+              ${price ? `<tr>
+                <td style="padding:6px 0;border-top:1px solid #f0eee9;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a8a8a">Book price</td>
+                <td style="padding:6px 0;border-top:1px solid #f0eee9;font-size:16px;color:#2a2a2a;text-align:right">&euro;${price}</td>
+              </tr>` : ''}
+            </table>
+          </td></tr>
+          <tr><td style="padding:8px 20px 18px">
+            <p style="margin:0;font-size:14px;color:#6a6a6a;line-height:1.6">Delivery is added at checkout, and you won't be charged until you approve your book.</p>
+          </td></tr>
+        </table>
 
-          <!-- Body -->
-          <div style="background:#ffffff;padding:40px">
-            <p style="margin:0 0 16px">Hi ${customerName},</p>
-            <p style="margin:0 0 24px">Thank you for your order. Your photos have been received and we're already getting to work.</p>
-
-            <!-- Order summary box -->
-            <div style="background:#f5f5f5;border-radius:8px;padding:20px;margin:0 0 24px">
-              <div style="font-size:11px;color:#999;letter-spacing:1px;font-variant:small-caps;text-transform:uppercase;margin-bottom:12px">Order Summary</div>
-              <table style="width:100%;border-collapse:collapse">
-                <tr>
-                  <td style="padding:6px 0;color:#888;font-size:14px">Template</td>
-                  <td style="padding:6px 0;color:#1a1a1a;font-size:14px;text-align:right">${templateName}</td>
-                </tr>
-                <tr>
-                  <td style="padding:6px 0;color:#888;font-size:14px">Pages</td>
-                  <td style="padding:6px 0;color:#1a1a1a;font-size:14px;text-align:right">${pageCount}</td>
-                </tr>
-                ${price ? `<tr>
-                  <td style="padding:6px 0;color:#888;font-size:14px">Price</td>
-                  <td style="padding:6px 0;color:#1a1a1a;font-size:14px;text-align:right">&euro;${price}</td>
-                </tr>` : ''}
-                <tr>
-                  <td style="padding:6px 0;color:#888;font-size:14px">Order reference</td>
-                  <td style="padding:6px 0;color:#1a1a1a;font-size:14px;font-weight:bold;text-align:right">${orderNumber}</td>
-                </tr>
-              </table>
-            </div>
-
-            <p style="margin:0 0 12px">We're assembling your photo book and will send you a preview for approval within 48 hours.</p>
-            <p style="color:#999;font-style:italic;font-size:13px;margin:0 0 24px">You won't be charged until you review and approve the final design.</p>
-
-            <hr style="border:none;border-top:1px solid #e0e0e0;margin:0 0 24px">
-
-            <p style="font-size:13px;margin:0">Questions? Write to <a href="mailto:xenia@aevia.at" style="color:#333">xenia@aevia.at</a> with <strong>${orderNumber}</strong> in the subject line.</p>
-          </div>
-
-          <!-- Footer -->
-          <div style="background:#f5f5f5;padding:20px;text-align:center">
-            <p style="color:#999;font-size:14px;margin:0">— The Aevia team</p>
-          </div>
-
-        </div>
-      `,
+        <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a8a8a">What happens next</p>
+        <p style="margin:0;font-size:15px;color:#6a6a6a;line-height:1.7">We'll have your preview ready within 24 hours. You'll get an email the moment it's ready for you to review and approve.</p>
+      `, { support: true }),
     });
 
     return res.status(200).json({ success: true });
