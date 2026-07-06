@@ -977,6 +977,131 @@ exports.markSentToPrint = functions
     }
   });
 
+// ── Send preview to customer ─────────────────────────────────────────────────
+// Staff-triggered from the dashboard "Send preview to customer" button. Does two
+// things in one atomic step: (1) transitions the order to 'review_sent' and
+// captures an immutable snapshot of the staff book state (with the send time),
+// and (2) emails the customer the branded preview-ready message with their link.
+// Separated from generatePreviewLink (which only mints the token for staff QA) so
+// an incomplete or unreviewed book never reaches a customer. Safe to call again
+// to resend — it re-stamps sentAt and re-sends the email without duplicating the
+// status-history entry.
+const PRE_APPROVAL_STATUSES = ['uploading', 'new', 'designing', 'needs_info', 'review_sent'];
+
+exports.sendPreviewEmail = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (!(await isStaff(req))) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+
+    try {
+      const db = admin.firestore();
+      const ref = db.collection('orders').doc(orderNumber);
+      const doc = await ref.get();
+      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+
+      const order = doc.data();
+
+      // Gate 1: a link must exist (staff generates + QAs it first).
+      if (!order.previewToken) {
+        return res.status(409).json({ error: 'Generate a preview link first, then send it.' });
+      }
+      // Gate 2: only send while the order is still awaiting the customer. Past
+      // approval, the customer has already seen and accepted the book.
+      if (!PRE_APPROVAL_STATUSES.includes(order.status)) {
+        return res.status(409).json({ error: `Order is already past the preview stage (${order.status}).` });
+      }
+      // Gate 3: the book must be saved as complete in the engine — never send a
+      // half-finished book. staffBookComplete is stamped on save (book-completeness.js).
+      if (order.staffBookComplete !== true) {
+        const reasons = (order.staffIncompleteReasons && order.staffIncompleteReasons.length)
+          ? order.staffIncompleteReasons.join(', ')
+          : 'the book has not been saved as complete yet';
+        return res.status(409).json({ error: `Book is not ready to send — ${reasons}.` });
+      }
+
+      // Capture the immutable snapshot of what the customer is about to see,
+      // stamped with the send time. Read straight from the order doc so this is
+      // authoritative (not whatever a stale browser tab holds).
+      const sentSnapshot = {
+        bookAssignments:     order.staffBookAssignments     || null,
+        bookCaptions:        order.staffBookCaptions         || null,
+        bookSequence:        order.staffBookSequence         || null,
+        coverCaptionStyles:  order.staffCoverCaptionStyles   || null,
+        spreadCaptionStyles: order.staffSpreadCaptionStyles  || null,
+        sentAt:              admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      const update = { status: 'review_sent', sentSnapshot };
+      // Only add a history entry on the first transition into review_sent — a
+      // resend re-stamps sentAt but shouldn't pile up duplicate history rows.
+      if (order.status !== 'review_sent') {
+        update.statusHistory = admin.firestore.FieldValue.arrayUnion({
+          status: 'review_sent',
+          timestamp: admin.firestore.Timestamp.now(),
+        });
+      }
+      await ref.update(update);
+
+      // Email the customer their preview link (S105-approved shell).
+      const previewUrl = `https://aevia-test.pages.dev/pages/customer-preview.html?token=${order.previewToken}`;
+      const pagesRow = order.pageCount
+        ? `<tr class="div">
+             <td style="padding:6px 0;border-top:1px solid #f0eee9;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a8a8a">Pages</td>
+             <td style="padding:6px 0;border-top:1px solid #f0eee9;font-size:16px;color:#2a2a2a;text-align:right">${order.pageCount}</td>
+           </tr>`
+        : '';
+
+      const transporter = createTransporter();
+      await transporter.sendMail({
+        ...FROM.customer,
+        to:      order.email,
+        subject: `Your Aevia preview is ready — ${orderNumber}`,
+        html: renderEmail(`
+          <p style="margin:0 0 18px">Hi ${order.customerName},</p>
+          <p style="margin:0 0 22px">Your book is ready to see. We've designed your <strong>${order.templateName}</strong> book from the photos you sent, and you can look through every page now.</p>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e2e2;border-radius:4px;margin:0 0 22px">
+            <tr><td style="padding:16px 20px 4px">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a8a8a">Order</td>
+                  <td style="padding:6px 0;font-size:16px;color:#2a2a2a;text-align:right">${orderNumber}</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;border-top:1px solid #f0eee9;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a8a8a">Book</td>
+                  <td style="padding:6px 0;border-top:1px solid #f0eee9;font-size:16px;color:#2a2a2a;text-align:right">${order.templateName}</td>
+                </tr>
+                ${pagesRow}
+              </table>
+            </td></tr>
+          </table>
+
+          ${emailButton(previewUrl, 'View your book')}
+
+          <p style="margin:26px 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a8a8a">Before you approve</p>
+          <p style="margin:0;font-size:15px;color:#6a6a6a;line-height:1.7">Take your time. You can move a photo or fix a caption yourself, right on the page. When it looks right, approve it and we'll take you to payment. Nothing is charged until you approve.</p>
+        `, { support: true }),
+      });
+
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('sendPreviewEmail error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
 // ── Generate web-resolution photo derivatives (chunk-023) ────────────────────
 // GCS Storage trigger: onFinalize for all files in the bucket.
 // When an original photo is uploaded, generates a ~1600px long-edge JPEG derivative.

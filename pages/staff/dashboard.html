@@ -148,7 +148,10 @@
       background: var(--white); color: var(--text); cursor: pointer;
       font-family: var(--sans); outline: none; width: 100%;
     }
-    .status-cell { min-width: 160px; }
+    .status-cell { min-width: 150px; }
+    /* Actions is the busiest column (engine link, preview link, send, PDF, print)
+       — give it room so its stacked controls don't get squeezed by Status. */
+    .actions-cell { min-width: 240px; }
 
     /* ── Status history tooltip ── */
     .status-history { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.6; }
@@ -184,6 +187,15 @@
     }
     .preview-link-btn:hover { border-color: var(--text); }
     .preview-link-btn.revoke:hover { background: #ffe4e6; }
+    /* Primary send action — the one deliberate "customer sees it now" button. */
+    .send-preview-row { margin-top: 8px; }
+    .send-preview-btn {
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 6px 12px; border: 1px solid var(--text); border-radius: 4px;
+      color: var(--white); background: var(--text); cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .send-preview-btn:hover { opacity: 0.82; }
     .preview-url {
       font-size: 11px; padding: 4px 8px; background: var(--surface); border-radius: 3px;
       color: var(--accent); word-break: break-all; flex: 1; min-width: 200px;
@@ -290,7 +302,7 @@
           <th>Pages</th>
           <th>Photos</th>
           <th>Price</th>
-          <th>Actions</th>
+          <th class="actions-cell">Actions</th>
           <th class="status-cell">Status</th>
           <th>Folder</th>
         </tr>
@@ -307,7 +319,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-  import { getFirestore, collection, getDocs, doc, updateDoc, query, orderBy, arrayUnion, serverTimestamp, Timestamp }
+  import { getFirestore, collection, getDocs, doc, updateDoc, query, orderBy, arrayUnion, Timestamp }
     from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
     from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -331,6 +343,7 @@
   const GENERATE_PDF_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/generatePdf';
   const GET_PDF_STATUS_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getPdfStatus';
   const MARK_SENT_TO_PRINT_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/markSentToPrint';
+  const SEND_PREVIEW_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/sendPreviewEmail';
 
   // Headers for staff Cloud Function calls — sends the current user's Firebase
   // ID token. The function verifies it against the server-side staff allowlist.
@@ -509,7 +522,7 @@
         <td>${esc(String(o.pageCount ?? '—'))}</td>
         <td>${o.fileCount ?? '—'}</td>
         <td>${esc(price)}</td>
-        <td>
+        <td class="actions-cell">
           <div class="notes-text" title="${esc(notes)}">${esc(notes)}</div>
           <div class="engine-link-row" style="margin-top:8px;">
             <a class="pdf-link-btn" href="template-engine.html?order=${esc(o.orderNumber)}"
@@ -523,6 +536,11 @@
               : `<button class="preview-link-btn" onclick="generatePreviewLink('${esc(o.orderNumber)}')">Generate preview link</button>`
             }
           </div>
+          ${previewUrl && PRE_APPROVAL.includes(o.status)
+            ? `<div class="send-preview-row">
+                 <button class="send-preview-btn" onclick="sendPreviewToCustomer('${esc(o.orderNumber)}')">${sentMs ? 'Resend preview' : 'Send preview to customer'}</button>
+               </div>`
+            : ''}
           ${nudge}
           <div class="pdf-links-row" id="pdf-row-${esc(o.orderNumber)}" style="display:flex;margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center;">
             ${['new','approved','paid'].includes(o.status)
@@ -705,45 +723,70 @@
     }
   };
 
-  // ── Generate preview link ────────────────────────────────────────────────
+  // ── Generate preview link (staff QA step — no email, no status change) ──────
+  // Mints the token so staff can open the customer view and check the book before
+  // anyone sees it. Sending to the customer (status change + email + sentAt) is a
+  // separate deliberate step: sendPreviewToCustomer below.
   window.generatePreviewLink = async function(orderNumber) {
     try {
       const token = crypto.randomUUID();
       const order = allOrders.find(o => o.orderNumber === orderNumber);
 
-      // Send-gate: an incomplete book must never reach the customer. The completeness
-      // flag is computed and stored when staff saves in the template engine
-      // (assets/js/book-completeness.js). Missing flag = never saved as complete.
-      if (!order || order.staffBookComplete !== true) {
-        const reasons = (order && order.staffIncompleteReasons && order.staffIncompleteReasons.length)
-          ? order.staffIncompleteReasons.join(', ')
-          : 'the book has not been saved as complete yet';
-        alert(`Can’t send this book yet — ${reasons}.\n\nOpen it in the template engine, complete it, and save before sending the preview link.`);
-        return;
-      }
-
-      // Capture staff's current book state as immutable snapshot
-      const sentSnapshot = {
-        bookAssignments: order?.staffBookAssignments || null,
-        bookCaptions: order?.staffBookCaptions || null,
-        bookSequence: order?.staffBookSequence || null,
-        coverCaptionStyles: order?.staffCoverCaptionStyles || null,
-        spreadCaptionStyles: order?.staffSpreadCaptionStyles || null,
-        sentAt: serverTimestamp()
-      };
-
       await updateDoc(doc(db, 'orders', orderNumber), {
-        previewToken: token,
-        sentSnapshot: sentSnapshot
+        previewToken: token
       });
       // Update local state
       if (order) {
         order.previewToken = token;
-        order.sentSnapshot = sentSnapshot;
       }
       renderTable();
     } catch (err) {
       alert('Could not generate preview link: ' + err.message);
+    }
+  };
+
+  // ── Send preview to customer (status → review_sent + branded email) ─────────
+  window.sendPreviewToCustomer = async function(orderNumber) {
+    const order = allOrders.find(o => o.orderNumber === orderNumber);
+
+    // Fast client-side gate (the function enforces the same server-side): never
+    // send a book that hasn't been saved as complete in the engine.
+    if (!order || order.staffBookComplete !== true) {
+      const reasons = (order && order.staffIncompleteReasons && order.staffIncompleteReasons.length)
+        ? order.staffIncompleteReasons.join(', ')
+        : 'the book has not been saved as complete yet';
+      alert(`Can’t send this book yet — ${reasons}.\n\nOpen it in the template engine, complete it, and save before sending.`);
+      return;
+    }
+
+    const resend = !!(order.sentSnapshot && order.sentSnapshot.sentAt);
+    const confirmed = confirm(
+      `${resend ? 'Resend' : 'Send'} the preview to ${order.customerName} (${order.email})?\n\nThey'll get an email with their link, and the order moves to “Review sent”.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(SEND_PREVIEW_ENDPOINT, {
+        method: 'POST',
+        headers: await staffHeaders(),
+        body: JSON.stringify({ orderNumber }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        order.status = 'review_sent';
+        order.sentSnapshot = { ...(order.sentSnapshot || {}), sentAt: { seconds: Math.floor(Date.now() / 1000) } };
+        order.statusHistory = order.statusHistory || [];
+        if (!order.statusHistory.some(h => h.status === 'review_sent')) {
+          order.statusHistory.push({ status: 'review_sent', timestamp: { seconds: Math.floor(Date.now() / 1000) } });
+        }
+        renderTable();
+        alert(`Preview ${resend ? 're-sent' : 'sent'} to ${order.email}.`);
+      } else {
+        alert(`Could not send preview: ${data.error || res.status}`);
+      }
+    } catch (err) {
+      alert('Could not send preview: ' + err.message);
     }
   };
 
