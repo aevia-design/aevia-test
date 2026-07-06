@@ -922,6 +922,41 @@
       img.addEventListener('pointerup', onUp);
     });
   }
+
+  // Reposition handle (S101): the ✥ affordance + per-slot "reposition mode" toggle.
+  // Shared by regular slots (where it also suspends swap-drag while active) and special
+  // slots (story/words/toy/steps/artwork — not swap-draggable, but they get the same
+  // visible button so the ✥ instruction in the edit-hint holds for them too). Only called
+  // when !_readOnly. Restores the slot's prior `draggable` on exit so special slots never
+  // become swap-draggable.
+  function attachRepositionHandle(img, slotEl, photoName) {
+    const handle = document.createElement('div');
+    handle.className = 'reposition-handle';
+    handle.textContent = '✥';
+    handle.title = 'Reposition photo inside the frame';
+    attachCropDrag(img, slotEl, photoName, { alwaysOn: false });
+    let prevDraggable = false;
+    const exitReposition = () => {
+      slotEl.classList.remove('repositioning');
+      slotEl.draggable = prevDraggable;
+      document.removeEventListener('pointerdown', onOutside, true);
+      document.removeEventListener('keydown', onEsc);
+    };
+    const onOutside = ev => { if (!slotEl.contains(ev.target)) exitReposition(); };
+    const onEsc = ev => { if (ev.key === 'Escape') exitReposition(); };
+    handle.addEventListener('pointerdown', e => { e.stopPropagation(); });
+    handle.addEventListener('click', e => {
+      e.stopPropagation();
+      if (window._readOnly) return;
+      if (slotEl.classList.contains('repositioning')) { exitReposition(); return; }
+      prevDraggable = slotEl.draggable;
+      slotEl.classList.add('repositioning');
+      slotEl.draggable = false;   // suspend swap-drag while repositioning (no-op for special slots)
+      document.addEventListener('pointerdown', onOutside, true);
+      document.addEventListener('keydown', onEsc);
+    });
+    slotEl.appendChild(handle);
+  }
   window.previewSpreadIndex = 0;
 
   const SCALE    = 3;
@@ -1995,14 +2030,14 @@
             img.style.objectPosition = hc.x + '% ' + hc.y + '%';
           }
 
-          // Reposition-drag (S101, ported from the staff engine). Heart + Story slots
-          // aren't swap-draggable, so their drag is always live; regular slots use the
-          // ✥ handle toggle below so the default gesture stays slot→slot swap-drag.
-          if (!window._readOnly && (slotDef.heartClip || isSpecialSlot)) {
+          // Reposition-drag (S101, ported from the staff engine). The heart slot is
+          // clip-masked to a heart shape, so a corner ✥ button would be clipped away —
+          // it keeps always-on drag. Regular + special slots use the ✥ handle toggle
+          // below (regular: so the default gesture stays slot→slot swap-drag; special:
+          // so the ✥ instruction in the edit-hint holds for them too).
+          if (!window._readOnly && slotDef.heartClip) {
             img.style.cursor = 'move';
-            img.title = slotDef.heartClip
-              ? 'Drag to reposition inside the heart'
-              : 'Drag to reposition inside the frame';
+            img.title = 'Drag to reposition inside the heart';
             attachCropDrag(img, slotEl, photo.name, { alwaysOn: true });
           }
           slotEl.appendChild(img);
@@ -2057,8 +2092,10 @@
               renderPhotoSidebar();
             });
           } else {
-            // Story-page photos are fixed — chosen at order time, not from the rearrangeable
-            // pool. Customers can't move, remove, or replace them here. Explain on interaction.
+            // Story-page photos are fixed in PLACE — chosen at order time, not from the
+            // rearrangeable pool, so they can't be swapped or removed here (lock toast on
+            // dblclick). They CAN still be nudged inside their frame via the ✥ button.
+            if (!window._readOnly) attachRepositionHandle(img, slotEl, photo.name);
             slotEl.style.cursor = 'not-allowed';
             slotEl.addEventListener('dblclick', () => showToast(SPECIAL_LOCK_MSG));
           }
