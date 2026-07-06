@@ -2149,8 +2149,8 @@ async function submitOrder() {
 
   const humourLines = [
     'Packing your memories carefully…',
-    'Still going… great things take a moment.',
-    'Almost there — your photos are travelling to our Viennese Lab.',
+    'Still uploading. Good books are worth the wait.',
+    'Almost there. Your photos are travelling to our Viennese studio.',
   ];
   let humourIdx = 0;
   overlaySub.textContent = humourLines[0];
@@ -2205,7 +2205,7 @@ async function submitOrder() {
     // Add reassurance for large orders. Fold it into the rotating humourLines so it
     // recurs — the humourTimer would otherwise overwrite a one-off message within ~4s.
     if (total > 50) {
-      const bigOrderNote = 'Large orders can take a few minutes — please keep this tab open.';
+      const bigOrderNote = 'Large albums can take a few minutes. Please keep this tab open.';
       humourLines.push(bigOrderNote);
       overlaySub.textContent = bigOrderNote;
     }
@@ -2552,7 +2552,7 @@ function preSubmitConfirm() {
     </div>
     <div class="upload-progress-count" id="upload-progress-count"></div>
     <div id="upload-time-remaining" style="font-size:12px;color:var(--muted);margin-top:8px;min-height:1.2em;"></div>
-    <div style="font-size:12px;color:var(--muted);margin-top:16px;">Please don't close this tab while your photos upload.</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:16px;">Please keep this tab open until your photos finish uploading.</div>
   </div>
 </div>
 
@@ -2644,16 +2644,34 @@ function preSubmitConfirm() {
     const prompt  = $('signin-prompt');
     const confirm = $('signin-confirm');
     // Only treat a verified account as "signed in" — matches getMyOrders gating.
+    const emailEl = $('inp-email');
     if (user && user.emailVerified) {
       const nameEl  = $('inp-name');
-      const emailEl = $('inp-email');
-      // Pre-fill only empty fields so we never clobber what a customer typed.
+      // Name: pre-fill only if empty so we never clobber what a customer typed.
       if (nameEl  && !nameEl.value  && user.displayName) nameEl.value  = user.displayName;
-      if (emailEl && !emailEl.value && user.email)       emailEl.value = user.email;
+      // Email: a signed-in order MUST use the verified account email — that's the
+      // key getMyOrders matches on. Force it (overriding any browser autofill,
+      // which would otherwise silently detach the order from the account and send
+      // the confirmation to the wrong inbox) and lock the field. Guests keep a
+      // normal editable field via the else branch.
+      if (emailEl && user.email) {
+        emailEl.value = user.email;
+        emailEl.readOnly = true;
+        emailEl.style.background = '#f5f2ee';
+        emailEl.style.cursor = 'not-allowed';
+        emailEl.title = 'Linked to your Aevia account. Sign out to order with a different email.';
+      }
       $('signin-email').textContent = user.email || '';
       if (prompt)  prompt.style.display  = 'none';
       if (confirm) confirm.style.display = 'flex';
     } else {
+      // Signed out (or unverified): unlock the email field for guest ordering.
+      if (emailEl) {
+        emailEl.readOnly = false;
+        emailEl.style.background = '';
+        emailEl.style.cursor = '';
+        emailEl.title = '';
+      }
       if (prompt)  prompt.style.display  = 'flex';
       if (confirm) confirm.style.display = 'none';
     }
