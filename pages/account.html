@@ -140,7 +140,7 @@
             <div class="field"><label for="last-name">Last name</label><input type="text" id="last-name" autocomplete="family-name" /></div>
           </div>
           <div class="field"><label for="email">Email</label><input type="email" id="email" name="username" autocomplete="username" required /></div>
-          <div class="field">
+          <div class="field" id="password-field">
             <label for="password">Password</label>
             <div class="pw-wrap">
               <input type="password" id="password" name="password" autocomplete="current-password" minlength="8" required />
@@ -171,6 +171,26 @@
         </div>
         <div class="auth-msg" id="verify-msg" style="text-align:center;"></div>
         <p style="margin-top:22px;"><button class="btn-ghost" id="verify-signout" type="button">Sign out</button></p>
+      </div>
+    </div>
+
+    <!-- ── Password reset (arrived via branded email link) ── -->
+    <div id="reset-view" style="display:none;">
+      <h1>Choose a new password</h1>
+      <p class="sub" id="reset-sub">Set a new password for your Aevia account.</p>
+      <div class="auth-card">
+        <form id="reset-form">
+          <div class="field">
+            <label for="reset-password">New password</label>
+            <div class="pw-wrap">
+              <input type="password" id="reset-password" autocomplete="new-password" minlength="8" required />
+              <button type="button" class="pw-toggle" id="reset-pw-toggle" aria-label="Show password" aria-pressed="false">Show</button>
+            </div>
+            <div class="pw-hint show">At least 8 characters. A password manager is welcome.</div>
+          </div>
+          <button class="btn-primary" id="reset-submit" type="submit">Save new password</button>
+        </form>
+        <div class="auth-msg" id="reset-msg"></div>
       </div>
     </div>
 
@@ -227,7 +247,8 @@
     getAuth, onAuthStateChanged,
     signInWithEmailAndPassword, createUserWithEmailAndPassword,
     GoogleAuthProvider, signInWithPopup, signOut,
-    sendEmailVerification, setPersistence, browserLocalPersistence, updateProfile
+    sendEmailVerification, setPersistence, browserLocalPersistence, updateProfile,
+    verifyPasswordResetCode, confirmPasswordReset
   } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
   const firebaseConfig = {
@@ -245,6 +266,7 @@
   const SAVE_MY_ADDRESS = 'https://europe-west1-aevia-uploads.cloudfunctions.net/saveMyAddress';
   const RESEND_VERIFY   = 'https://europe-west1-aevia-uploads.cloudfunctions.net/resendVerificationEmail';
   const SEND_RESET      = 'https://europe-west1-aevia-uploads.cloudfunctions.net/sendPasswordResetEmail';
+  const SEND_PW_CHANGED = 'https://europe-west1-aevia-uploads.cloudfunctions.net/sendPasswordChangedEmail';
   const GEOAPIFY_KEY    = '9fae15e78a364df9a2453018cdecf1c5'; // public frontend key — secured by domain restriction in the Geoapify dashboard
 
   const app  = initializeApp(firebaseConfig);
@@ -253,23 +275,38 @@
 
   // ── element handles ──
   const $ = (id) => document.getElementById(id);
-  const views = { boot: $('boot'), auth: $('auth-view'), verify: $('verify-view'), account: $('account-view') };
+  const views = { boot: $('boot'), auth: $('auth-view'), verify: $('verify-view'), reset: $('reset-view'), account: $('account-view') };
   function show(view) { Object.entries(views).forEach(([k, el]) => { el.style.display = (k === view) ? '' : 'none'; }); }
 
-  // ── auth-card mode (sign in / register) ──
+  // ── auth-card mode (sign in / register / forgot) ──
   let mode = 'signin';
   function applyMode() {
     const signin = mode === 'signin';
-    $('auth-title').textContent = signin ? 'Sign in' : 'Create your account';
-    $('email-submit').textContent = signin ? 'Sign in' : 'Create account';
+    const forgot = mode === 'forgot';
+    const register = mode === 'register';
+    $('auth-title').textContent = forgot ? 'Reset your password' : (register ? 'Create your account' : 'Sign in');
+    $('auth-sub').textContent = forgot
+      ? 'Enter your email and we\'ll send you a link to set a new password.'
+      : 'Track your orders, see their status, and open a book that\'s ready for review.';
+    $('email-submit').textContent = forgot ? 'Send reset link' : (register ? 'Create account' : 'Sign in');
     // new-password lets the browser/password-manager offer a generated strong password on register.
-    $('password').setAttribute('autocomplete', signin ? 'current-password' : 'new-password');
-    $('pw-hint').classList.toggle('show', !signin);
+    $('password').setAttribute('autocomplete', register ? 'new-password' : 'current-password');
+    $('pw-hint').classList.toggle('show', register);
+    // Forgot mode is email-only: hide the password field entirely so the customer
+    // isn't asked for a password they've forgotten. Toggle `required` so the hidden
+    // input never blocks the form submit.
+    $('password-field').style.display = forgot ? 'none' : '';
+    $('password').required = !forgot;
     $('forgot-wrap').style.display = signin ? '' : 'none';
-    $('name-fields').style.display = signin ? 'none' : '';
-    $('auth-toggle-wrap').innerHTML = signin
-      ? `New to Aevia? <button type="button" id="auth-toggle">Create an account</button>`
-      : `Already have an account? <button type="button" id="auth-toggle">Sign in</button>`;
+    $('name-fields').style.display = register ? '' : 'none';
+    // Hide Google + the "or" divider in forgot mode — they don't apply.
+    $('google-btn').style.display = forgot ? 'none' : '';
+    document.querySelector('.auth-divider').style.display = forgot ? 'none' : '';
+    $('auth-toggle-wrap').innerHTML = forgot
+      ? `Remembered it? <button type="button" id="auth-toggle">Back to sign in</button>`
+      : (signin
+        ? `New to Aevia? <button type="button" id="auth-toggle">Create an account</button>`
+        : `Already have an account? <button type="button" id="auth-toggle">Sign in</button>`);
     $('auth-toggle').addEventListener('click', () => { mode = signin ? 'register' : 'signin'; clearMsg(); applyMode(); });
   }
   function setMsg(text, kind) { const m = $('auth-msg'); m.textContent = text; m.className = 'auth-msg show ' + kind; }
@@ -301,7 +338,11 @@
     const password = $('password').value;
     const btn = $('email-submit'); btn.disabled = true;
     try {
-      if (mode === 'register') {
+      if (mode === 'forgot') {
+        if (!email) { setMsg('Please enter your email.', 'error'); btn.disabled = false; return; }
+        await sendResetLink(email);
+        setMsg('If that email has an account, a reset link is on its way. Check your inbox.', 'ok');
+      } else if (mode === 'register') {
         const first = $('first-name').value.trim();
         const last = $('last-name').value.trim();
         if (!first || !last) { setMsg('Please enter your first and last name.', 'error'); btn.disabled = false; return; }
@@ -332,27 +373,22 @@
   });
 
   // ── forgot password ──
-  // Sends a reset link via the branded Brevo email. The backend always returns
-  // success (it never reveals whether the address is registered), so we show the
-  // same confirmation regardless.
-  $('forgot-btn').addEventListener('click', async () => {
-    clearMsg();
-    const email = $('email').value.trim().toLowerCase();
-    if (!email) { setMsg('Enter your email above first, then try again.', 'error'); return; }
-    const btn = $('forgot-btn'); btn.disabled = true;
-    try {
-      await fetch(SEND_RESET, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      setMsg('If that email has an account, a reset link is on its way. Check your inbox.', 'ok');
-    } catch (e) {
-      setMsg('Something went wrong. Please try again.', 'error');
-    } finally {
-      btn.disabled = false;
-    }
+  // "Forgot your password?" switches the card to a dedicated email-only step
+  // (no password field) rather than reusing the sign-in inputs.
+  $('forgot-btn').addEventListener('click', () => {
+    mode = 'forgot'; clearMsg(); applyMode(); $('email').focus();
   });
+
+  // Sends a reset link via the branded Brevo email. The backend always returns
+  // success (it never reveals whether the address is registered), so the caller
+  // shows the same confirmation regardless.
+  async function sendResetLink(email) {
+    await fetch(SEND_RESET, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+  }
 
   // ── Google ──
   $('google-btn').addEventListener('click', async () => {
@@ -588,8 +624,68 @@
     $('info-email').textContent = user.email || '';
   }
 
+  // ── password reset (branded, in-app) ──
+  // The reset email links to account.html?mode=resetPassword&oobCode=… (the code
+  // is minted server-side by Firebase, wrapped into our own URL). We verify the
+  // code, let the customer choose a new password here, then confirm it — so the
+  // whole flow stays on the Aevia page instead of Firebase's default screen.
+  let resetFlow = false;
+  let resetEmail = '';
+
+  $('reset-pw-toggle').addEventListener('click', () => {
+    const inp = $('reset-password'), btn = $('reset-pw-toggle');
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    btn.textContent = show ? 'Hide' : 'Show';
+    btn.setAttribute('aria-pressed', String(show));
+    inp.focus();
+  });
+
+  function setResetMsg(text, kind) { const m = $('reset-msg'); m.textContent = text; m.className = 'auth-msg show ' + kind; }
+
+  async function startResetFlow(oobCode) {
+    resetFlow = true;
+    show('reset');
+    try {
+      resetEmail = await verifyPasswordResetCode(auth, oobCode);
+      $('reset-sub').textContent = `Set a new password for ${resetEmail}.`;
+    } catch (e) {
+      // Expired or already-used link.
+      $('reset-form').style.display = 'none';
+      setResetMsg('This reset link has expired or already been used. Please request a new one from the sign-in page.', 'error');
+    }
+  }
+
+  $('reset-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const params = new URLSearchParams(location.search);
+    const oobCode = params.get('oobCode');
+    const pw = $('reset-password').value;
+    if (pw.length < 8) { setResetMsg('Please choose a password of at least 8 characters.', 'error'); return; }
+    const btn = $('reset-submit'); btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      await confirmPasswordReset(auth, oobCode, pw);
+      // Sign in with the new password so we hold a verified token, then ask the
+      // backend to send the "password changed" confirmation to the account's own
+      // address (authenticated → can't be used to spam anyone else).
+      try {
+        const cred = await signInWithEmailAndPassword(auth, resetEmail, pw);
+        const token = await cred.user.getIdToken();
+        fetch(SEND_PW_CHANGED, { method: 'POST', headers: { Authorization: 'Bearer ' + token } }).catch(() => {});
+      } catch (_) { /* sign-in is best-effort; the password was still changed */ }
+      resetFlow = false;
+      // Drop the reset params from the URL so a refresh doesn't re-enter the flow.
+      history.replaceState(null, '', location.pathname);
+      route(auth.currentUser);
+    } catch (err) {
+      btn.disabled = false; btn.textContent = 'Save new password';
+      setResetMsg('That reset link has expired or already been used. Please request a new one.', 'error');
+    }
+  });
+
   // ── router ──
   function route(user) {
+    if (resetFlow) return; // reset view owns the screen until the flow completes
     if (!user) { applyMode(); show('auth'); return; }
     if (!user.emailVerified) { $('verify-email').textContent = user.email || ''; show('verify'); return; }
     fillInfo(user);
@@ -597,6 +693,14 @@
     loadOrders(user);
     loadAddress(user);
   }
+
+  // If we arrived from a reset email, take over before normal auth routing.
+  (function checkResetLink() {
+    const params = new URLSearchParams(location.search);
+    if (params.get('mode') === 'resetPassword' && params.get('oobCode')) {
+      startResetFlow(params.get('oobCode'));
+    }
+  })();
 
   onAuthStateChanged(auth, route);
 </script>

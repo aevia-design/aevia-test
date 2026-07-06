@@ -1320,10 +1320,10 @@ exports.onUserCreated = functions
   });
 
 // ── Resend verification email (Brevo-branded) ───────────────────────────────
-// Authenticated callable for the "Resend the email" button. Safe without a
-// throttle beyond Firebase's own token rate-limiting: it can only ever email the
-// signed-in user's OWN address (from the verified token), so it can't enumerate
-// or spam a third party.
+// Authenticated callable for the "Resend the email" button. It can only ever
+// email the signed-in user's OWN address (from the verified token), so it can't
+// enumerate or spam a third party — but we still throttle to 5/hour per email so
+// a scripted client can't flood that one inbox (matches sendPasswordResetEmail).
 exports.resendVerificationEmail = functions
   .region('europe-west1')
   .runWith({ timeoutSeconds: 20, memory: '128MB' })
@@ -1347,6 +1347,18 @@ exports.resendVerificationEmail = functions
     if (!email) return res.status(400).json({ error: 'No email on this account.' });
 
     try {
+      // Per-email throttle: 5 resends/hour. Return the same success shape when
+      // throttled so the UI just shows its normal cooldown.
+      const db = admin.firestore();
+      const ref = db.collection('resendThrottle').doc(normalizeEmail(email));
+      const now = Date.now();
+      const hourAgo = now - 60 * 60 * 1000;
+      const snap = await ref.get();
+      const recent = ((snap.exists && snap.data().times) || []).filter((t) => t > hourAgo);
+      if (recent.length >= 5) return res.status(200).json({ ok: true }); // silently throttled
+      recent.push(now);
+      await ref.set({ times: recent }, { merge: true });
+
       const link = await admin.auth().generateEmailVerificationLink(email, {
         url: `${ACCOUNT_URL}?verify=1`,
         handleCodeInApp: false,
@@ -1402,10 +1414,16 @@ exports.sendPasswordResetEmail = functions
       recent.push(now);
       await ref.set({ times: recent }, { merge: true });
 
-      const link = await admin.auth().generatePasswordResetLink(email, {
+      const fbLink = await admin.auth().generatePasswordResetLink(email, {
         url: `${ACCOUNT_URL}`,
         handleCodeInApp: false,
       });
+      // Firebase mints the reset code, but we point the email at our OWN branded
+      // reset page rather than Firebase's default screen: extract the oobCode and
+      // wrap it into account.html?mode=resetPassword&oobCode=… . account.html then
+      // verifies the code and lets the customer set a new password in-brand.
+      const oobCode = new URL(fbLink).searchParams.get('oobCode');
+      const link = `${ACCOUNT_URL}?mode=resetPassword&oobCode=${encodeURIComponent(oobCode)}`;
       const transporter = createTransporter();
       await transporter.sendMail({
         ...FROM.customer,
@@ -1425,4 +1443,54 @@ exports.sendPasswordResetEmail = functions
       }
     }
     return ok();
+  });
+
+// ── Password-changed confirmation (Brevo-branded) ────────────────────────────
+// Sent right after a customer completes a reset on our branded page. It's a
+// security alert ("your password changed — wasn't you? contact us"). Authenticated
+// so it can only ever email the caller's OWN address (the client signs in with the
+// new password first), which means it can't be used to spam or alarm anyone else.
+exports.sendPasswordChangedEmail = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 20, memory: '128MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const m = (req.headers.authorization || '').match(/^Bearer (.+)$/);
+    if (!m) return res.status(401).json({ error: 'Unauthorised' });
+    let decoded;
+    try {
+      decoded = await admin.auth().verifyIdToken(m[1]);
+    } catch (e) {
+      return res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
+    }
+    const email = decoded.email;
+    if (!email) return res.status(400).json({ error: 'No email on this account.' });
+
+    try {
+      const when = new Date().toLocaleString('en-GB', {
+        timeZone: 'Europe/Vienna', day: 'numeric', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+      const transporter = createTransporter();
+      const name = (decoded.name || '').split(' ')[0];
+      await transporter.sendMail({
+        ...FROM.customer,
+        to: email,
+        subject: 'Your Aevia password was changed',
+        html: renderEmail(`
+          <p style="margin:0 0 18px">Hi${name ? ' ' + name : ''},</p>
+          <p style="margin:0 0 22px">Your Aevia account password was changed on ${when} (Vienna time).</p>
+          <p style="margin:0 0 22px">If this was you, there's nothing to do. If it wasn't, please write to us at hello@aevia.at right away and we'll help you secure your account.</p>
+        `),
+      });
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('sendPasswordChangedEmail error for', email, err);
+      return res.status(500).json({ error: 'Could not send confirmation.' });
+    }
   });
