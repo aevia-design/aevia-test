@@ -111,3 +111,15 @@ Captured ideas, most recent at the bottom. Status: Captured | Exploring | Commit
 **Status:** Captured — nice polish item post-Papercut launch.
 
 ---
+
+## 2026-07-06 — Replace special-page photos (cover / story / toy / artwork)
+
+**Context:** Cover and special-page photos are chosen at order time and bound to their specific slot. The engine lets customers *reposition* them inside the frame (✥ drag) but not drag them back to the sidebar or swap them, unlike ordinary pool photos. Reviewed in S110 — the lock is intentional: special frames are required (see `book-completeness` guard), so "drag to sidebar" has no valid empty end-state, and it protects customers from accidentally emptying a required frame right before approving.
+
+**Core concept:** If a customer wants a *different* photo on their cover/special page, offer a deliberate "Replace this photo" action (pick from their uploaded pool) rather than loosening the current lock into free drag-to-sidebar.
+
+**Downside of doing nothing:** none for MVP — repositioning already covers the common "it's a bit off-centre" need.
+
+**Status:** Parked — build only if a real customer actually asks to change a special photo during the F&F trial. Do not pre-empt.
+
+---

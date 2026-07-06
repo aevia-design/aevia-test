@@ -237,7 +237,17 @@
       letter-spacing: 0.01em;
     }
     .edit-hint strong { color: var(--text); font-weight: 600; }
+    .edit-hint span { white-space: nowrap; display: inline-block; }
+    .edit-hint span:not(:first-child)::before {
+      content: "·";
+      color: var(--border);
+      margin: 0 12px;
+    }
     .page-body.preview-mode .edit-hint { display: none; }
+    /* Preview is view-only: no swap-drag, repositioning, or caption edits.
+       (Flip navigation lives outside #book-canvas, so it stays clickable.) */
+    .page-body.preview-mode #book-canvas [contenteditable],
+    .page-body.preview-mode #book-canvas .photo-slot { pointer-events: none; }
     .book-canvas-wrap.preview-mode {
       max-width: 1290px;
       padding: 40px;
@@ -726,12 +736,12 @@
 <!-- ── MAIN CONTENT ── -->
 <div class="page-body" id="page-body">
   <div class="edit-hint" id="edit-hint" style="display:none">
-    <strong>Drag</strong> a photo to swap it with another &nbsp;·&nbsp;
-    <strong>Double-click</strong> a photo to return it to the sidebar &nbsp;·&nbsp;
-    Click <strong>✥</strong> on a photo to move it inside its frame &nbsp;·&nbsp;
-    <strong>Click</strong> any caption to edit the text &nbsp;·&nbsp;
-    Use the <strong>sidebar</strong> to place unplaced photos &nbsp;·&nbsp;
-    Switch to <strong>Preview</strong> to flip through your finished book
+    <span><strong>Drag</strong> a photo to swap it with another</span>
+    <span><strong>Double-click</strong> a photo to return it to the sidebar</span>
+    <span>Click <strong>✥</strong> on a photo to move it inside its frame</span>
+    <span><strong>Click</strong> any caption to edit the text</span>
+    <span>Use the <strong>sidebar</strong> to place unplaced photos</span>
+    <span>Switch to <strong>Preview</strong> to flip through your finished book</span>
   </div>
   <div class="book-canvas-wrap">
     <div id="book-canvas">
@@ -883,7 +893,7 @@
   // after an in-session approval without a re-render.
   function attachCropDrag(img, slotEl, photoName, { alwaysOn = false } = {}) {
     img.addEventListener('pointerdown', e => {
-      if (window._readOnly) return;
+      if (window._readOnly || window._previewMode) return;
       if (!alwaysOn && !slotEl.classList.contains('repositioning')) return;
       // natural dims needed to know the cover-scaled image size; bail if not loaded yet
       const natW = img.naturalWidth, natH = img.naturalHeight;
@@ -2609,6 +2619,7 @@
 
   // ── Mode toggle ──
   document.getElementById('mode-edit-btn').addEventListener('click', () => {
+    window._previewMode = false;
     document.getElementById('mode-edit-btn').classList.add('active');
     document.getElementById('mode-preview-btn').classList.remove('active');
     document.getElementById('page-body').classList.remove('preview-mode');
@@ -2625,6 +2636,7 @@
   });
 
   document.getElementById('mode-preview-btn').addEventListener('click', () => {
+    window._previewMode = true;
     document.getElementById('mode-preview-btn').classList.add('active');
     document.getElementById('mode-edit-btn').classList.remove('active');
     document.getElementById('page-body').classList.add('preview-mode');
