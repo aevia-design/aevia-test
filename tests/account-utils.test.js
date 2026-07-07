@@ -32,9 +32,9 @@ describe('customerStatusLabel', () => {
     expect(customerStatusLabel('in_delivery')).toBe('Shipped');
     expect(customerStatusLabel('delivered')).toBe('Delivered');
   });
-  test('collapses internal states the customer should not see', () => {
-    expect(customerStatusLabel('needs_info')).toBe('Designing');
-    expect(customerStatusLabel('paid')).toBe('Approved');
+  test('maps internal states to friendlier customer labels', () => {
+    expect(customerStatusLabel('issue')).toBe('Under review');
+    expect(customerStatusLabel('paid')).toBe('Payment confirmed');
   });
   test('falls back gracefully for an unknown status', () => {
     expect(customerStatusLabel('something_new')).toBe('In progress');
@@ -44,11 +44,11 @@ describe('customerStatusLabel', () => {
 
 describe('canPreview', () => {
   test('true once a preview has been sent and for every later state', () => {
-    ['review_sent', 'approved', 'paid', 'sent_to_print', 'printing', 'in_delivery', 'delivered']
+    ['review_sent', 'issue', 'approved', 'paid', 'sent_to_print', 'printing', 'in_delivery', 'delivered']
       .forEach(s => expect(canPreview(s)).toBe(true));
   });
   test('false before a preview exists', () => {
-    ['uploading', 'new', 'designing', 'needs_info'].forEach(s => expect(canPreview(s)).toBe(false));
+    ['uploading', 'new'].forEach(s => expect(canPreview(s)).toBe(false));
   });
 });
 
@@ -56,7 +56,7 @@ describe('awaitingReview', () => {
   test('only review_sent is awaiting the customer', () => {
     expect(awaitingReview('review_sent')).toBe(true);
     expect(awaitingReview('approved')).toBe(false);
-    expect(awaitingReview('designing')).toBe(false);
+    expect(awaitingReview('issue')).toBe(false);
   });
 });
 
@@ -111,10 +111,10 @@ describe('projectOrderForCustomer', () => {
 
   test('withholds previewToken before a preview is ready', () => {
     const out = projectOrderForCustomer({
-      orderNumber: 'AEV-046', status: 'designing', previewToken: 'tok_xyz',
+      orderNumber: 'AEV-046', status: 'new', previewToken: 'tok_xyz',
     });
     expect(out.previewToken).toBeNull();
-    expect(out.statusLabel).toBe('Designing');
+    expect(out.statusLabel).toBe('Received');
   });
 
   test('withholds previewToken when the token is missing even if status allows', () => {

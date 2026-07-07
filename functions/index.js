@@ -353,6 +353,84 @@ exports.approveOrder = functions
     }
   });
 
+// ── Report an issue (customer flags a problem from the preview) ───────────────
+// Token-gated (only someone with the preview link can call it). Records the note
+// on the order, flips a review_sent order to 'issue' so it surfaces on the staff
+// dashboard, and emails support@ so it's seen even if no one is watching the
+// dashboard. Deliberately one-way: the back-and-forth then happens over email.
+exports.reportOrderIssue = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const { token, message } = req.body;
+    if (!token) return res.status(403).json({ error: 'Token required' });
+    const note = String(message || '').trim().slice(0, 1000);
+    if (!note) return res.status(400).json({ error: 'Message required' });
+
+    try {
+      const db = admin.firestore();
+      const snapshot = await db.collection('orders')
+        .where('previewToken', '==', token)
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) return res.status(403).json({ error: 'Invalid or expired token' });
+
+      const orderRef  = snapshot.docs[0].ref;
+      const orderData = snapshot.docs[0].data();
+
+      const updates = {
+        issueNote:       note,
+        issueReportedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      // Only knock the order back to 'issue' from the preview stage — never
+      // clobber an approved/paid/in-production order's status. The note + email
+      // still land so staff see it regardless.
+      if (orderData.status === 'review_sent') {
+        updates.status = 'issue';
+        updates.statusHistory = admin.firestore.FieldValue.arrayUnion({
+          status: 'issue',
+          timestamp: admin.firestore.Timestamp.now(),
+        });
+      }
+      await orderRef.update(updates);
+
+      try {
+        const transporter = createTransporter();
+        await transporter.sendMail({
+          from:    FROM.orders.from,
+          to:      'support@aevia.at',
+          replyTo: orderData.email || undefined,
+          subject: `Issue reported — ${orderData.orderNumber}`,
+          html: `
+            <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#2a2a2a;line-height:1.6">
+              <p><strong>${orderData.orderNumber}</strong> — the customer reported an issue with their book.</p>
+              <p><strong>Customer:</strong> ${orderData.customerName || '—'} (${orderData.email || '—'})<br>
+                 <strong>Current status:</strong> ${orderData.status || '—'}</p>
+              <p><strong>Their message:</strong></p>
+              <blockquote style="margin:0;padding:10px 14px;border-left:3px solid #dc2626;background:#fff5f5;white-space:pre-wrap">${note.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</blockquote>
+              <p style="margin-top:16px"><a href="https://aevia-test.pages.dev/pages/staff/dashboard.html">Open the staff dashboard →</a></p>
+            </div>`,
+        });
+      } catch (mailErr) {
+        // The note is already saved; don't fail the customer's request if the
+        // email hiccups — staff still see the flag on the dashboard.
+        console.error('reportOrderIssue email error:', mailErr);
+      }
+
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('reportOrderIssue error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
 // ── Save staff book state (assignments + captions) ───────────────────────────
 // Accepts { orderNumber, bookAssignments, bookCaptions } with x-staff-key header
 exports.saveStaffState = functions

@@ -131,8 +131,7 @@
     }
     .badge-uploading    { background: #fff7ed; color: #9a3412; }
     .badge-new          { background: #e8f0fe; color: #1a56db; }
-    .badge-designing    { background: #fef3c7; color: #92400e; }
-    .badge-needs_info   { background: #ffe4e6; color: #9f1239; }
+    .badge-issue        { background: #fee2e2; color: #991b1b; }
     .badge-review_sent  { background: #e0f2fe; color: #0369a1; }
     .badge-approved     { background: #dcfce7; color: #166534; }
     .badge-paid         { background: #d1fae5; color: #065f46; }
@@ -140,6 +139,13 @@
     .badge-printing     { background: #f3e8ff; color: #6b21a8; }
     .badge-in_delivery  { background: #fef9c3; color: #854d0e; }
     .badge-delivered    { background: #f0fdf4; color: #14532d; }
+
+    /* ── Issue-flagged row ── */
+    tr.row-issue td { background: #fff5f5; box-shadow: inset 3px 0 0 #dc2626; }
+    .issue-note {
+      font-size: 11px; color: #991b1b; margin-top: 3px; max-width: 220px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
 
     /* ── Status dropdown ── */
     .status-select {
@@ -264,8 +270,8 @@
       <div class="stat-label">In progress</div>
     </div>
     <div class="stat">
-      <div class="stat-num" id="stat-needs">—</div>
-      <div class="stat-label">Needs info</div>
+      <div class="stat-num" id="stat-issues">—</div>
+      <div class="stat-label">Issues</div>
     </div>
     <div class="stat">
       <div class="stat-num" id="stat-done">—</div>
@@ -278,8 +284,7 @@
     <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
     <button class="filter-btn" onclick="setFilter('uploading', this)">Uploading</button>
     <button class="filter-btn" onclick="setFilter('new', this)">New</button>
-    <button class="filter-btn" onclick="setFilter('designing', this)">Designing</button>
-    <button class="filter-btn" onclick="setFilter('needs_info', this)">Needs info</button>
+    <button class="filter-btn" onclick="setFilter('issue', this)">Issues</button>
     <button class="filter-btn" onclick="setFilter('review_sent', this)">Review sent</button>
     <button class="filter-btn" onclick="setFilter('approved', this)">Approved</button>
     <button class="filter-btn" onclick="setFilter('paid', this)">Paid</button>
@@ -424,6 +429,9 @@
           .some(f => String(f).toLowerCase().includes(searchTerm))
       );
     }
+    // Float issue-flagged orders to the top so they can't be missed (stable sort
+    // preserves the createdAt-desc order within each group).
+    list = [...list].sort((a, b) => (b.status === 'issue') - (a.status === 'issue'));
     return list;
   }
 
@@ -443,21 +451,21 @@
   };
 
   // ── Stats ─────────────────────────────────────────────────────────────────
-  const IN_PROGRESS = ['designing', 'needs_info', 'review_sent', 'approved', 'paid', 'sent_to_print', 'printing', 'in_delivery'];
+  const IN_PROGRESS = ['review_sent', 'approved', 'paid', 'sent_to_print', 'printing', 'in_delivery'];
 
   function updateStats() {
-    let newCount = 0, activeCount = 0, needsCount = 0, doneCount = 0;
+    let newCount = 0, activeCount = 0, issuesCount = 0, doneCount = 0;
     allOrders.forEach(o => {
       if (o.status === 'new')           newCount++;
       else if (o.status === 'uploading') activeCount++;
-      else if (o.status === 'needs_info') needsCount++;
+      else if (o.status === 'issue') issuesCount++;
       else if (IN_PROGRESS.includes(o.status)) activeCount++;
       else if (o.status === 'delivered') doneCount++;
     });
     document.getElementById('stat-total').textContent  = allOrders.length;
     document.getElementById('stat-new').textContent    = newCount;
     document.getElementById('stat-active').textContent = activeCount;
-    document.getElementById('stat-needs').textContent  = needsCount;
+    document.getElementById('stat-issues').textContent = issuesCount;
     document.getElementById('stat-done').textContent   = doneCount;
   }
 
@@ -489,7 +497,7 @@
         return `<span>${statusLabel(h.status)}${ts ? ' · ' + ts : ''}</span>`;
       }).join('');
 
-      const allStatuses = ['uploading','new','designing','needs_info','review_sent','approved','paid','sent_to_print','printing','in_delivery','delivered'];
+      const allStatuses = ['uploading','new','review_sent','issue','approved','paid','sent_to_print','printing','in_delivery','delivered'];
 
       const previewUrl = o.previewToken
         ? `https://aevia-test.pages.dev/pages/customer-preview.html?token=${esc(o.previewToken)}`
@@ -499,7 +507,7 @@
       // customer response. sentSnapshot.sentAt is stamped by generatePreviewLink;
       // once the customer approves, the status leaves the pre-approval set and the
       // nudge disappears (the badge tells the story from there).
-      const PRE_APPROVAL = ['uploading','new','designing','needs_info','review_sent'];
+      const PRE_APPROVAL = ['uploading','new','review_sent','issue'];
       const sentMs = (o.sentSnapshot && o.sentSnapshot.sentAt) ? o.sentSnapshot.sentAt.seconds * 1000 : null;
       let nudge = '';
       if (previewUrl && sentMs && PRE_APPROVAL.includes(o.status)) {
@@ -508,9 +516,10 @@
         nudge = `<div class="sent-nudge${stale ? ' stale' : ''}">Preview sent ${timeAgo(sentMs)}${stale ? ' — nudge the customer?' : ' — awaiting response'}</div>`;
       }
 
-      return `<tr>
+      return `<tr class="${o.status === 'issue' ? 'row-issue' : ''}">
         <td>
           <div class="order-num">${esc(o.orderNumber)}</div>
+          ${o.status === 'issue' && o.issueNote ? `<div class="issue-note" title="${esc(o.issueNote)}">⚠ ${esc(o.issueNote)}</div>` : ''}
           <div class="order-date">${dateStr}</div>
           ${ageStr ? `<div class="order-age">${ageStr}</div>` : ''}
         </td>
@@ -881,15 +890,15 @@
   };
 
   // ── Update status + log event ─────────────────────────────────────────────
-  // Linear workflow order for the progression guard. 'needs_info' is intentionally
+  // Linear workflow order for the progression guard. 'issue' is intentionally
   // omitted — it's a triage side-state you toggle in/out of at any point.
-  const STATUS_SEQUENCE = ['uploading','new','designing','review_sent','approved','paid','sent_to_print','printing','in_delivery','delivered'];
+  const STATUS_SEQUENCE = ['uploading','new','review_sent','approved','paid','sent_to_print','printing','in_delivery','delivered'];
 
   window.updateStatus = async function(orderNumber, newStatus) {
     // Guard against accidental out-of-sequence jumps (a stray scroll on the <select>
     // landing on a far-ahead or earlier status). Adjacent forward steps pass silently.
     const current = allOrders.find(o => o.orderNumber === orderNumber)?.status;
-    if (current && current !== newStatus && current !== 'needs_info' && newStatus !== 'needs_info') {
+    if (current && current !== newStatus && current !== 'issue' && newStatus !== 'issue') {
       const fi = STATUS_SEQUENCE.indexOf(current);
       const ti = STATUS_SEQUENCE.indexOf(newStatus);
       if (fi !== -1 && ti !== -1 && (ti < fi || ti > fi + 1)) {
@@ -931,8 +940,7 @@
     const labels = {
       uploading:     'Uploading…',
       new:           'New',
-      designing:     'Designing',
-      needs_info:    'Needs info',
+      issue:         'Issue raised',
       review_sent:   'Review sent',
       approved:      'Approved',
       paid:          'Paid',

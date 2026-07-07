@@ -786,6 +786,21 @@
   <button class="cancel-btn" id="save-btn">Save changes</button>
   <button class="submit-btn" id="approve-btn">Approve &amp; confirm</button>
   <button class="submit-btn" id="pay-btn" style="display:none;">Pay now</button>
+  <a href="#" id="report-issue-link" style="font-size:12px;color:var(--muted);letter-spacing:0.02em;text-decoration:underline;align-self:center;">Report an issue</a>
+</div>
+
+<!-- ── REPORT-AN-ISSUE MODAL ── -->
+<div id="issue-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
+  <div style="background:#fff;max-width:440px;width:90%;padding:28px;border-radius:6px;font-family:var(--sans,Arial,sans-serif);">
+    <h3 style="font-family:Georgia,serif;font-size:20px;margin:0 0 6px;">Report an issue</h3>
+    <p style="font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 14px;">Tell us what's wrong with your book and we'll reply by email.</p>
+    <textarea id="issue-text" rows="4" placeholder="What's the problem?" style="width:100%;box-sizing:border-box;padding:10px;font-size:14px;font-family:inherit;border:1px solid var(--border,#ddd);border-radius:4px;resize:vertical;"></textarea>
+    <div id="issue-status" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px;">
+      <button class="cancel-btn" id="issue-cancel">Cancel</button>
+      <button class="submit-btn" id="issue-send">Send</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── MOBILE GATE ── -->
@@ -2833,6 +2848,49 @@
       btn.innerHTML = 'Approve & confirm';
     }
   });
+
+  // ── Report an issue ────────────────────────────────────────────────────────
+  (function wireReportIssue() {
+    const link   = document.getElementById('report-issue-link');
+    const modal  = document.getElementById('issue-modal');
+    const text   = document.getElementById('issue-text');
+    const status = document.getElementById('issue-status');
+    const sendBtn = document.getElementById('issue-send');
+    if (!link || !modal) return;
+
+    const open  = () => { status.textContent = ''; text.value = ''; modal.style.display = 'flex'; text.focus(); };
+    const close = () => { modal.style.display = 'none'; };
+
+    link.addEventListener('click', e => { e.preventDefault(); open(); });
+    document.getElementById('issue-cancel').addEventListener('click', close);
+    modal.addEventListener('click', e => { if (e.target === modal) close(); });
+
+    sendBtn.addEventListener('click', async () => {
+      const message = text.value.trim();
+      if (!message) { status.style.color = '#b91c1c'; status.textContent = 'Please describe the issue first.'; return; }
+      sendBtn.disabled = true;
+      status.style.color = 'var(--muted)';
+      status.textContent = 'Sending…';
+      try {
+        const token = new URLSearchParams(location.search).get('token');
+        const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/reportOrderIssue', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, message }),
+        });
+        if (!resp.ok) {
+          const body = await resp.json().catch(() => ({}));
+          throw new Error(body.error || `Failed (${resp.status})`);
+        }
+        close();
+        showToast('Thanks, we got your message and will reply by email.');
+      } catch (err) {
+        status.style.color = '#b91c1c';
+        status.textContent = 'Could not send: ' + err.message;
+        sendBtn.disabled = false;
+      }
+    });
+  })();
 
   // Paste as plain text in caption editors — strip any source formatting so pasted text
   // adopts the caption's current styling instead of carrying over fonts/colours from a website.

@@ -19,11 +19,11 @@ function normalizeEmail(email) {
 
 /**
  * Customer-facing status label. Friendlier/coarser than the staff dashboard
- * labels — internal states (needs_info) collapse into the nearest stage the
- * customer should see, and print stages read as "In production".
+ * labels — print stages read as "In production", and a reported issue reads as
+ * "Under review".
  *
  * Status vocabulary (from order-flow-hardening + dashboard.html):
- *   uploading, new, designing, needs_info, review_sent, approved,
+ *   uploading, new, issue, review_sent, approved,
  *   paid, sent_to_print, printing, in_delivery, delivered
  *
  * @param {string} status
@@ -33,11 +33,10 @@ function customerStatusLabel(status) {
   const labels = {
     uploading:     'Uploading photos',
     new:           'Received',
-    designing:     'Designing',
-    needs_info:    'Designing',          // internal back-and-forth → still "Designing" to the customer
+    issue:         'Under review',       // customer reported a problem → staff are on it
     review_sent:   'Ready for preview',
     approved:      'Approved',
-    paid:          'Approved',           // paid but pre-print → still "Approved" from the customer's view
+    paid:          'Payment confirmed',  // paid but pre-print → distinct from "Approved"
     sent_to_print: 'In production',
     printing:      'In production',
     in_delivery:   'Shipped',
@@ -58,7 +57,7 @@ function customerStatusLabel(status) {
  */
 function canPreview(status) {
   return [
-    'review_sent', 'approved', 'paid',
+    'review_sent', 'issue', 'approved', 'paid',
     'sent_to_print', 'printing', 'in_delivery', 'delivered',
   ].includes(status);
 }
