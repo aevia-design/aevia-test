@@ -484,6 +484,16 @@ exports.generatePdf = functions
         return res.status(400).json({ error: `Order status '${order.status}' is not eligible for PDF generation` });
       }
 
+      // Pre-empt the silent 0%-forever hang: the renderer builds the book from
+      // staffBookSequence/staffBookAssignments (written by "Save book state" in the
+      // engine). If they're missing, there are no spreads to render — the renderer
+      // sits at total=0 until the dashboard's 16-min poll ceiling. Catch it here.
+      if (!Array.isArray(order.staffBookSequence) || order.staffBookSequence.length === 0) {
+        return res.status(400).json({
+          error: 'This book hasn’t been saved yet. Open it in the template engine and press “Save book state” before generating the PDF.',
+        });
+      }
+
       // Mark queued so the dashboard sees movement instantly, even before Cloud Run
       // (possibly cold-starting) writes its first 'rendering' status.
       await docRef.update({ pdfRender: { status: 'starting', updatedAt: new Date() } });

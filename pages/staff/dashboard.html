@@ -634,7 +634,9 @@
     btn.disabled = true;
     btn.textContent = 'Starting…';
 
-    // Build a small progress bar + label next to the button.
+    // Build a small progress bar next to the button. The live status (Starting… /
+    // Rendering… N%) lives inside the button itself so it doesn't leave a stale
+    // "Starting…" sitting to the left of a moving percentage.
     const wrap = document.createElement('span');
     wrap.style.cssText = 'display:inline-flex;align-items:center;gap:8px;margin-left:8px;';
     const barOuter = document.createElement('span');
@@ -642,11 +644,7 @@
     const barInner = document.createElement('span');
     barInner.style.cssText = 'display:block;height:100%;width:0%;background:var(--text);transition:width .3s ease;';
     barOuter.appendChild(barInner);
-    const label = document.createElement('span');
-    label.style.cssText = 'font-size:11px;color:var(--muted);white-space:nowrap;';
-    label.textContent = 'Starting…';
     wrap.appendChild(barOuter);
-    wrap.appendChild(label);
     row.appendChild(wrap);
 
     const cleanup = () => { wrap.remove(); };
@@ -714,7 +712,7 @@
         // status 'starting' | 'rendering'
         const pct = (st.total > 0) ? Math.round((st.done / st.total) * 100) : 0;
         barInner.style.width = `${pct}%`;
-        label.textContent = (st.total > 0) ? `Rendering… ${pct}%` : 'Starting…';
+        btn.textContent = (st.total > 0) ? `Rendering… ${pct}%` : 'Starting…';
         setTimeout(poll, 2500);
       };
       poll();

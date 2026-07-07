@@ -1549,9 +1549,10 @@
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `Server error ${res.status}`);
       }
-      // Persist the confirmation (no auto-clear): export feeds the PDF pipeline, and a
-      // flashed-then-gone message left staff unsure whether book-state.json was written.
-      status.textContent = 'Exported ✓ — book-state.json saved (PDF ready)';
+      // Persist the confirmation (no auto-clear). NOTE: this JSON export is a backup/
+      // debug artefact — the PDF renderer reads the staffBook* fields written by
+      // "Save book state", NOT this file. Don't imply the PDF is ready off this button.
+      status.textContent = 'Exported ✓ — book-state.json saved (backup only; use “Save book state” for the PDF)';
     } catch (err) {
       status.textContent = 'Export failed: ' + err.message;
     } finally {
