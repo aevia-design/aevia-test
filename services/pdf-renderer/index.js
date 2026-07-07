@@ -80,6 +80,12 @@ function buildStateFromOrder(order, storedNames) {
 }
 
 // ── Fetch all original photos from GCS into memory (in-region, no egress) ─────
+// A stalled GCS stream never resolves OR rejects, so a bare `.download()` can hang
+// forever — the whole render then sits until Cloud Run's 900s kill, and the dashboard
+// polls at 0% the entire time (getPdfStatus never sees done/error). Cap each download
+// so a stall becomes a fast, named failure that handleGenerate reports as status:error.
+const PHOTO_DOWNLOAD_TIMEOUT_MS = 120000; // in-region reads are normally < 1s
+
 async function fetchAllPhotos(storedNames) {
   const bufferMap = new Map();
 
@@ -87,27 +93,53 @@ async function fetchAllPhotos(storedNames) {
     if (!storedPath) return;
     const base = path.basename(storedPath);
     if (bufferMap.has(base)) return; // already fetched
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`photo download timed out after ${PHOTO_DOWNLOAD_TIMEOUT_MS / 1000}s: ${storedPath}`)),
+        PHOTO_DOWNLOAD_TIMEOUT_MS,
+      );
+    });
     try {
-      const [contents] = await bucket.file(storedPath).download();
+      const [contents] = await Promise.race([bucket.file(storedPath).download(), timeout]);
       bufferMap.set(base, contents);
     } catch (err) {
+      // A missing/failed photo is non-fatal (skip it). But a TIMEOUT means a stalled
+      // stream that would otherwise hang the whole render — rethrow so the book fails
+      // loudly in seconds with the offending path, instead of a silent 15-min stall.
+      if (/timed out/.test(err.message)) throw err;
       console.warn(`  ⚠ Could not fetch photo ${storedPath}: ${err.message}`);
+    } finally {
+      clearTimeout(timer);
     }
   }
 
-  const tasks = [];
-  if (storedNames.cover) tasks.push(fetchOne(storedNames.cover));
+  // Collect every path to fetch (cover + specials + the whole uploaded pool).
+  const toFetch = [];
+  if (storedNames.cover) toFetch.push(storedNames.cover);
   for (const paths of Object.values(storedNames.special || {})) {
     for (const p of (Array.isArray(paths) ? paths : [paths])) {
-      if (p) tasks.push(fetchOne(p));
+      if (p) toFetch.push(p);
     }
   }
   for (const p of (storedNames.pool || [])) {
-    if (p) tasks.push(fetchOne(p));
+    if (p) toFetch.push(p);
   }
 
-  // Fetch in parallel (GCS in-region is fast + free)
-  await Promise.all(tasks);
+  // Fetch with BOUNDED concurrency. An unbounded Promise.all over the whole pool is
+  // fine for small books but melts on large ones: a 40-page order can carry 100+
+  // originals at 20-66MB each (~2GB) — downloading them all at once stalls the streams
+  // and the render never finishes before Cloud Run's 900s kill. A small worker pool
+  // keeps memory + open connections bounded while staying fast in-region.
+  const CONCURRENCY = 6;
+  let cursor = 0;
+  async function worker() {
+    while (cursor < toFetch.length) {
+      const p = toFetch[cursor++];
+      await fetchOne(p);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, toFetch.length) }, worker));
   console.log(`  Fetched ${bufferMap.size} photos from GCS`);
   return bufferMap;
 }
