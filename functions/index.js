@@ -716,6 +716,9 @@ exports.createCheckoutSession = functions
 
       const sessionParams = {
         mode: 'payment',
+        // Show Stripe's hosted "Add promotion code" field. Inert until a coupon/
+        // promotion code exists in the Stripe account (Phase 1 F&F: FRIENDS30).
+        allow_promotion_codes: true,
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: successUrl,
         cancel_url: cancelUrl,
