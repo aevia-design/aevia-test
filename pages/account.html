@@ -80,6 +80,9 @@
     address.saved-address{font-style:normal;font-size:16px;line-height:1.8;color:var(--text);}
     .delivery-note{margin-top:24px;font-size:14px;color:var(--muted);line-height:1.6;}
     .addr-attr{margin-top:6px;font-size:11px;color:var(--muted);}.addr-attr a{color:var(--accent-dk);}
+    .referral-code{display:inline-flex;align-items:center;gap:14px;border:1px solid var(--border);background:#fff;padding:12px 18px;}
+    .referral-code span{font-family:Georgia,serif;font-size:20px;letter-spacing:.08em;}
+    .referral-code .copy-code{border:none;background:none;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-dk);cursor:pointer;padding:4px 0;}
 
     .verify-card{max-width:480px;margin:0 auto;text-align:center;background:var(--white);border:1px solid var(--border);border-radius:6px;padding:40px 36px;}
     .verify-card h2{font-family:var(--serif);font-weight:400;font-size:26px;margin-bottom:12px;}
@@ -206,6 +209,7 @@
             <button data-panel="orders" class="active">Orders</button>
             <button data-panel="info">Personal info</button>
             <button data-panel="address">Address book</button>
+            <button data-panel="referral">Refer a friend</button>
           </nav>
           <button class="signout" id="signout-btn" type="button">Sign out</button>
         </aside>
@@ -223,6 +227,10 @@
             <h2>Address book</h2>
             <div id="address-body"><div class="loading">Loading…</div></div>
             <p class="delivery-note">Currently delivering to Austria only. More countries coming soon.</p>
+          </section>
+          <section class="panel" id="panel-referral">
+            <h2>Refer a friend</h2>
+            <div id="referral-body"><div class="loading">Loading…</div></div>
           </section>
         </div>
       </div>
@@ -267,6 +275,7 @@
   const RESEND_VERIFY   = 'https://europe-west1-aevia-uploads.cloudfunctions.net/resendVerificationEmail';
   const SEND_RESET      = 'https://europe-west1-aevia-uploads.cloudfunctions.net/sendPasswordResetEmail';
   const SEND_PW_CHANGED = 'https://europe-west1-aevia-uploads.cloudfunctions.net/sendPasswordChangedEmail';
+  const GET_REFERRAL    = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getMyReferralCode';
   const GEOAPIFY_KEY    = '9fae15e78a364df9a2453018cdecf1c5'; // public frontend key — secured by domain restriction in the Geoapify dashboard
 
   const app  = initializeApp(firebaseConfig);
@@ -507,6 +516,51 @@
     }
   }
 
+  async function loadReferral(user) {
+    const body = $('referral-body');
+    body.innerHTML = `<div class="loading">Loading…</div>`;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(GET_REFERRAL, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        body.innerHTML = `<div class="empty">${escapeHtml(data.error || 'Could not load your referral code. Please try again.')}</div>`;
+        return;
+      }
+      const data = await res.json();
+      renderReferral(data.code, data.rewardCodes || []);
+    } catch (e) {
+      body.innerHTML = `<div class="empty">Could not load your referral code. Please check your connection and try again.</div>`;
+    }
+  }
+
+  function renderReferral(code, rewardCodes) {
+    const rewards = rewardCodes.length
+      ? `<div class="referral-rewards">
+           <h3 style="font-family:Georgia,serif;font-weight:normal;font-size:18px;margin:28px 0 6px">Your rewards</h3>
+           <p style="color:#6a6a6a;font-size:14px;margin:0 0 12px">Each code takes 10 &euro; off one order and stays valid for 12 months. Enter it at checkout.</p>
+           ${rewardCodes.map((c) => `<div class="referral-code" style="margin-bottom:8px"><span>${escapeHtml(c)}</span><button type="button" class="copy-code" data-code="${escapeHtml(c)}">Copy</button></div>`).join('')}
+         </div>`
+      : '';
+    $('referral-body').innerHTML = `
+      <p style="margin:0 0 18px;line-height:1.65">Give a friend 10 &euro; off their first Aevia book. When they pay for their order, you get 10 &euro; off your next one.</p>
+      <div class="referral-code"><span>${escapeHtml(code)}</span><button type="button" class="copy-code" data-code="${escapeHtml(code)}">Copy</button></div>
+      <p style="color:#6a6a6a;font-size:13px;margin:10px 0 0;line-height:1.6">Your friend enters the code at checkout. It works on first orders only.</p>
+      ${rewards}`;
+    document.querySelectorAll('#referral-body .copy-code').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(btn.dataset.code);
+          btn.textContent = 'Copied';
+          setTimeout(() => { btn.textContent = 'Copy'; }, 1600);
+        } catch (_) { /* clipboard blocked — code is visible to select manually */ }
+      });
+    });
+  }
+
   async function loadAddress(user) {
     const body = $('address-body');
     let address = null, savedName = '';
@@ -692,6 +746,7 @@
     show('account');
     loadOrders(user);
     loadAddress(user);
+    loadReferral(user);
   }
 
   // If we arrived from a reset email, take over before normal auth routing.

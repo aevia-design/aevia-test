@@ -3,6 +3,7 @@ const admin = require('firebase-admin');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createUploadSessionHandler, confirmUploadHandler } = require('./upload');
 const { normalizeEmail, projectOrderForCustomer, sortOrdersNewestFirst } = require('./account-utils');
+const { generateReferralCode, extractPromotionCodeId, referrerRewardDecision } = require('./referral-utils');
 const { createTransporter, FROM, renderEmail, emailButton } = require('./email');
 
 // Where the auth-email links send the customer back to after they click. Must be
@@ -839,6 +840,98 @@ exports.createCheckoutSession = functions
     }
   });
 
+// ── Referral reward (promo codes Phase 2) ────────────────────────────────────
+// Called by stripeWebhook after an order flips to paid. If the session used a
+// referral share code (looked up via the referralCodes/{promotionCodeId} index),
+// mint the referrer a single-use €10 reward code, store it on their customer
+// doc, stamp the order for audit, and email them. Idempotent: the webhook's
+// already-paid guard stops redelivered events upstream, and the order's
+// referrerRewardIssued flag covers a crash-retry after the paid flip.
+// Errors here are caught by the caller — a referral hiccup must never break
+// the payment flow.
+async function handleReferralReward(db, session, orderRef, order, orderNumber) {
+  // Cheap pre-check: no discount on the session → no code was used.
+  if (!session.total_details?.amount_discount) return;
+
+  // The webhook payload omits the discount breakdown — re-fetch with it expanded.
+  const full = await stripe.checkout.sessions.retrieve(session.id, {
+    expand: ['total_details.breakdown'],
+  });
+  const promoId = extractPromotionCodeId(full);
+  if (!promoId) return;
+
+  const refDoc = await db.collection('referralCodes').doc(promoId).get();
+  const referral = refDoc.exists ? refDoc.data() : null;
+  const decision = referrerRewardDecision({
+    paymentStatus: session.payment_status,
+    order,
+    referral,
+  });
+  if (!decision.issue) {
+    if (decision.reason !== 'no_referral') {
+      console.log('Referral reward skipped:', decision.reason, orderNumber);
+    }
+    return;
+  }
+
+  const referrerEmail = decision.referrerEmail;
+  const couponId = process.env.STRIPE_REFERRAL_COUPON_ID;
+  if (!couponId) {
+    console.warn('Referral reward: STRIPE_REFERRAL_COUPON_ID not set, skipping', orderNumber);
+    return;
+  }
+
+  // Mint the single-use €10 reward code (retry on the rare code collision).
+  // Rewards expire 12 months after issue — generous, but no open-ended liability.
+  const expiresAt = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60;
+  let reward = null;
+  for (let attempt = 0; attempt < 4 && !reward; attempt++) {
+    try {
+      reward = await stripe.promotionCodes.create({
+        coupon: couponId,
+        code: generateReferralCode('Thanks'),
+        max_redemptions: 1,
+        expires_at: expiresAt,
+        metadata: { aevia_kind: 'referral_reward', referrerEmail, referredOrder: orderNumber },
+      });
+    } catch (e) {
+      if (e && e.code === 'resource_already_exists') continue;
+      throw e;
+    }
+  }
+  if (!reward) throw new Error('could not mint reward code after retries');
+
+  // Audit + idempotency on the order and the reward onto the referrer's
+  // customer doc, in ONE batch — a crash can't leave the flag set without the
+  // reward (or vice versa), so a webhook redelivery can't double-issue.
+  const rewardBatch = db.batch();
+  rewardBatch.update(orderRef, { referredBy: referrerEmail, referrerRewardIssued: true });
+  rewardBatch.set(db.collection('customers').doc(referrerEmail), {
+    rewardCodes: admin.firestore.FieldValue.arrayUnion(reward.code),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+  await rewardBatch.commit();
+
+  console.log('Referral reward issued:', reward.code, 'to', referrerEmail, 'for', orderNumber);
+
+  // Tell the referrer — without this they would never know to check their account.
+  try {
+    const transporter = createTransporter();
+    await transporter.sendMail({
+      ...FROM.customer,
+      to: referrerEmail,
+      subject: 'You earned 10 € off your next Aevia book',
+      html: renderEmail(`
+        <p style="margin:0 0 22px">A friend ordered their Aevia book with your referral code. As a thank-you, here is 10&nbsp;&euro; off your next order:</p>
+        <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:22px;letter-spacing:.06em"><strong>${reward.code}</strong></p>
+        <p style="margin:0;font-size:15px;color:#6a6a6a;line-height:1.7">Enter it at checkout on your next book. It works once and stays valid for 12 months. You can also find it any time in your account.</p>
+      `, { support: true }),
+    });
+  } catch (e) {
+    console.warn('Referral reward email failed (code still issued):', e.message);
+  }
+}
+
 // ── Stripe Webhook (payment completion) ──────────────────────────────────────
 exports.stripeWebhook = functions
   .region('europe-west1')
@@ -910,6 +1003,14 @@ exports.stripeWebhook = functions
               { merge: true }
             );
           }
+        }
+
+        // Referral attribution + referrer reward (promo codes Phase 2).
+        // Isolated so a Stripe/Firestore hiccup here never breaks the paid flow.
+        try {
+          await handleReferralReward(db, session, orderRef, order, orderNumber);
+        } catch (e) {
+          console.error('Webhook referral reward failed (order still marked paid):', e);
         }
 
         // Send staff notification email
@@ -1414,6 +1515,115 @@ exports.getMyAddress = functions
     } catch (err) {
       console.error('getMyAddress error:', err);
       return res.status(500).json({ error: 'Could not load your address.' });
+    }
+  });
+
+// ── Referral programme: get (or mint) the customer's share code ─────────────
+// Promo codes Phase 2 (docs/briefs/promo-codes.md). Auth: verified Firebase ID
+// token — referral codes are issued to VERIFIED account holders only. On first
+// call this mints a unique Stripe promotion code (backed by the €10 coupon in
+// STRIPE_REFERRAL_COUPON_ID, restricted to the referee's first order), stores
+// it on customers/{email} and in the referralCodes/{promotionCodeId} reverse
+// index that stripeWebhook uses for attribution. Subsequent calls just read.
+// Also returns any earned reward codes so account.html can show them.
+exports.getMyReferralCode = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const m = (req.headers.authorization || '').match(/^Bearer (.+)$/);
+    if (!m) return res.status(401).json({ error: 'Sign in to see your referral code.' });
+
+    let decoded;
+    try {
+      decoded = await admin.auth().verifyIdToken(m[1]);
+    } catch (e) {
+      return res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
+    }
+
+    const email = normalizeEmail(decoded.email);
+    if (!email) return res.status(400).json({ error: 'No email on this account.' });
+    if (!decoded.email_verified) {
+      return res.status(403).json({ error: 'unverified' });
+    }
+
+    try {
+      const db = admin.firestore();
+      const custRef = db.collection('customers').doc(email);
+      const custDoc = await custRef.get();
+      const cust = custDoc.exists ? custDoc.data() : {};
+
+      // Already minted — just return it (plus any earned rewards).
+      if (cust.referralCode) {
+        return res.status(200).json({ code: cust.referralCode, rewardCodes: cust.rewardCodes || [] });
+      }
+
+      const couponId = process.env.STRIPE_REFERRAL_COUPON_ID;
+      if (!couponId) {
+        console.warn('getMyReferralCode: STRIPE_REFERRAL_COUPON_ID not set');
+        return res.status(503).json({ error: 'The referral programme is not available yet.' });
+      }
+
+      // Mint a unique share code. Stripe rejects duplicate active codes with
+      // resource_already_exists, so retry with a fresh random suffix.
+      const displayName = decoded.name || '';
+      let promo = null;
+      for (let attempt = 0; attempt < 4 && !promo; attempt++) {
+        const candidate = generateReferralCode(displayName);
+        try {
+          promo = await stripe.promotionCodes.create({
+            coupon: couponId,
+            code: candidate,
+            // Referee side: €10 off their FIRST order only. The share code is
+            // multi-use (each new friend can redeem it once).
+            restrictions: { first_time_transaction: true },
+            metadata: { aevia_kind: 'referral_share', referrerEmail: email },
+          });
+        } catch (e) {
+          if (e && e.code === 'resource_already_exists') continue; // collision — retry
+          throw e;
+        }
+      }
+      if (!promo) {
+        return res.status(500).json({ error: 'Could not create your code. Please try again.' });
+      }
+
+      // Commit in a transaction: if a concurrent request already minted a code
+      // for this customer (double-click race), keep THAT one, deactivate ours
+      // in Stripe, and return the winner. Otherwise write the reverse index
+      // (for webhook attribution) + mirror onto the customer doc atomically.
+      const result = await db.runTransaction(async (tx) => {
+        const fresh = await tx.get(custRef);
+        const existing = fresh.exists ? fresh.data().referralCode : null;
+        if (existing) return { code: existing, lostRace: true };
+        tx.set(db.collection('referralCodes').doc(promo.id), {
+          referrerEmail: email,
+          code: promo.code,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        tx.set(custRef, {
+          referralCode: promo.code,
+          referralPromotionCodeId: promo.id,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        return { code: promo.code, lostRace: false };
+      });
+
+      if (result.lostRace) {
+        // Best-effort cleanup of the orphaned Stripe code — never blocks the response.
+        try { await stripe.promotionCodes.update(promo.id, { active: false }); }
+        catch (e) { console.warn('getMyReferralCode: could not deactivate duplicate code', promo.id, e.message); }
+      }
+
+      return res.status(200).json({ code: result.code, rewardCodes: cust.rewardCodes || [] });
+    } catch (err) {
+      console.error('getMyReferralCode error:', err);
+      return res.status(500).json({ error: 'Could not load your referral code. Please try again.' });
     }
   });
 
