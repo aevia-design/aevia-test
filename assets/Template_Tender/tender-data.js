@@ -12,8 +12,9 @@
  *
  * Standard-spread photo geometry matches the Newborn CSV family (same SP 0x SVG naming,
  *   same coordinates). What differs from Newborn: page bgColors (cream #fbf8f6 / greige
- *   #ddd3ce, not white), caption font/colour, and Spread 3 renders its decorative art
- *   UNDER the photos (overlay_position=below in the CSV → overlayBelow:true here).
+ *   #ddd3ce, not white), caption font/colour, and some pages render their decorative art
+ *   UNDER the photos (overlay_position=below in the CSV → overlayBelow:true here): Spread 0
+ *   right pages, and all of Spread 3 (both left and right pages).
  *
  * Caption letterSpacing: the CSV column reads "10" = InDesign tracking (1/1000 em). The
  *   engine applies letterSpacing as em, so that is 0.01 here (wider tracking suits the
@@ -90,9 +91,9 @@ window.TENDER_DATA = {
       type: 'standard', id: 'SP0', label: 'Spread 0', rightOnly: true,
       pages: {
         right: {
-          H: { bgColor: '#fbf8f6', svg: 'SP Spread 0/SP 06 H Right.svg',
+          H: { bgColor: '#fbf8f6', svg: 'SP Spread 0/SP 06 H Right.svg', overlayBelow: true,
             slots: [ { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Parisienne', sizePt: 18, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#7c746e' } } ] },
-          V: { bgColor: '#fbf8f6', svg: 'SP Spread 0/SP 06 V Right.svg',
+          V: { bgColor: '#fbf8f6', svg: 'SP Spread 0/SP 06 V Right.svg', overlayBelow: true,
             slots: [ { slot: 1, x: 85, y: 100, xBleed: 88, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 173, yMm: 43, wMm: 40, hMm: 40, halign: 'left', valign: 'top', font: 'Parisienne', sizePt: 18, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#7c746e' } } ] },
         },
       }
