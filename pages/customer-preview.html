@@ -258,10 +258,14 @@
       max-width: 1290px;
       padding: 40px;
     }
-    /* Centre the spread's pages within the preview canvas (two-page spreads are ~1204px) */
+    /* Centre the spread within the preview canvas (no sidebar here). The box is a
+       fixed 1204px; margin-auto + top-centre transform origin keep the scaled result
+       centred, whereas edit mode leaves it top-left to line up with the sidebar. */
     .page-body.preview-mode .spread-pages {
       justify-content: center;
       align-items: center;
+      margin: 0 auto;
+      transform-origin: top center;
     }
     #book-canvas {
       min-height: 400px;
@@ -313,9 +317,10 @@
     .spread-type-tag.fp { color: #8060a8; border-color: #c8aae0; background: #f5f0fc; }
     .spread-pages {
       display: flex; gap: 4px;
-    }
-    @media (max-width: 1399px) {
-      .spread-pages { flex-direction: column; gap: 2px; }
+      /* Fixed natural width (two 600px pages + 4px gap) so it scales as one box to
+         fit the window, exactly like .cover-canvas. fitBook() sets the transform. */
+      width: 1204px;
+      transform-origin: top left;
     }
     .page-canvas {
       position: relative;
@@ -343,9 +348,10 @@
       width: 1227px;
       height: 600px;
     }
-    /* Cover is a fixed 1227px-wide wraparound; scale it to fit the viewport so it
-       never overflows/clips at narrow widths or browser zoom (set via fitCover()). */
-    .cover-scale-wrap {
+    /* Cover (1227px) and spreads (1204px) are fixed-width; each is scaled to fit the
+       available width so the book never overflows/clips at narrow widths or browser
+       zoom. fitBook() measures the wrapper's own width and sets the transform. */
+    .cover-scale-wrap, .spread-scale-wrap {
       width: 100%;
       overflow: hidden;
     }
@@ -923,6 +929,12 @@
       e.stopPropagation();
 
       const slotW = slotEl.clientWidth, slotH = slotEl.clientHeight;
+      // Live on-screen scale: the book (cover + spreads) is fitted to the window
+      // via CSS transform:scale (fitBook). clientWidth is layout px (transform-blind);
+      // getBoundingClientRect().width is the on-screen size. Their ratio is the current
+      // scale, so we divide the screen-px pointer delta back into layout px below —
+      // otherwise a photo dragged on a scaled spread tracks the cursor at the wrong gain.
+      const dispScale = (slotEl.getBoundingClientRect().width / slotW) || 1;
       const scale = Math.max(slotW / natW, slotH / natH);   // object-fit: cover
       const imgW = natW * scale, imgH = natH * scale;
       // overflow = how far the image extends beyond the slot on each axis (≥0)
@@ -935,10 +947,11 @@
 
       const onMove = ev => {
         // object-position offset = -(overflow) * pct/100. Moving the image by +d px
-        // means offset += d, so pct -= d / overflow * 100.
+        // means offset += d, so pct -= d / overflow * 100. Delta is divided by the
+        // on-screen scale so the image tracks the cursor 1:1 regardless of fit-scale.
         let x = start.x, y = start.y;
-        if (overflowX > 0.5) x = start.x - (ev.clientX - startX) / overflowX * 100;
-        if (overflowY > 0.5) y = start.y - (ev.clientY - startY) / overflowY * 100;
+        if (overflowX > 0.5) x = start.x - ((ev.clientX - startX) / dispScale) / overflowX * 100;
+        if (overflowY > 0.5) y = start.y - ((ev.clientY - startY) / dispScale) / overflowY * 100;
         setHeartCrop(photoName, x, y);
         const hc = getHeartCrop(photoName);
         img.style.objectPosition = hc.x + '% ' + hc.y + '%';
@@ -1246,6 +1259,9 @@
     });
     const toggle = document.getElementById('mode-toggle');
     if (toggle) toggle.style.visibility = '';
+    // The instruction bar just became visible — recompute the reserve below it so it
+    // clears the first spread header (and re-fit in case the sidebar changed width).
+    requestAnimationFrame(fitBook);
   }
 
   async function loadPhotos() {
@@ -1693,20 +1709,52 @@
     return row;
   }
 
-  // Scale the fixed-width (1227px) cover down to fit the available width.
-  // Measures the wrapper's own laid-out width (reliable post-layout); retries
-  // on the next frame if the wrapper isn't measurable yet.
-  function fitCover() {
-    const wrap = document.querySelector('.cover-scale-wrap');
-    if (!wrap) return;
-    const canvas = wrap.querySelector('.cover-canvas');
-    if (!canvas) return;
-    const avail = wrap.clientWidth;
-    if (!avail) { requestAnimationFrame(fitCover); return; }
-    const scale = Math.min(1, avail / 1227);
-    canvas.style.transformOrigin = 'top left';
-    canvas.style.transform = `scale(${scale})`;
-    wrap.style.height = (600 * scale) + 'px';
+  // Scale the whole book — the fixed-width cover (1227px) AND every interior spread
+  // (1204px) — down to fit the available width, so nothing overflows at narrow widths
+  // or browser zoom. Each element is measured against its own wrapper's laid-out width
+  // (which already nets out the sidebar + padding); retries next frame if not yet
+  // measurable. transform:scale doesn't change layout box size, so we also collapse
+  // each wrapper's height to the scaled height (else scaled spreads leave empty gaps).
+  function fitBook() {
+    // Cover
+    const coverWrap = document.querySelector('.cover-scale-wrap');
+    if (coverWrap) {
+      const canvas = coverWrap.querySelector('.cover-canvas');
+      const avail = coverWrap.clientWidth;
+      if (!avail) { requestAnimationFrame(fitBook); return; }
+      if (canvas) {
+        const s = Math.min(1, avail / 1227);
+        canvas.style.transformOrigin = 'top left';
+        canvas.style.transform = `scale(${s})`;
+        coverWrap.style.height = (600 * s) + 'px';
+      }
+    }
+    // Spreads (transform-origin comes from CSS: top-left in edit, top-centre in preview)
+    document.querySelectorAll('.spread-scale-wrap').forEach(wrap => {
+      const pages = wrap.querySelector('.spread-pages');
+      if (!pages) return;
+      const avail = wrap.clientWidth;
+      if (!avail) return;
+      const s = Math.min(1, avail / 1204);
+      pages.style.transform = `scale(${s})`;
+      wrap.style.height = (600 * s) + 'px';
+    });
+    adjustHintReserve();
+  }
+
+  // Reserve exactly the fixed instruction bar's height below the nav, measured live so
+  // it never overlaps the first spread header no matter how many lines the bar wraps to.
+  // When the bar is hidden (preview / read-only) we clear the inline value and let CSS
+  // decide. (Replaces the old hard-coded one-line reserve.)
+  function adjustHintReserve() {
+    const body = document.getElementById('page-body');
+    const hint = document.getElementById('edit-hint');
+    if (!body) return;
+    if (hint && getComputedStyle(hint).display !== 'none') {
+      body.style.paddingTop = (69 + hint.offsetHeight + 8) + 'px';
+    } else {
+      body.style.paddingTop = '';
+    }
   }
 
   function renderBook() {
@@ -1739,7 +1787,7 @@
 
     renderPhotoSidebar();
     setupPreviewMode();
-    requestAnimationFrame(fitCover);
+    requestAnimationFrame(fitBook);
   }
 
   function renderPhotoSidebar() {
@@ -1869,7 +1917,12 @@
 
     const pagesWrap = document.createElement('div');
     pagesWrap.className = 'spread-pages';
-    row.appendChild(pagesWrap);
+    // Wrap in a scale container (mirrors the cover) so fitBook() can shrink the
+    // fixed 1204px spread to fit the window without overflow.
+    const scaleWrap = document.createElement('div');
+    scaleWrap.className = 'spread-scale-wrap';
+    scaleWrap.appendChild(pagesWrap);
+    row.appendChild(scaleWrap);
 
     // For rightOnly spreads (SP0), add a blank left page labeled "Technical page"
     if (spreadDef.rightOnly) {
@@ -2653,7 +2706,7 @@
     document.getElementById('submit-bar').style.display = '';
     // Preview mode hides all rows but the current spread — restore them all on return to edit.
     document.querySelectorAll('.spread-row').forEach(row => row.classList.remove('preview-hidden'));
-    requestAnimationFrame(fitCover);
+    requestAnimationFrame(fitBook);
   });
 
   document.getElementById('mode-preview-btn').addEventListener('click', () => {
@@ -2665,7 +2718,7 @@
     document.getElementById('photo-sidebar').classList.add('hidden');
     document.getElementById('preview-controls').classList.add('visible');
     updatePreviewMode();
-    requestAnimationFrame(fitCover);
+    requestAnimationFrame(fitBook);
   });
 
   // ── Save helper ──
@@ -3017,7 +3070,7 @@
       document.getElementById('submit-bar').style.display = '';
       document.getElementById('preview-controls').style.display = '';
     }
-    fitCover();
+    fitBook();
   });
 </script>
 
