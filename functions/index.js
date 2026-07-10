@@ -781,15 +781,38 @@ exports.createCheckoutSession = functions
       const price80 = process.env.STRIPE_PRICE_ID_80 || price40;
       const priceId = (Number(order.pageCount) >= 80) ? price80 : price40;
 
-      // Look up saved address for pre-fill (best-effort — never blocks checkout)
+      // Look up saved address for pre-fill + the Stripe Customer id, from the
+      // same customer doc (best-effort — never blocks checkout).
       let savedAddress = null;
+      let stripeCustomerId = null;
       const customerEmail = normalizeEmail(order.email);
       if (customerEmail) {
         try {
-          const custDoc = await db.collection('customers').doc(customerEmail).get();
-          if (custDoc.exists) savedAddress = custDoc.data().shippingAddress || null;
+          const custRef = db.collection('customers').doc(customerEmail);
+          const custDoc = await custRef.get();
+          if (custDoc.exists) {
+            savedAddress = custDoc.data().shippingAddress || null;
+            stripeCustomerId = custDoc.data().stripeCustomerId || null;
+          }
+          // Attach a Stripe Customer keyed by email so Stripe can enforce
+          // per-customer promo rules. The referral share code is
+          // first_time_transaction only, which Stripe checks against the
+          // Customer's payment history — without a Customer it never binds and
+          // a returning buyer could reuse the discount. Create once, cache the
+          // id, reuse on every later order for this email.
+          if (!stripeCustomerId) {
+            const customer = await stripe.customers.create({
+              email: customerEmail,
+              name: order.customerName || undefined,
+            });
+            stripeCustomerId = customer.id;
+            await custRef.set({
+              stripeCustomerId,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
+          }
         } catch (e) {
-          console.warn('createCheckoutSession: address pre-fill lookup failed', e.message);
+          console.warn('createCheckoutSession: customer lookup/attach failed', e.message);
         }
       }
 
@@ -806,6 +829,10 @@ exports.createCheckoutSession = functions
           token: token || order.previewToken,
         },
       };
+
+      // Bind the session to the Stripe Customer so first_time_transaction and
+      // any future per-customer promo restrictions actually apply.
+      if (stripeCustomerId) sessionParams.customer = stripeCustomerId;
 
       if (savedAddress) {
         // Signed-in customer with an Aevia-owned saved address: pass it straight to
@@ -849,6 +876,22 @@ exports.createCheckoutSession = functions
 // referrerRewardIssued flag covers a crash-retry after the paid flip.
 // Errors here are caught by the caller — a referral hiccup must never break
 // the payment flow.
+// Count a customer email's OTHER paid orders (excluding the current one). Used
+// as the DB-side first-time-customer guard for referral rewards. Filters status
+// in code (not a compound where) so no composite Firestore index is needed —
+// order counts per email are tiny at F&F scale.
+async function countPriorPaidOrders(db, email, excludeOrderNumber) {
+  const norm = normalizeEmail(email);
+  if (!norm) return 0;
+  const snap = await db.collection('orders').where('email', '==', norm).get();
+  let count = 0;
+  snap.forEach((doc) => {
+    if (doc.id === excludeOrderNumber) return;
+    if (doc.data().status === 'paid') count++;
+  });
+  return count;
+}
+
 async function handleReferralReward(db, session, orderRef, order, orderNumber) {
   // Cheap pre-check: no discount on the session → no code was used.
   if (!session.total_details?.amount_discount) return;
@@ -862,10 +905,16 @@ async function handleReferralReward(db, session, orderRef, order, orderNumber) {
 
   const refDoc = await db.collection('referralCodes').doc(promoId).get();
   const referral = refDoc.exists ? refDoc.data() : null;
+  // Only count prior paid orders when a real referral code was used (skips the
+  // query for FRIENDS30 / unknown codes, which resolve to no_referral anyway).
+  const refereePriorPaidOrders = referral
+    ? await countPriorPaidOrders(db, order.email, orderNumber)
+    : 0;
   const decision = referrerRewardDecision({
     paymentStatus: session.payment_status,
     order,
     referral,
+    refereePriorPaidOrders,
   });
   if (!decision.issue) {
     if (decision.reason !== 'no_referral') {

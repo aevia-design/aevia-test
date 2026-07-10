@@ -60,15 +60,20 @@ function extractPromotionCodeId(session) {
  *  - only for genuinely PAID sessions (never abandoned/cancelled),
  *  - only when the code used maps to a known referrer (referralCodes index),
  *  - exactly once per order (referrerRewardIssued flag = webhook-redelivery guard),
- *  - never for self-referral (customer redeeming their own code).
+ *  - never for self-referral (customer redeeming their own code),
+ *  - only when the referee was a genuine first-time customer (no prior paid
+ *    order for their email) — the DB-side guard mirroring Stripe's
+ *    first_time_transaction restriction so the two can't silently diverge.
  *
  * @param {object} args
  * @param {string} args.paymentStatus - Stripe session.payment_status
  * @param {object} args.order - the referred order doc (email, referrerRewardIssued)
  * @param {object|null} args.referral - referralCodes/{id} doc data, or null if unknown code
+ * @param {number} [args.refereePriorPaidOrders] - count of the referee email's
+ *   OTHER paid orders (excluding this one); >0 means they were not first-time
  * @returns {{issue: boolean, reason?: string, referrerEmail?: string}}
  */
-function referrerRewardDecision({ paymentStatus, order, referral }) {
+function referrerRewardDecision({ paymentStatus, order, referral, refereePriorPaidOrders = 0 }) {
   if (paymentStatus !== 'paid') return { issue: false, reason: 'not_paid' };
   const referrerEmail = normalizeEmail(referral && referral.referrerEmail);
   if (!referrerEmail) return { issue: false, reason: 'no_referral' };
@@ -76,6 +81,7 @@ function referrerRewardDecision({ paymentStatus, order, referral }) {
   if (normalizeEmail(order && order.email) === referrerEmail) {
     return { issue: false, reason: 'self_referral' };
   }
+  if (refereePriorPaidOrders > 0) return { issue: false, reason: 'referee_not_first' };
   return { issue: true, referrerEmail };
 }
 

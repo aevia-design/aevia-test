@@ -132,4 +132,26 @@ describe('referrerRewardDecision', () => {
     expect(d.issue).toBe(false);
     expect(d.reason).toBe('no_referral');
   });
+
+  test('skips when the referee already has a prior paid order (not first-time)', () => {
+    const d = referrerRewardDecision({ ...base, refereePriorPaidOrders: 1 });
+    expect(d.issue).toBe(false);
+    expect(d.reason).toBe('referee_not_first');
+  });
+
+  test('still issues when the referee has no prior paid orders (default 0)', () => {
+    const d = referrerRewardDecision({ ...base, refereePriorPaidOrders: 0 });
+    expect(d.issue).toBe(true);
+    expect(d.referrerEmail).toBe('anna@example.com');
+  });
+
+  test('self-referral takes precedence over the first-time check', () => {
+    const d = referrerRewardDecision({
+      ...base,
+      order: { email: 'anna@example.com' },
+      refereePriorPaidOrders: 3,
+    });
+    expect(d.issue).toBe(false);
+    expect(d.reason).toBe('self_referral');
+  });
 });
