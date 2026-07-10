@@ -235,13 +235,19 @@
       padding: 12px 40px;
       font-size: 12px; color: var(--muted);
       letter-spacing: 0.01em;
+      /* The tips total ~1580px — wider than a laptop viewport, so this bar
+         wraps to two lines below ~1920px in every browser. Centre it so the
+         wrap reads as an intentional two-line helper (balanced, no orphaned
+         tips) instead of left-aligned overflow. Identical in Safari + Chrome. */
+      text-align: center;
+      line-height: 1.75;
     }
     .edit-hint strong { color: var(--text); font-weight: 600; }
     .edit-hint span { white-space: nowrap; display: inline-block; }
     .edit-hint span:not(:first-child)::before {
       content: "·";
       color: var(--border);
-      margin: 0 12px;
+      margin: 0 10px;
     }
     .page-body.preview-mode .edit-hint { display: none; }
     /* Preview is view-only: no swap-drag, repositioning, or caption edits.
