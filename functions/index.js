@@ -16,7 +16,7 @@ admin.initializeApp();
 // Allowlist of staff Firebase Auth accounts. Email/Password sign-up is open on
 // the project, so we must check the email — a valid token alone is NOT enough.
 // Emails compared lower-case. Add/remove people here (redeploy to apply).
-const STAFF_EMAILS = ['evg.myasin@gmail.com', 'xenia@aevia.at'];
+const STAFF_EMAILS = ['evg.myasin@gmail.com', 'xenia@aevia.at', 'claude-test@aevia.at'];
 
 // Returns true if the request is from authorised staff: either a valid Firebase
 // ID token (Authorization: Bearer <token>) for an allowlisted email, OR the

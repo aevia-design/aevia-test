@@ -3,6 +3,11 @@ functions/.env
 functions/serviceAccountKey.json
 motif-engine/.env
 aevia-uploads-*.json
+qa/.env
+
+# QA test photo libraries — real photos, local-only (privacy + size)
+qa/test-photos/
+qa/*.zip
 
 # Dependencies — too large, reinstalled with `npm install`
 node_modules/
