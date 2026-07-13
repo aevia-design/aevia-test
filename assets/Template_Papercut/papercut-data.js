@@ -31,8 +31,8 @@ window.PAPERCUT_DATA = {
       }
     },
     captions: [
-      { key: 'year',      xMm: 301, yMm: 180, wMm: 120, font: 'Source Sans 3', sizePt: 26, weight: 'bold', align: 'center',  color: '#4a4b40', label: 'Front — year',       placeholder: 'Our sweet Ann', maxLength: 60 },
-      { key: 'name',      xMm: 390, yMm: 180, wMm: 60,  font: 'Source Sans 3', sizePt: 28, weight: 'regular', align: 'center', color: '#4a4b40', label: 'Front — album name', placeholder: '2026',        maxLength: 10 },
+      { key: 'year',      xMm: 301, yMm: 180, wMm: 120, font: 'Source Sans 3', sizePt: 26, weight: 'bold', align: 'center',  color: '#4a4b40', label: 'Front — year',       placeholder: '2026',          maxLength: 10 },
+      { key: 'name',      xMm: 390, yMm: 180, wMm: 60,  font: 'Source Sans 3', sizePt: 28, weight: 'regular', align: 'center', color: '#4a4b40', label: 'Front — album name', placeholder: 'Our sweet Ann', maxLength: 60 },
       { key: 'spineName', xMm: 222, yMm: 158, wMm: 98,  font: 'Source Sans 3', sizePt: 16, weight: 'regular', color: '#4a4b40', rotate: 270, label: 'Spine — name', placeholder: 'Ann',  maxLength: 20 },
       { key: 'spineYear', xMm: 222, yMm: 78,  wMm: 38,  font: 'Source Sans 3', sizePt: 16, weight: 'regular', color: '#4a4b40', rotate: 270, label: 'Spine — year', placeholder: '2026', maxLength: 10 },
     ]
