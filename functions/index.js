@@ -4,6 +4,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createUploadSessionHandler, confirmUploadHandler } = require('./upload');
 const { normalizeEmail, projectOrderForCustomer, sortOrdersNewestFirst } = require('./account-utils');
 const { generateReferralCode, extractPromotionCodeId, referrerRewardDecision } = require('./referral-utils');
+const { normalizePromoCode, promoValidationDecision, describeDiscount } = require('./promo-utils');
 const { createTransporter, FROM, renderEmail, emailButton } = require('./email');
 
 // Where the auth-email links send the customer back to after they click. Must be
@@ -714,6 +715,110 @@ exports.convertHeic = functions
     }
   });
 
+// ── Promo codes: validate on our page, not in Stripe (ADR-0008) ──────────────
+// Stripe's hosted "Add promotion code" field is OFF. Codes are typed on the pay
+// page and checked here, UPSTREAM of the checkout session, so we can do the one
+// thing Stripe cannot: refuse a customer their own referral code (QA S125,
+// F-P1-03). Everything else about a code — existence, discount, caps, expiry —
+// is still read from Stripe, which stays the source of truth.
+//
+// Shared by validatePromoCode (the field's Apply button) and createCheckoutSession
+// (which re-runs it, because the browser's "valid" claim is not trustworthy).
+async function resolvePromo(db, rawCode, order, orderNumber) {
+  const code = normalizePromoCode(rawCode);
+  if (!code) return { valid: false, reason: 'unknown_code' };
+
+  // Stripe matches the code exactly; an unknown code just returns an empty list.
+  const list = await stripe.promotionCodes.list({ code, limit: 1 });
+  const promo = list.data[0] || null;
+
+  // Who does this code belong to? The S115 reverse index answers it for referral
+  // codes; F&F/marketing codes have no entry and so have no owner.
+  let ownerEmail = null;
+  if (promo) {
+    const refDoc = await db.collection('referralCodes').doc(promo.id).get();
+    if (refDoc.exists) ownerEmail = refDoc.data().referrerEmail || null;
+  }
+
+  // Only pay for the orders query when the code actually is first-order-only.
+  const firstOrderOnly = !!(promo && promo.restrictions && promo.restrictions.first_time_transaction);
+  const buyerPriorPaidOrders = firstOrderOnly
+    ? await countPriorPaidOrders(db, order.email, orderNumber)
+    : 0;
+
+  const decision = promoValidationDecision({
+    promo,
+    ownerEmail,
+    buyerEmail: order.email,
+    buyerPriorPaidOrders,
+  });
+
+  if (!decision.valid) {
+    if (decision.reason === 'self_referral') {
+      // Traced, per the ADR — we want to know if this is ever attempted for real.
+      console.warn(`promo: self-referral DENIED — ${normalizeEmail(order.email)} tried own code ${code} on ${orderNumber}`);
+    }
+    return decision;
+  }
+
+  return {
+    valid: true,
+    promotionCodeId: promo.id,
+    code: promo.code,
+    discount: describeDiscount(promo.coupon),
+  };
+}
+
+// Customer-facing wording for each rejection reason. Kept server-side so the page
+// never has to guess what went wrong.
+const PROMO_MESSAGES = {
+  unknown_code:    'We don\'t recognise that code. Check the spelling.',
+  expired:         'That code has expired.',
+  used_up:         'Someone has already used that code.',
+  not_first_order: 'That code only works on a first order.',
+  self_referral:   'That\'s your own code. Share it with a friend and you get €10 when they order.',
+  promo_rejected:  'That code doesn\'t work on this order.',
+};
+
+exports.validatePromoCode = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const { token, code } = req.body;
+    if (!token) return res.status(403).json({ error: 'Unauthorised' });
+
+    try {
+      const db = admin.firestore();
+      const snapshot = await db.collection('orders')
+        .where('previewToken', '==', token)
+        .limit(1)
+        .get();
+      if (snapshot.empty) return res.status(403).json({ error: 'Invalid or expired token' });
+
+      const order = snapshot.docs[0].data();
+      const orderNumber = snapshot.docs[0].id;
+
+      const result = await resolvePromo(db, code, order, orderNumber);
+      if (!result.valid) {
+        return res.status(200).json({
+          valid: false,
+          reason: result.reason,
+          message: PROMO_MESSAGES[result.reason] || PROMO_MESSAGES.promo_rejected,
+        });
+      }
+      return res.status(200).json({ valid: true, code: result.code, discount: result.discount });
+    } catch (err) {
+      console.error('validatePromoCode error:', err);
+      return res.status(500).json({ error: 'We couldn\'t check that code. Try again in a moment.' });
+    }
+  });
+
 // ── Create Checkout Session (Stripe payment) ─────────────────────────────────
 exports.createCheckoutSession = functions
   .region('europe-west1')
@@ -726,7 +831,7 @@ exports.createCheckoutSession = functions
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
     const hasStaffAuth = await isStaff(req);
-    const { orderNumber, token } = req.body;
+    const { orderNumber, token, promoCode } = req.body;
 
     // Auth: require either staff key or customer token
     if (!hasStaffAuth && !token) {
@@ -818,9 +923,10 @@ exports.createCheckoutSession = functions
 
       const sessionParams = {
         mode: 'payment',
-        // Show Stripe's hosted "Add promotion code" field. Inert until a coupon/
-        // promotion code exists in the Stripe account (Phase 1 F&F: FRIENDS30).
-        allow_promotion_codes: true,
+        // Stripe's hosted promo field stays OFF (ADR-0008): a code typed in there
+        // would skip our self-referral check. Codes come from our pay page, already
+        // validated, and are attached below.
+        allow_promotion_codes: false,
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: successUrl,
         cancel_url: cancelUrl,
@@ -833,6 +939,20 @@ exports.createCheckoutSession = functions
       // Bind the session to the Stripe Customer so first_time_transaction and
       // any future per-customer promo restrictions actually apply.
       if (stripeCustomerId) sessionParams.customer = stripeCustomerId;
+
+      // Re-validate any code the page sends. The browser already called
+      // validatePromoCode, but a hand-crafted request could skip that — the
+      // self-referral block only holds if it also runs here, in the money path.
+      if (promoCode) {
+        const promo = await resolvePromo(db, promoCode, order, orderNum);
+        if (!promo.valid) {
+          return res.status(400).json({
+            error: PROMO_MESSAGES[promo.reason] || PROMO_MESSAGES.promo_rejected,
+            reason: promo.reason,
+          });
+        }
+        sessionParams.discounts = [{ promotion_code: promo.promotionCodeId }];
+      }
 
       if (savedAddress) {
         // Signed-in customer with an Aevia-owned saved address: pass it straight to
@@ -858,7 +978,20 @@ exports.createCheckoutSession = functions
       }
 
       // Create Stripe Checkout Session
-      const session = await stripe.checkout.sessions.create(sessionParams);
+      let session;
+      try {
+        session = await stripe.checkout.sessions.create(sessionParams);
+      } catch (err) {
+        // A restriction we don't model (minimum amount, currency, product scope)
+        // can still make Stripe refuse the code. Say so plainly instead of failing
+        // as a generic payment error — and never silently drop the discount and
+        // charge full price.
+        if (sessionParams.discounts) {
+          console.warn('createCheckoutSession: Stripe rejected the promo code —', err.message);
+          return res.status(400).json({ error: PROMO_MESSAGES.promo_rejected, reason: 'promo_rejected' });
+        }
+        throw err;
+      }
 
       return res.status(200).json({ url: session.url });
     } catch (err) {

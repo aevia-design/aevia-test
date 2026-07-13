@@ -627,6 +627,11 @@
       z-index: 85;
     }
     .submit-bar.hidden { display: none; }
+    /* The promo field (ADR-0008) is the widest thing added to this row — without
+       this the buttons squeeze and "Pay now · €70" wraps. The notice text takes
+       the squeeze instead; it wraps cleanly. */
+    .submit-bar > button,
+    .submit-bar > #promo-group { flex-shrink: 0; white-space: nowrap; }
     /* Review → Approve → Pay progress cue: reassures the customer that approval
        is a step, not the finish line, so they don't abandon before paying. */
     .flow-steps {
@@ -797,6 +802,15 @@
   </span>
   <button class="cancel-btn" id="save-btn">Save changes</button>
   <button class="submit-btn" id="approve-btn">Approve &amp; confirm</button>
+  <!-- Promo code (ADR-0008): entry lives here, not in Stripe's hosted checkout,
+       so the code can be validated (and self-referral denied) before payment. -->
+  <span id="promo-group" style="display:none;align-items:center;gap:8px;">
+    <input id="promo-input" type="text" placeholder="Have a code?" autocomplete="off"
+           maxlength="40" aria-label="Promo code"
+           style="width:130px;padding:8px 10px;border:1px solid var(--line);border-radius:2px;background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;letter-spacing:0.06em;text-transform:uppercase;">
+    <button class="cancel-btn" id="promo-apply">Apply</button>
+    <span id="promo-msg" style="display:none;font-size:12px;letter-spacing:0.02em;"></span>
+  </span>
   <button class="submit-btn" id="pay-btn" style="display:none;">Pay now</button>
   <a href="#" id="report-issue-link" style="font-size:12px;color:var(--muted);letter-spacing:0.02em;text-decoration:underline;align-self:center;">Report an issue</a>
 </div>
@@ -2785,6 +2799,7 @@
     const notice     = document.getElementById('approved-notice');
     const payBtn     = document.getElementById('pay-btn');
     const payNotice  = document.getElementById('payment-success-notice');
+    const promoGroup = document.getElementById('promo-group');
     if (approveBtn) { approveBtn.disabled = true; approveBtn.textContent = 'Approved ✓'; }
     if (saveBtn)    { saveBtn.style.display = 'none'; }
 
@@ -2793,17 +2808,19 @@
 
     if (status === 'paid' || params.get('payment') === 'success') {
       // Already paid or just returned from Stripe — show confirmation, hide pay button
-      if (notice)    { notice.style.display = 'none'; }
-      if (payNotice) { payNotice.style.display = ''; }
-      if (payBtn)    { payBtn.style.display = 'none'; }
+      if (notice)     { notice.style.display = 'none'; }
+      if (payNotice)  { payNotice.style.display = ''; }
+      if (payBtn)     { payBtn.style.display = 'none'; }
+      if (promoGroup) { promoGroup.style.display = 'none'; }
       setFlowStep('done');
       if (params.get('payment') === 'success') {
         setTimeout(() => showToast('Payment received — we\'ll be in touch soon!'), 500);
       }
     } else if (status === 'approved') {
       // Approved but not yet paid — show pay button + forward "one last step" copy
-      if (notice)  { notice.style.display = ''; }
-      if (payBtn)  { payBtn.style.display = ''; setPayButtonLabel(); }
+      if (notice)     { notice.style.display = ''; }
+      if (promoGroup) { promoGroup.style.display = 'inline-flex'; }
+      if (payBtn)     { payBtn.style.display = ''; setPayButtonLabel(); }
       setFlowStep('pay');
     } else {
       if (notice)  { notice.style.display = ''; }
@@ -2832,6 +2849,63 @@
     }
   }
 
+  // ── Promo code (ADR-0008) ──
+  // The code is checked here, before Stripe, because Stripe cannot tell that a
+  // referral code belongs to the person trying to spend it. Once accepted it's
+  // held in _appliedPromo and passed to createCheckoutSession, which checks it
+  // again server-side (this page's word is not proof).
+  window._appliedPromo = null;
+
+  function showPromoMessage(text, ok) {
+    const msg = document.getElementById('promo-msg');
+    if (!msg) return;
+    msg.textContent = text;
+    msg.style.color = ok ? 'var(--text)' : 'var(--warn, #b3261e)';
+    msg.style.display = text ? '' : 'none';
+  }
+
+  document.getElementById('promo-apply').addEventListener('click', async () => {
+    const input = document.getElementById('promo-input');
+    const btn   = document.getElementById('promo-apply');
+    const code  = (input.value || '').trim();
+    if (!code) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    showPromoMessage('', true);
+    try {
+      const token = new URLSearchParams(location.search).get('token');
+      const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/validatePromoCode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, code }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Could not check that code right now.');
+
+      if (data.valid) {
+        window._appliedPromo = code;
+        input.disabled = true;
+        btn.style.display = 'none';
+        showPromoMessage(`Applied · ${data.discount}`, true);
+      } else {
+        window._appliedPromo = null;
+        showPromoMessage(data.message, false);
+        btn.disabled = false;
+        btn.textContent = 'Apply';
+      }
+    } catch (err) {
+      showPromoMessage(err.message, false);
+      btn.disabled = false;
+      btn.textContent = 'Apply';
+    }
+  });
+
+  // Enter in the field applies the code rather than doing nothing.
+  document.getElementById('promo-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('promo-apply').click(); }
+  });
+
   // ── Pay now ──
   document.getElementById('pay-btn').addEventListener('click', async () => {
     const btn = document.getElementById('pay-btn');
@@ -2842,10 +2916,23 @@
       const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/createCheckoutSession', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, promoCode: window._appliedPromo || undefined }),
       });
       if (!resp.ok) {
         const body = await resp.json().catch(() => ({}));
+        // The server re-checks the code. If it refuses one the page had accepted,
+        // drop the code and let them pay full price rather than dead-end them.
+        if (body.reason) {
+          window._appliedPromo = null;
+          const input = document.getElementById('promo-input');
+          const applyBtn = document.getElementById('promo-apply');
+          if (input) { input.disabled = false; input.value = ''; }
+          if (applyBtn) { applyBtn.style.display = ''; applyBtn.disabled = false; applyBtn.textContent = 'Apply'; }
+          showPromoMessage(body.error, false);
+          btn.disabled = false;
+          setPayButtonLabel();
+          return;
+        }
         throw new Error(body.error || `Payment initiation failed (${resp.status})`);
       }
       const { url } = await resp.json();
