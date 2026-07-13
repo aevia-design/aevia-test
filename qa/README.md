@@ -9,6 +9,14 @@ staff journey end-to-end against real Firebase/GCS/Stripe (test mode).
 Run from the **project root**. Artefacts (screenshots + logs) write to
 `sessions/qa-runs/…`, which is gitignored.
 
+## Reuse orders — don't mint new ones (owner directive, S126)
+
+Test against an order that **already exists**. Only place a new order when the case under test
+*is* the order-creation path, and then let that one order serve the whole batch. S124/S125 left
+a dozen junk orders behind because each agent minted its own; the owner does not want that
+volume of test data in the live project. `QA_ORDER` (below) is how you point a script at an
+existing one.
+
 ```bash
 node qa/<script>.mjs
 ```
