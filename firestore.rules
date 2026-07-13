@@ -9,7 +9,7 @@ service cloud.firestore {
       // never touch Firestore directly and need no rule here.
       function isStaff() {
         return request.auth != null
-          && request.auth.token.email in ['evg.myasin@gmail.com', 'xenia@aevia.at'];
+          && request.auth.token.email in ['evg.myasin@gmail.com', 'xenia@aevia.at', 'claude-test@aevia.at'];
       }
 
       allow read:   if isStaff();
