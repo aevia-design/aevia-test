@@ -2,10 +2,12 @@
 
 ## One-time setup (Evgeny does this with you, ~15 min)
 1. Your Claude account on the Pro plan, Claude Desktop app installed.
-2. Install the marketing skill pack on YOUR account: claude.ai → Settings →
-   Customize → Plugins → Browse plugins → add custom marketplace →
-   `coreyhaines31/marketingskills` → install. (One click; Evgeny has done it once
-   already on his account and can drive.)
+2. Install Aevia's own marketing skill pack on YOUR account: claude.ai →
+   Settings → Customize → Plugins → Browse plugins → add custom marketplace →
+   `aevia-design/aevia-marketing-skills` → install **aevia-marketing-core**.
+   (One click; Evgeny drives. A second plugin, aevia-marketing-extras, adds
+   copywriting/content/social skills — install it later, when strategy turns
+   into content.)
 3. Create a folder `Aevia Marketing` (inside a synced drive if you want Evgeny to
    see the same files). Put `folder-instructions.md` content into Cowork's folder
    instructions for it, and keep a copy in the folder root.
@@ -43,7 +45,7 @@ each grounded in what they actually wrote. The value is the disagreement.
 ## Session 3 and on — the plan, section by section
 Paste:
 
-> Run the marketing-plan skill for Aevia. Work from product-marketing.md. Draft
+> Run the aevia-marketing-plan skill. Work from product-marketing.md. Draft
 > one section at a time and stop for my verdict — I will approve, change, or
 > reject each section. Where you rely on an assumption, log it in assumptions.md
 > with confidence and the cheapest way to test it. Every spend recommendation
