@@ -41,11 +41,42 @@ index maps a code to its owner's email, and the buyer's email is on the order.
 - We assume: promo codes are only ever redeemed at the approve/pay step (true today),
   so a single entry point covers every case.
 
+## What stays in Stripe (important — we are NOT building a promo store)
+
+Only **code entry + one extra validation** moves to our page. Everything about code
+**management and integrity stays in Stripe**, managed via the **Stripe Dashboard** exactly
+as today:
+
+- Creating coupons / promotion codes; setting % or € off, max_redemptions, expiry,
+  first-order-only, active/inactive → **Stripe**.
+- Redemption tracking (who used what, how many left) → **Stripe**, still the source of truth.
+- "Is this code real / active / not expired?" → answered by a **Stripe** lookup
+  (`stripe.promotionCodes.list({ code })`) at validation time.
+- Applying + enforcing the discount on the charge → **Stripe** (`discounts:[{promotion_code}]`).
+
+The **only** Aevia-side data is the `referralCodes/{promotionCodeId}` → owner-email index,
+which **already exists** (S115, for reward attribution). The self-referral gate reuses it.
+Unique F&F codes (decision #1) are also generated **in Stripe** (dashboard, or a small API
+script for bulk) and tracked **in Stripe** — no Aevia admin UI is built.
+
 ## Consequences
 
 - Enables decision #1: unique per-person F&F codes get validated by us on the same page.
 - Rules out relying on Stripe's hosted promo field going forward (`allow_promotion_codes`
-  goes to `false`).
+  goes to `false`); its box is replaced by our own field (cosmetic, no enforcement lost).
+- New maintenance we take on: **one validation Cloud Function** in the money path. That is
+  the honest cost — today a promo needs zero code (just a Stripe object); after this, a
+  function has to keep working. Small and contained, but real.
 - Revisit if promo redemption ever needs to happen somewhere other than the pay page.
 - Build is money-path-sensitive → its own focused session with a regression test
   (extends the S118 first-order + Stripe-Customer work in `createCheckoutSession`).
+
+## The deny-now vs cap-now fork (recorded so it's not re-litigated)
+
+- **Deny-now (this ADR, chosen):** build the our-page validation → self-referral is hard-
+  denied and traced. Costs the validation function + a money-path test pass.
+- **Cap-now (interim fallback):** keep Stripe's hosted field, add only a max_redemptions +
+  expiry to the referral coupon → self-referral is *capped, not denied*, with zero new code.
+  Legitimate "not yet" at friends-and-family scale (people known by name); the hard block
+  earns its cost more once past that. Owner agreed to **deny-now**; cap-now stays available
+  as a stopgap if the build slips.
