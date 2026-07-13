@@ -26,9 +26,27 @@ node qa/staff-customer-chain.mjs
 
 ## The scripts
 
+### Pre-launch QA suite (S124) — the current, maintained set
+
+These four cover **P0** of `work/pre-launch-qa/case-catalogue_v1.md`. Each writes a findings
+log + screenshots to `sessions/qa-runs/`, and exits non-zero on an S1. Findings triage lives
+in `work/pre-launch-qa/findings_v1.md`.
+
+| Script | Case | Run |
+|---|---|---|
+| `p0-1-template.mjs` | P0-1 — full customer order, **any** template (generic special-page filler) | `node qa/p0-1-template.mjs <newborn\|wander\|scribble\|papercut\|tender>` |
+| `p0-2-preview.mjs` | P0-2 — engine save → generate link → **send preview** → customer opens the emailed link | `node qa/p0-2-preview.mjs <AEV-nnn> <testmail-tag>` |
+| `p0-3-payment.mjs` | P0-3 — approve → Stripe **test** card → `paid` + payment email | `node qa/p0-3-payment.mjs <AEV-nnn> <testmail-tag> [card]` |
+| `p0-4-account-email.mjs` | P0-4 — signup/verify, then a decoy email raced against auth (the S109 guard) | `node qa/p0-4-account-email.mjs` |
+
+The `<testmail-tag>` for an order is in its P0-1 run's `findings.json`.
+`p0-1-newborn.mjs` is the original calibration script, superseded by `p0-1-template.mjs`.
+
+### Older scripts
+
 | Script | What it does | Touches staff? | Template-coupled? |
 |---|---|---|---|
-| `order-journey.mjs` | Mints a fresh order via the **Scribble** product flow (uploads `DTS_PARENTHOOD` photos, configures all 5 special pages), screenshots each milestone. Leaves a real `AEV-xxx` in Firestore. | no | **Scribble-specific** |
+| `order-journey.mjs` | Mints a fresh order via the **Scribble** product flow (uploads `DTS_PARENTHOOD` photos, configures all 5 special pages), screenshots each milestone. Leaves a real `AEV-xxx` in Firestore. **STALE** — predates the multi-step wizard; do not copy selectors from it. | no | **Scribble-specific** |
 | `order-80-fp1-fp5.mjs` | Same idea, but an 80-page order with only FP1+FP5. Records GCS upload duration. | no | **Scribble-specific** |
 | `staff-customer-chain.mjs` | Picks up an **existing** order (`$env:QA_ORDER`) and drives the rest: staff login → load in engine → save → dashboard generate-preview-link → customer approve → Stripe pay → confirm paid. Status-aware (won't re-approve a paid order). | yes | template-agnostic |
 | `downstream-chain.mjs` | Like the chain above but **skips the engine load+save leg** — picks up an order whose book the staff already saved in their own browser, drives only generate-link → approve → pay. Use this so an automated run can't clobber the staff's creative edits via a save-before-render race. | yes | template-agnostic |
@@ -78,6 +96,38 @@ drivers (e.g. a Wander variant of `order-journey`):
   why `downstream-chain.mjs` exists and skips the engine save leg.
 
 ## Gotchas
+
+### Added S124 (each of these cost a run)
+
+- **`waitForEmail()` LONG-POLLS** (`livequery=true`): the server holds the connection open
+  until mail arrives, so on an inbox that never receives anything the `fetch` hangs and the
+  function's own timeout **never fires**. To assert an inbox is **EMPTY**, use `getEmails()`
+  (plain snapshot) after a grace period — never `waitForEmail()`.
+- **Brevo rewrites every email link** into a click-tracking redirect (`sendibt*.com/tr/cl/…`),
+  so the raw HTML never contains your URL. **Follow** the link and assert where it lands;
+  never string-match hrefs.
+- **The dashboard holds an open Firestore listener**, so `networkidle` NEVER fires — `goto`
+  with `domcontentloaded` and gate on elements. Its rows also paint asynchronously: wait for
+  the *order's row text*, not just the first `<tr>`, before probing its buttons.
+- **Playwright auto-DISMISSES native dialogs** (= Cancel). This path has three (incomplete-book
+  confirm on save, send-preview confirm, post-send alert) — without `page.on('dialog', d =>
+  d.accept())` the save and the send **silently no-op**.
+- **Both preview buttons are on the DASHBOARD**, not the engine. The engine only saves book state.
+- **Stripe Checkout**: collects a shipping address, and the card fields do not exist until the
+  Card accordion row is opened. Its overlay button reports itself *invisible* to Playwright
+  while still intercepting clicks → dispatch via `$eval(el => el.click())` on
+  `[data-testid=card-accordion-item-button]`. Fields then mount in the **main** frame (no iframe)
+  as `#cardNumber` / `#cardExpiry` / `#cardCvc`.
+- **All 5 templates use `.sp-card`** (an earlier note claiming scribble uses `.addon` was wrong).
+  Click the **card** element, not coordinates — a coordinate click hits `.sp-thumb`, which
+  `stopPropagation()`s and only opens the preview.
+- **Photo libraries are mixed JPG + PNG** (the form accepts both). A jpg-only glob leaves every
+  template except newborn short of its exact photo target — and the count must match **exactly**.
+- **Wander**: has NO cover photo (`cover.slots: []` → `#dz-cover` never renders), and its country
+  `<select>` ignores a programmatic `selectOption()` unless `dataset.touched` is set first
+  (an anti-Chrome-autofill guard in `onCountryPick`).
+
+### Older
 
 - **`serve` drops query strings on `.html`.** For a **local** customer-preview
   with a token, use the clean URL `…/customer-preview?token=…` — the `.html`
