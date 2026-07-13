@@ -76,7 +76,10 @@ const RUN_DIR = path.resolve('sessions/qa-runs', `${new Date().toISOString().sli
 const PHOTO_DIR = path.resolve('qa/test-photos', SPEC.photoDir);
 fs.mkdirSync(RUN_DIR, { recursive: true });
 
-const TAG = 'p01' + TEMPLATE.slice(0, 3) + Date.now().toString(36);
+// QA_TAG lets a caller pin the testmail tag (= the customer email) instead of getting a
+// fresh one. The P1 promo track needs TWO orders from the SAME referee email to exercise
+// the first_time_transaction guard, so it passes QA_TAG=<same tag> to both runs.
+const TAG = process.env.QA_TAG || ('p01' + TEMPLATE.slice(0, 3) + Date.now().toString(36));
 const EMAIL = address(TAG);
 
 const env = Object.fromEntries(

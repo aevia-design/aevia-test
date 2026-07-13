@@ -114,11 +114,21 @@ try {
   // NOT networkidle — the dashboard holds an open Firestore listener, so the network
   // never goes idle and goto() times out. Gate on the elements instead.
   await dash.goto(`${BASE}/staff/dashboard.html`, { waitUntil: 'domcontentloaded' });
-  await dash.waitForSelector('#email-input', { state: 'visible', timeout: 30000 });
-  await dash.fill('#email-input', env.STAFF_TEST_EMAIL);
-  await dash.fill('#pwd-input', env.STAFF_TEST_PASSWORD);
-  await dash.click('.lock-btn');
-  await dash.waitForSelector('#app', { state: 'visible', timeout: 30000 });
+  // Firebase auth persists per-ORIGIN, so the engine sign-in above is already live in
+  // this context: the dashboard's lock overlay hides itself as soon as
+  // onAuthStateChanged resolves. Logging in unconditionally races that — the fill lands
+  // while the overlay is still up, then the click times out on a now-hidden button.
+  // Only log in if the lock is actually still showing.
+  const locked = await dash.waitForSelector('#app', { state: 'visible', timeout: 8000 }).then(() => false).catch(() => true);
+  if (locked) {
+    await dash.waitForSelector('#email-input', { state: 'visible', timeout: 30000 });
+    await dash.fill('#email-input', env.STAFF_TEST_EMAIL);
+    await dash.fill('#pwd-input', env.STAFF_TEST_PASSWORD);
+    await dash.click('.lock-btn');
+    await dash.waitForSelector('#app', { state: 'visible', timeout: 30000 });
+  } else {
+    note('Dashboard already unlocked (staff session carried over from the engine)');
+  }
   // Wait for THIS order's row to paint before probing for its buttons — the table is
   // filled asynchronously, and a rerun of this script finds the row already carrying a
   // token (Generate is replaced by Open/Revoke, and Send reads "Resend preview").

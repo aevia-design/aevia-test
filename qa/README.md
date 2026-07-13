@@ -42,6 +42,21 @@ in `work/pre-launch-qa/findings_v1.md`.
 The `<testmail-tag>` for an order is in its P0-1 run's `findings.json`.
 `p0-1-newborn.mjs` is the original calibration script, superseded by `p0-1-template.mjs`.
 
+### P1 staff-side suite (S125)
+
+| Script | Case | Run |
+|---|---|---|
+| `p1-staff-10-issue.mjs` | P1-10 — customer reports an issue → status `issue` + dashboard flag (+ the S114 post-approval branch) | `node qa/p1-staff-10-issue.mjs <AEV-nnn>` (order must be `review_sent`) |
+| `p1-staff-11-pdf-unsaved.mjs` | P1-11 — Generate PDF on an **unsaved** book is blocked, not a 0% hang | `node qa/p1-staff-11-pdf-unsaved.mjs <AEV-nnn>` |
+| `p1-staff-12-pdf-large.mjs` | P1-12 — Generate PDF on a **GB-scale** order; records duration + total photo bytes | `node qa/p1-staff-12-pdf-large.mjs <AEV-nnn>` |
+| `p1-staff-13-staff-as-customer.mjs` | P1-13 — a staff-allowlisted account on `account.html` + a customer preview (privilege-leak check, both directions) | `node qa/p1-staff-13-staff-as-customer.mjs <AEV-nnn>` |
+
+`firestore.mjs` — read-only Firestore + GCS-**metadata** helper (`orderState`,
+`orderPhotoBytes`) used by the P1 scripts. Pass criteria like "status flipped to `issue`"
+and "the render finished" live in Firestore, not the DOM, and the dashboard is a module
+script so its `allOrders` is **not** reachable from `page.evaluate()`. `orderPhotoBytes()`
+lists object metadata only — it never downloads an object, so it costs **no GCS egress**.
+
 ### Older scripts
 
 | Script | What it does | Touches staff? | Template-coupled? |
@@ -96,6 +111,29 @@ drivers (e.g. a Wander variant of `order-journey`):
   why `downstream-chain.mjs` exists and skips the engine save leg.
 
 ## Gotchas
+
+### Added S125 (each of these cost a run)
+
+- **Firebase auth persists per ORIGIN, across pages in the same browser context.** Signing
+  into the **engine** therefore also signs you into the **dashboard**: its lock overlay
+  hides itself the moment `onAuthStateChanged` resolves. A script that logs in
+  unconditionally races that and `click('.lock-btn')` times out on a now-hidden button.
+  **Guard it:** only log in if `#app` is not already visible. (Fixed in `p0-2-preview.mjs`.)
+- **The dashboard's PDF cell is rewritten asynchronously.** `updatePdfLinks()` runs a round
+  trip *after* the row paints and swaps "Generate PDF" for Preview/Print + "Regenerate PDF".
+  Grab the button as soon as it appears and your handle detaches mid-click. Wait for the
+  cell's button set to stop changing first.
+- **Never `import()` firebase-auth inside `page.evaluate()`** — you get a fresh module
+  instance with no initialised app (`No Firebase App '[DEFAULT]'`). To call an authed
+  endpoint from the page, read the persisted token:
+  `JSON.parse(localStorage['firebase:authUser:…']).stsTokenManager.accessToken`.
+- **The dashboard is a module script**, so `allOrders` is module-scoped and **not** on
+  `window`. Don't try to scrape it from `page.evaluate()` — read Firestore instead
+  (`qa/firestore.mjs`).
+- **Cloud Logging is closed to us**: the service-account key returns `403 Permission denied
+  for all log views`. You cannot verify a Cloud Function's side effects (e.g. mail to
+  `support@aevia.at`) from the logs — and `reportOrderIssue` swallows mail errors and still
+  returns 200, so a 200 proves nothing about delivery.
 
 ### Added S124 (each of these cost a run)
 
