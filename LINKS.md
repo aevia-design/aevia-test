@@ -2,7 +2,7 @@
 
 Handy URLs for the website, both staff engines, the dashboard, and the customer preview — local and live. Replace `XXXX` with a real preview token.
 
-> **Live = Cloudflare Pages** (`aevia-test.pages.dev`). It serves **clean URLs (no `.html`)** — the `.html` form redirects (308) and, for customer-preview, **drops the `?token=`**. So on live always use the clean form.
+> **Live = Cloudflare Pages** (`aevia-test.pages.dev`). It serves **clean URLs (no `.html`)** — the `.html` form 308-redirects to the clean form. The redirect **does preserve the query string** (verified S130: `?token=…&payment=success` survives), so emailed preview links work either way — but prefer the clean form to save a hop.
 >
 > **Live deploys from `main`** automatically on push.
 
