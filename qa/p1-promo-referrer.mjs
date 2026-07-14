@@ -10,6 +10,11 @@
 // referrer.json and just re-reads the referral panel (used to assert the THANKS- reward
 // code appeared after a referred order was paid).
 //
+// Optional explicit tag (S127 self-referral case): `node qa/p1-promo-referrer.mjs --tag <tag>`
+// signs up under that exact address() instead of a generated one — used to become the account
+// holder of an EXISTING order's email, so a self-referral attempt can be tested against it
+// without minting a new order. State + run dir are keyed by the tag so runs don't collide.
+//
 // Signup section copied from qa/p0-4-account-email.mjs.
 
 import { chromium } from '@playwright/test';
@@ -17,19 +22,21 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { address, waitForEmail, extractLinks } from './testmail.mjs';
 
+const CHECK = process.argv.includes('--check');
+const tagFlagIdx = process.argv.indexOf('--tag');
+const explicitTag = tagFlagIdx !== -1 ? process.argv[tagFlagIdx + 1] : null;
+
 const BASE = 'https://aevia-test.pages.dev/pages';
-const RUN_DIR = path.resolve('sessions/qa-runs', `${new Date().toISOString().slice(0, 10)}-p1-promo-referrer`);
+const RUN_DIR = path.resolve('sessions/qa-runs', explicitTag ? `${new Date().toISOString().slice(0, 10)}-p1-promo-referrer-${explicitTag}` : `${new Date().toISOString().slice(0, 10)}-p1-promo-referrer`);
 fs.mkdirSync(RUN_DIR, { recursive: true });
 const STATE = path.join(RUN_DIR, 'referrer.json');
-
-const CHECK = process.argv.includes('--check');
 
 let state;
 if (CHECK) {
   if (!fs.existsSync(STATE)) { console.error(`No ${STATE} — run without --check first`); process.exit(1); }
   state = JSON.parse(fs.readFileSync(STATE, 'utf8'));
 } else {
-  const tag = 'p1ref' + Date.now().toString(36);
+  const tag = explicitTag || ('p1ref' + Date.now().toString(36));
   state = { tag, email: address(tag), password: 'QaTest!' + Date.now().toString(36), code: null };
 }
 

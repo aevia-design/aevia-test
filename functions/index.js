@@ -952,6 +952,10 @@ exports.createCheckoutSession = functions
           });
         }
         sessionParams.discounts = [{ promotion_code: promo.promotionCodeId }];
+        // Stripe rejects a session that specifies both allow_promotion_codes and
+        // discounts, even when allow_promotion_codes is false — the key has to be
+        // absent, not falsy. (QA S127: this was 400-ing every discounted payment.)
+        delete sessionParams.allow_promotion_codes;
       }
 
       if (savedAddress) {

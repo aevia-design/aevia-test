@@ -65,6 +65,19 @@ and "the render finished" live in Firestore, not the DOM, and the dashboard is a
 script so its `allOrders` is **not** reachable from `page.evaluate()`. `orderPhotoBytes()`
 lists object metadata only — it never downloads an object, so it costs **no GCS egress**.
 
+### P1 promo track (S125/S127)
+
+Catalogue: P1-1..4, the ADR-0008 money-path regression. `p1-promo-adr8.mjs` is current —
+code entry happens on OUR pay page (`customer-preview.html` `#promo-input`/`#promo-apply`),
+not in Stripe's hosted checkout. `p1-promo-pay.mjs` predates ADR-0008 and targets Stripe's
+now-disabled hosted promo field — **STALE**, do not copy selectors from it.
+
+| Script | Case | Run |
+|---|---|---|
+| `p1-promo-referrer.mjs` | Set up (or re-check) a referrer account + share code | `node qa/p1-promo-referrer.mjs` (fresh account) · `--check` (re-read the same account) · `--tag <tag>` (sign up under a SPECIFIC `address(tag)` instead of a generated one — needed to become the account holder of an existing order's email, e.g. for a self-referral test) |
+| `p1-promo-adr8.mjs` | Apply a code on the pay page, optionally pay | `node qa/p1-promo-adr8.mjs <AEV-nnn> [CODE] [testmail-tag] [--approve] [--expect-denied] [--no-pay] [--expect-percent N] [--expect-amount N]` |
+| `p1-promo-stripe.mjs` | Read-only — list/lookup live coupons + promotion codes in Stripe TEST | `node qa/p1-promo-stripe.mjs [codeToLookUp ...]` |
+
 ### Older scripts
 
 | Script | What it does | Touches staff? | Template-coupled? |
