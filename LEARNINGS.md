@@ -1,3 +1,40 @@
+## 2026-07-14 — The engine is full of Scribble-shaped assumptions; a new template's real cost is finding them (Joyride, S129)
+
+Adding a template mostly means **discovering hardcodes written when Scribble was the only
+template**. Joyride surfaced five, and three of them were bugs *already live for every existing
+template* — nobody had hit them because no template exercised that path.
+
+**The generalisable rule: if a value describes the SHAPE of a template, it must come from the
+template's own data, not from a literal in the engine.** The ones found (all in
+`pages/staff/template-engine.html`):
+
+- `renderCover` read `cover.slots[0]` — fine until a cover has 4 photos.
+- Spread lists hardcoded `['SP1'…'SP6']` in **three** places (type dropdown, sequence builder,
+  and again in `customer-preview.html`) — so `SP7`+ was simply unreachable.
+- Local-mode cover upload hardcoded `data-max="1"` in the markup.
+- **`.cover-canvas { width: 1227px !important }`** — that is `(200 + 9 + 200)mm × 3px/mm`. A
+  template whose cover isn't 409mm wide gets **silently clipped**, losing content off the right
+  edge. Joyride's (erroneous) 428mm artboard was cutting its right-hand cover photo in half.
+  Still hardcoded — **fix it the day a cover legitimately isn't 409mm.**
+- FP text panels never applied their CSV `captions_color`, so they inherited the CSS default.
+  Wander's navy had *never* been honoured; nobody noticed because the default looked close.
+
+**Two of these only surface in a specific ORDER of operations.** `window.bookCaptions` was never
+initialised in the globals block (every sibling was); `renderBook` created it lazily, but
+`renderCover` reads it unguarded. So **uploading a cover photo *before* any pool photos crashed
+the engine** — on every template, reproducible on Tender. A smoke test that always loads pool
+photos first will never see it.
+
+**Therefore: a change made for one template must be regression-tested across ALL of them.**
+`qa/debug-all-templates-render.mjs` (new) renders all six — cover photos first, every functional
+page ticked — and fails on any pageerror. **Run it after any `template-engine.html` edit.** It
+caught nothing on the day it was written only because it was written *after* the bugs were
+already fixed; it exists so the next one is caught in seconds rather than by eyeball.
+
+**Corollary — a smoke test cannot see a wrong colour, size, or position.** The `captions_color`
+bug and the clipped cover photo both passed every automated gate (0 pageerrors, canvases render)
+and were only caught by *looking at a screenshot*. Render an image and read it.
+
 ## 2026-06-25 — Three PDF-renderer traps a new template hits (Tender, S81)
 
 Bringing Tender live surfaced three issues that will recur for **every** future template. All

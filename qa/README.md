@@ -78,6 +78,22 @@ now-disabled hosted promo field — **STALE**, do not copy selectors from it.
 | `p1-promo-adr8.mjs` | Apply a code on the pay page, optionally pay | `node qa/p1-promo-adr8.mjs <AEV-nnn> [CODE] [testmail-tag] [--approve] [--expect-denied] [--no-pay] [--expect-percent N] [--expect-amount N]` |
 | `p1-promo-stripe.mjs` | Read-only — list/lookup live coupons + promotion codes in Stripe TEST | `node qa/p1-promo-stripe.mjs [codeToLookUp ...]` |
 
+### Engine render smoke tests (local, no order, no backend)
+
+These drive the staff engine in **Local** mode against `qa/test-photos/` — no order is minted,
+nothing is written to Firestore, no email is sent. They need `npx serve . -p 8080` running.
+
+| Script | What it does | Touches staff? | Template-coupled? |
+|---|---|---|---|
+| `debug-all-templates-render.mjs` | **Run this after ANY `template-engine.html` edit.** Renders **all six** templates (cover photos uploaded FIRST, every functional page ticked) and fails on any pageerror. The guard for shared-engine code — `renderCover` / `renderSpread` / the photo allocator / `buildBookSequence` are shared, so a change made for one template silently breaks another. Added S129, after three pre-existing bugs turned out to hit *every* template. Exits non-zero on failure. | no | template-agnostic |
+| `debug-joyride-render.mjs` | Joyride's own gate: asserts 4 cover slots with 4 photos placed, SP7–SP9 reachable, the M page (SP4/SP8 right) gets 1 vertical + 1 horizontal, Intro shows 2 text panels, the FP1 map draws a region image + pins + itinerary panel, 0 pageerrors. | no | **Joyride** |
+| `debug-tender-render.mjs`, `debug-wander-render.mjs` | ⚠ **STALE selector.** Both tick functional pages via `.fp-toggle` / `#local-fp-list` — **neither exists in the markup**, so they have silently *never* enabled an FP. The live checkbox group is `#fp-group`. Superseded by `debug-all-templates-render.mjs`. | no | per-template |
+
+**A render smoke test cannot see a wrong colour, size, or position** — it only proves nothing
+threw. Two S129 bugs (text panels ignoring their CSV colour; a cover photo clipped off the
+canvas) passed every automated gate and were caught only by screenshotting and *looking*. When
+geometry or styling is in question, render an image and read it.
+
 ### Older scripts
 
 | Script | What it does | Touches staff? | Template-coupled? |
