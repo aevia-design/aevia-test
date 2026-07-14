@@ -92,6 +92,7 @@ require(path.resolve(__dirname, '../assets/Template_Wander/wander-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Newborn/newborn-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Papercut/papercut-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Tender/tender-data.js'));
+require(path.resolve(__dirname, '../assets/Template_Joyride/joyride-data.js'));
 DATA = global.window.SCRIBBLE_DATA; // default; will be updated in main() if needed
 
 function initializePrintConstants() {
@@ -141,6 +142,7 @@ const TEMPLATES = {
   newborn:  { data: () => global.window.NEWBORN_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Newborn') },
   tender:   { data: () => global.window.TENDER_DATA,   assetBase: path.resolve(__dirname, '../assets/Template_Tender') },
   papercut: { data: () => global.window.PAPERCUT_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Papercut/SVG') },
+  joyride:  { data: () => global.window.JOYRIDE_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Joyride/SVG') },
 };
 
 let ASSET_BASE = TEMPLATES.scribble.assetBase; // default
@@ -622,6 +624,8 @@ const FONT_FILE_MAP = {
   'Baskervville_mediumitalic':   'Baskervville-MediumItalic.ttf',
   'Source Sans 3_regular':       'SourceSans3/SourceSans3-Regular.ttf',
   'Source Sans 3_bold':          'SourceSans3/SourceSans3-Bold.ttf',
+  'Lora_regular':                'Lora-Regular.ttf',
+  'Mulish_light':                'Mulish-Light.ttf',
 };
 
 // Pre-embed all fonts into a PDFDocument; returns a lookup map
@@ -651,7 +655,9 @@ async function embedAllFonts(pdfDoc) {
 // Newborn print can't ship with mid-word gaps; confirm visually at E2E (Stage 7).
 // Source Sans 3 forms fi/fl/ff ligatures (verified: 26 chars → 23 glyphs via fontkit.layout),
 // so it hits the same advance-width bug → per-character draw workaround.
-const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star', 'Source Sans 3', 'Parisienne']);
+// Lora + Mulish (Joyride, static cuts instanced from the variable TTFs) both form
+// ligatures via fontkit (verified: 30 chars → 26 glyphs each) → same workaround.
+const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star', 'Source Sans 3', 'Parisienne', 'Lora', 'Mulish']);
 // EB Garamond additionally suppresses letter-spacing in the char-by-char path; the shaping
 // context loss caused irregular gaps when spacing was also applied. Cormorant Garamond keeps
 // its defined letter-spacing because the -0.02em tightening is aesthetically required.

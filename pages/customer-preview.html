@@ -9,6 +9,7 @@
   <script src="../assets/Template_Newborn/newborn-data.js"></script>
   <script src="../assets/Template_Papercut/papercut-data.js"></script>
   <script src="../assets/Template_Tender/tender-data.js"></script>
+  <script src="../assets/Template_Joyride/joyride-data.js"></script>
   <script src="../assets/js/photo-utils.js"></script>
   <script src="../assets/js/book-completeness.js"></script>
   <script src="../assets/js/map-render.js"></script>
@@ -78,6 +79,16 @@
       font-family: 'Parisienne';
       src: url('../assets/fonts/Parisienne-Regular.ttf') format('truetype');
       font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Lora';
+      src: url('../assets/fonts/Lora-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Mulish';
+      src: url('../assets/fonts/Mulish-Light.ttf') format('truetype');
+      font-weight: 300; font-style: normal; font-display: swap;
     }
     @font-face {
       font-family: 'Baskervville';
@@ -1031,6 +1042,7 @@
     newborn:  { data: () => window.NEWBORN_DATA,  svgBase: '../assets/Template_Newborn/' },
     papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../assets/Template_Papercut/SVG/' },
     tender:   { data: () => window.TENDER_DATA,   svgBase: '../assets/Template_Tender/' },
+    joyride:  { data: () => window.JOYRIDE_DATA,  svgBase: '../assets/Template_Joyride/SVG/' },
   };
 
   let _activeTemplateData = window.SCRIBBLE_DATA; // default
@@ -1073,6 +1085,8 @@
     { label: 'Parisienne',        value: 'Parisienne',        styles: [{ label: 'Regular', weight: 400, italic: false }] },
     { label: 'Baskervville',      value: 'Baskervville',      styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Medium Italic', weight: 500, italic: true }] },
     { label: 'Source Sans 3',    value: 'Source Sans 3',    styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
+    { label: 'Lora',              value: 'Lora',              styles: [{ label: 'Regular', weight: 400, italic: false }] },
+    { label: 'Mulish',            value: 'Mulish',            styles: [{ label: 'Light', weight: 300, italic: false }] },
   ];
 
   // Caption-toolbar fonts scoped to the active template's fontPicker allow-list
