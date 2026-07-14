@@ -40,3 +40,5 @@ Standard,n.a,9,Left V,2,136,138,139,141,73,98,no,no,,,,,,,,,,,,,,,n.a,n.a,,#f2c7
 Standard,n.a,9,Right S,1,105,100,108,103,200,200,no,no,,,,,,,,,,,,,,,n.a,n.a,,#f2c7de,03:02,square,rectangle,3,,200×200mm
 Functional,Intro,0,Left,-,-,-,-,-,-,-,no,yes,center,105,104,108,107,100,50,center,center,Mulish,22pt,Light,0,1.28,no,yes,#d94027,#f9d84d,n.a,square,,3,,200×200mm
 Functional,Intro,0,Left,-,-,-,-,-,-,-,no,yes,center,105,60,108,63,120,15,center,center,Lora,36pt,Regular,0,1.28,no,yes,#d94027,#f9d84d,n.a,square,,3,,200×200mm
+Functional,Travel itinerary,1,-,-,-,-,-,-,-,-,no,no,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,,3,200×200mm,
+Functional,Travel itinerary,1,-,-,-,-,-,-,-,-,no,yes,center,105,100,108,103,135,100,center,center,Lora,28pt,Regular,0,1.28,no,yes,#d94027,#f9d84d,n.a,-,,3,200×200mm,

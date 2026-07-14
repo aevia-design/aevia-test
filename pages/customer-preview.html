@@ -1530,7 +1530,11 @@
     const totalSpreads  = pageCount / 2;
     const remaining     = totalSpreads - 1;
     const standardCount = remaining - bodyFPs.length;
-    const stdIds = ['SP1','SP2','SP3','SP4','SP5','SP6'];
+    // Derived from the template's own spread keys — was hardcoded to SP1–SP6, which
+    // left SP7–SP9 (Joyride) unreachable. Mirrors template-engine.html.
+    const stdIds = Object.keys(_data?.spreads || {})
+      .filter(id => /^SP[1-9]\d*$/.test(id))
+      .sort((a, b) => parseInt(a.slice(2), 10) - parseInt(b.slice(2), 10));
     const standards = [];
     for (let i = 0; i < standardCount; i++) standards.push(stdIds[i % stdIds.length]);
     const fpCount   = bodyFPs.length;

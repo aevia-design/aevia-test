@@ -889,6 +889,7 @@
       <option value="Newborn">Newborn</option>
       <option value="Papercut">Papercut</option>
       <option value="Tender">Tender</option>
+      <option value="Joyride">Joyride</option>
     </select>
     <button class="config-export-btn" id="export-state-btn">Export State</button>
     <button class="config-upload-btn" id="upload-btn">+ Add Photos</button>
@@ -1111,6 +1112,7 @@
   window.photoPool          = [];   // [{ file, url, date, orientation, name, w, h, lowRes }]
   window.bookAssignments    = {};   // { spreadIndex: { left:[poolIdx|null,...], right:[...] } }
   window.captionState       = {};   // { spreadIndex: { left:{1:'text'}, right:{1:'text'} } }
+  window.bookCaptions       = {};   // { spreadIndex|'cover': { side: { slotIdx: 'html' } } } — renderBook resets it per rebuild, but renderCover can run FIRST (staff uploads a cover photo before any pool photos), and it reads this unguarded. Initialising here stops that crash.
   window.specialPhotos      = { cover: [], FP1: [], FP3: [], FP4: [], FP5: [] };
   window.coverCaptionStyles  = {};   // { year: { font, weight, style, sizePt, lineSpacing, letterSpacing }, name: {...} }
   window.spreadCaptionStyles = {};   // { spreadIndex: { side: { slotIdx: { font, weight, italic, sizePt, lineSpacing, letterSpacing } } } }
@@ -1833,13 +1835,12 @@
     };
     canvas.appendChild(svgImg);
 
-    // Photo slot (center-based coords from CSV). Only some templates have a cover
-    // photo — Wander's cover is free-text only (cover.slots === []), so skip the
-    // slot entirely when absent. Without this guard renderCover throws and the whole
-    // book (spreads included) fails to render.
+    // Photo slots (center-based coords from CSV). Most templates have exactly one
+    // cover photo; Wander's cover is free-text only (cover.slots === []); Joyride has
+    // FOUR (top/left/right/bottom around the centred title). Loop over every slot —
+    // Wander's empty array makes this a no-op, single-slot templates run once.
     const COVER_BLEED_MM = 18;  // cover CSV coords include 18mm bleed on each side
-    const slotDef = coverDef.slots[0];
-    if (slotDef) {
+    coverDef.slots.forEach((slotDef, slotIdx) => {
       const slotW   = slotDef.wMm * SCALE;
       const slotH   = slotDef.hMm * SCALE;
       const slotL   = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2;
@@ -1879,7 +1880,7 @@
         // the butterflies layer on top of it — matching the artwork's intended layering.
       }
 
-      const coverPhoto = (window.specialPhotos.cover || [])[0];
+      const coverPhoto = (window.specialPhotos.cover || [])[slotIdx];
       if (coverPhoto) {
         const img = document.createElement('img');
         img.className = 'slot-photo';
@@ -1898,11 +1899,14 @@
       } else {
         const ph = document.createElement('div');
         ph.className = 'slot-placeholder';
-        ph.textContent = 'Cover photo';
+        // Per-slot label (e.g. Joyride's top/left/right/bottom) when the key follows
+        // the 'cover<Position>' convention; generic fallback for single-slot covers.
+        const posLabel = (slotDef.key || '').replace(/^cover/i, '');
+        ph.textContent = posLabel ? `Cover photo — ${posLabel}` : 'Cover photo';
         slot.appendChild(ph);
       }
       canvas.appendChild(slot);
-    }
+    });
 
     // Captions — coords are with-bleed (18mm); subtract before converting to canvas px
     const savedCoverCaps = window.bookCaptions['cover'] || {};
@@ -1959,6 +1963,38 @@
       cap.addEventListener('focus', () => showCoverCaptionToolbar(capDef, cap));
 
       canvas.appendChild(cap);
+
+      // Auto-shrink: the caption box is a FIXED size (wMm × hMm) and the text must stay
+      // inside it rather than spill onto the artwork — or, on the spine, wrap onto a
+      // second line across a 9mm band. Step the font size down (1pt at a time, floor at
+      // 50% of the CSV size) until the content fits hMm. Re-fits live as staff type.
+      // Must run AFTER canvas.appendChild(cap) — it measures a laid-out element.
+      if (capDef.autoShrink && capDef.hMm) {
+        const capH       = capDef.hMm * SCALE;
+        const baseSizePt = sizePt;
+        const minSizePt  = baseSizePt * 0.5;
+        // Apply a size + its PROPORTIONAL leading. line-height was baked as a fixed px
+        // value from the base size, so shrinking the font alone left the leading too
+        // loose and the box still overflowed. Rotated captions are vertically centred
+        // on capCY using one line's height, which also moves when the size changes.
+        const applySize = (s) => {
+          cap.style.fontSize   = (s * SCALE * 25.4 / 72).toFixed(1) + 'px';
+          cap.style.lineHeight = (s * lineSpacing * SCALE * 25.4 / 72).toFixed(1) + 'px';
+          if (capDef.rotate) {
+            cap.style.top = (capCY - (s * (4 / 3) * lineSpacing) / 2) + 'px';
+          }
+        };
+        const fitCoverCaption = () => {
+          let s = baseSizePt;
+          applySize(s);
+          while (cap.scrollHeight > capH && s > minSizePt) {
+            s -= 1;
+            applySize(s);
+          }
+        };
+        fitCoverCaption();
+        cap.addEventListener('input', fitCoverCaption);
+      }
     });
 
     pagesWrap.appendChild(canvas);
@@ -2398,8 +2434,13 @@
     const typeSelect = document.createElement('select');
     typeSelect.className = 'spread-type-select';
     typeSelect.title = 'Change spread type';
-    const standardTypes = ['SP1','SP2','SP3','SP4','SP5','SP6'];
-    const fpTypes = ['FP1','FP2','FP3','FP4','FP5'];
+    // Derived from the active template's own spread keys (not a Scribble-shaped
+    // hardcode) so SP7+ (Joyride) are selectable and a template with no FP1–FP5
+    // (Joyride's only FP is FPintro) doesn't show bogus FP options.
+    const standardTypes = Object.keys(getActiveTemplateData().spreads)
+      .filter(id => /^SP[1-9]\d*$/.test(id))
+      .sort((a, b) => parseInt(a.slice(2), 10) - parseInt(b.slice(2), 10));
+    const fpTypes = Object.keys(getActiveTemplateData().spreads).filter(id => /^FP\d+$/.test(id));
     [...standardTypes, ...fpTypes].forEach(id => {
       const opt = document.createElement('option');
       opt.value = id;
@@ -2627,6 +2668,10 @@
           slotEl.style.width  = (slotDef.w * SCALE) + 'px';
           slotEl.style.height = (slotDef.h * SCALE) + 'px';
         }
+        // M pages (Joyride SP4/SP8 right): the vertical frame overlaps the horizontal
+        // one and must render ON TOP (data-driven, not a CSV column — see joyride-data.js).
+        // Default z-index (1, from .photo-slot) is unchanged when zIndex is absent.
+        if (slotDef.zIndex) slotEl.style.zIndex = slotDef.zIndex;
         slotEl.dataset.slot = slotDef.slot;
         if (slotDef.heartClip) {
           // Heart path: use template-specific path if defined, otherwise Scribble's default.
@@ -2899,6 +2944,96 @@
         }
       });
 
+      // ── Text panel TITLE (Joyride Intro's Lora heading, sits above the standard
+      //    textPanel body — the only template with two text boxes on one FP page) ──
+      if (variant.textPanelTitle?.caption?.allowed) {
+        const savedTitle = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanelTitle'] || '';
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'slot-caption fp-text-panel';
+        titleEl.contentEditable = 'true';
+        titleEl.spellcheck = false;
+
+        const ttCap = variant.textPanelTitle.caption;
+        const titleWidth  = ttCap.wMm * SCALE;
+        const titleHeight = ttCap.hMm * SCALE;
+        const titleLeft   = (ttCap.xMm - BLEED_MM) * SCALE - titleWidth  / 2;
+        const titleTop    = (ttCap.yMm - BLEED_MM) * SCALE - titleHeight / 2;
+
+        titleEl.style.left = titleLeft + 'px';
+        titleEl.style.width = titleWidth + 'px';
+        const _ttAlignOv = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.['textPanelTitle']?.align;
+        titleEl.style.textAlign = _ttAlignOv !== undefined ? _ttAlignOv : (ttCap.halign || 'center');
+
+        if (ttCap.valign === 'bottom') {
+          const CANVAS_PX = 200 * SCALE;
+          const titleBottomEdge = (ttCap.yMm - BLEED_MM) * SCALE + titleHeight / 2;
+          titleEl.style.bottom    = (CANVAS_PX - titleBottomEdge) + 'px';
+          titleEl.style.maxHeight = titleHeight + 'px';
+        } else {
+          titleEl.style.top    = titleTop    + 'px';
+          titleEl.style.height = titleHeight + 'px';
+          if (ttCap.valign === 'center') {
+            titleEl.style.display        = 'flex';
+            titleEl.style.flexDirection  = 'column';
+            titleEl.style.justifyContent = 'center';
+          }
+        }
+
+        // Typography: CSV defaults, then any spreadCaptionStyles override (same toolbar
+        // path as textPanel, keyed by the 'textPanelTitle' slotIdx).
+        const _ttOv     = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.['textPanelTitle'] || {};
+        const _ttFont   = _ttOv.font          !== undefined ? _ttOv.font          : ttCap.font;
+        const _ttWeight = _ttOv.weight        !== undefined ? _ttOv.weight        : (ttCap.style === 'bold' ? 700 : ttCap.style === 'semibold' ? 600 : ttCap.style === 'medium' ? 500 : 400);
+        const _ttItalic = _ttOv.italic        !== undefined ? _ttOv.italic        : (ttCap.style === 'italic');
+        const _ttSizePt = _ttOv.sizePt        !== undefined ? _ttOv.sizePt        : ttCap.sizePt;
+        const _ttLineS  = _ttOv.lineSpacing   !== undefined ? _ttOv.lineSpacing   : ttCap.lineSpacing;
+        const _ttLetS   = _ttOv.letterSpacing !== undefined ? _ttOv.letterSpacing : ttCap.letterSpacing;
+        if (_ttFont)                 titleEl.style.fontFamily    = `'${_ttFont}', var(--sans)`;
+        if (_ttSizePt)                titleEl.style.fontSize      = (_ttSizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
+        if (_ttLineS !== undefined)  titleEl.style.lineHeight    = _ttLineS;
+        if (_ttLetS  !== undefined)  titleEl.style.letterSpacing = _ttLetS + 'em';
+        titleEl.style.fontWeight = _ttWeight;
+        titleEl.style.fontStyle  = _ttItalic ? 'italic' : 'normal';
+        if (ttCap.color) titleEl.style.color = ttCap.color;
+
+        const titleToPlain = () => titleEl.innerHTML
+          .replace(/<div>/gi, '\n').replace(/<\/div>/gi, '')
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .trim();
+        const plainToTitle = (text) => { titleEl.innerHTML = text.replace(/\n/g, '<br>'); };
+
+        if (savedTitle) plainToTitle(applyTypographicRules(savedTitle));
+
+        const saveTitleCaption = () => {
+          const raw = titleToPlain();
+          if (!window.bookCaptions) window.bookCaptions = {};
+          if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+          if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+          window.bookCaptions[spreadIndex][side]['textPanelTitle'] = raw;
+          return raw;
+        };
+
+        titleEl.addEventListener('focus', () => {
+          const stored = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanelTitle'] || '';
+          plainToTitle(stored);
+          showSpreadCaptionToolbar(spreadIndex, side, 'textPanelTitle', ttCap, titleEl);
+        });
+        titleEl.addEventListener('blur', () => {
+          const raw = saveTitleCaption();
+          plainToTitle(applyTypographicRules(raw));
+        });
+        titleEl.addEventListener('mousedown', e => e.stopPropagation());
+        titleEl.addEventListener('keydown', e => {
+          if (e.key === 'Escape') { e.preventDefault(); titleEl.blur(); return; }
+          if (e.key === 'Enter') { e.preventDefault(); document.execCommand('insertLineBreak'); }
+        });
+
+        canvas.appendChild(titleEl);
+      }
+
       // ── Text panel (FP1 Birthday wishes / FP2 Funny words left pages) ──
       if (variant.textPanel?.caption?.allowed) {
         // This page shows an editable caption box → its text is required to be filled.
@@ -2973,6 +3108,11 @@
         if (_tpLetS  !== undefined)           panelEl.style.letterSpacing = _tpLetS + 'em';
         panelEl.style.fontWeight = _tpWeight;
         panelEl.style.fontStyle  = _tpItalic ? 'italic' : 'normal';
+        // Text panels never applied their own CSV colour — they inherited the
+        // .slot-caption CSS default, so a template's captions_color was silently
+        // ignored on every FP text panel (Joyride's red route text, Wander's navy).
+        // Cover captions already read capDef.color; do the same here.
+        if (tpCap.color) panelEl.style.color = tpCap.color;
         // Line breaks handled via <br> tags (innerHTML round-trip) — pre-line not needed
 
         const formatFunnyWords = (text) => {
@@ -3102,8 +3242,12 @@
     const remaining     = totalSpreads - 1;
     const standardCount = remaining - bodyFPs.length;
 
-    // Cycle SP1–SP6 for however many standard slots are needed
-    const stdIds = ['SP1','SP2','SP3','SP4','SP5','SP6'];
+    // Cycle the template's own standard spreads (SP1+, numeric order) for however
+    // many standard slots are needed — was hardcoded to SP1–SP6, which left SP7–SP9
+    // (Joyride) unreachable.
+    const stdIds = Object.keys(_data?.spreads || {})
+      .filter(id => /^SP[1-9]\d*$/.test(id))
+      .sort((a, b) => parseInt(a.slice(2), 10) - parseInt(b.slice(2), 10));
     const standards = [];
     for (let i = 0; i < standardCount; i++) {
       standards.push(stdIds[i % stdIds.length]);
@@ -3226,10 +3370,38 @@
           if (idxs.length > bestCount) { bestOrient = o; bestCount = idxs.length; }
         });
 
+        // Joyride's M pages (SP4/SP8 right) have no H/V — resolveVariant falls
+        // straight to 'default' with no warning — and mix a fixed vertical + fixed
+        // horizontal frame on the SAME page (variant.mixed:true). A same-orientation
+        // GROUP pick (the standard multi-slot rule below) can't serve that: it would
+        // fill both slots with whichever orientation is more plentiful. Instead match
+        // each slot's own fixed orient independently against this spread's window,
+        // falling back to cropping in whatever's left (+ a console warning) exactly
+        // like the single-slot mismatch case below.
+        const variantKeyPeek = resolveVariant(pageDef, bestOrient || 'horizontal');
+        const variantPeek = pageDef[variantKeyPeek];
+        if (variantPeek?.mixed) {
+          assignment[side] = (variantPeek.slots || []).map(s => {
+            if (s.pool === 'special' || s.pool === 'artwork') return null;
+            const wantOrient = s.orient === 'vertical' ? 'vertical' : 'horizontal';
+            let li = (byOrient[wantOrient] || []).find(idx => !usedLocal.has(idx));
+            if (li === undefined) {
+              li = window_.map((_, idx) => idx).find(idx => !usedLocal.has(idx));
+              if (li !== undefined) {
+                console.warn(`⚠ Spread ${spreadIndex} ${side}: no ${wantOrient} photo available for the M-page slot — cropping into frame instead.`);
+              }
+            }
+            if (li === undefined) return null;
+            usedLocal.add(li);
+            return validIndices[ptrStart + li];
+          });
+          return;
+        }
+
         const chosen = (byOrient[bestOrient] || []).slice(0, slots);
         chosen.forEach(li => usedLocal.add(li));
 
-        const variantKey = resolveVariant(pageDef, bestOrient || 'horizontal');
+        const variantKey = variantKeyPeek;
         const preferredKey = (bestOrient || 'horizontal') === 'vertical' ? 'V' : 'H';
         if (variantKey !== preferredKey) {
           console.warn(`⚠ Spread ${spreadIndex} ${side}: ${bestOrient} photos placed in ${variantKey}-variant slot (no ${preferredKey} variant available)`);
@@ -3788,9 +3960,20 @@
     const panel = document.getElementById('special-panel');
     const data = getActiveTemplateData();
     // Cover zone shown only when the active template has a cover photo slot
-    // (Scribble does; Wander's cover is free-text only).
-    const hasCoverPhoto = (data.cover?.slots || []).length > 0;
-    document.getElementById('special-zone-cover').style.display = hasCoverPhoto ? 'flex' : 'none';
+    // (Scribble does; Wander's cover is free-text only). The upload cap follows the
+    // template's OWN slot count — Joyride takes four (top/left/right/bottom), every
+    // other template one — rather than the markup's hardcoded max of 1.
+    const coverSlotCount = (data.cover?.slots || []).length;
+    const hasCoverPhoto  = coverSlotCount > 0;
+    const coverZone = document.getElementById('special-zone-cover');
+    coverZone.style.display = hasCoverPhoto ? 'flex' : 'none';
+    if (hasCoverPhoto) {
+      const btn = coverZone.querySelector('.special-upload-btn');
+      btn.dataset.max   = coverSlotCount;
+      btn.textContent   = coverSlotCount > 1 ? `+ Upload ${coverSlotCount} photos` : '+ Upload photo';
+      coverZone.querySelector('.special-zone-label').textContent = coverSlotCount > 1 ? 'Cover photos' : 'Cover photo';
+      coverZone.querySelector('[data-fp-input="cover"]').multiple = coverSlotCount > 1;
+    }
     // Every functional spread that takes a photo: toggle its zone by its checkbox.
     let anyFpChecked = false;
     Object.values(data.spreads || {}).forEach(s => {
@@ -3915,18 +4098,32 @@
      Generates the functional-page checkboxes from the template's functional
      spreads (skipping map pages, not yet wired). The cover-photo zone visibility
      is handled in updateSpecialPanel based on whether the cover has a photo slot. */
+  // Local mode has no order behind it, so a map page has no region/route to draw.
+  // Seed a demo selection the first time one is ticked, purely so staff can eyeball
+  // the page in Local mode. Order mode always overwrites this from the real order
+  // (loadOrderIntoEngine), so it can never leak into a customer's book.
+  const LOCAL_MAP_DEMO = {
+    region: 'EU',
+    countries: ['Austria', 'Italy', 'France'],
+    itinerary: 'Vienna → Milan → Paris',
+  };
+
   function buildLocalTemplateUI() {
     const data  = getActiveTemplateData();
     const group = document.getElementById('fp-group');
     group.innerHTML = '';
+    // Map pages ARE listed here now. They used to be filtered out (they carry no
+    // local checkbox and only enter the book from an order), which meant a travel
+    // template's signature page could not be previewed in Local mode at all.
     const fps = Object.values(data.spreads || {})
-      .filter(s => s.type === 'functional' && !s.mapPage);
+      .filter(s => s.type === 'functional');
     fps.forEach(fp => {
       const label = document.createElement('label');
       label.className = 'fp-checkbox-item';
       const cb = document.createElement('input');
       cb.type = 'checkbox'; cb.name = 'fp'; cb.value = fp.id;
       cb.addEventListener('change', () => {
+        if (cb.checked && fp.mapPage && !window._wanderMap) window._wanderMap = LOCAL_MAP_DEMO;
         updateSpecialPanel();
         updatePhotoHint();
         if (window.photoPool.length) renderBook();
@@ -3935,7 +4132,7 @@
       label.appendChild(document.createTextNode(' ' + (fp.label || fp.id)));
       group.appendChild(label);
     });
-    // Hide the whole group when the template has no (non-map) functional pages.
+    // Hide the whole group when the template has no functional pages.
     document.getElementById('fp-config-group').style.display = fps.length ? '' : 'none';
   }
 
