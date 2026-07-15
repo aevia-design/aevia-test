@@ -57,8 +57,11 @@ function buildStateFromOrder(order, storedNames) {
       specialPhotos[key] = basenames.length === 1 ? basenames[0] : basenames;
     }
   }
-  // Cover photo — store as specialPhotos.cover (matches how export-pdf.js reads it)
-  if (storedNames.cover) {
+  // Cover photo — store as specialPhotos.cover (matches how export-pdf.js reads it).
+  // Joyride's cover is a slot-ordered array of 4 paths; other templates a single path.
+  if (Array.isArray(storedNames.cover)) {
+    specialPhotos.cover = storedNames.cover.map(p => path.basename(p));
+  } else if (storedNames.cover) {
     specialPhotos.cover = path.basename(storedNames.cover);
   }
 
@@ -116,7 +119,8 @@ async function fetchAllPhotos(storedNames) {
 
   // Collect every path to fetch (cover + specials + the whole uploaded pool).
   const toFetch = [];
-  if (storedNames.cover) toFetch.push(storedNames.cover);
+  if (Array.isArray(storedNames.cover)) toFetch.push(...storedNames.cover.filter(Boolean));
+  else if (storedNames.cover) toFetch.push(storedNames.cover);
   for (const paths of Object.values(storedNames.special || {})) {
     for (const p of (Array.isArray(paths) ? paths : [paths])) {
       if (p) toFetch.push(p);

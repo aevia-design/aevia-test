@@ -191,15 +191,21 @@ exports.getOrder = functions
       const signedUrls = { cover: null, special: {}, pool: [] };
       const derivativeUrls = { cover: null, special: {}, pool: [] };
 
-      // Originals (for PDF export — chunk-023 does not modify this path)
-      signedUrls.cover = await signedReadUrl(manifest.cover);
+      // Originals (for PDF export — chunk-023 does not modify this path).
+      // manifest.cover is a string (single cover) or an array (Joyride's 4-slot
+      // cover) — sign each so the shape carries through to the engines unchanged.
+      signedUrls.cover = Array.isArray(manifest.cover)
+        ? await Promise.all(manifest.cover.map(p => signedReadUrl(p)))
+        : await signedReadUrl(manifest.cover);
       for (const [slug, paths] of Object.entries(manifest.special || {})) {
         signedUrls.special[slug] = await Promise.all((Array.isArray(paths) ? paths : [paths]).map(p => signedReadUrl(p)));
       }
       signedUrls.pool = await Promise.all((manifest.pool || []).map(p => signedReadUrl(p)));
 
       // Derivatives (for engine rendering — chunk-023, with fallback to originals)
-      derivativeUrls.cover = await signedDerivativeUrl(manifest.cover);
+      derivativeUrls.cover = Array.isArray(manifest.cover)
+        ? await Promise.all(manifest.cover.map(p => signedDerivativeUrl(p)))
+        : await signedDerivativeUrl(manifest.cover);
       for (const [slug, paths] of Object.entries(manifest.special || {})) {
         derivativeUrls.special[slug] = await Promise.all((Array.isArray(paths) ? paths : [paths]).map(p => signedDerivativeUrl(p)));
       }

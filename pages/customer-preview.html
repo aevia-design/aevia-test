@@ -1350,9 +1350,13 @@
       }
     }
 
-    // Cover → specialPhotos.cover (mirrors staff engine structure)
-    const coverPhoto = await fetchPhoto(signedUrls.cover, _baseName(storedNames?.cover) || 'cover');
-    if (coverPhoto) window.specialPhotos.cover = [coverPhoto];
+    // Cover → specialPhotos.cover (mirrors staff engine structure). Joyride's cover
+    // is a slot-ordered array of 4 URLs; other templates send a single URL string.
+    const coverUrls  = Array.isArray(signedUrls.cover)   ? signedUrls.cover   : [signedUrls.cover];
+    const coverNames = Array.isArray(storedNames?.cover) ? storedNames.cover  : [storedNames?.cover];
+    const coverPhotos = await Promise.all(coverUrls.map((u, i) =>
+      fetchPhoto(u, _baseName(coverNames[i]) || `cover-${i}`)));
+    window.specialPhotos.cover = coverPhotos.filter(Boolean);
 
     // Special (FP) photos → specialPhotos[FPX] (mirrors staff engine structure)
     for (const [slug, urls] of Object.entries(signedUrls.special || {})) {
@@ -1600,6 +1604,30 @@
     }
   }
 
+  // Auto-shrink a cover caption to fit its fixed hMm box (mirrors template-engine.html's
+  // fitCoverCaption). Only Joyride's cover captions set autoShrink, so every other
+  // template is untouched. Must run AFTER the caption is in the DOM (measures scrollHeight).
+  function autoShrinkCoverCaption(cap, capDef) {
+    if (!capDef.autoShrink || !capDef.hMm) return;
+    const COVER_BLEED_MM = 18;
+    const ov = window.coverCaptionStyles?.[capDef.key] || {};
+    const baseSizePt  = ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt;
+    const lineSpacing = ov.lineSpacing !== undefined ? ov.lineSpacing : 1.1;
+    const capH   = capDef.hMm * SCALE;
+    const capCY  = (capDef.yMm - COVER_BLEED_MM) * SCALE;
+    const minSizePt = baseSizePt * 0.5;
+    // Shrink the font AND its proportional leading together; rotated captions are
+    // centred on capCY using one line's height, which moves as the size changes.
+    const applySize = (s) => {
+      cap.style.fontSize   = (s * SCALE * 25.4 / 72).toFixed(1) + 'px';
+      cap.style.lineHeight = (s * lineSpacing * SCALE * 25.4 / 72).toFixed(1) + 'px';
+      if (capDef.rotate) cap.style.top = (capCY - (s * (4 / 3) * lineSpacing) / 2) + 'px';
+    };
+    let s = baseSizePt;
+    applySize(s);
+    while (cap.scrollHeight > capH && s > minSizePt) { s -= 1; applySize(s); }
+  }
+
   // Port of the staff engine's renderCover (editable captions like the rest of the book).
   function renderCover() {
     const coverDef = getActiveTemplateData().cover;
@@ -1652,9 +1680,10 @@
     // Photo slot (center-based coords, with-bleed). Some templates (e.g. Wander)
     // have a free-text cover with no photo slot (cover.slots === []) — skip it then,
     // mirroring template-engine.html. Without this guard renderCover throws.
-    const slotDef = coverDef.slots[0];
-    if (slotDef) {
-      const COVER_BLEED_MM = 18;  // cover CSV coords include 18mm bleed on each side
+    // Most templates have one cover photo; Wander's is free-text (slots === []);
+    // Joyride has four (top/left/right/bottom). Loop every slot — mirrors template-engine.html.
+    const COVER_BLEED_MM = 18;  // cover CSV coords include 18mm bleed on each side
+    coverDef.slots.forEach((slotDef, slotIdx) => {
       const slotW = slotDef.wMm * SCALE;
       const slotH = slotDef.hMm * SCALE;
       const slotL = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2;
@@ -1692,7 +1721,7 @@
         // clipped photo stays BELOW the SVG (z-index 1) and shows through, butterflies on top.
       }
 
-      const coverPhoto = (window.specialPhotos.cover || [])[0];
+      const coverPhoto = (window.specialPhotos.cover || [])[slotIdx];
       if (coverPhoto) {
         const img = document.createElement('img');
         img.className = 'slot-photo';
@@ -1712,11 +1741,13 @@
       } else {
         const ph = document.createElement('div');
         ph.className = 'slot-placeholder';
-        ph.textContent = 'Cover photo';
+        // Per-slot label (Joyride's top/left/right/bottom); generic for single covers.
+        const posLabel = (slotDef.key || '').replace(/^cover/i, '');
+        ph.textContent = posLabel ? `${posLabel} cover photo` : 'Cover photo';
         slot.appendChild(ph);
       }
       canvas.appendChild(slot);
-    }
+    });
 
     // Captions — editable, styled identically to the staff engine. Coords are
     // with-bleed; applyCoverCaptionLayout converts to canvas px.
@@ -1743,6 +1774,9 @@
       });
 
       canvas.appendChild(cap);
+      // Fit the caption to its fixed box now it's laid out, and re-fit as the customer types.
+      autoShrinkCoverCaption(cap, capDef);
+      cap.addEventListener('input', () => autoShrinkCoverCaption(cap, capDef));
     });
 
     const scaleWrap = document.createElement('div');
@@ -2133,6 +2167,9 @@
           slotEl.style.width = (slotDef.w * SCALE) + 'px';
           slotEl.style.height = (slotDef.h * SCALE) + 'px';
         }
+        // M pages (Joyride SP4/SP8 right): the vertical frame overlaps the horizontal
+        // one and must render ON TOP. Data-driven zIndex, mirrors template-engine.html.
+        if (slotDef.zIndex) slotEl.style.zIndex = slotDef.zIndex;
         if (slotDef.heartClip) {
           const _heartPath = getActiveTemplateData().heartClipPath ||
             'M315.61,569.29 c189.41,-32.30,353.76,-502.10,161.52,-504.13 -75.98,-.82,-144.62,37.88,-166.39,37.88 -29.30,0,-56.97,-92.27,-165.83,-47.06 -200.49,83.33,48.24,534.15,170.70,513.31Z';
@@ -2339,6 +2376,92 @@
       });
 
       // Text panel for FPs — mirrors staff engine (funnyWords + valign + pt/px sizing)
+      // ── Text panel TITLE (Joyride Intro's Lora heading above the body) — mirrors
+      //    template-engine.html; the only template with two text boxes on one FP page. ──
+      if (variant.textPanelTitle?.caption?.allowed) {
+        const ttCap = variant.textPanelTitle.caption;
+        const titleWidth  = ttCap.wMm * SCALE;
+        const titleHeight = ttCap.hMm * SCALE;
+        const titleLeft   = (ttCap.xMm - BLEED_MM) * SCALE - titleWidth  / 2;
+        const titleTop    = (ttCap.yMm - BLEED_MM) * SCALE - titleHeight / 2;
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'slot-caption fp-text-panel';
+        titleEl.contentEditable = 'true';
+        titleEl.spellcheck = false;
+        titleEl.style.left  = titleLeft  + 'px';
+        titleEl.style.width = titleWidth + 'px';
+        const _ttAlignOv = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.['textPanelTitle']?.align;
+        titleEl.style.textAlign = _ttAlignOv !== undefined ? _ttAlignOv : (ttCap.halign || 'center');
+
+        if (ttCap.valign === 'bottom') {
+          const CANVAS_PX = 200 * SCALE;
+          const titleBottomEdge = (ttCap.yMm - BLEED_MM) * SCALE + titleHeight / 2;
+          titleEl.style.bottom    = (CANVAS_PX - titleBottomEdge) + 'px';
+          titleEl.style.maxHeight = titleHeight + 'px';
+        } else {
+          titleEl.style.top    = titleTop    + 'px';
+          titleEl.style.height = titleHeight + 'px';
+          if (ttCap.valign === 'center') {
+            titleEl.style.display        = 'flex';
+            titleEl.style.flexDirection  = 'column';
+            titleEl.style.justifyContent = 'center';
+          }
+        }
+
+        const _ttOv     = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.['textPanelTitle'] || {};
+        const _ttFont   = _ttOv.font          !== undefined ? _ttOv.font          : ttCap.font;
+        const _ttWeight = _ttOv.weight        !== undefined ? _ttOv.weight        : (ttCap.style === 'bold' ? 700 : ttCap.style === 'semibold' ? 600 : ttCap.style === 'medium' ? 500 : 400);
+        const _ttItalic = _ttOv.italic        !== undefined ? _ttOv.italic        : (ttCap.style === 'italic');
+        const _ttSizePt = _ttOv.sizePt        !== undefined ? _ttOv.sizePt        : ttCap.sizePt;
+        const _ttLineS  = _ttOv.lineSpacing   !== undefined ? _ttOv.lineSpacing   : ttCap.lineSpacing;
+        const _ttLetS   = _ttOv.letterSpacing !== undefined ? _ttOv.letterSpacing : ttCap.letterSpacing;
+        if (_ttFont)                titleEl.style.fontFamily    = `'${_ttFont}', var(--sans)`;
+        if (_ttSizePt)              titleEl.style.fontSize      = (_ttSizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
+        if (_ttLineS !== undefined) titleEl.style.lineHeight    = _ttLineS;
+        if (_ttLetS  !== undefined) titleEl.style.letterSpacing = _ttLetS + 'em';
+        titleEl.style.fontWeight = _ttWeight;
+        titleEl.style.fontStyle  = _ttItalic ? 'italic' : 'normal';
+        if (ttCap.color) titleEl.style.color = ttCap.color;
+
+        const titleToPlain = () => titleEl.innerHTML
+          .replace(/<div>/gi, '\n').replace(/<\/div>/gi, '')
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .trim();
+        const plainToTitle = (text) => { titleEl.innerHTML = text.replace(/\n/g, '<br>'); };
+
+        const savedTitle = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanelTitle'] || '';
+        if (savedTitle) plainToTitle(applyTypographicRules(savedTitle));
+
+        const saveTitleCaption = () => {
+          const raw = titleToPlain();
+          if (!window.bookCaptions) window.bookCaptions = {};
+          if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+          if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+          window.bookCaptions[spreadIndex][side]['textPanelTitle'] = raw;
+          return raw;
+        };
+
+        titleEl.addEventListener('focus', () => {
+          const stored = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanelTitle'] || '';
+          plainToTitle(stored);
+          showCaptionToolbar(spreadIndex, side, 'textPanelTitle', ttCap, titleEl);
+        });
+        titleEl.addEventListener('blur', () => {
+          const raw = saveTitleCaption();
+          plainToTitle(applyTypographicRules(raw));
+        });
+        titleEl.addEventListener('mousedown', e => e.stopPropagation());
+        titleEl.addEventListener('keydown', e => {
+          if (e.key === 'Escape') { e.preventDefault(); titleEl.blur(); return; }
+          if (e.key === 'Enter') { e.preventDefault(); document.execCommand('insertLineBreak'); }
+        });
+
+        canvas.appendChild(titleEl);
+      }
+
       if (variant.textPanel?.caption?.allowed) {
         // This page shows an editable caption box → its text is required to be filled.
         (window._requiredCaptions = window._requiredCaptions || []).push({ spread: spreadIndex, side });
@@ -2395,6 +2518,10 @@
         if (_tpLetS   !== undefined)         panelEl.style.letterSpacing = _tpLetS + 'em';
         panelEl.style.fontWeight = _tpWeight;
         panelEl.style.fontStyle  = _tpItalic ? 'italic' : 'normal';
+        // Apply the CSV caption colour (mirrors template-engine.html) — without this the
+        // panel inherited the .slot-caption default, so Joyride's red intro/itinerary body
+        // and Wander's navy were silently ignored on the customer side only.
+        if (tpCap.color) panelEl.style.color = tpCap.color;
 
         const formatFunnyWords = (text) => {
           if (!isFunnyWords) return text;
@@ -2652,6 +2779,8 @@
       if (!window.coverCaptionStyles[key]) window.coverCaptionStyles[key] = {};
       Object.assign(window.coverCaptionStyles[key], patch);
       applyCoverCaptionLayout(_tbCapEl, _tbCoverCtx.capDef);
+      // A style change (e.g. a larger size) resets the box layout — re-fit if autoShrink.
+      autoShrinkCoverCaption(_tbCapEl, _tbCoverCtx.capDef);
       return;
     }
     if (!_tbSpreadCtx || !_tbCapEl) return;

@@ -4524,9 +4524,13 @@
     const derivUrls = order.derivativeUrls || {};
     const origUrls  = order.signedUrls  || {};
 
-    // Merge: use derivative if present, else fallback to original
+    // Merge: use derivative if present, else fallback to original.
+    // cover is a single URL (most templates) or an array (Joyride's 4-slot cover);
+    // merge per-index when either side is an array so slot order is preserved.
     const urls = {
-      cover: derivUrls.cover || origUrls.cover || null,
+      cover: (Array.isArray(derivUrls.cover) || Array.isArray(origUrls.cover))
+        ? (origUrls.cover || []).map((o, i) => (derivUrls.cover || [])[i] || o)
+        : (derivUrls.cover || origUrls.cover || null),
       special: {},
       pool: []
     };
@@ -4549,8 +4553,16 @@
     // Fetch all special photos in parallel, then process sequentially (HEIC WASM not thread-safe)
     const specialFetchTasks = [];
     if (urls.cover) {
-      const filename = storedBasename(names.cover) || 'cover.jpg';
-      specialFetchTasks.push({ type: 'cover', slug: 'cover', url: urls.cover, filename });
+      // Multi-cover (Joyride): urls.cover / names.cover are slot-ordered arrays.
+      // Each pushes a cover task; the sequential loop below fills specialPhotos.cover
+      // in the same order, so slot 0..3 map to coverTop/Left/Right/Bottom.
+      const coverArr  = Array.isArray(urls.cover)  ? urls.cover  : [urls.cover];
+      const coverNames = Array.isArray(names.cover) ? names.cover : [names.cover];
+      coverArr.forEach((u, i) => {
+        if (!u) return;
+        const filename = storedBasename(coverNames[i]) || `cover-${i}.jpg`;
+        specialFetchTasks.push({ type: 'cover', slug: 'cover', url: u, filename });
+      });
     }
     for (const [slug, slugUrls] of Object.entries(urls.special || {})) {
       const slugNames = (names.special || {})[slug] || [];

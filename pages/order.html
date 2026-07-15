@@ -248,6 +248,7 @@
 <script src="../assets/Template_Newborn/newborn-data.js"></script>
 <script src="../assets/Template_Papercut/papercut-data.js"></script>
 <script src="../assets/Template_Tender/tender-data.js"></script>
+<script src="../assets/Template_Joyride/joyride-data.js"></script>
 <script src="../assets/js/map-render.js"></script>
 </head>
 <body>
@@ -545,6 +546,7 @@ const TEMPLATE_REGISTRY = {
   newborn:  () => window.NEWBORN_DATA,
   papercut: () => window.PAPERCUT_DATA,
   tender:   () => window.TENDER_DATA,
+  joyride:  () => window.JOYRIDE_DATA,
 };
 function templateData() {
   const key = (ORDER.template || '').toLowerCase();
@@ -575,9 +577,20 @@ ORDER.addons = addonNames.map((name, i) => ({
 // Upload state
 // ─────────────────────────────────────────────────────────────────
 let coverFile = null;
+const coverFiles = {};   // multi-cover templates (Joyride): { slotKey: File }
 const specialFiles = {}; // { slug: File }
 let mainFiles = [];      // File[]
 let uploadInFlight = false;
+
+// Cover-slot helpers. Most templates have exactly one cover photo (coverFile);
+// Joyride has four (coverTop/Left/Right/Bottom), keyed in coverFiles by slot.
+function coverSlots()  { return templateData()?.cover?.slots || []; }
+function isMultiCover() { return coverSlots().length > 1; }
+// "coverTop" → "Top". Used for the per-slot upload label + validation copy.
+function coverSlotLabel(slot) {
+  const k = (slot?.key || '').replace(/^cover/, '');
+  return k ? k.charAt(0).toUpperCase() + k.slice(1) : 'Cover';
+}
 
 // ─────────────────────────────────────────────────────────────────
 // Init
@@ -754,22 +767,44 @@ function renderCoverSection() {
 
   let html = '';
 
-  if (coverHasPhoto()) {
-    html += `
-      <div class="upload-label">Required</div>
-      <div class="upload-heading">Cover photo</div>
-      <div class="upload-hint">${coverPhotoHint(cover.slots[0])}</div>
-      <div class="drop-zone" id="dz-cover">
-        <input type="file" accept=".jpg,.jpeg,.png,.heic" onchange="handleCoverFile(this.files[0])" />
+  // Drop-zone + preview markup for one cover photo. `sfx` suffixes the element
+  // ids so a multi-cover template (Joyride) can have several on the page at once;
+  // the single-cover path passes '' and keeps the original ids untouched.
+  function coverDropZone(sfx, onchange) {
+    return `
+      <div class="drop-zone" id="dz-cover${sfx}">
+        <input type="file" accept=".jpg,.jpeg,.png,.heic" onchange="${onchange}" />
         <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <div class="dz-text"><strong>Choose photo</strong> or drag here</div>
         <div class="dz-formats">JPG · PNG · HEIC</div>
       </div>
-      <div class="single-preview" id="cover-preview">
-        <div class="single-preview-inner" id="cover-preview-inner"></div>
-        <div class="single-preview-name" id="cover-preview-name"></div>
+      <div class="single-preview" id="cover-preview${sfx}">
+        <div class="single-preview-inner" id="cover-preview-inner${sfx}"></div>
+        <div class="single-preview-name" id="cover-preview-name${sfx}"></div>
       </div>
-      <div class="cover-orientation-warn" id="cover-orientation-warn" style="display:none;"></div>`;
+      <div class="cover-orientation-warn" id="cover-orientation-warn${sfx}" style="display:none;"></div>`;
+  }
+
+  if (coverHasPhoto() && isMultiCover()) {
+    // Joyride: four square cover photos, one labelled zone per slot.
+    html += `
+      <div class="upload-label">Required</div>
+      <div class="upload-heading">Cover photos</div>
+      <div class="upload-hint">Four photos for the cover, one for each frame around the title.</div>`;
+    coverSlots().forEach(slot => {
+      const label = coverSlotLabel(slot);
+      html += `
+        <div style="margin-top:14px;">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">${label}</div>
+          ${coverDropZone(`-${slot.key}`, `handleCoverFileMulti('${slot.key}', this.files[0])`)}
+        </div>`;
+    });
+  } else if (coverHasPhoto()) {
+    html += `
+      <div class="upload-label">Required</div>
+      <div class="upload-heading">Cover photo</div>
+      <div class="upload-hint">${coverPhotoHint(cover.slots[0])}</div>
+      ${coverDropZone('', 'handleCoverFile(this.files[0])')}`;
   }
 
   if (captions.length) {
@@ -1418,8 +1453,15 @@ function prepareUploadSteps() {
 // declares a photo slot; captions are optional (so a captions-only cover, e.g.
 // Wander's album name, is always valid here).
 function validateCoverStep() {
-  if (coverHasPhoto() && !coverFile) {
-    return { ok: false, message: 'Please upload a cover photo before continuing.' };
+  if (coverHasPhoto()) {
+    if (isMultiCover()) {
+      const missing = coverSlots().find(s => !coverFiles[s.key]);
+      if (missing) {
+        return { ok: false, message: `Please upload the ${coverSlotLabel(missing).toLowerCase()} cover photo before continuing.` };
+      }
+    } else if (!coverFile) {
+      return { ok: false, message: 'Please upload a cover photo before continuing.' };
+    }
   }
   // Primary cover caption is required (customer can still refine it at preview).
   const caps = templateData()?.cover?.captions || [];
@@ -1526,25 +1568,51 @@ function validatePhotosStep() {
 // ─────────────────────────────────────────────────────────────────
 // File handling — cover
 // ─────────────────────────────────────────────────────────────────
+// Single-cover templates (all but Joyride): one file, original element ids.
 async function handleCoverFile(file) {
   if (!file) return;
   coverFile = file;
-  document.getElementById('dz-cover').style.display = 'none';
-  const warnEl = document.getElementById('cover-orientation-warn');
+  await renderCoverUpload(file, {
+    sfx: '',
+    slotOrient: templateData()?.cover?.slots?.[0]?.orientation,
+    onClear: () => { coverFile = null; },
+  });
+}
+
+// Joyride: one file per cover slot, keyed in coverFiles; ids suffixed by slot key.
+async function handleCoverFileMulti(key, file) {
+  if (!file) return;
+  coverFiles[key] = file;
+  const slot = coverSlots().find(s => s.key === key);
+  await renderCoverUpload(file, {
+    sfx: `-${key}`,
+    slotOrient: slot?.orientation,
+    onClear: () => { delete coverFiles[key]; },
+  });
+}
+
+// Shared preview/HEIC/low-res/orientation logic for one cover photo. Element ids
+// are `dz-cover${sfx}`, `cover-preview${sfx}`, etc. — sfx is '' for the single
+// cover and `-<slotKey>` for each Joyride slot. onClear resets the caller's state.
+async function renderCoverUpload(file, opts) {
+  const sfx = opts.sfx || '';
+  document.getElementById(`dz-cover${sfx}`).style.display = 'none';
+  const warnEl = document.getElementById(`cover-orientation-warn${sfx}`);
   if (warnEl) { warnEl.style.display = 'none'; warnEl.textContent = ''; }
 
-  const preview = document.getElementById('cover-preview');
-  const inner   = document.getElementById('cover-preview-inner');
+  const preview = document.getElementById(`cover-preview${sfx}`);
+  const inner   = document.getElementById(`cover-preview-inner${sfx}`);
+  const nameEl  = document.getElementById(`cover-preview-name${sfx}`);
   inner.innerHTML = '';
 
   const removeBtn = document.createElement('button');
   removeBtn.className = 'single-preview-remove';
   removeBtn.innerHTML = '×';
   removeBtn.onclick = () => {
-    coverFile = null;
+    opts.onClear();
     preview.style.display = 'none';
     if (warnEl) { warnEl.style.display = 'none'; warnEl.textContent = ''; }
-    document.getElementById('dz-cover').style.display = '';
+    document.getElementById(`dz-cover${sfx}`).style.display = '';
   };
 
   if (isImage(file)) {
@@ -1562,7 +1630,7 @@ async function handleCoverFile(file) {
           <span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;text-align:center;">Preview unavailable<br/>your photo is still included</span>
         </div>`;
         inner.appendChild(removeBtn);
-        document.getElementById('cover-preview-name').textContent = file.name;
+        nameEl.textContent = file.name;
         preview.style.display = 'block';
         return;
       }
@@ -1588,8 +1656,7 @@ async function handleCoverFile(file) {
       inner.appendChild(badge);
 
       // Non-blocking orientation nudge against the cover slot's declared shape.
-      const slotOrient = templateData()?.cover?.slots?.[0]?.orientation;
-      const msg = coverOrientationWarning(slotOrient, checker.naturalWidth, checker.naturalHeight);
+      const msg = coverOrientationWarning(opts.slotOrient, checker.naturalWidth, checker.naturalHeight);
       file._orientationMismatch = !!msg;
       if (warnEl && msg) {
         warnEl.innerHTML = `<span class="warn-ico">⚠</span><span>${msg}</span>`;
@@ -1606,7 +1673,7 @@ async function handleCoverFile(file) {
     inner.appendChild(removeBtn);
   }
 
-  document.getElementById('cover-preview-name').textContent = file.name;
+  nameEl.textContent = file.name;
   preview.style.display = 'block';
 }
 
@@ -1983,6 +2050,21 @@ function initDragDrop() {
       }
     });
   });
+
+  // Joyride: one drop zone per cover slot (dz-cover-<slotKey>).
+  if (isMultiCover()) {
+    coverSlots().forEach(slot => {
+      const el = document.getElementById(`dz-cover-${slot.key}`);
+      if (!el) return;
+      el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+      el.addEventListener('dragleave', ()  => el.classList.remove('drag-over'));
+      el.addEventListener('drop', e => {
+        e.preventDefault();
+        el.classList.remove('drag-over');
+        handleCoverFileMulti(slot.key, e.dataTransfer.files[0]);
+      });
+    });
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -2112,8 +2194,17 @@ async function submitOrder() {
   const fileObjects = [];
   const filesMeta   = [];
 
-  // Cover (only if this template uses a cover photo)
-  if (coverFile) {
+  // Cover (only if this template uses a cover photo). Multi-cover templates
+  // (Joyride) push one file per slot, tagged with slotIndex so the backend gives
+  // each a distinct GCS name (mirrors the multi-photo special-page pattern).
+  if (isMultiCover()) {
+    coverSlots().forEach((slot, i) => {
+      const f = coverFiles[slot.key];
+      if (!f) return;
+      fileObjects.push(f);
+      filesMeta.push({ name: f.name, type: mimeType(f), fileType: 'cover', slotIndex: i, slotKey: slot.key });
+    });
+  } else if (coverFile) {
     fileObjects.push(coverFile);
     filesMeta.push({ name: coverFile.name, type: mimeType(coverFile), fileType: 'cover' });
   }
@@ -2482,11 +2573,14 @@ function closeSpreadZoom() {
 // never flagged (those files never get _lowRes set).
 function collectSubmitWarnings() {
   const issues = [];
-  if (coverHasPhoto() && coverFile && coverFile._orientationMismatch)
+  const coverList = isMultiCover()
+    ? coverSlots().map(s => coverFiles[s.key]).filter(Boolean)
+    : (coverFile ? [coverFile] : []);
+  if (coverHasPhoto() && coverList.some(f => f._orientationMismatch))
     issues.push('Your cover photo is the wrong orientation for this template, so it will be cropped to fit.');
 
   let lowRes = 0;
-  if (coverFile && coverFile._lowRes) lowRes++;
+  coverList.forEach(f => { if (f && f._lowRes) lowRes++; });
   Object.values(specialFiles || {}).forEach(f => { if (f && f._lowRes) lowRes++; });
   (mainFiles || []).forEach(f => { if (f && f._lowRes) lowRes++; });
   if (lowRes > 0)

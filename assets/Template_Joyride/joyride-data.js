@@ -291,7 +291,7 @@ window.JOYRIDE_DATA = {
         introFields: true,
         heading: 'Your trip',
         fields: [
-          { key: 'place', label: 'Where was it',        placeholder: 'Milan' },
+          { key: 'place', label: 'Where you went',      placeholder: 'Milan' },
           { key: 'when',  label: 'When',                placeholder: 'July, 2026' },
           { key: 'line',  label: 'A line to remember it by', placeholder: 'Two days of sun, trains and gelato.' },
         ],

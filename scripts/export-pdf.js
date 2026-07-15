@@ -285,8 +285,10 @@ async function setupPhotoSource() {
   // Store the full order for later (used to fetch book-state.json from GCS)
   gcsOrder = orderData;
 
-  // Derive folderName from the first available storedName (e.g., cover or pool[0])
-  const firstPath = storedNames.cover || (Array.isArray(storedNames.pool) && storedNames.pool[0]) || Object.values(storedNames.special || {})?.[0]?.[0];
+  // Derive folderName from the first available storedName (e.g., cover or pool[0]).
+  // cover may be an array (Joyride) or a string — take the first element either way.
+  const coverFirst = Array.isArray(storedNames.cover) ? storedNames.cover[0] : storedNames.cover;
+  const firstPath = coverFirst || (Array.isArray(storedNames.pool) && storedNames.pool[0]) || Object.values(storedNames.special || {})?.[0]?.[0];
   if (firstPath) {
     folderName = firstPath.split('/')[0];
   }
@@ -298,7 +300,12 @@ async function setupPhotoSource() {
     if (gcsUrlByName.has(base)) console.warn(`  ⚠ Duplicate photo filename in manifest: ${base} — later entry wins`);
     gcsUrlByName.set(base, url);
   };
-  add(storedNames.cover, signedUrls.cover);
+  // cover: array (Joyride, 4 slots) or string — register each name→url pair.
+  if (Array.isArray(storedNames.cover)) {
+    storedNames.cover.forEach((p, i) => add(p, (signedUrls.cover || [])[i]));
+  } else {
+    add(storedNames.cover, signedUrls.cover);
+  }
   for (const slug of Object.keys(storedNames.special || {})) {
     const paths = storedNames.special[slug] || [];
     const urls  = (signedUrls.special || {})[slug] || [];
@@ -408,7 +415,12 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
   const composites = [];
 
   // ── Photo slots ─────────────────────────────────────────────────────────────
-  for (let i = 0; i < (slots || []).length; i++) {
+  // Composite in z-index order (default 1) so higher-zIndex slots draw LAST = on top.
+  // M pages (Joyride SP4/SP8 right) put the vertical frame (zIndex 2) over the
+  // horizontal one; every other template's slots share z-index 1 → original order.
+  const slotOrder = (slots || []).map((_, i) => i)
+    .sort((a, b) => (slots[a].zIndex || 1) - (slots[b].zIndex || 1));
+  for (const i of slotOrder) {
     const slot = slots[i];
     const sw = slotW(slot);
     const sh = slotH(slot);
@@ -819,6 +831,53 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     });
   }
 
+  // ── Text panel TITLE (Joyride Intro's Lora heading, above the body) ────────
+  // Mirrors the textPanel block below; the only template with two FP text boxes.
+  const titleText = stripHtml(sideCaps['textPanelTitle']);
+  if (pageDef.textPanelTitle?.caption?.allowed && titleText && titleText.trim()) {
+    const capDef = pageDef.textPanelTitle.caption;
+    const ov = scsOverrides['textPanelTitle'] || {};
+    const fontName = ov.font !== undefined ? ov.font : capDef.font;
+    const ovStyle  = ov.weight !== undefined
+      ? (ov.weight >= 600 ? (ov.weight >= 700 ? 'bold' : 'semibold') : ov.italic ? 'italic' : 'regular')
+      : (ov.italic ? 'italic' : capDef.style || 'regular');
+    const font = lookupFont(fontMap, fontName, ovStyle);
+    if (font) {
+      const sizePt        = (ov.sizePt !== undefined ? ov.sizePt : capDef.sizePt) || 16;
+      const lineSpacingPt = sizePt * ((ov.lineSpacing !== undefined ? ov.lineSpacing : capDef.lineSpacing) || 1.28);
+      const charSpacing   = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0
+        : ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
+      const boxWidthPt  = capDef.wMm * MM_TO_PT;
+      const boxHeightPt = capDef.hMm * MM_TO_PT;
+      const textXPt = (capDef.xMm - capDef.wMm / 2) * MM_TO_PT;
+      const textYPt = pageSizePt - (capDef.yMm + capDef.hMm / 2) * MM_TO_PT;
+      const lines = String(titleText).split('\n');
+      const wrappedLines = lines.flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : ['']);
+      const totalTextHeight = wrappedLines.length > 0
+        ? (wrappedLines.length * lineSpacingPt - (lineSpacingPt - sizePt))
+        : 0;
+      let yOffsetPt = 0;
+      if (capDef.valign === 'center') yOffsetPt = (boxHeightPt - totalTextHeight) / 2;
+      else if (capDef.valign === 'bottom') yOffsetPt = boxHeightPt - totalTextHeight;
+      const isLigTitle = LIGATURE_FONTS.has(fontName);
+      wrappedLines.forEach((line, li) => {
+        if (!line.trim()) return;
+        const textWidthPt = isLigTitle
+          ? measureNoLig(font, line, sizePt, charSpacing)
+          : font.widthOfTextAtSize(line, sizePt) + charSpacing * Math.max(0, line.length - 1);
+        const halign = capDef.halign || 'center';
+        const xPt = halign === 'left'  ? textXPt
+                  : halign === 'right' ? textXPt + boxWidthPt - textWidthPt
+                  :                      textXPt + (boxWidthPt - textWidthPt) / 2;
+        const lineTopPt = textYPt + boxHeightPt - yOffsetPt - li * lineSpacingPt;
+        const drawOpts = { x: xPt, y: lineTopPt - sizePt * 0.75, size: sizePt, font,
+                           color: resolveColor(capDef.color), characterSpacing: charSpacing };
+        if (isLigTitle) drawTextNoLig(pg, line, drawOpts);
+        else            pg.drawText(line, drawOpts);
+      });
+    }
+  }
+
   // ── Text panel caption (FP spreads) ───────────────────────────────────────
   const panelText = stripHtml(sideCaps['textPanel']);
   if (textPanel?.caption?.allowed && panelText && panelText.trim()) {
@@ -901,8 +960,10 @@ const COVER_SVG_BLEED_UNITS = COVER_BLEED_MM * 72 / 25.4;  // ~51.024
 
 // Render the full cover spread as a PNG buffer.
 // coverDef = DATA.cover; coverPhoto = filename string; coverCaptions = { year, name, spineName, spineYear }
-async function renderCoverImage(coverDef, coverPhotoName, heartCrop = {}) {
+async function renderCoverImage(coverDef, coverPhotoNames, heartCrop = {}) {
   const { sections, slots, svg } = coverDef;
+  // One cover photo for most templates, four for Joyride — normalise to an array.
+  const names = Array.isArray(coverPhotoNames) ? coverPhotoNames : [coverPhotoNames];
   // Cover SVG lives in the same Spreads/ folder as content SVGs (ASSET_BASE already points there)
   const COVER_ASSET_BASE = ASSET_BASE;
 
@@ -924,11 +985,15 @@ async function renderCoverImage(coverDef, coverPhotoName, heartCrop = {}) {
 
   const composites = [];
 
-  // ── Front photo slot (BEFORE SVG so decorations can overlay) ──────────────
-  if (coverPhotoName) {
+  // ── Photo slots (BEFORE SVG so decorations overlay) ───────────────────────
+  // One slot for most templates; Joyride has four (top/left/right/bottom). Each
+  // photo draws below the cover SVG, whose transparent windows sit over the frames.
+  for (let slotIdx = 0; slotIdx < slots.length; slotIdx++) {
+    const slot = slots[slotIdx];
+    const coverPhotoName = names[slotIdx];
+    if (!coverPhotoName) continue;
     const photoData = await loadPhoto(coverPhotoName);
     if (photoData) {
-      const slot = slots[0]; // single cover photo slot
       // slot.xMm/yMm are CENTER coords already including the 18mm bleed — do NOT add COVER_BLEED_PX.
       const sw = Math.round(slot.wMm * MM_TO_PX);
       const sh = Math.round(slot.hMm * MM_TO_PX);
@@ -1052,11 +1117,33 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
     const font = lookupFont(fontMap, fontName, style);
     if (!font) { console.warn(`  ⚠ Cover caption font not found: ${fontName}`); continue; }
 
-    const sizePt      = ov.sizePt || capDef.sizePt || 20;
-    const lineSpacing = sizePt * (ov.lineSpacing || 1.28);
-    const charSpacing = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0 : ((ov.letterSpacing || 0)) * sizePt;
     const color       = resolveColor(ov.color || capDef.color);
-    const lines = text.split('\n').filter(l => l.trim());
+    // Cover-caption line-spacing: the engine uses 1.1 for cover captions (not the 1.28
+    // spread default), so autoShrink captions must match to place identically.
+    const lsFactor = capDef.autoShrink ? (ov.lineSpacing || 1.1) : (ov.lineSpacing || 1.28);
+
+    // Auto-shrink (Joyride): step the font down 1pt at a time (floor 50%) until the
+    // word-wrapped text fits the fixed hMm box — mirrors the engine's fitCoverCaption.
+    // Non-autoShrink captions keep the original \n-split, no-wrap behaviour untouched.
+    let sizePt = ov.sizePt || capDef.sizePt || 20;
+    let lines;
+    if (capDef.autoShrink && capDef.hMm) {
+      const capHPt = capDef.hMm * MM_TO_PT;
+      const boxWPt = capDef.wMm * MM_TO_PT;
+      const minSize = sizePt * 0.5;
+      const fitAt = (s) => {
+        const cs = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0 : ((ov.letterSpacing || 0)) * s;
+        const wl = String(text).split('\n').flatMap(l => l.trim() ? wrapText(font, l, s, boxWPt, cs) : ['']);
+        return { wl, h: wl.length * s * lsFactor };  // content height in pt (matches engine leading)
+      };
+      let r = fitAt(sizePt);
+      while (r.h > capHPt && sizePt > minSize) { sizePt -= 1; r = fitAt(sizePt); }
+      lines = r.wl;
+    } else {
+      lines = text.split('\n').filter(l => l.trim());
+    }
+    const lineSpacing = sizePt * lsFactor;
+    const charSpacing = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0 : ((ov.letterSpacing || 0)) * sizePt;
 
     const isRotated = !!capDef.rotate; // spine captions have rotate: 270 (CSS CW degrees)
 
@@ -1241,11 +1328,14 @@ async function main() {
   // ── Cover ────────────────────────────────────────────────────────────────────
   console.log('  [cover] Rendering cover spread…');
   const coverDef      = DATA.cover;
-  const coverPhotoName = typeof specialPhotos.cover === 'string'
-    ? specialPhotos.cover : specialPhotos.cover?.name;
+  // Cover photo name(s): a slot-ordered array (Joyride, 4) or a single name.
+  const _coverName = (p) => typeof p === 'string' ? p : p?.name;
+  const coverPhotoNames = Array.isArray(specialPhotos.cover)
+    ? specialPhotos.cover.map(_coverName)
+    : [_coverName(specialPhotos.cover)];
 
   try {
-    const coverBuf = await renderCoverImage(coverDef, coverPhotoName, state.heartCrop || {});
+    const coverBuf = await renderCoverImage(coverDef, coverPhotoNames, state.heartCrop || {});
 
     const COVER_W_PT = COVER_FULL_W_MM / 25.4 * 72;
     const COVER_H_PT = COVER_FULL_H_MM / 25.4 * 72;

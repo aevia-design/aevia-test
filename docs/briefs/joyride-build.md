@@ -132,13 +132,68 @@ a variable font's default instance, so Mulish Light would print as Regular).
   **← Phase A COMPLETE. Hand back for owner eyeball in the staff engine.**
 
 ## Phase B — Flow works
-- [ ] 5. Order form: 4 labelled cover uploads, cover title (**60** chars) + sub + spine inputs,
-  Intro fields, **+ the FP1 country-picker/itinerary rows (already generic — Wander's flow)**.
-- [ ] 6. Customer-preview parity (incl. 4-photo cover, M-page z-order, auto-shrink title). Re-run Scribble smoke test.
-- [ ] 7. PDF parity (export-pdf.js) — owner redeploys Cloud Run renderer + generates via dashboard. ⛔ no local renders.
+- [x] 5. **(S133) Order form wired.** The 4-photo cover was the real work; the rest was
+  already data-driven. Changes span four layers (all had hardcoded single-cover assumptions):
+  - **`pages/order.html`** — registry entry + `<script>` include. New `coverFiles{}` keyed
+    state + `coverSlots()`/`isMultiCover()`/`coverSlotLabel()` helpers. `renderCoverSection`
+    branches: multi → 4 labelled zones (`dz-cover-<slotKey>`), single → original markup
+    (untouched). Refactored `handleCoverFile` into a shared `renderCoverUpload(file, opts)`
+    core + thin single/`handleCoverFileMulti(key,…)` wrappers (one copy of HEIC/low-res/
+    orientation logic). `validateCoverStep`, `initDragDrop`, the payload build (tags each
+    cover `fileType:'cover'` + `slotIndex`), and `collectSubmitWarnings` all handle both.
+    **Single-cover templates render byte-identically** (verified: Scribble `isMulti:false`,
+    1 zone, 4 caps, 0 errors).
+  - **`functions/upload.js`** — cover files with a `slotIndex` get a distinct GCS name
+    (`cover/cover-<i>.ext`) and `photoManifest.cover` becomes a slot-ordered **array**;
+    single-cover stays a string (mirrors the multi-photo special-page pattern).
+  - **`functions/index.js`** — `signedUrls.cover`/`derivativeUrls.cover` sign each element
+    when `manifest.cover` is an array; `storedNames.cover` passes the shape through.
+  - **`pages/staff/template-engine.html`** — the deriv/orig cover merge (~4529) and the
+    order-ingestion (~4551) handle string OR array; the 4 covers land in `specialPhotos.cover`
+    in slot order (0..3 = Top/Left/Right/Bottom). **Local-mode render already worked (Phase A);
+    the real-order array path is NEW and only testable after the backend deploys (below).**
+  - **Intro draft copy `/stop-slop`ped** (`joyride-data.js` orderFormMeta): "Where was it" →
+    "Where you went"; cover hint em-dash removed. Resolves the "DRAFT copy" open issue.
+  - Verified: `npm test` 202/202; new `qa/smoke-joyride-order.mjs` (Scribble parity + Joyride
+    4-zone/validation, 0 console errors); `qa/debug-all-templates-render.mjs` all 6 clean.
+  - **⚠ OWNER: two backend deploys before a real Joyride order works end-to-end** —
+    `firebase deploy --only functions:createUploadSession,functions:getOrder` (upload.js +
+    index.js). Until then the order form collects 4 covers but the staff engine can't load
+    them from the order. **← End of Stage 5. Hand back: deploy, then place a test Joyride
+    order + open it in the staff engine to eyeball the 4-photo cover.**
+- [x] 6. **(S133) Customer-preview parity DONE.** Mirrored into `customer-preview.html`:
+  (a) cover ingestion handles the array (`signedUrls.cover` string|array → fetch each);
+  (b) `renderCover` loops all 4 slots (was `slots[0]`), placeholder labelled per slot;
+  (c) **autoShrink** cover caption via new `autoShrinkCoverCaption()` (deferred #1 browser
+  half) — called after append, on input, and after the caption-toolbar re-layout;
+  (d) **textPanelTitle** render block added before the textPanel block (Joyride Intro heading);
+  (e) M-page **zIndex** honoured on the spread slot (vertical on top);
+  (f) **BONUS parity fix:** the customer `textPanel` body never applied `tpCap.color` — so
+  Joyride's red intro/itinerary body (and Wander's navy) rendered in the CSS default here
+  only, diverging from staff+PDF. Now applied. Verified: `npm test` 202/202 (engine-parity
+  included); customer-preview loads with **0 pageerrors**; all 6 engine renders clean. All
+  changes gated to Joyride data or identical for single-cover, so other templates unchanged.
+  Customer visual verification happens at the e2e (needs a real order).
+- [x] 7. **(S133) PDF parity DONE (code) — awaiting owner dashboard render to verify.** Two files:
+  - **`services/pdf-renderer/index.js`** (Cloud Run source): `buildStateFromOrder` maps an
+    array cover to `specialPhotos.cover` (basenames); `fetchAllPhotos` fetches all 4 covers.
+  - **`scripts/export-pdf.js`**: array-aware folderName + photo registration; `renderCoverImage`
+    loops all 4 cover slots (was `slots[0]`); the cover call site builds the name array;
+    **M-page slots composite in zIndex order** (vertical on top); **textPanelTitle** drawn
+    (mirrors textPanel, minus funnyWords); **cover-caption autoShrink** (deferred #1 print
+    half) — wraps to box width + shrinks font to fit `hMm`, using the engine's **1.1** cover
+    line-spacing (not the PDF's 1.28 default), gated on `capDef.autoShrink` so no other
+    template's PDF changes. Verified: `node -c` clean on both; `npm test` 202/202.
+  - ⚠ Known minor gap: the PDF front-cover-caption path reads `capDef.align` (not `halign`);
+    all Joyride cover captions are `center` so no visible effect — revisit only if a cover
+    caption needs left/right.
+  - **⛔ Could NOT render locally (egress rule).** Verification is the owner's dashboard render.
+  **← End of Phase B (code). Hand back: redeploy renderer + functions, then ONE e2e test.**
 
 ## Phase C — Live
 - [ ] 8. Product page (shared product-page pattern; standard €70/€100 prices.js).
+  **⚠ OWNER NOTE (S133): the website has a *placeholder* template called "Terrain" —
+  replace it with Joyride (collections card + product page + `template=` param).**
 - [ ] 9. E2E via qa/staff-customer-chain.mjs; npm test green.
 - [ ] 10. Merge (backend-first; owner redeploys renderer; docs/templates.md roster update).
 
@@ -175,8 +230,8 @@ a variable font's default instance, so Mulish Light would print as Regular).
 - **Cover captions use weight/italic, spread captions use style** — data carries both
   (`style:'light'` + browser resolves Mulish's single 300 face either way). Check the PDF's
   COVER caption font resolution (Family_style key?) at stage 7.
-- **Intro orderFormMeta fields are DRAFT copy** (place/when/line) — owner review + /stop-slop
-  at stage 5 before they ship.
+- ~~**Intro orderFormMeta fields are DRAFT copy**~~ — **DONE S133.** `/stop-slop`ped at stage 5
+  ("Where you went", em-dash removed). Owner can still tweak wording on eyeball.
 
 ### Resolved
 - ~~**Spine reads as 28mm**~~ — **RESOLVED S129.** Artboard export error; Xenia confirmed and

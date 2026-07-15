@@ -87,7 +87,11 @@ async function handler(req, res) {
           ? fileInfo.type
           : ext === 'heic' ? 'image/heic' : 'image/jpeg';
         if (fileInfo.fileType === 'cover') {
-          storedName = `${folderName}/cover/cover.${ext}`;
+          // Multi-cover templates (Joyride, 4 photos) send a slotIndex so each
+          // cover gets a distinct name; single-cover templates omit it.
+          const suffix = (fileInfo.slotIndex !== undefined && fileInfo.slotIndex !== null)
+            ? `-${fileInfo.slotIndex}` : '';
+          storedName = `${folderName}/cover/cover${suffix}.${ext}`;
         } else if (fileInfo.fileType === 'special') {
           const slug = fileInfo.addonSlug || `special_${String(i + 1).padStart(3, '0')}`;
           // Multi-photo special pages (only FP5 art gallery, 2 photos) send a
@@ -123,7 +127,14 @@ async function handler(req, res) {
       const fileInfo = fileList[u.slot - 1];
       if (!fileInfo) return;
       if (fileInfo.fileType === 'cover') {
-        photoManifest.cover = u.storedName;
+        // Single-cover templates keep cover as a string; multi-cover (Joyride)
+        // sends a slotIndex per photo → cover becomes a slot-ordered array.
+        if (fileInfo.slotIndex !== undefined && fileInfo.slotIndex !== null) {
+          if (!Array.isArray(photoManifest.cover)) photoManifest.cover = [];
+          photoManifest.cover[fileInfo.slotIndex] = u.storedName;
+        } else {
+          photoManifest.cover = u.storedName;
+        }
       } else if (fileInfo.fileType === 'special') {
         const slug = fileInfo.addonSlug;
         if (!photoManifest.special[slug]) photoManifest.special[slug] = [];
