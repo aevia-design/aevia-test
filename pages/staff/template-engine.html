@@ -1188,6 +1188,14 @@
     handle.className = 'reposition-handle';
     handle.textContent = '✥';
     handle.title = 'Reposition photo inside the frame';
+    // Per-template override: centre the handle on the photo when the template's artwork
+    // would otherwise bury the default top-left position (Joyride). Inline styles beat the
+    // .reposition-handle CSS; the class still supplies size/colour/hover.
+    if (_activeTemplateData?.repositionHandle === 'center') {
+      handle.style.top = '50%';
+      handle.style.left = '50%';
+      handle.style.transform = 'translate(-50%, -50%)';
+    }
     attachCropDrag(img, slotEl, photoName, { alwaysOn: false });
     let prevDraggable = false;
     const exitReposition = () => {
@@ -1926,7 +1934,8 @@
       const sizePt   = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
       const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
       const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
-      const align     = ov.align !== undefined ? ov.align : (capDef.align || 'center');
+      const halign    = ov.align !== undefined ? ov.align : (capDef.halign || capDef.align || 'center');
+      const valign    = capDef.valign || 'center';
       // Caption colour from the CSV (capDef.color), with user override — previously
       // the cover-caption CSS default (#493955) always won because color was never
       // emitted here. Scribble's data colour matches that default (no change); Wander
@@ -1946,9 +1955,15 @@
       let posCSS;
       if (capDef.rotate) {
         const top = capCY - lineHpx / 2;
-        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};color:${color};z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
+        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${halign};color:${color};z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
       } else {
-        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};color:${color};z-index:3;transform:translateY(-50%);`;
+        // Vertical alignment within the fixed caption box. Default 'center' reproduces the
+        // original top:capCY + translateY(-50%) exactly, so templates without valign are
+        // unchanged; 'top'/'bottom' anchor the text block to the box edge (box = hMm tall).
+        const boxHalf = (capDef.hMm ? capDef.hMm * SCALE : 0) / 2;
+        const vTop = valign === 'top' ? capCY - boxHalf : valign === 'bottom' ? capCY + boxHalf : capCY;
+        const vTransform = valign === 'top' ? 'none' : valign === 'bottom' ? 'translateY(-100%)' : 'translateY(-50%)';
+        posCSS = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${vTop}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${halign};color:${color};z-index:3;transform:${vTransform};`;
       }
       cap.style.cssText = posCSS;
 
@@ -2856,6 +2871,12 @@
           captionEl.style.letterSpacing = _letS + 'em';
           captionEl.style.fontWeight    = _weight;
           captionEl.style.fontStyle     = _italic ? 'italic' : 'normal';
+          // Per-slot caption colour from the CSV (cap.color). Previously omitted, so every
+          // spread caption fell back to the .slot-caption CSS default (#493955) and a
+          // template's per-spread colours were silently dropped (the same bug already fixed
+          // for cover + text-panel captions). The PDF applies capDef.color already; this
+          // brings the engine preview into parity with the print output.
+          captionEl.style.color         = (_scsOv.color !== undefined ? _scsOv.color : cap.color) || '#493955';
 
           const saved = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx];
           if (saved) captionEl.innerHTML = saved;

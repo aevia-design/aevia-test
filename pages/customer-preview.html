@@ -1003,6 +1003,13 @@
     handle.className = 'reposition-handle';
     handle.textContent = '✥';
     handle.title = 'Reposition photo inside the frame';
+    // Per-template override (mirrors staff engine): centre the handle for templates whose
+    // artwork buries the default top-left position (Joyride).
+    if (_activeTemplateData?.repositionHandle === 'center') {
+      handle.style.top = '50%';
+      handle.style.left = '50%';
+      handle.style.transform = 'translate(-50%, -50%)';
+    }
     attachCropDrag(img, slotEl, photoName, { alwaysOn: false });
     let prevDraggable = false;
     const exitReposition = () => {
@@ -1568,7 +1575,8 @@
     const sizePt   = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
     const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
     const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
-    const align     = ov.align !== undefined ? ov.align : (capDef.align || 'center');
+    const halign    = ov.align !== undefined ? ov.align : (capDef.halign || capDef.align || 'center');
+    const valign    = capDef.valign || 'center';
     // Caption colour from the CSV (mirrors template-engine.html). Scribble's data
     // colour matches the .cover-caption CSS default; Wander + Newborn now apply theirs.
     const color     = ov.color !== undefined ? ov.color : (capDef.color || '#493955');
@@ -1582,9 +1590,13 @@
 
     if (capDef.rotate) {
       const top = capCY - lineHpx / 2;
-      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};color:${color};z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
+      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${top}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${halign};color:${color};z-index:3;transform:rotate(${capDef.rotate}deg);transform-origin:center center;`;
     } else {
-      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${capCY}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${align};color:${color};z-index:3;transform:translateY(-50%);`;
+      // Vertical alignment in the fixed box — 'center' matches the original behaviour.
+      const boxHalf = (capDef.hMm ? capDef.hMm * SCALE : 0) / 2;
+      const vTop = valign === 'top' ? capCY - boxHalf : valign === 'bottom' ? capCY + boxHalf : capCY;
+      const vTransform = valign === 'top' ? 'none' : valign === 'bottom' ? 'translateY(-100%)' : 'translateY(-50%)';
+      cap.style.cssText = `position:absolute;width:${capW}px;left:${capCX - capW/2}px;top:${vTop}px;font-family:'${font}',serif;font-weight:${weight};font-style:${italic ? 'italic' : 'normal'};font-size:${fontSize};line-height:${lineH};letter-spacing:${letterSpacing}em;text-align:${halign};color:${color};z-index:3;transform:${vTransform};`;
     }
   }
 
@@ -2168,6 +2180,11 @@
               handle.className = 'reposition-handle';
               handle.textContent = '✥';
               handle.title = 'Reposition photo inside the frame';
+              if (_activeTemplateData?.repositionHandle === 'center') {
+                handle.style.top = '50%';
+                handle.style.left = '50%';
+                handle.style.transform = 'translate(-50%, -50%)';
+              }
               attachCropDrag(img, slotEl, photo.name, { alwaysOn: false });
               const exitReposition = () => {
                 slotEl.classList.remove('repositioning');
@@ -2287,6 +2304,9 @@
           captionEl.style.letterSpacing = _letS + 'em';
           captionEl.style.fontWeight = _weight;
           captionEl.style.fontStyle = _italic ? 'italic' : 'normal';
+          // Per-slot caption colour from the CSV — mirrors the staff engine + PDF (was
+          // omitted, so captions fell back to the #493955 .slot-caption default).
+          captionEl.style.color = (_scsOv.color !== undefined ? _scsOv.color : cap.color) || '#493955';
 
           const saved = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx];
           if (saved) captionEl.innerHTML = saved;

@@ -77,14 +77,17 @@ window.JOYRIDE_DATA = {
     // 12pt; spine sub 16 chars in 35mm at Mulish 12pt; front sub ~24 chars in 40mm at
     // Mulish 20pt) — autoShrink is what makes the caps safe rather than a silent overflow.
     captions: [
-      { key: 'name',     xMm: 327,   yMm: 113, wMm: 50, hMm: 41, font: 'Lora',   sizePt: 33, style: 'regular', align: 'center', color: '#d94027', autoShrink: true, label: 'Front — title',     placeholder: 'Hot Getaway in Milan', maxLength: 60 },
-      { key: 'subtitle', xMm: 327,   yMm: 140, wMm: 40, hMm: 8,  font: 'Mulish', sizePt: 20, style: 'light',   align: 'center', color: '#d94027', autoShrink: true, label: 'Front — sub label',  placeholder: 'July, 2026', maxLength: 60 },
-      { key: 'spine',    xMm: 222.5, yMm: 61,  wMm: 60, hMm: 5,  font: 'Lora',   sizePt: 12, style: 'regular', align: 'center', color: '#d94027', autoShrink: true, rotate: 270, label: 'Spine — label',     placeholder: 'Hot Getaway in Milan', maxLength: 30 },
-      { key: 'spineSub', xMm: 222.5, yMm: 193, wMm: 35, hMm: 5,  font: 'Mulish', sizePt: 12, style: 'light',   align: 'center', color: '#d94027', autoShrink: true, rotate: 270, label: 'Spine — sub label', placeholder: 'July, 2026', maxLength: 20 },
+      { key: 'name',     xMm: 327,   yMm: 112, wMm: 50, hMm: 41, font: 'Lora',   sizePt: 28, style: 'regular', halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, label: 'Front — title',     placeholder: 'Hot Getaway in Milan', maxLength: 60 },
+      { key: 'subtitle', xMm: 327,   yMm: 140, wMm: 40, hMm: 8,  font: 'Mulish', sizePt: 20, style: 'light',   halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, label: 'Front — sub label',  placeholder: 'July, 2026', maxLength: 60 },
+      { key: 'spine',    xMm: 222.5, yMm: 61,  wMm: 60, hMm: 5,  font: 'Lora',   sizePt: 14, style: 'regular', halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, rotate: 270, label: 'Spine — label',     placeholder: 'Hot Getaway in Milan', maxLength: 60 },
+      { key: 'spineSub', xMm: 222.5, yMm: 193, wMm: 40, hMm: 5,  font: 'Mulish', sizePt: 14, style: 'light',   halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, rotate: 270, label: 'Spine — sub label', placeholder: 'July, 2026', maxLength: 60 },
     ]
   },
 
   scale: 3,
+  // Joyride's inner artwork has irregular shapes that hide the default top-left ✥
+  // reposition affordance; centre it on the photo instead (S131 owner request).
+  repositionHandle: 'center',
   fonts: { display: 'Lora', body: 'Mulish' },
   fontPicker: ['Lora', 'Mulish'],
   colors: {
@@ -112,20 +115,23 @@ window.JOYRIDE_DATA = {
       }
     },
 
+    // S131: spreads 1 & 2 swapped (Xenia reorder). SP1 now carries the single-photo
+    // blue/red layout (was SP2); SP2 now carries the two-photo cream "art-below" layout
+    // (was SP1). SVG files were physically moved between the two folders to match.
     SP1: {
       type: 'standard', id: 'SP1', label: 'Spread 1',
       pages: {
         left: {
-          H: { bgColor: '#efe7d3', svg: 'SP Spread 1/SP 01 H Left.svg', overlayBelow: true,
-            slots: [ { slot: 1, x: 75, y: 53, xBleed: 78, yBleed: 56, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } },
-                     { slot: 2, x: 114, y: 147, xBleed: 117, yBleed: 150, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } } ] },
-          V: { bgColor: '#efe7d3', svg: 'SP Spread 1/SP 01 V Left.svg', overlayBelow: true,
-            slots: [ { slot: 1, x: 54, y: 62, xBleed: 57, yBleed: 65, w: 73, h: 98, ratio: '73:98', caption: { allowed: false } },
-                     { slot: 2, x: 136, y: 138, xBleed: 139, yBleed: 141, w: 73, h: 98, ratio: '73:98', caption: { allowed: false } } ] },
+          H: { bgColor: '#9eb7e0', svg: 'SP Spread 1/SP 01 H Left.svg',
+            slots: [ { slot: 1, x: 95, y: 77, xBleed: 98, yBleed: 80, w: 150, h: 100, ratio: '3:2', caption: { allowed: false } } ] },
+          V: { bgColor: '#9eb7e0', svg: 'SP Spread 1/SP 01 V Left.svg',
+            slots: [ { slot: 1, x: 95, y: 81, xBleed: 98, yBleed: 84, w: 107, h: 135, ratio: '107:135', caption: { allowed: false } } ] },
         },
         right: {
-          default: { bgColor: '#efe7d3', svg: 'SP Spread 1/SP 01 S Right.svg',
-            slots: [ { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 200, h: 200, ratio: '1:1', caption: { allowed: false } } ] },
+          H: { bgColor: '#d94027', svg: 'SP Spread 1/SP 01 H Right.svg',
+            slots: [ { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: false } } ] },
+          V: { bgColor: '#d94027', svg: 'SP Spread 1/SP 01 V Right.svg',
+            slots: [ { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: false } } ] },
         },
       }
     },
@@ -134,16 +140,16 @@ window.JOYRIDE_DATA = {
       type: 'standard', id: 'SP2', label: 'Spread 2',
       pages: {
         left: {
-          H: { bgColor: '#9eb7e0', svg: 'SP Spread 2/SP 02 H Left.svg',
-            slots: [ { slot: 1, x: 95, y: 77, xBleed: 98, yBleed: 80, w: 150, h: 100, ratio: '3:2', caption: { allowed: false } } ] },
-          V: { bgColor: '#9eb7e0', svg: 'SP Spread 2/SP 02 V Left.svg',
-            slots: [ { slot: 1, x: 95, y: 81, xBleed: 98, yBleed: 84, w: 107, h: 135, ratio: '107:135', caption: { allowed: false } } ] },
+          H: { bgColor: '#efe7d3', svg: 'SP Spread 2/SP 02 H Left.svg', overlayBelow: true,
+            slots: [ { slot: 1, x: 75, y: 53, xBleed: 78, yBleed: 56, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } },
+                     { slot: 2, x: 114, y: 147, xBleed: 117, yBleed: 150, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } } ] },
+          V: { bgColor: '#efe7d3', svg: 'SP Spread 2/SP 02 V Left.svg', overlayBelow: true,
+            slots: [ { slot: 1, x: 52, y: 62, xBleed: 55, yBleed: 65, w: 74, h: 99, ratio: '74:99', caption: { allowed: false } },
+                     { slot: 2, x: 138, y: 138, xBleed: 141, yBleed: 141, w: 74, h: 99, ratio: '74:99', caption: { allowed: false } } ] },
         },
         right: {
-          H: { bgColor: '#d94027', svg: 'SP Spread 2/SP 02 H Right.svg',
-            slots: [ { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: false } } ] },
-          V: { bgColor: '#d94027', svg: 'SP Spread 2/SP 02 V Right.svg',
-            slots: [ { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: false } } ] },
+          default: { bgColor: '#efe7d3', svg: 'SP Spread 2/SP 02 S Right.svg',
+            slots: [ { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 200, h: 200, ratio: '1:1', caption: { allowed: false } } ] },
         },
       }
     },
@@ -228,8 +234,8 @@ window.JOYRIDE_DATA = {
             slots: [ { slot: 1, x: 105, y: 50, xBleed: 108, yBleed: 53, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } },
                      { slot: 2, x: 105, y: 150, xBleed: 108, yBleed: 153, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } } ] },
           V: { bgColor: '#9eb7e0', svg: 'SP Spread 7/SP 07 V Right.svg',
-            slots: [ { slot: 1, x: 69, y: 62, xBleed: 72, yBleed: 65, w: 73, h: 98, ratio: '73:98', caption: { allowed: false } },
-                     { slot: 2, x: 152, y: 138, xBleed: 155, yBleed: 141, w: 73, h: 98, ratio: '73:98', caption: { allowed: false } } ] },
+            slots: [ { slot: 1, x: 69, y: 62, xBleed: 72, yBleed: 65, w: 74, h: 99, ratio: '74:99', caption: { allowed: false } },
+                     { slot: 2, x: 152, y: 138, xBleed: 155, yBleed: 141, w: 74, h: 99, ratio: '74:99', caption: { allowed: false } } ] },
         },
       }
     },
@@ -260,8 +266,8 @@ window.JOYRIDE_DATA = {
             slots: [ { slot: 1, x: 75, y: 53, xBleed: 78, yBleed: 56, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } },
                      { slot: 2, x: 114, y: 147, xBleed: 117, yBleed: 150, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } } ] },
           V: { bgColor: '#f2c7de', svg: 'SP Spread 9/SP 09 V Left.svg', overlayBelow: true,
-            slots: [ { slot: 1, x: 54, y: 62, xBleed: 57, yBleed: 65, w: 73, h: 98, ratio: '73:98', caption: { allowed: false } },
-                     { slot: 2, x: 136, y: 138, xBleed: 139, yBleed: 141, w: 73, h: 98, ratio: '73:98', caption: { allowed: false } } ] },
+            slots: [ { slot: 1, x: 52, y: 62, xBleed: 55, yBleed: 65, w: 74, h: 99, ratio: '74:99', caption: { allowed: false } },
+                     { slot: 2, x: 138, y: 138, xBleed: 141, yBleed: 141, w: 74, h: 99, ratio: '74:99', caption: { allowed: false } } ] },
         },
         right: {
           default: { bgColor: '#f2c7de', svg: 'SP Spread 9/SP 09 S Right.svg',
@@ -319,15 +325,15 @@ window.JOYRIDE_DATA = {
       orderFormPhoto: null,
       orderFormMeta: { countrySelect: true, sameRegionOnly: true, textPrompt: 'Your route', hint: 'List the places on your trip, in order, and we\'ll lay out the itinerary for you.', placeholder: 'e.g. Vienna → Hallstatt → Salzburg → Innsbruck' },
       type: 'functional', id: 'FP1', label: 'Travel map', mapPage: true,
-      pin: { png: 'FP Spread 1 - Special Files/GEO PIN.png', wMm: 12, hMm: 23, anchor: 'center' },
+      pin: { png: 'FP Spread 1 - Special Files/GEO pin.png', wMm: 12, hMm: 23, anchor: 'center' },
       // region code (from mapCoordinates) → left-page map image
       maps: {
-        'EU':         'FP Spread 1/FP 01 Map Left (EU).png',
-        'Asia':       'FP Spread 1/FP 01 Map Left (Asia).png',
-        'Africa':     'FP Spread 1/FP 01 Map Left (Africa).png',
-        'N.America':  'FP Spread 1/FP 01 Map Left (N.America).png',
-        'S.America':  'FP Spread 1/FP 01 Map Left (S.America).png',
-        'Oceania':    'FP Spread 1/FP 01 Map Left (Oceania).png',
+        'EU':         'FP Spread 1/FP 01 Left EU.png',
+        'Asia':       'FP Spread 1/FP 01 Left Asia.png',
+        'Africa':     'FP Spread 1/FP 01 Left Africa.png',
+        'N.America':  'FP Spread 1/FP 01 Left N.America.png',
+        'S.America':  'FP Spread 1/FP 01 Left S.America.png',
+        'Oceania':    'FP Spread 1/FP 01 Left Oceania.png',
       },
       pages: {
         left: {
@@ -337,9 +343,9 @@ window.JOYRIDE_DATA = {
         right: {
           default: {
             bgColor: '#f9d84d',
-            svg: 'FP Spread 1/FP 01 Map Right.svg',
+            svg: 'FP Spread 1/FP 01 Right.svg',
             slots: [],
-            textPanel: { caption: { allowed: true, xMm: 108, yMm: 103, wMm: 135, hMm: 100, halign: 'center', valign: 'center', font: 'Lora', sizePt: 28, style: 'regular', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' }, itinerary: true }
+            textPanel: { caption: { allowed: true, xMm: 108, yMm: 94, wMm: 136, hMm: 70, halign: 'center', valign: 'center', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' }, itinerary: true }
           },
         },
       }
