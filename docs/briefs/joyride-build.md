@@ -215,15 +215,40 @@ a variable font's default instance, so Mulish Light would print as Regular).
   bio + portrait into `our-artists.html` (currently lorem ipsum + placeholder image).
 
 ## S134 owner test round (local testing) — 8 items
-Pass A DONE; B + C pending. Fix in 3 passes.
+**ALL 8 DONE** — Pass A (S134), Passes B + C (S135).
 - **[1] Collections desc** ✅ → "Colourful, joyful, emotional. For summer getaways, city tours, and dolce moments."
 - **[2] Artist name** ✅ letdorabe → **Dorottya Juhász** (IG @letdorabe) on collections + product + our-artists (anchor `#dorottya-juhasz`) + templates.md.
 - **[3] Product tagline** ✅ → "For bright city escapes and the easy joy of a summer away."
 - **[4] Safari thumbnail bug (CRITICAL)** ✅ ROOT-CAUSED + FIXED. **WebKit ignores `aspect-ratio` on grid items** → `.thumb-ph` grew to the image's full height. Fix in `assets/css/product.css`: ratio moved onto `.thumb-ph img` (replaced element) via `width:100%;aspect-ratio:10/7`; button no longer carries the ratio. Joyride's broken-placeholder thumbs also fixed via a transparent 10:7 SVG swap in `phBroken()`. Verified 95px in **WebKit + Chromium** across all 6 product pages. See [[reference_safari_aspect_ratio_grid]]. Affected ALL product pages, not just Joyride.
-- **[5] Order example copy** ⏳ PASS B. `order.html` ~499: `adventures` album-note placeholder is category-keyed + SHARED with Wander. Owner wants Joyride-only "Joyful summer in Italy…" → add a per-template override (not change shared `adventures`).
-- **[6] Cover: 4 fields → 1 field** ⏳ PASS B. One dropzone taking 4 photos (not 4 separate zones — feels long), each thumbnail LABELLED with its slot (Top/Left/Right/Bottom) beneath it; photos map to cover slots in drop order, repositionable in engine. (Future nice-to-have: visual cover preview.) Reverses part of S133 stage-5's 4-zone UI.
-- **[7] Order-form map preview broken** ⏳ PASS C. Map spread preview in the ORDER FORM didn't render images. Multi-component → instrument before fixing (per systematic-debugging).
-- **[8] Photo count 43 vs 46** ⏳ PASS C. Staff engine (local smoke-test order) requires **49** photos with no special page, **46** with Intro+Map; customer order form's `calcPhotoTarget` says **43** — 3 short. Engine slot count is source of truth. Study `calcPhotoTarget` (order.html ~865/1438) vs engine `buildBookSequence` slot counting for Joyride's multi-slot spreads (M pages = 2, SP2/SP9 left = 2). No new mechanics — make Joyride count like other templates.
+- **[5] Order example copy** ✅ **S135.** New `TEMPLATE_NOTE_PLACEHOLDERS` map in `order.html`, keyed like the
+  template registry and checked BEFORE the category map — Joyride gets its own example, Wander's shared
+  `adventures` one untouched.
+- **[6] Cover: 4 fields → 1 field** ✅ **S135.** One dropzone takes all 4; they fill labelled slots
+  (Top/Left/Right/Bottom) in drop order. Removing one re-opens the zone and refills that exact slot. Kept the
+  per-slot preview ids, so `renderCoverUpload` (HEIC/low-res/orientation) is reused unchanged and `coverFiles`
+  stays slot-keyed → validation, payload (`slotIndex`), and submit warnings needed NO change. UI layer only.
+  Two gotchas worth remembering: the slot grid needs `minmax(0,1fr)` (plain `1fr` floors at min-content, so the
+  nowrap filenames forced unequal columns — measured 149/127/120px); and the square ratio must sit on the
+  `<img>`, not the grid item (same WebKit constraint as [4] — see [[reference_safari_aspect_ratio_grid]]).
+  Verified equal 121px slots in WebKit + Chromium.
+- **[7] Order-form map preview broken** ✅ **S135 — root cause: a Wander hardcode.** `renderRegionMap`'s
+  `ASSET_BASE` was hardcoded `'../assets/Template_Wander/'`. Joyride's assets sit under an `SVG/` subfolder AND
+  use different map filenames, so EVERY request 404'd (instrumented: all 4 canvas images + right-page SVG at
+  `naturalWidth 0` for Joyride, `200`/4056×4056 for Wander). Fix: `TEMPLATE_REGISTRY` now carries `svgBase` per
+  template, mirroring the engine + customer-preview registries — closes the seam gap instead of special-casing
+  Joyride. **Bonus fix found while instrumenting:** the itinerary font was hardcoded to Cormorant Garamond
+  (Wander's face) → now read from the textPanel caption's own `font`, and **Mulish is now registered on
+  `order.html`** alongside Cormorant (every map template's face must be registered there).
+- **[8] Photo count** ✅ **S135 — same bug class.** `calcPhotoTarget` hardcoded `stdIds` to SP1–SP6, so Joyride's
+  **SP7/SP8/SP9 never entered the sequence**. The engine + customer-preview were de-hardcoded at S129; the order
+  form was the third surface and was missed. Now derives from the template's own spread keys.
+  ⚠ The reported "**43 vs 46**" was **two different configurations**: 43 = map only, 46 = Intro+Map. The real
+  defect was a consistent **4-photo undercount in every Joyride config**. Live order form now returns **49** (no
+  special pages) / **46** (Intro+Map) — exactly the engine's numbers. Other 5 templates unchanged (they only have
+  SP1–SP6, so the hardcode was coincidentally correct until Joyride).
+  New `tests/photo-count-sequence.test.js` pins the engine's counts, asserts **every template's standard spreads
+  are reachable** (the invariant the hardcode broke — catches this for any future template), pins the other five
+  templates' counts, and tripwires the derivation in `order.html`. Confirmed red against the old hardcode.
 
 ## Open issues
 ### For Xenia
