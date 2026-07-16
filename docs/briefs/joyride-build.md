@@ -191,11 +191,39 @@ a variable font's default instance, so Mulish Light would print as Regular).
   **← End of Phase B (code). Hand back: redeploy renderer + functions, then ONE e2e test.**
 
 ## Phase C — Live
-- [ ] 8. Product page (shared product-page pattern; standard €70/€100 prices.js).
-  **⚠ OWNER NOTE (S133): the website has a *placeholder* template called "Terrain" —
-  replace it with Joyride (collections card + product page + `template=` param).**
+- [x] 8. **(S134) Product page + Terrain swap DONE.** Built `pages/joyride.html` by copying
+  the shared product-page pattern — **Wander** as the base (it has the map FP) plus **Tender's**
+  intro sp-card. Wiring verified headless (Playwright, dev server): price toggles €70/€100,
+  `window.PRODUCT` = `{template:'Joyride', category:'adventures', back:'joyride.html',
+  fp:{FPintro:intro, FP1:map}}`, all onclick handlers resolve in shared `product.js`,
+  `goToOrder` builds the right params. **Terrain placeholder retired:** `pages/terrain.html`
+  git-rm'd; its collections card replaced with a Joyride card (collab line → letdorabe, €70,
+  `pickPage(this,'joyride',…)`). Artist **letdorabe** added to `our-artists.html` (`#letdorabe`
+  anchor, **placeholder lorem-ipsum bio + missing-portrait fallback** — real bio/photo TBD).
+  `docs/templates.md` roster updated (Terrain row → Joyride Built + collaboration entry).
+  `/stop-slop` pass done on new copy (em-dash removed from the About paragraph; page title,
+  alt text, and the shared "Optional spreads —" label left as-is to match every sibling page).
+  `npm test` 202/202.
+  **⚠ PLACEHOLDER IMAGES:** the page points at `assets/images/mockups/exp2/joyride/` which does
+  **not exist yet** — all 11 mockups 404 and degrade to grey "Preview soon" boxes via an onerror
+  fallback (the ONLY console errors; no JS errors). Owner deferred mockups: "need a good order
+  first." They auto-appear the moment the webp set is dropped in that folder (front, back,
+  sp1–sp4, fpintro, fp1). **← End of Stage 8. Hand back: eyeball the page on the dev server.**
 - [ ] 9. E2E via qa/staff-customer-chain.mjs; npm test green.
-- [ ] 10. Merge (backend-first; owner redeploys renderer; docs/templates.md roster update).
+- [ ] 10. Merge (backend-first; owner redeploys renderer; docs/templates.md roster update — DONE).
+  **Before merge:** produce the Joyride mockup set (exp2/joyride/), and swap letdorabe's real
+  bio + portrait into `our-artists.html` (currently lorem ipsum + placeholder image).
+
+## S134 owner test round (local testing) — 8 items
+Pass A DONE; B + C pending. Fix in 3 passes.
+- **[1] Collections desc** ✅ → "Colourful, joyful, emotional. For summer getaways, city tours, and dolce moments."
+- **[2] Artist name** ✅ letdorabe → **Dorottya Juhász** (IG @letdorabe) on collections + product + our-artists (anchor `#dorottya-juhasz`) + templates.md.
+- **[3] Product tagline** ✅ → "For bright city escapes and the easy joy of a summer away."
+- **[4] Safari thumbnail bug (CRITICAL)** ✅ ROOT-CAUSED + FIXED. **WebKit ignores `aspect-ratio` on grid items** → `.thumb-ph` grew to the image's full height. Fix in `assets/css/product.css`: ratio moved onto `.thumb-ph img` (replaced element) via `width:100%;aspect-ratio:10/7`; button no longer carries the ratio. Joyride's broken-placeholder thumbs also fixed via a transparent 10:7 SVG swap in `phBroken()`. Verified 95px in **WebKit + Chromium** across all 6 product pages. See [[reference_safari_aspect_ratio_grid]]. Affected ALL product pages, not just Joyride.
+- **[5] Order example copy** ⏳ PASS B. `order.html` ~499: `adventures` album-note placeholder is category-keyed + SHARED with Wander. Owner wants Joyride-only "Joyful summer in Italy…" → add a per-template override (not change shared `adventures`).
+- **[6] Cover: 4 fields → 1 field** ⏳ PASS B. One dropzone taking 4 photos (not 4 separate zones — feels long), each thumbnail LABELLED with its slot (Top/Left/Right/Bottom) beneath it; photos map to cover slots in drop order, repositionable in engine. (Future nice-to-have: visual cover preview.) Reverses part of S133 stage-5's 4-zone UI.
+- **[7] Order-form map preview broken** ⏳ PASS C. Map spread preview in the ORDER FORM didn't render images. Multi-component → instrument before fixing (per systematic-debugging).
+- **[8] Photo count 43 vs 46** ⏳ PASS C. Staff engine (local smoke-test order) requires **49** photos with no special page, **46** with Intro+Map; customer order form's `calcPhotoTarget` says **43** — 3 short. Engine slot count is source of truth. Study `calcPhotoTarget` (order.html ~865/1438) vs engine `buildBookSequence` slot counting for Joyride's multi-slot spreads (M pages = 2, SP2/SP9 left = 2). No new mechanics — make Joyride count like other templates.
 
 ## Open issues
 ### For Xenia
