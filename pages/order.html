@@ -135,6 +135,22 @@
     .single-preview-remove { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,0.55); color: white; font-size: 16px; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; }
     .single-preview-name { font-size: 11px; color: var(--muted); margin-top: 8px; }
 
+    /* Multi-cover slot grid (Joyride): one drop zone above four labelled square
+       slots. Photos fill the slots in drop order. The square previews override
+       the fixed 260x195 single-preview size above; the ratio sits on the <img>
+       (a replaced element) because WebKit ignores aspect-ratio on grid items.
+       minmax(0,1fr) — not 1fr — or each column is forced as wide as its
+       (nowrap) filename and the slots come out unequal. */
+    .cover-slot-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; max-width: 520px; }
+    .cover-slot-label { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+    .cover-slot-empty { border: 1px dashed var(--border); border-radius: 4px; background: var(--surface); width: 100%; aspect-ratio: 1; }
+    .cover-slot-grid .single-preview-inner { display: block; max-width: none; }
+    .cover-slot-grid .single-preview-inner img { width: 100%; height: auto; aspect-ratio: 1; }
+    .cover-slot-grid .single-preview-inner .file-icon { width: 100%; height: auto; aspect-ratio: 1; }
+    .cover-slot-grid .single-preview-remove { width: 22px; height: 22px; top: 5px; right: 5px; font-size: 14px; }
+    .cover-slot-grid .single-preview-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 700px) { .cover-slot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
     /* Photo grid */
     .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 16px; }
     /* content-visibility:auto keeps initial render of many thumbs fast. It's safe here now
@@ -502,6 +518,13 @@ const ALBUM_NOTE_PLACEHOLDERS = {
 };
 const DEFAULT_NOTE_PLACEHOLDER = "e.g. A summer in the south of France, August 2024. Three families, one house, too many rosés.";
 
+// Per-template overrides, keyed like the template registry (name lowercased).
+// Checked before the category map, so a template with a distinct voice can have
+// its own example without changing the one its category-mates share.
+const TEMPLATE_NOTE_PLACEHOLDERS = {
+  joyride: "e.g. Joyful summer in Italy, July 2026. Gelato in Rome, a week on the Amalfi coast, and long dinners outside.",
+};
+
 const ADDON_NOTE_PLACEHOLDERS = {
   'first-words':         "e.g. Mama, Dada, water, dog — in the order they arrived",
   'anniversary-caption': "e.g. First date: Rome, 2018 · Engaged: Lisbon, 2021 · Married: Vienna, 2023",
@@ -767,9 +790,18 @@ function renderCoverSection() {
 
   let html = '';
 
-  // Drop-zone + preview markup for one cover photo. `sfx` suffixes the element
-  // ids so a multi-cover template (Joyride) can have several on the page at once;
-  // the single-cover path passes '' and keeps the original ids untouched.
+  // Preview markup for one cover photo. `sfx` suffixes the element ids so a
+  // multi-cover template (Joyride) can have several on the page at once; the
+  // single-cover path passes '' and keeps the original ids untouched.
+  function coverSlotPreview(sfx) {
+    return `
+      <div class="single-preview" id="cover-preview${sfx}">
+        <div class="single-preview-inner" id="cover-preview-inner${sfx}"></div>
+        <div class="single-preview-name" id="cover-preview-name${sfx}"></div>
+      </div>`;
+  }
+
+  // Drop zone + preview for the single-cover templates (all but Joyride).
   function coverDropZone(sfx, onchange) {
     return `
       <div class="drop-zone" id="dz-cover${sfx}">
@@ -778,26 +810,39 @@ function renderCoverSection() {
         <div class="dz-text"><strong>Choose photo</strong> or drag here</div>
         <div class="dz-formats">JPG · PNG · HEIC</div>
       </div>
-      <div class="single-preview" id="cover-preview${sfx}">
-        <div class="single-preview-inner" id="cover-preview-inner${sfx}"></div>
-        <div class="single-preview-name" id="cover-preview-name${sfx}"></div>
-      </div>
+      ${coverSlotPreview(sfx)}
       <div class="cover-orientation-warn" id="cover-orientation-warn${sfx}" style="display:none;"></div>`;
   }
 
   if (coverHasPhoto() && isMultiCover()) {
-    // Joyride: four square cover photos, one labelled zone per slot.
+    // Joyride: four square cover photos around the title. ONE drop zone takes all
+    // four; they fill the labelled slots below in the order they're added. Each
+    // slot keeps its own preview ids (`-<slotKey>`) so renderCoverUpload is reused
+    // as-is; only the per-slot drop zones are gone.
+    const n = coverSlots().length;
     html += `
       <div class="upload-label">Required</div>
       <div class="upload-heading">Cover photos</div>
-      <div class="upload-hint">Four photos for the cover, one for each frame around the title.</div>`;
+      <div class="upload-hint">${n} photos for the cover, one for each frame around the title. They fill the frames in the order you add them.</div>
+      <div class="drop-zone" id="dz-cover">
+        <input type="file" accept=".jpg,.jpeg,.png,.heic" multiple onchange="handleCoverFilesMulti(this.files); this.value=''" />
+        <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="dz-text" id="dz-cover-text"><strong>Choose ${n} photos</strong> or drag here</div>
+        <div class="dz-formats">JPG · PNG · HEIC</div>
+      </div>
+      <div class="cover-slot-grid" id="cover-slot-grid">`;
     coverSlots().forEach(slot => {
-      const label = coverSlotLabel(slot);
       html += `
-        <div style="margin-top:14px;">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">${label}</div>
-          ${coverDropZone(`-${slot.key}`, `handleCoverFileMulti('${slot.key}', this.files[0])`)}
+        <div>
+          <div class="cover-slot-label">${coverSlotLabel(slot)}</div>
+          <div class="cover-slot-empty" id="cover-slot-empty-${slot.key}"></div>
+          ${coverSlotPreview(`-${slot.key}`)}
         </div>`;
+    });
+    html += `</div>`;
+    // Orientation warnings live under the grid, one per slot.
+    coverSlots().forEach(slot => {
+      html += `<div class="cover-orientation-warn" id="cover-orientation-warn-${slot.key}" style="display:none;"></div>`;
     });
   } else if (coverHasPhoto()) {
     html += `
@@ -851,9 +896,10 @@ function initSummary() {
     row.style.display = 'none';
   }
 
-  const cat = ORDER.category.toLowerCase();
+  const cat  = ORDER.category.toLowerCase();
+  const tmpl = (ORDER.template || '').toLowerCase();
   document.getElementById('album-notes').placeholder =
-    ALBUM_NOTE_PLACEHOLDERS[cat] || DEFAULT_NOTE_PLACEHOLDER;
+    TEMPLATE_NOTE_PLACEHOLDERS[tmpl] || ALBUM_NOTE_PLACEHOLDERS[cat] || DEFAULT_NOTE_PLACEHOLDER;
 }
 
 function cancelAddon(slug, wrapId) {
@@ -1579,24 +1625,58 @@ async function handleCoverFile(file) {
   });
 }
 
-// Joyride: one file per cover slot, keyed in coverFiles; ids suffixed by slot key.
-async function handleCoverFileMulti(key, file) {
+// Joyride: one drop zone takes all four cover photos. Each lands in the first
+// still-empty slot, so they map to Top/Left/Right/Bottom in the order added.
+// Extras beyond the slot count are ignored (the zone hides once full).
+async function handleCoverFilesMulti(fileList) {
+  const files = Array.from(fileList || []);
+  for (const file of files) {
+    const slot = coverSlots().find(s => !coverFiles[s.key]);
+    if (!slot) break;              // all slots filled
+    await handleCoverSlotFile(slot.key, file);
+  }
+  updateCoverSlotUI();
+}
+
+// Fill one cover slot. Keyed in coverFiles; preview ids suffixed by slot key.
+async function handleCoverSlotFile(key, file) {
   if (!file) return;
   coverFiles[key] = file;
   const slot = coverSlots().find(s => s.key === key);
+  document.getElementById(`cover-slot-empty-${key}`)?.style.setProperty('display', 'none');
   await renderCoverUpload(file, {
     sfx: `-${key}`,
     slotOrient: slot?.orientation,
-    onClear: () => { delete coverFiles[key]; },
+    onClear: () => {
+      delete coverFiles[key];
+      document.getElementById(`cover-slot-empty-${key}`)?.style.removeProperty('display');
+      updateCoverSlotUI();
+    },
   });
+}
+
+// Keep the shared drop zone in step with how many slots are still empty.
+function updateCoverSlotUI() {
+  if (!isMultiCover()) return;
+  const dz = document.getElementById('dz-cover');
+  if (!dz) return;
+  const remaining = coverSlots().filter(s => !coverFiles[s.key]).length;
+  dz.style.display = remaining ? '' : 'none';
+  const txt = document.getElementById('dz-cover-text');
+  if (txt && remaining) {
+    txt.innerHTML = `<strong>Choose ${remaining} ${remaining === 1 ? 'photo' : 'photos'}</strong> or drag here`;
+  }
 }
 
 // Shared preview/HEIC/low-res/orientation logic for one cover photo. Element ids
 // are `dz-cover${sfx}`, `cover-preview${sfx}`, etc. — sfx is '' for the single
 // cover and `-<slotKey>` for each Joyride slot. onClear resets the caller's state.
+// A multi-cover slot has no drop zone of its own (one shared zone feeds them all),
+// so `dz-cover${sfx}` is absent there and every access to it is optional.
 async function renderCoverUpload(file, opts) {
   const sfx = opts.sfx || '';
-  document.getElementById(`dz-cover${sfx}`).style.display = 'none';
+  const dz = document.getElementById(`dz-cover${sfx}`);
+  if (dz) dz.style.display = 'none';
   const warnEl = document.getElementById(`cover-orientation-warn${sfx}`);
   if (warnEl) { warnEl.style.display = 'none'; warnEl.textContent = ''; }
 
@@ -1612,7 +1692,7 @@ async function renderCoverUpload(file, opts) {
     opts.onClear();
     preview.style.display = 'none';
     if (warnEl) { warnEl.style.display = 'none'; warnEl.textContent = ''; }
-    document.getElementById(`dz-cover${sfx}`).style.display = '';
+    if (dz) dz.style.display = '';
   };
 
   if (isImage(file)) {
@@ -2044,27 +2124,15 @@ function initDragDrop() {
       el.classList.remove('drag-over');
       const files = e.dataTransfer.files;
       if (id === 'dz-cover') {
-        handleCoverFile(files[0]);
+        // Joyride's shared cover zone takes all four at once; every other
+        // template's cover takes exactly one.
+        if (isMultiCover()) handleCoverFilesMulti(files);
+        else handleCoverFile(files[0]);
       } else {
         handleMainFiles(files);
       }
     });
   });
-
-  // Joyride: one drop zone per cover slot (dz-cover-<slotKey>).
-  if (isMultiCover()) {
-    coverSlots().forEach(slot => {
-      const el = document.getElementById(`dz-cover-${slot.key}`);
-      if (!el) return;
-      el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
-      el.addEventListener('dragleave', ()  => el.classList.remove('drag-over'));
-      el.addEventListener('drop', e => {
-        e.preventDefault();
-        el.classList.remove('drag-over');
-        handleCoverFileMulti(slot.key, e.dataTransfer.files[0]);
-      });
-    });
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────

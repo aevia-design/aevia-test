@@ -6,6 +6,15 @@ const BASE = 'http://localhost:8080/pages';
 const browser = await chromium.launch();
 const results = [];
 
+// Four real photos for the Joyride cover, in a known order so the smoke test can
+// assert they map to Top/Left/Right/Bottom in the order they were added.
+const PHOTOS = [
+  'qa/test-photos/wander/1-at-the-table-upscaled.png',
+  'qa/test-photos/wander/11-friends-upscaled.png',
+  'qa/test-photos/wander/12-drink-upscaled.png',
+  'qa/test-photos/wander/41- jump_upscaled.jpg',
+];
+
 async function run(label, query, checks) {
   const page = await browser.newPage();
   const errors = [];
@@ -34,29 +43,63 @@ await run('SCRIBBLE', 'template=Scribble&category=kids&pages=40&price=70&back=sc
   }));
 });
 
-// ── Joyride: FOUR labelled cover zones, four caption fields, isMultiCover() true
+// ── Joyride: ONE cover zone feeding four labelled slots (S135 Pass B — was four
+// separate zones). Drives a real 4-file upload through the shared input.
 await run('JOYRIDE', 'template=Joyride&category=adventures&pages=40&price=70&back=collections.html', async (page) => {
   const base = await page.evaluate(() => ({
-    singleCoverZone: !!document.getElementById('dz-cover'),
-    multiCoverZones: [...document.querySelectorAll('[id^="dz-cover-"]')].map(e => e.id),
+    sharedCoverZone: !!document.getElementById('dz-cover'),
+    perSlotZones: [...document.querySelectorAll('[id^="dz-cover-"]')].map(e => e.id)
+                    .filter(id => id !== 'dz-cover-text'),   // the zone's own label
+    slotLabels: [...document.querySelectorAll('.cover-slot-label')].map(e => e.textContent),
+    emptyPlaceholders: document.querySelectorAll('.cover-slot-empty').length,
     coverCapKeys: [...document.querySelectorAll('[id^="cover-cap-"]')].map(e => e.id),
     isMulti: isMultiCover(),
-    slotKeys: coverSlots().map(s => s.key),
+    dzText: document.getElementById('dz-cover-text')?.textContent.trim(),
+    notePlaceholder: document.getElementById('album-notes')?.placeholder,
   }));
-  // Simulate uploading all four cover photos, then check the validator passes.
-  const validation = await page.evaluate(() => {
-    coverSlots().forEach(s => { coverFiles[s.key] = new File([new Uint8Array([1])], `${s.key}.jpg`, { type: 'image/jpeg' }); });
-    // fill primary caption so caption validation passes too
+
+  // Real upload: four photos in one go through the single input.
+  await page.setInputFiles('#dz-cover input[type=file]', PHOTOS);
+  await page.waitForTimeout(900);
+
+  const afterUpload = await page.evaluate(() => ({
+    // Files landed in slot order = drop order.
+    slotToFile: coverSlots().map(s => [s.key, coverFiles[s.key]?.name || null]),
+    filledPreviews: [...document.querySelectorAll('[id^="cover-preview-"]')]
+      .filter(e => e.classList.contains('single-preview') && e.style.display === 'block').length,
+    hiddenPlaceholders: [...document.querySelectorAll('.cover-slot-empty')]
+      .filter(e => e.style.display === 'none').length,
+    dzHiddenWhenFull: document.getElementById('dz-cover')?.style.display === 'none',
+  }));
+
+  // Caption + validation.
+  const validationAll = await page.evaluate(() => {
     const cap = document.getElementById('cover-cap-name');
     if (cap) cap.value = 'Hot Getaway in Milan';
     return validateCoverStep();
   });
-  // And that removing one is caught.
-  const missingOne = await page.evaluate(() => {
-    delete coverFiles.coverLeft;
-    return validateCoverStep();
+
+  // Removing one photo re-opens the zone and re-shows that slot's placeholder.
+  const afterRemove = await page.evaluate(() => {
+    document.querySelector('#cover-preview-inner-coverLeft .single-preview-remove').click();
+    return {
+      leftCleared: !coverFiles.coverLeft,
+      placeholderBack: document.getElementById('cover-slot-empty-coverLeft')?.style.display !== 'none',
+      dzVisibleAgain: document.getElementById('dz-cover')?.style.display !== 'none',
+      dzText: document.getElementById('dz-cover-text')?.textContent.trim(),
+      validation: validateCoverStep(),
+    };
   });
-  return { ...base, validationAll: validation, validationMissingLeft: missingOne };
+
+  // The re-added photo refills the freed slot (not appended at the end).
+  await page.setInputFiles('#dz-cover input[type=file]', [PHOTOS[0]]);
+  await page.waitForTimeout(600);
+  const afterRefill = await page.evaluate(() => ({
+    slotToFile: coverSlots().map(s => [s.key, coverFiles[s.key]?.name || null]),
+    validation: validateCoverStep(),
+  }));
+
+  return { ...base, afterUpload, validationAll, afterRemove, afterRefill };
 });
 
 console.log(JSON.stringify(results, null, 2));
