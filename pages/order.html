@@ -5,9 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Create your book — Aevia</title>
   <style>
-    /* Cormorant Garamond — used in the Wander FP1 spread preview to match the engine's itinerary page */
+    /* FP1 spread-preview faces — each template's itinerary page renders in its own
+       font, so every map template's face has to be registered here to match the engine.
+       Cormorant Garamond = Wander; Mulish = Joyride. */
     @font-face { font-family: 'Cormorant Garamond'; src: url('../assets/fonts/CormorantGaramond-Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
     @font-face { font-family: 'Cormorant Garamond'; src: url('../assets/fonts/CormorantGaramond-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+    @font-face { font-family: 'Mulish'; src: url('../assets/fonts/Mulish-Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
     :root {
       --bg: #fafaf8; --surface: #f3efe9; --border: #e4dfd8;
       --text: #1a1a1a; --muted: #7d7570; --accent-dk: #a8895f;
@@ -563,18 +566,23 @@ const ORDER = {
 
 // ── Template registry: pick the active template's data by the `template` param.
 // Unknown / missing names fall back to Scribble (mirrors the chunk-020 engine seam).
+// `svgBase` mirrors the engine + customer-preview registries (same relative depth
+// as customer-preview, both being in pages/) — the map preview needs the ACTIVE
+// template's asset folder, which is not the same for every template.
 const TEMPLATE_REGISTRY = {
-  scribble: () => window.SCRIBBLE_DATA,
-  wander:   () => window.WANDER_DATA,
-  newborn:  () => window.NEWBORN_DATA,
-  papercut: () => window.PAPERCUT_DATA,
-  tender:   () => window.TENDER_DATA,
-  joyride:  () => window.JOYRIDE_DATA,
+  scribble: { data: () => window.SCRIBBLE_DATA, svgBase: '../assets/Template_Scribble/Spreads/' },
+  wander:   { data: () => window.WANDER_DATA,   svgBase: '../assets/Template_Wander/' },
+  newborn:  { data: () => window.NEWBORN_DATA,  svgBase: '../assets/Template_Newborn/' },
+  papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../assets/Template_Papercut/SVG/' },
+  tender:   { data: () => window.TENDER_DATA,   svgBase: '../assets/Template_Tender/' },
+  joyride:  { data: () => window.JOYRIDE_DATA,  svgBase: '../assets/Template_Joyride/SVG/' },
 };
-function templateData() {
+function templateEntry() {
   const key = (ORDER.template || '').toLowerCase();
-  return (TEMPLATE_REGISTRY[key] || TEMPLATE_REGISTRY.scribble)();
+  return TEMPLATE_REGISTRY[key] || TEMPLATE_REGISTRY.scribble;
 }
+function templateData()    { return templateEntry().data(); }
+function templateSvgBase() { return templateEntry().svgBase; }
 
 // Resolve an addon slug to its actual functional-spread key, case-insensitively.
 // Scribble/Wander slugs map straight ('fp1' → 'FP1'); Newborn's functional keys
@@ -1355,11 +1363,14 @@ function renderRegionMap(slug) {
     return;
   }
 
-  // Rough spread preview: the two real Wander FP1 pages side by side — region map
-  // on the left, the actual itinerary page (its own SVG background + the route text
+  // Rough spread preview: the two real FP1 pages side by side — region map on the
+  // left, the actual itinerary page (its own SVG background + the route text
   // dropped into the engine's text-panel position) on the right. Mirrors how the
   // staff engine renders this spread; only the final staff typesetting is missing.
-  const ASSET_BASE = '../assets/Template_Wander/';
+  // Base must come from the ACTIVE template: Joyride's assets sit under an SVG/
+  // subfolder and use different map filenames, so a hardcoded Wander base 404s
+  // every image on this page.
+  const ASSET_BASE = templateSvgBase();
   // clientWidth is 0 when the step panel is hidden (the map can be drawn before the
   // Special step is shown). Fall back to a sensible width; refreshCountryMaps()
   // re-renders at the true width once the step becomes visible.
@@ -1386,7 +1397,7 @@ function renderRegionMap(slug) {
     const weight   = tp.style === 'light' ? 300 : 400;
     panelStyle = `position:absolute;left:${panelL}px;top:${panelT}px;width:${panelW}px;height:${panelH}px;`
       + `display:flex;flex-direction:column;justify-content:${tp.valign === 'center' ? 'center' : 'flex-start'};`
-      + `text-align:${tp.halign || 'center'};font-family:'Cormorant Garamond',var(--serif);font-weight:${weight};`
+      + `text-align:${tp.halign || 'center'};font-family:'${tp.font || 'Cormorant Garamond'}',var(--serif);font-weight:${weight};`
       + `font-size:${fontPx}px;line-height:${tp.lineSpacing || 1.28};letter-spacing:${tp.letterSpacing || 0}em;`
       + `color:${tp.color || '#12264b'};z-index:1;overflow:hidden;`;
   }
@@ -2522,7 +2533,12 @@ function calcPhotoTarget(pageCount, selectedFPs) {
   const totalSpreads  = pageCount / 2;
   const remaining     = totalSpreads - 1;
   const standardCount = remaining - bodyFPs.length;
-  const stdIds = ['SP1','SP2','SP3','SP4','SP5','SP6'];
+  // Derived from the template's own spread keys — was hardcoded to SP1–SP6, which
+  // left SP7–SP9 (Joyride) out of the sequence and under-counted its books by 4
+  // photos. Mirrors template-engine.html + customer-preview.html buildBookSequence.
+  const stdIds = Object.keys(DATA?.spreads || {})
+    .filter(id => /^SP[1-9]\d*$/.test(id))
+    .sort((a, b) => parseInt(a.slice(2), 10) - parseInt(b.slice(2), 10));
   const standards = [];
   for (let i = 0; i < standardCount; i++) standards.push(stdIds[i % stdIds.length]);
 
