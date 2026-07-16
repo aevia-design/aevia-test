@@ -697,6 +697,33 @@ function drawTextNoLig(pg, text, opts) {
   }
 }
 
+// Resolve which cut a COVER caption should use, from the caption's own definition
+// plus any per-order style override. Pure — exported for tests.
+//
+// Precedence: an explicitly declared weight/italic (override first, then the
+// caption's own) wins; failing that, the caption's own `style` string.
+//
+// That `style` fallback is what the three SPREAD caption paths always did, and its
+// absence here silently dropped text from print (S136): Joyride's cover captions
+// declare `style: 'light'` with no numeric weight, so this derived 'regular' from
+// the 400 default and asked for `Mulish_regular`. Mulish is the only family in
+// FONT_FILE_MAP without a `_regular` cut, so lookupFont() returned null and
+// drawCoverCaptions() skipped the caption entirely — the sub-labels were simply
+// missing from the cover, with no error. See tests/cover-caption-fonts.test.js.
+function coverCaptionStyle(capDef = {}, ov = {}) {
+  const declaresWeight = ov.weight !== undefined || ov.italic !== undefined
+                      || capDef.weight !== undefined || capDef.italic !== undefined;
+  if (!declaresWeight) return capDef.style || 'regular';
+  const capWeight = ov.weight !== undefined ? ov.weight : (capDef.weight !== undefined ? capDef.weight : 400);
+  const capItalic = ov.italic !== undefined ? ov.italic : (capDef.italic || false);
+  return (capItalic && capWeight >= 500 && capWeight < 600) ? 'mediumitalic'
+       : capWeight >= 700 ? 'bold'
+       : capWeight >= 600 ? 'semibold'
+       : capWeight >= 500 ? 'medium'
+       : capItalic        ? 'italic'
+       :                    'regular';
+}
+
 function lookupFont(fontMap, fontName, style) {
   // Normalise: lowercase + strip hyphens so 'Semi-Bold' → 'semibold' matches the font map key.
   const normStyle = (style || 'regular').toLowerCase().replace(/-/g, '');
@@ -1106,14 +1133,7 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
     // Default weight/italic from the caption's own styling (capDef), not a hardcoded
     // 400/non-italic — so e.g. the Newborn Baskervville subtitle is italic 500 (→
     // mediumitalic) by default. User overrides (ov.*) still win. Mirrors the engine.
-    const capWeight = ov.weight !== undefined ? ov.weight : (capDef.weight !== undefined ? capDef.weight : 400);
-    const capItalic = ov.italic !== undefined ? ov.italic : (capDef.italic || false);
-    const style    = (capItalic && capWeight >= 500 && capWeight < 600) ? 'mediumitalic'
-                   : capWeight >= 700 ? 'bold'
-                   : capWeight >= 600 ? 'semibold'
-                   : capWeight >= 500 ? 'medium'
-                   : capItalic        ? 'italic'
-                   :                    'regular';
+    const style = coverCaptionStyle(capDef, ov);
     const font = lookupFont(fontMap, fontName, style);
     if (!font) { console.warn(`  ⚠ Cover caption font not found: ${fontName}`); continue; }
 
@@ -1588,4 +1608,4 @@ async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, p
   return main();  // main() returns previewPdfBytes in server mode
 }
 
-module.exports = { generatePdfFromFirestore };
+module.exports = { generatePdfFromFirestore, coverCaptionStyle, lookupFont, FONT_FILE_MAP };

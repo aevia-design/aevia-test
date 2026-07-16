@@ -9,6 +9,7 @@
 
 | # | Item | Priority | Notes |
 |---|------|----------|-------|
+| 77 | Papercut cover year prints regular instead of bold | Low | Found while fixing the Joyride cover-caption bug (S136). `papercut-data.js` declares its cover captions' cut as a **string** — `weight: 'bold'` — but `coverCaptionStyle()` in `scripts/export-pdf.js` compares numerically, and `'bold' >= 700` is `false` (string→NaN), so it falls through to `'regular'`. `Source Sans 3_bold` IS registered, so nothing vanishes — the year just prints in the wrong weight. **Cosmetic, not destructive** (unlike Joyride's, where the missing cut deleted the text). Fix options: (a) change the data to `weight: 700`, or (b) have `coverCaptionStyle()` accept a string weight and map it (`'bold'`→700 etc.) — (b) also guards the next template that does this. Check the engines resolve it the same way before changing the data (parity). `tests/cover-caption-fonts.test.js` passes today because it only asserts the cut RESOLVES, not that it's the intended one. |
 | 7 | Fix hero slide 3 text alignment | Medium | Slide 3 has inline `style="text-align:center"` while slides 1 & 2 are left-aligned. Remove the inline style. `pages/home.html:331` |
 | 43 | Template engine scroll performance | Medium | After alt-tab and return, interface stalls 10–15s before responding. Investigate virtual scroll or viewport-gated rendering. `pages/template-engine.html` |
 | 44 | Prune dashboard status bar | High | Status bar logic needs review — unclear what it currently shows, may have stale or redundant states. `pages/dashboard.html` |
