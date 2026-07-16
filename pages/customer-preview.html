@@ -225,6 +225,13 @@
     .page-body.preview-mode {
       padding-left: 0;
       display: flex;
+      /* Column, NOT the flex default of row. page-body's children here are the
+         canvas AND the quality-note paragraph — as a row they became side-by-side
+         columns, so the note sat beside the book eating ~680px and squeezed the
+         spread off-centre and past the right edge. Stacking puts the note back
+         under the book, the way it already sits in edit mode (where page-body
+         isn't flex at all, so its margin:auto works). */
+      flex-direction: column;
       align-items: center;
       justify-content: center;
     }
@@ -261,6 +268,32 @@
       margin: 0 10px;
     }
     .page-body.preview-mode .edit-hint { display: none; }
+    /* Edit mode: a centred paragraph under the last spread. (These lived inline on
+       the element until S136 — inline styles beat the preview-mode rule below, so
+       the override silently lost. Only `display` stays inline, since JS owns it.) */
+    .quality-note {
+      max-width: 680px;
+      margin: 18px auto 4px;
+      text-align: center;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+    /* Preview hides .edit-hint, which frees the band under the nav — the only space
+       in this mode that isn't taken (the bottom holds the floating flip pill and the
+       fixed action bar, with ~17px between them). So the note becomes a fixed top
+       bar here, the same treatment .edit-hint gets in edit mode.
+       adjustHintReserve() measures whichever bar is showing and reserves for it. */
+    .page-body.preview-mode .quality-note {
+      position: fixed;
+      top: 69px; left: 0; right: 0;
+      z-index: 80;
+      margin: 0;
+      max-width: none;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 40px;
+    }
     /* Preview is view-only: no swap-drag, repositioning, or caption edits.
        (Flip navigation lives outside #book-canvas, so it stays clickable.) */
     .page-body.preview-mode #book-canvas [contenteditable],
@@ -366,6 +399,10 @@
       width: 100%;
       overflow: hidden;
     }
+    /* Centre the cover in preview, mirroring .spread-pages. The canvas is a fixed
+       1227px inside a 100%-wide wrap; margin:auto centres the box and fitBook()
+       switches its transform-origin to top-centre so the scaled result stays put. */
+    .page-body.preview-mode .cover-canvas { margin: 0 auto; }
     .cover-caption:empty::before {
       content: attr(data-label);
       color: #c0b8ae;
@@ -784,7 +821,7 @@
       </div>
     </div>
   </div>
-  <p class="quality-note" id="quality-note" style="display:none;max-width:680px;margin:18px auto 4px;text-align:center;font-size:12.5px;line-height:1.5;color:var(--muted);">
+  <p class="quality-note" id="quality-note" style="display:none;">
     Photos can look softer here than in print. We show a lighter version so your preview loads fast, then print your book from your original, full-resolution photos. <a href="help.html#preview-quality" target="_blank" rel="noopener" style="color:var(--accent-dk);border-bottom:1px solid currentColor;text-decoration:none;white-space:nowrap;">Learn more</a>
   </p>
 </div>
@@ -1793,16 +1830,63 @@
   // (which already nets out the sidebar + padding); retries next frame if not yet
   // measurable. transform:scale doesn't change layout box size, so we also collapse
   // each wrapper's height to the scaled height (else scaled spreads leave empty gaps).
+  // How much height a preview spread may occupy, or 0 in edit mode (where the page
+  // scrolls through every spread and only width matters).
+  //
+  // Everything here is measured from FIXED chrome — never from the spread's own
+  // laid-out position. preview-mode centres the stack with justify-content, so
+  // scaling the spread moves it; reading its rect back would chase its own tail.
+  function previewHeightBudget(wrap) {
+    const body = document.getElementById('page-body');
+    if (!body || !body.classList.contains('preview-mode')) return 0;
+
+    const px = (v) => parseFloat(v) || 0;
+    const canvasWrap = wrap.closest('.book-canvas-wrap');
+    const header = wrap.closest('.spread-row')?.querySelector('.spread-row-header');
+    const bar = document.getElementById('submit-bar');
+    const barVisible = bar && getComputedStyle(bar).display !== 'none';
+
+    const cs = getComputedStyle(body);
+    const cws = canvasWrap ? getComputedStyle(canvasWrap) : null;
+    const headerCs = header ? getComputedStyle(header) : null;
+
+    const used =
+        px(cs.paddingTop)                                            // nav + the fixed top bar
+      + (cws ? px(cws.paddingTop) + px(cws.paddingBottom) : 0)
+      + (header ? header.offsetHeight + px(headerCs.marginBottom) : 0)
+      + (barVisible ? bar.offsetHeight : 0)                          // fixed action bar
+      + 24;                                                          // breathing room
+
+    // Floor it: on a very short window a tiny spread is worse than a little scroll.
+    return Math.max(280, window.innerHeight - used);
+  }
+
   function fitBook() {
-    // Cover
+    // Reserve for the fixed top bar FIRST — previewHeightBudget() reads page-body's
+    // paddingTop, so it has to be settled before any spread is measured.
+    adjustHintReserve();
+    // Cover.
+    // Only touch it when it's actually on screen. Preview renders ONE row at a
+    // time, so on any spread but the cover its row is display:none and clientWidth
+    // is 0 — and the `retry` below would then early-return on every frame, for
+    // ever: the spreads loop was never reached (so a flipped-to spread kept its
+    // stale edit-mode scale) and rAF span at full tilt. The retry is only for the
+    // cover being visible but not yet laid out.
     const coverWrap = document.querySelector('.cover-scale-wrap');
-    if (coverWrap) {
+    if (coverWrap && coverWrap.offsetParent !== null) {
       const canvas = coverWrap.querySelector('.cover-canvas');
       const avail = coverWrap.clientWidth;
       if (!avail) { requestAnimationFrame(fitBook); return; }
       if (canvas) {
-        const s = Math.min(1, avail / 1227);
-        canvas.style.transformOrigin = 'top left';
+        // The cover is spread 0 in preview, so it needs the same height budget as a
+        // spread — it just scales off its own 1227px natural width.
+        let s = Math.min(1, avail / 1227);
+        const budget = previewHeightBudget(coverWrap);
+        if (budget) s = Math.min(s, budget / 600);
+        // Same rule as .spread-pages: top-left in edit (to line up with the sidebar),
+        // top-centre in preview so the shrunk cover stays centred instead of
+        // collapsing towards the left edge. Paired with margin:0 auto in the CSS.
+        canvas.style.transformOrigin = budget ? 'top center' : 'top left';
         canvas.style.transform = `scale(${s})`;
         coverWrap.style.height = (600 * s) + 'px';
       }
@@ -1813,11 +1897,18 @@
       if (!pages) return;
       const avail = wrap.clientWidth;
       if (!avail) return;
-      const s = Math.min(1, avail / 1204);
+      let s = Math.min(1, avail / 1204);
+      // Preview shows ONE spread and is meant to be taken in at a glance, so it
+      // must fit the viewport's HEIGHT too. Width-only scaling made the spread a
+      // constant 600px tall whatever the window, so on a laptop-height screen its
+      // bottom slid under the fixed action bar and captions were cut off. Edit
+      // mode stacks every spread and scrolls, so width-only is right there —
+      // hence the budget only applies in preview (returns 0 otherwise).
+      const budget = previewHeightBudget(wrap);
+      if (budget) s = Math.min(s, budget / 600);
       pages.style.transform = `scale(${s})`;
       wrap.style.height = (600 * s) + 'px';
     });
-    adjustHintReserve();
   }
 
   // Reserve exactly the fixed instruction bar's height below the nav, measured live so
@@ -1826,10 +1917,14 @@
   // decide. (Replaces the old hard-coded one-line reserve.)
   function adjustHintReserve() {
     const body = document.getElementById('page-body');
-    const hint = document.getElementById('edit-hint');
     if (!body) return;
-    if (hint && getComputedStyle(hint).display !== 'none') {
-      body.style.paddingTop = (69 + hint.offsetHeight + 8) + 'px';
+    // Whichever fixed bar sits under the nav in this mode: the instruction bar in
+    // edit, the quality note in preview (where the instruction bar is hidden).
+    const bar = body.classList.contains('preview-mode')
+      ? document.getElementById('quality-note')
+      : document.getElementById('edit-hint');
+    if (bar && getComputedStyle(bar).display !== 'none') {
+      body.style.paddingTop = (69 + bar.offsetHeight + 8) + 'px';
     } else {
       body.style.paddingTop = '';
     }
@@ -2870,6 +2965,11 @@
     document.querySelectorAll('.preview-dot').forEach((dot, idx) => {
       dot.classList.toggle('active', idx === window.previewSpreadIndex);
     });
+
+    // Re-fit the row we just revealed. fitBook skips hidden rows (clientWidth 0), so
+    // without this a flipped-to spread keeps whatever scale it was last given — the
+    // edit-mode one, measured against a narrower canvas because the sidebar was there.
+    requestAnimationFrame(fitBook);
   }
 
   // ── Mode toggle ──
