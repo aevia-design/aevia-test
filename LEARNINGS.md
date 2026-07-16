@@ -1,3 +1,30 @@
+## 2026-07-16 — A recorded command is a claim, and the deploy reads your working tree (S137)
+
+Two failures that share a root: **the gap between what a file says is true and what is true.**
+
+**1. `gcloud run deploy --source .` uploads the WORKING TREE, not `HEAD`.** It will happily ship a
+file that exists on no branch, in no commit, on nobody else's machine. Combined with the
+Dockerfile baking in all of `assets/` and a renderer that fails **silently** (browser shows new,
+PDF renders old), that is a recipe for a production artefact nobody can reproduce or explain.
+**Commit before deploying.** The corollary bit the same day in reverse: a commit sitting unpushed
+in the Codespace means the owner's `git pull` on another machine silently gets a stale tree.
+Codespace state is not shared state until it's pushed.
+
+**2. A command written into a handover is an untested claim.** S136 recorded a gcloud invocation
+that was wrong twice over — a path that didn't exist, in a `$(ls -d …)` form that fails *silently*
+(no match → empty var → a confusing downstream error instead of "no such directory"). It cost the
+owner a failed command and a round-trip. Two rules: **if the next session is expected to run it,
+run it before writing it down**; and **prefer forms that fail loudly** — a literal path errors
+honestly, command substitution swallows the evidence.
+
+**Also: don't sync data to a changed asset reflexively — measure which one moved.** Xenia's new
+Spread 8 SVG shifted its frames 0.4mm and looked like it demanded a coordinate sync. It didn't:
+the coords already matched it to ≤0.22mm, and matched the *old* SVG only to 0.58mm. She had moved
+the artwork **to match the data**. Syncing would have made it worse. The check is cheap — frame
+window → mm (`200 ÷ 566.929` for a Joyride page) → centre, compared against the JS `x`/`y` (which
+are **content-origin centres**, not top-left, not bleed-origin). Matching w/h to three decimals is
+what proves you're reading the right window before you trust the position.
+
 ## 2026-07-16 — The four surfaces have INTERNAL paths that drift too (Joyride, S136)
 
 Extends the S135 entry below. The rule "grep all four surfaces" is necessary but **not
