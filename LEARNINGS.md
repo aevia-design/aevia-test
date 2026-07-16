@@ -1,3 +1,38 @@
+## 2026-07-16 — The four surfaces have INTERNAL paths that drift too (Joyride, S136)
+
+Extends the S135 entry below. The rule "grep all four surfaces" is necessary but **not
+sufficient**: a single surface can hold several code paths for the same concept, and they rot
+apart. `export-pdf.js` has **four** caption paths — three for spreads, one for the cover. All
+three spread paths resolve a font cut as `ov.weight !== undefined ? derive(…) : (ov.italic ?
+'italic' : capDef.style || 'regular')`. The cover path alone never read `capDef.style`, deriving
+the cut from a numeric weight only. Joyride's cover captions declare `style: 'light'` and no
+weight (mirroring Xenia's CSV), so the cover asked for `Mulish_regular` and **both sub-labels were
+silently deleted from the print PDF** — present in both engines, correctly saved in book state.
+
+**Why it survived:** four coincidences had to line up. (1) Only Joyride declares a cut as a
+*string* — every other template uses numeric `weight` or nothing. (2) `Mulish` is the only family
+in `FONT_FILE_MAP` with **no `_regular` cut**, so `lookupFont`'s `|| ${font}_regular` fallback —
+which silently rescues every other family with a slightly-wrong weight — resolved to the same
+missing key and returned `null`. (3) Only the cover path ignored `style`, so Joyride's *spread*
+Mulish captions printed fine and the symptom looked template-specific rather than path-specific.
+(4) The failure mode is `console.warn` + `continue`, not a throw.
+
+**Two durable rules:**
+- **When you find a hardcode/divergence on a surface, grep that surface for OTHER paths doing the
+  same job.** "Cover vs spread" is the recurring split in this codebase — the cover is a second
+  path inside all four surfaces, not just a different data shape.
+- **A missing font cut deletes text from a print PDF with no error.** Adding a font means adding
+  every cut any template's data references, and checking whether that data expresses the cut as a
+  `style` string or a numeric `weight`. Data and renderer must agree on which.
+
+Guard: `tests/cover-caption-fonts.test.js` asserts every template's cover captions resolve to a
+registered cut — the invariant, not the instance. It only checks a cut **resolves**, not that it's
+the *intended* one: Papercut declares `weight: 'bold'` as a string, `'bold' >= 700` is `false`, so
+its cover year prints regular (TO-DOS #77, cosmetic — nothing vanishes).
+
+Same shape as the "silent" family below: nothing threw, no test failed, and the wrong output
+looked plausible. See also [[project_pdf_font_rules]] Rule 5.
+
 ## 2026-07-16 — A de-hardcode sweep must cover FOUR surfaces, not two (Joyride, S135)
 
 Two S135 bugs extend two earlier entries. Both were **silent** — nothing threw, nothing failed a

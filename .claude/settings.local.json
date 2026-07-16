@@ -71,7 +71,8 @@
       "Bash(awk 'NR>=2400 && NR<=3210 && /color/ {print NR\": \"$0}' pages/staff/template-engine.html)",
       "Bash(awk -F: '$1>1700 && $1<2500')",
       "Bash(awk 'NR>=2386 && NR<=2760' pages/staff/template-engine.html)",
-      "Bash(awk 'NR>=711 && NR<=736 {print NR\": \"$0}' pages/staff/template-engine.html)"
+      "Bash(awk 'NR>=711 && NR<=736 {print NR\": \"$0}' pages/staff/template-engine.html)",
+      "Bash(node scripts/sync-joyride-csv.mjs --dry-run)"
     ]
   },
   "hooks": {

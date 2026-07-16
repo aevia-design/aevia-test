@@ -4,6 +4,9 @@ functions/serviceAccountKey.json
 motif-engine/.env
 aevia-uploads-*.json
 qa/.env
+# Minted customer-preview token URLs (qa/p1-preview-token.mjs). Live access tokens
+# to a real order — its own comment said "gitignored-ish", but nothing ignored them.
+qa/.preview-url-*.txt
 
 # QA test photo libraries — real photos, local-only (privacy + size)
 qa/test-photos/
