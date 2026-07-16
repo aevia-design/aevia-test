@@ -1,3 +1,46 @@
+## 2026-07-16 — A de-hardcode sweep must cover FOUR surfaces, not two (Joyride, S135)
+
+Two S135 bugs extend two earlier entries. Both were **silent** — nothing threw, nothing failed a
+test, and the wrong output looked plausible.
+
+**1. `order.html` is the surface everyone forgets.** The S129 entry below says the `['SP1'…'SP6']`
+hardcode lived "in three places". There was a **fourth**: `calcPhotoTarget()` in `pages/order.html`.
+Because the sweep covered the two engines, Joyride's order form asked for **4 fewer photos than the
+book has slots** (49→45 with no FPs). The same session found `renderRegionMap()`'s `ASSET_BASE`
+hardcoded to `'../assets/Template_Wander/'`, which 404'd **every** map image for Joyride (its assets
+sit under an `SVG/` subfolder with different filenames) — and its itinerary font hardcoded to
+Wander's Cormorant Garamond.
+
+**The rule: template-shaped logic lives on FOUR surfaces — `template-engine.html`,
+`customer-preview.html`, `order.html`, and `scripts/export-pdf.js`.** When you de-hardcode one, grep
+all four in the same pass. The order form is easy to overlook because it feels like "just a form",
+but it computes the photo count and renders the FP1 map preview. Its registry now carries `svgBase`
+like the other two, so the seam is closed rather than special-cased.
+
+**Why nothing caught it:** the two engines were correct, so `engine-parity` was green; the order
+form's count had no test at all (the existing `photo-count-guard` only checks the *message*). The
+other five templates masked it — they only have SP1–SP6, so the hardcode was **coincidentally
+correct** until a template with SP7+ arrived. Guard the *invariant*, not the number:
+`tests/photo-count-sequence.test.js` now asserts every template's standard spreads are **reachable**,
+which catches this for any future template.
+
+**2. A `*-data.js` edit needs a renderer redeploy — and this one fails SILENTLY.** The S81 entry
+below fixed deploy-skew by throwing on an unknown template *name*. That guard does **not** cover a
+data change: the Dockerfile does `COPY assets/ ./assets/`, so coordinates are baked into the image.
+After a CSV coord re-sync you get a **split brain** — the browser (Cloudflare) uses the new coords,
+the PDF renders the old ones, diverging sub-millimetre with no error. Caught at S135 before the owner
+tested: the renderer had been deployed at S133, *before* his re-syncs, so a PDF-vs-preview comparison
+would have shown a ~0.3–0.7 mm drift **that was already fixed in the code**. **Check
+`git diff <deployed-commit>..HEAD -- assets/` before trusting any PDF comparison.**
+
+**Method note (reinforces [[feedback_inspect_render_first]]):** both bugs were found by *measuring*,
+not reasoning — a probe that ran Joyride against Wander as a control and printed each image's
+`naturalWidth` (0 vs 4056) and each config's slot count. The control template is what made the root
+cause obvious in one run. A cosmetic fix also looked right in a screenshot but was wrong: the cover
+slots were unequal because CSS grid `1fr` floors at min-content, so nowrap filenames forced the
+columns apart (measured 149/127/120px). `minmax(0,1fr)` fixed it. Screenshots show *that* something
+is off; only the DOM says *why*.
+
 ## 2026-07-14 — The engine is full of Scribble-shaped assumptions; a new template's real cost is finding them (Joyride, S129)
 
 Adding a template mostly means **discovering hardcodes written when Scribble was the only
