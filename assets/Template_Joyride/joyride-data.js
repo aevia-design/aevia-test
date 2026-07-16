@@ -108,9 +108,9 @@ window.JOYRIDE_DATA = {
       pages: {
         right: {
           H: { bgColor: '#c2dbcc', svg: 'SP Spread 0/SP 00 H Right.svg',
-            slots: [ { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 168, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 22, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#231f20' } } ] },
+            slots: [ { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 168, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#231f20' } } ] },
           V: { bgColor: '#c2dbcc', svg: 'SP Spread 0/SP 00 V Right.svg',
-            slots: [ { slot: 1, x: 105, y: 94, xBleed: 108, yBleed: 97, w: 120, h: 150, ratio: '4:5', caption: { allowed: true, xMm: 108, yMm: 185, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 22, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#231f20' } } ] },
+            slots: [ { slot: 1, x: 105, y: 94, xBleed: 108, yBleed: 97, w: 120, h: 150, ratio: '4:5', caption: { allowed: true, xMm: 108, yMm: 185, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#231f20' } } ] },
         },
       }
     },
@@ -123,13 +123,13 @@ window.JOYRIDE_DATA = {
       pages: {
         left: {
           H: { bgColor: '#9eb7e0', svg: 'SP Spread 1/SP 01 H Left.svg',
-            slots: [ { slot: 1, x: 94.3, y: 77, xBleed: 97.3, yBleed: 80, w: 150, h: 100, ratio: '3:2', caption: { allowed: false } } ] },
+            slots: [ { slot: 1, x: 95, y: 77, xBleed: 98, yBleed: 80, w: 150, h: 100, ratio: '3:2', caption: { allowed: false } } ] },
           V: { bgColor: '#9eb7e0', svg: 'SP Spread 1/SP 01 V Left.svg',
             slots: [ { slot: 1, x: 95, y: 81, xBleed: 98, yBleed: 84, w: 107, h: 135, ratio: '107:135', caption: { allowed: false } } ] },
         },
         right: {
           H: { bgColor: '#d94027', svg: 'SP Spread 1/SP 01 H Right.svg',
-            slots: [ { slot: 1, x: 104.3, y: 100, xBleed: 107.3, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: false } } ] },
+            slots: [ { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: false } } ] },
           V: { bgColor: '#d94027', svg: 'SP Spread 1/SP 01 V Right.svg',
             slots: [ { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: false } } ] },
         },
@@ -145,7 +145,7 @@ window.JOYRIDE_DATA = {
                      { slot: 2, x: 114, y: 147, xBleed: 117, yBleed: 150, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } } ] },
           V: { bgColor: '#efe7d3', svg: 'SP Spread 2/SP 02 V Left.svg', overlayBelow: true,
             slots: [ { slot: 1, x: 52, y: 62, xBleed: 55, yBleed: 65, w: 74, h: 99, ratio: '74:99', caption: { allowed: false } },
-                     { slot: 2, x: 137.5, y: 137.5, xBleed: 140.5, yBleed: 140.5, w: 74, h: 99, ratio: '74:99', caption: { allowed: false } } ] },
+                     { slot: 2, x: 138, y: 138, xBleed: 141, yBleed: 141, w: 74, h: 99, ratio: '74:99', caption: { allowed: false } } ] },
         },
         right: {
           default: { bgColor: '#efe7d3', svg: 'SP Spread 2/SP 02 S Right.svg',
@@ -159,9 +159,9 @@ window.JOYRIDE_DATA = {
       pages: {
         left: {
           H: { bgColor: '#f2c7de', svg: 'SP Spread 3/SP 03 H Left.svg',
-            slots: [ { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 168, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 22, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } } ] },
+            slots: [ { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 168, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } } ] },
           V: { bgColor: '#f2c7de', svg: 'SP Spread 3/SP 03 V Left.svg',
-            slots: [ { slot: 1, x: 95, y: 95, xBleed: 98, yBleed: 98, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 98, yMm: 188, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 22, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } } ] },
+            slots: [ { slot: 1, x: 95, y: 95, xBleed: 98, yBleed: 98, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 98, yMm: 188, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } } ] },
         },
         right: {
           // Full-bleed square photo (206×206 over the 206mm canvas), no background.
@@ -184,8 +184,8 @@ window.JOYRIDE_DATA = {
           // M page — the mixed-orientation exception (see header note 3). Single
           // fixed variant: slot 1 vertical ON TOP (zIndex 2), slot 2 horizontal.
           default: { bgColor: '#476045', svg: 'SP Spread 4/SP 04 M Right.svg', mixed: true,
-            slots: [ { slot: 1, x: 60, y: 66.7, xBleed: 63, yBleed: 69.7, w: 80, h: 107, ratio: '80:107', orient: 'vertical', zIndex: 2, caption: { allowed: true, xMm: 46, yMm: 169, wMm: 53, hMm: 46, halign: 'left', valign: 'top', font: 'Mulish', sizePt: 22, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#ffffff' } },
-                     { slot: 2, x: 135.7, y: 145.7, xBleed: 138.7, yBleed: 148.7, w: 107, h: 80, ratio: '4:3', orient: 'horizontal', caption: { allowed: false } } ] },
+            slots: [ { slot: 1, x: 60, y: 66.7, xBleed: 63, yBleed: 69.7, w: 80, h: 107, ratio: '80:107', orient: 'vertical', zIndex: 2, caption: { allowed: true, xMm: 46, yMm: 169, wMm: 53, hMm: 46, halign: 'left', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#ffffff' } },
+                     { slot: 2, x: 136, y: 146, xBleed: 139, yBleed: 149, w: 107, h: 80, ratio: '4:3', orient: 'horizontal', caption: { allowed: false } } ] },
         },
       }
     },
@@ -209,9 +209,9 @@ window.JOYRIDE_DATA = {
       pages: {
         left: {
           H: { bgColor: '#f9d84d', svg: 'SP Spread 6/SP 06 H Left.svg',
-            slots: [ { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 168, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 22, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } } ] },
+            slots: [ { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 168, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } } ] },
           V: { bgColor: '#f9d84d', svg: 'SP Spread 6/SP 06 V Left.svg',
-            slots: [ { slot: 1, x: 95, y: 95, xBleed: 98, yBleed: 98, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 98, yMm: 188, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 22, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } } ] },
+            slots: [ { slot: 1, x: 95, y: 95, xBleed: 98, yBleed: 98, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 98, yMm: 188, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } } ] },
         },
         right: {
           default: { bgColor: '#efe7d3', svg: 'SP Spread 6/SP 06 S Right.svg',
@@ -225,9 +225,9 @@ window.JOYRIDE_DATA = {
       pages: {
         left: {
           H: { bgColor: '#9eb7e0', svg: 'SP Spread 7/SP 07 H Left.svg',
-            slots: [ { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 168, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 22, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } } ] },
+            slots: [ { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 168, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } } ] },
           V: { bgColor: '#9eb7e0', svg: 'SP Spread 7/SP 07 V Left.svg',
-            slots: [ { slot: 1, x: 95, y: 94, xBleed: 98, yBleed: 97, w: 120, h: 150, ratio: '4:5', caption: { allowed: true, xMm: 98, yMm: 185, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 22, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } } ] },
+            slots: [ { slot: 1, x: 95, y: 94, xBleed: 98, yBleed: 97, w: 120, h: 150, ratio: '4:5', caption: { allowed: true, xMm: 98, yMm: 185, wMm: 115, hMm: 10, halign: 'center', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } } ] },
         },
         right: {
           H: { bgColor: '#9eb7e0', svg: 'SP Spread 7/SP 07 H Right.svg',
@@ -252,8 +252,8 @@ window.JOYRIDE_DATA = {
         right: {
           // M page — same fixed mixed layout as SP4 right, sage colourway.
           default: { bgColor: '#c2dbcc', svg: 'SP Spread 8/SP 08 M Right.svg', mixed: true,
-            slots: [ { slot: 1, x: 60, y: 67, xBleed: 63, yBleed: 70, w: 80, h: 107, ratio: '80:107', orient: 'vertical', zIndex: 2, caption: { allowed: true, xMm: 46, yMm: 169, wMm: 53, hMm: 46, halign: 'left', valign: 'top', font: 'Mulish', sizePt: 22, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#231f20' } },
-                     { slot: 2, x: 135.7, y: 146, xBleed: 138.7, yBleed: 149, w: 107, h: 80, ratio: '4:3', orient: 'horizontal', caption: { allowed: false } } ] },
+            slots: [ { slot: 1, x: 60, y: 67, xBleed: 63, yBleed: 70, w: 80, h: 107, ratio: '80:107', orient: 'vertical', zIndex: 2, caption: { allowed: true, xMm: 46, yMm: 169, wMm: 53, hMm: 46, halign: 'left', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#231f20' } },
+                     { slot: 2, x: 136, y: 146, xBleed: 139, yBleed: 149, w: 107, h: 80, ratio: '4:3', orient: 'horizontal', caption: { allowed: false } } ] },
         },
       }
     },
@@ -267,7 +267,7 @@ window.JOYRIDE_DATA = {
                      { slot: 2, x: 114, y: 147, xBleed: 117, yBleed: 150, w: 120, h: 80, ratio: '3:2', caption: { allowed: false } } ] },
           V: { bgColor: '#f2c7de', svg: 'SP Spread 9/SP 09 V Left.svg', overlayBelow: true,
             slots: [ { slot: 1, x: 52, y: 62, xBleed: 55, yBleed: 65, w: 74, h: 99, ratio: '74:99', caption: { allowed: false } },
-                     { slot: 2, x: 137.5, y: 137.8, xBleed: 140.5, yBleed: 140.8, w: 74, h: 99, ratio: '74:99', caption: { allowed: false } } ] },
+                     { slot: 2, x: 138, y: 138, xBleed: 141, yBleed: 141, w: 74, h: 99, ratio: '74:99', caption: { allowed: false } } ] },
         },
         right: {
           default: { bgColor: '#f2c7de', svg: 'SP Spread 9/SP 09 S Right.svg',
@@ -279,7 +279,7 @@ window.JOYRIDE_DATA = {
     // ── FPintro — Intro (text only). OPENS the book, replacing standard SP0 when
     //    selected (same mechanic as Tender/Newborn Intro; the CSV labels the page
     //    "Left" but the intro renders on the right page like every other template).
-    //    TWO text boxes: textPanelTitle (Lora 36) + textPanel body (Mulish 22). ──
+    //    TWO text boxes: textPanelTitle (Lora 36) + textPanel body (Mulish 20). ──
     FPintro: {
       type: 'functional', id: 'FPintro', label: 'Intro',
       replacesFirstSpread: true,
@@ -305,7 +305,7 @@ window.JOYRIDE_DATA = {
             svg: 'FP Intro/FP 00 Intro.svg',
             slots: [],
             textPanelTitle: { caption: { allowed: true, xMm: 108, yMm: 63, wMm: 120, hMm: 15, halign: 'center', valign: 'center', font: 'Lora', sizePt: 36, style: 'regular', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } },
-            textPanel: { introFields: true, caption: { allowed: true, xMm: 108, yMm: 107, wMm: 100, hMm: 50, halign: 'center', valign: 'center', font: 'Mulish', sizePt: 22, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } }
+            textPanel: { introFields: true, caption: { allowed: true, xMm: 108, yMm: 107, wMm: 100, hMm: 50, halign: 'center', valign: 'center', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' } }
           },
         },
       }

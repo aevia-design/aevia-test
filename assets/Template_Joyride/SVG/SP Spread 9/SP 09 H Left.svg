@@ -10,10 +10,10 @@
     </g>
     <g>
       <g id="d" data-name="Photo">
-        <path id="e" data-name="Frame" d="M33.941,27.807v247.181h360.567V27.807H33.941ZM384.304,264.784H44.146V38.012h340.157v226.772Z" fill="#fff"/>
+        <rect x="33.941" y="27.807" width="360.567" height="247.181" fill="#fff"/>
       </g>
-      <g id="f" data-name="Photo">
-        <path id="g" data-name="Frame" d="M143.519,291.941v247.181h360.567v-247.181H143.519ZM493.881,528.917H153.724v-226.772h340.157v226.772Z" fill="#fff"/>
+      <g id="e" data-name="Photo">
+        <rect x="143.519" y="291.941" width="360.567" height="247.181" fill="#fff"/>
       </g>
     </g>
   </g>
