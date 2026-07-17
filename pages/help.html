@@ -65,6 +65,7 @@
     .page-sub {
       font-family: var(--serif); font-style: italic; font-size: 18px;
       color: var(--muted); line-height: 1.65; max-width: 520px; margin: 0 auto;
+      text-wrap: balance;
     }
 
     /* ══ FAQ SECTION ══ */
@@ -242,7 +243,55 @@
 
   <div class="faq-list" style="max-width:720px; margin: 0 auto;">
 
-    <div class="faq-item open" id="q1">
+    <div class="faq-item open" id="q4">
+      <div class="faq-q" onclick="toggle(this)">
+        How does ordering work?
+        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
+        </svg>
+      </div>
+      <div class="faq-a">
+        <p>Choose your template, upload your photos and a few words. Within 48 hours you'll get your finished preview: the whole book, laid out by our team. Make the final touches if you like, swap a photo, tweak a caption, then approve. You pay only then, and your book goes to print.</p>
+      </div>
+    </div>
+
+    <div class="faq-item" id="preview-reject">
+      <div class="faq-q" onclick="toggle(this)">
+        What if I don't like my preview?
+        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
+        </svg>
+      </div>
+      <div class="faq-a">
+        <p>Then you don't pay. The preview is free and comes with no obligation. Before walking away, though: you can adjust it yourself, swap photos, rewrite captions, change the order. And if something feels off that you can't fix in the editor, just reply to your preview email and a real person will look at it.</p>
+      </div>
+    </div>
+
+    <div class="faq-item" id="q5">
+      <div class="faq-q" onclick="toggle(this)">
+        How do I pay?
+        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
+        </svg>
+      </div>
+      <div class="faq-a">
+        <p>We accept all major credit and debit cards via Stripe. You're only charged after you approve your book, never upfront.</p>
+      </div>
+    </div>
+
+    <div class="faq-item" id="q3">
+      <div class="faq-q" onclick="toggle(this)">
+        How many photos do I need?
+        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
+        </svg>
+      </div>
+      <div class="faq-a">
+        <p>It depends on the template and page count. We'll tell you the ideal range when you order. JPEG or RAW both work.</p>
+      </div>
+    </div>
+
+    <div class="faq-item" id="q1">
       <div class="faq-q" onclick="toggle(this)">
         What do printed photos actually look like?
         <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
@@ -250,7 +299,7 @@
         </svg>
       </div>
       <div class="faq-a">
-        <p>Printed photos will always look different from your phone screen — and that's not a flaw, it's physics. Screens emit light; paper reflects it. Colors will be slightly less vivid, and very dark or backlit photos may print darker than expected. A good rule of thumb: reduce your screen brightness to 50% to approximate how a photo will look in print.</p>
+        <p>Printed photos will always look different from your phone screen. That's not a flaw, it's physics: screens emit light, paper reflects it. Colours will be slightly less vivid, and very dark or backlit photos may print darker than expected. Good rule of thumb: reduce your screen brightness to 50% to approximate how a photo will look in print.</p>
         <p>For best results we recommend photos taken in good light, with the main subject filling most of the frame. Small faces in group shots, distant landscapes, or heavily filtered photos may lose sharpness or detail in print.</p>
       </div>
     </div>
@@ -264,7 +313,7 @@
       </div>
       <div class="faq-a">
         <p>While you review your book, the preview shows a lighter version of each photo so the pages load fast. Look closely or zoom in and photos can appear softer than the originals. That's expected, and it doesn't affect your printed book.</p>
-        <p>We print from the original, full-resolution files you uploaded, so your finished book looks sharper and more detailed than the screen preview. A photo only prints at lower quality if the upload itself was low resolution: a screenshot, a heavily cropped image, or a photo sent over WhatsApp. If we spot one, we'll tell you before your book goes to print.</p>
+        <p>We print from the original, full-resolution files you uploaded, so your finished book looks sharper and more detailed than the screen preview. The only time a photo prints at lower quality is when the upload itself was low resolution: a screenshot, a heavily cropped image, or a photo sent over WhatsApp. If a photo is too low-resolution to print well, you'll see it flagged as soon as you upload it, so you can swap it right there before you finish your order.</p>
       </div>
     </div>
 
@@ -276,45 +325,9 @@
         </svg>
       </div>
       <div class="faq-a">
-        <p>Your phone camera is more than good enough — modern smartphones shoot at resolutions well above what printing requires. The main things to avoid: heavy Instagram filters, extreme crops, and very dark or strongly backlit shots. If you've edited your photos in an app, that's fine — just avoid over-sharpening or heavy color grading.</p>
-        <p>We print in sRGB color profile. Photos taken on a smartphone are automatically in sRGB. If you're uploading photos from a DSLR camera, check with your photographer that the color profile is set correctly.</p>
-        <p>For best quality and correct photo ordering, upload directly from your phone or transfer via USB cable / AirDrop. Avoid WhatsApp or email — they reduce quality and remove date information.</p>
-      </div>
-    </div>
-
-    <div class="faq-item" id="q3">
-      <div class="faq-q" onclick="toggle(this)">
-        How many photos do I need?
-        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
-        </svg>
-      </div>
-      <div class="faq-a">
-        <p>Depending on the template, you'll need between 50 and 80 photos. We'll let you know the exact range once you choose your template and page count.</p>
-      </div>
-    </div>
-
-    <div class="faq-item" id="q4">
-      <div class="faq-q" onclick="toggle(this)">
-        How does ordering work?
-        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
-        </svg>
-      </div>
-      <div class="faq-a">
-        <p>Aevia is currently in early access. Here's how the process works: choose your occasion and template, upload your photos via our order form, and we'll assemble your book within 48 hours. You'll receive two layout options to review — choose your favourite, then complete payment. Your book goes to print immediately after.</p>
-      </div>
-    </div>
-
-    <div class="faq-item" id="q5">
-      <div class="faq-q" onclick="toggle(this)">
-        How do I pay?
-        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
-        </svg>
-      </div>
-      <div class="faq-a">
-        <p>We accept all major credit and debit cards via Stripe — a secure, industry-standard payment processor. You are only charged after you approve your book layout, not upfront.</p>
+        <p>Your phone camera is more than good enough: modern smartphones shoot at resolutions well above what printing requires. The main things to avoid: heavy Instagram filters, extreme crops, and very dark or strongly backlit shots. If you've edited your photos in an app, that's fine. Just avoid over-sharpening or heavy colour grading.</p>
+        <p>We print in the sRGB colour profile. Photos taken on a smartphone are automatically in sRGB. If you're uploading photos from a DSLR camera, check with your photographer that the colour profile is set correctly.</p>
+        <p>For best quality and correct photo ordering, upload directly from your phone or transfer via USB cable / AirDrop. Avoid WhatsApp or email; they reduce quality and remove date information.</p>
       </div>
     </div>
 
@@ -326,19 +339,7 @@
         </svg>
       </div>
       <div class="faq-a">
-        <p>Yes — we currently deliver across the EU. Delivery times for other EU countries are typically 5–7 business days from dispatch.</p>
-      </div>
-    </div>
-
-    <div class="faq-item" id="q7">
-      <div class="faq-q" onclick="toggle(this)">
-        How much does delivery cost?
-        <svg class="faq-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/>
-        </svg>
-      </div>
-      <div class="faq-a">
-        <span class="note">Delivery pricing coming soon — we're finalising rates with our logistics partner.</span>
+        <p>No, currently we deliver only in Austria. More countries coming soon. After you approve your preview, your book is printed and dispatched in 2 business days. Delivery takes 7 business days in Austria. Shipping costs are shown at checkout before you pay.</p>
       </div>
     </div>
 
@@ -351,9 +352,8 @@
   <div class="contact-inner">
 
     <div class="contact-label">
-      <span class="section-tag">Get in touch</span>
+      <span class="section-tag">Contact</span>
       <h2>Still have questions?</h2>
-      <p>We're here to help. Reach out anytime.</p>
     </div>
 
     <div class="contact-cards">
@@ -379,7 +379,7 @@
         <div class="contact-card-body">
           <div class="contact-card-label">Instagram</div>
           <div class="contact-card-value">@aevia</div>
-          <div class="contact-card-note">DM us — we're active and responsive.</div>
+          <div class="contact-card-note">DM us, we read everything.</div>
         </div>
       </div>
 
@@ -406,7 +406,7 @@
         <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia"
              onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');" />
       </div>
-      <p>A premium photo book studio in Vienna. We design and print; you keep forever.</p>
+      <p>Photo book studio in Vienna. We design and make your book. Yours to keep.</p>
       
     </div>
     <div class="foot-col">
@@ -419,7 +419,7 @@
     <div class="foot-col">
       <h5>Company</h5>
       <a href="about.html">Our story</a>
-      <a href="our-artists.html">Our artists</a>
+      <a href="our-artists.html">For artists</a>
       <a href="home.html#how">How it works</a>
       <a href="#">Quality promise</a>
     </div>

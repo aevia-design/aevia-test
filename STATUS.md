@@ -1,48 +1,53 @@
 # Session Status
-_Last updated: 2026-07-16 (session 137)_
-_Context at save: **The renderer is REDEPLOYED — the S136 ⚠ that blocked every PDF is cleared, and the owner is regenerating his Joyride PDF now to confirm the cover sub-labels print.** Joyride is ~99% done: what's left is mockups (owner, on his Windows machine — he gets it back today) and Dorottya's real bio. The new Spread 8 SVG needed no data sync; measured, not assumed. Stage 9 (automated E2E) still deliberately unrun. Domain migration (S130 ADR-0009) still queued._
+_Last updated: 2026-07-17 (session 140)_
+_Context at save: **EN copy overhaul is DONE and PUSHED — all 11 marketing pages match the deck, QA-verified.** Next session starts the **German version**. `docs/website-copy-EN.md` is the master and is fully current (every S140 change is mirrored there, including the new "About this template" section) — the DE pass should work from it and NOT re-litigate English copy. `docs/website-copy-DE.md` is ~90% there but predates the owner's edits: it still carries the deleted "Who makes it" block and stale EU-delivery / €15 facts. 🔴 **Fix TO-DOS #79 (wrong book sizes on 3 pages) BEFORE translating** or the error ships in DE too._
 
 ## Status
-**Session 137 (2026-07-16) — Spread 8 SVG committed, renderer redeployed, stale gcloud recipe fixed.**
-1. **Spread 8 SVG** (`1fb5986`) — of three re-uploaded files only `SP 08 M Right.svg` changed: the `Frame` group moved **0.4mm up**, artwork didn't. `viewBox`/`width` unchanged → no bleed-model impact. **No sync needed** — the photo coords already match the new frames to ≤0.22mm (vs 0.58mm against the *old* SVG). Xenia moved the frames to match the coords the owner rounded in S136, not the reverse. `sync-joyride-csv.mjs --dry-run`: "already in sync".
-2. **Renderer redeployed (owner)** — stale since `53a439c`; the image now carries `45b186a` (cover sub-labels), `64f0b09` (20pt captions) and `1fb5986`. **Everything from S136 finally reaches the PDF.**
-3. **The gcloud recipe S136 handed forward was wrong twice** — see watch-outs. Cost a round-trip with the owner; both memories corrected.
-4. **Mockups researched, deliberately deferred** — the pipeline can't run in this Codespace (PSDs + captures are gitignored and absent). Owner does them on Windows.
+**Session 140 (2026-07-17) — EN copy overhaul complete, committed and pushed.**
+1. **All of `docs/website-copy-deltas.md` §1–7 is DONE** — collections.html (card removals, counts, CTAs), all 6 product pages, about.html, help.html (FAQ reordered + 3 factual fixes), our-artists.html (Dorottya's real bio — closes the Joyride bio gate), and the 16-page footer sweep. Verified with `node qa/copy-pass-check.mjs`: no console errors, no overflow, nav centred. Only 404s are known asset gaps (Joyride mockups, Dorottya's portrait) — both have graceful fallbacks.
+2. **"About this template" rewritten for all 6** — mood + layout + story pages, boilerplate cut, artist credited **for the book** ("Made in collaboration with X"), not for a single spread. In the deck.
+3. **🔴 Product-page spec sheets are NOT a source of truth** — a copy claim built on wander's `33 × 24 cm (landscape)` spec turned out false (owner: all books are 20 × 20). **wander fixed this session**; **newborn/scribble/papercut still say `21 × 21 cm`** → **TO-DOS #79 (High)**, owner only explicitly confirmed wander. Cover/Paper/Binding specs share that placeholder origin — unverified.
+4. **Mechanism strip dropped (S140, owner call)** — built as a sidebar strip on 4 pages, reverted same-session. If revisited: full-width, below the CTA panel, above "About this template". See deltas §2a.
+5. **Drive/Dropbox upload claim is aspirational** — copy left as-is per owner; logged **TO-DOS #78** with feasibility (both pickers reuse the existing upload pipeline; Dropbox easiest). Ship before real customers.
 
 ## Recent decisions
-- **Mockups happen on the owner's Windows machine, not here (S137):** `assets/mockup example/` is gitignored — `open book.psd` and `new/{front,back}.psd` don't exist in the Codespace, and `sessions/qa-runs/` has no captures. S98/S99's "zero egress, all captures local" was true on his box only. Not a workaround; the source assets live there.
-- **The new Spread 8 SVG is the *more* correct one (S137):** don't sync data to an updated asset reflexively — measure first. Here the asset had been moved to match the data.
-- **CSV `Aspect ratio` + `Orientation` kept but never synced (S136):** both decorative; `Aspect ratio` contradicts its **own w/h on 23 of 38 slots**. The JS is the truth. **Not deleted** because `csv-to-template.js` (Scribble-only) reads `ratio === '33:35'` to set `heartClip`, live at runtime.
-- **Papercut string-weight NOT bundled (S136):** `weight: 'bold'` is a string, `'bold' >= 700` is false → its cover year prints regular. Cosmetic → **TO-DOS #77**.
+- **Design decisions are Claude's, within `context/design-principles.md` (S139, owner ruling):** the deck's layout instructions are advisory. Its "serif body for the early-access letter" was overruled (serif is headings-only) and deleted from the deck. **`/designing-interfaces` does NOT apply to marketing pages** — it self-scopes to apps/dashboards; `context/design-principles.md` is the yardstick for the website.
+- **Mechanism strip dropped (S140):** built once as a sidebar strip above the CTA on 4 product pages, reverted same-session — owner didn't like it there. If revisited, owner wants it full-width, below the CTA panel, above "About this template" (ad-traffic landing directly on product pages is the reasoning).
+- **EN wins every DE contradiction (S139):** Austria-only delivery (not EU), €10 Instagram discount (not €15), no "Who makes it" block. The DE file predates the owner's edits and is stale until step 4 harmonises it.
+- **"Inside every Aevia book" is a pinned scroll tour (S139):** owner chose it over plain scrolling rows. Native scroll, never hijacked.
+- **Imagery is placeholders throughout (S139):** hero occasion photos, the book-tour interiors, and the About studio series don't exist yet. Owner swaps them in later.
+- **Photo shoots gate nothing** — build with the warm-grey placeholder SVGs (design principles §VII blesses this).
 
 ## Next steps (priority order)
-1. **Owner confirms the regenerated PDF** — cover sub-labels present, captions 20pt, coords match the browser. This is the check that the redeploy took.
-2. **Owner: Joyride mockups on Windows** — see the recipe in the watch-outs. Gates Stage 10 / merge.
-3. **Swap Dorottya's real bio + portrait** into `our-artists.html`. Also gates merge.
-4. **Stage 9** — run `qa/staff-customer-chain.mjs` for Joyride once he's done (or if he asks).
+**Next session = the German version (owner's plan).**
+0. **First, fix TO-DOS #79** — confirm newborn/scribble/papercut are 20 × 20 and correct their `Format:` spec. Do this **before** translating, or the wrong size gets carried into DE.
+1. **DE harmonise** — `docs/website-copy-DE.md` is ~90% done but **stale**: it predates the owner's edits and still has the deleted "Who makes it" block, EU-wide delivery (now Austria-only), and €15 (now €10) Instagram discount. **EN wins every contradiction.** Bring DE in line with the current `docs/website-copy-EN.md`, which includes all S140 work (About-this-template section, story-pages wording, FAQ rewrite, footer tagline).
+2. **DE build** — apply the harmonised DE copy to pages. Nothing is templated: every shared string is N inline copies (16 for footers, 6 for product pages). `docs/website-copy-deltas.md` documents where each string lives.
+3. **EN/DE switcher in the header** — owner's step 3. Decide toggle-on-same-page vs `/de/` pages (TO-DOS #8 has this open).
+4. **48h preview-promise sweep** — owner's step 2, still outstanding: order flow, emails, account still say 24h in places. Marketing pages are already 48h.
+5. **The owner tests on the live Cloudflare site, not localhost** — push before asking him to check.
 
 ## Open questions
-- **Capture AEV-065 for mockups now, or wait for Xenia?** Her FP1 map is still Wander's cream/navy parchment and the back-cover "Curated by @letdorabe" `<text>` has broken letter-spacing — both would be **baked into** `back.webp`/`fp1.webp` if shot now. Regenerating is cheap once captures exist, so shooting early is defensible.
-- For Xenia (art, not code): restyle the FP1 map artwork to Joyride's palette; **outline** the back-cover "Curated by @letdorabe" text.
+- **Joyride mockups** (owner, on his Windows box) and **Dorottya's portrait photo** still gate the Joyride merge. Her bio is now real (shipped S140).
+- **"Twentysix"** (the Budapest restaurant in Dorottya's bio) — spelling unverified; the deck flags it, now live on our-artists.html.
+- Xenia, art not code: restyle the FP1 map artwork to Joyride's palette; **outline** the back-cover "Curated by @letdorabe" text.
 
 ## Watch-outs for the next session
-- **`gcloud` in this Codespace: installed and authenticated, just NOT on PATH.** `command not found` does **not** mean reinstall. Verified S137: SDK 576.0.0, bundled python 3.14.6, `evg.myasin@gmail.com`, project `aevia-uploads`. From the repo root:
-  ```bash
-  export CLOUDSDK_PYTHON=/home/codespace/google-cloud-sdk/platform/bundledpythonunix/bin/python3
-  export PATH=$PATH:/home/codespace/google-cloud-sdk/bin
-  gcloud run deploy aevia-pdf-renderer --source . --region europe-west1
-  ```
-  Per-shell — a new terminal needs them again. **S136's `/usr/lib/google-cloud-sdk` path was wrong and failed silently** (`$(ls -d …)` finds nothing → empty `CLOUDSDK_PYTHON`). Never `--allow-unauthenticated` (S133); always `europe-west1` (co-located with `gs://aevia-uploads-eu`).
-- **`gcloud run deploy --source .` uploads the WORKING TREE, not HEAD** — commit before deploying or you ship a file that doesn't exist in git. (No `.gcloudignore`; gcloud generates one from `.gitignore`, keeping the PSDs and `mockups/` out of the upload.)
-- **Redeploy rule:** if `git diff <deployed-commit>..HEAD -- assets/ scripts/export-pdf.js` is non-empty, redeploy before trusting a PDF. The Dockerfile bakes in **both** `scripts/export-pdf.js` and all of `assets/`. It fails **silently** — browser shows new, PDF renders old. Currently deployed: **`1fb5986`** (S137).
-- **⚠ If a photo w/h is ever nudged in the CSV, hand-update the JS `ratio`** — the sync script deliberately won't (the CSV's ratio column is rotted). See S136 log.
-- **A missing font cut deletes text from a print PDF with no error** — `lookupFont` returns null, callers `continue` with a `console.warn`. Its `_regular` fallback only saves families that HAVE a regular cut; **Mulish doesn't**. `tests/cover-caption-fonts.test.js` guards this, but only checks a cut *resolves*, not that it's the *intended* one.
-- **The PDF reads what "Save book state" writes** — *not* "Export book state (JSON)" (backup only). Tell the owner if his PDF looks empty/stale.
-- **Joyride's cover is light (`#efe7d3`)** — the S74 cream-corner trap (the brightness grade was tuned for dark covers and pushes near-white past 255) is still open. Tender needed `BG_GRAY=240`; Joyride is paler.
-- `qa/order-map-preview.mjs` uses an **extensionless URL** that no longer resolves under the current `serve` — stale script.
-- Reusable: `qa/p1-preview-token.mjs AEV-065` mints a live preview URL; swap the host to `localhost:8080` to drive a **real book** against local changes.
+- **🔴 Don't source facts from the pages you're editing** (S140, the session's main lesson). The product-page spec sheets were wrong (wander claimed landscape 33 × 24; all books are 20 × 20) and marketing prose inherits its own errors. Facts about the product come from the **owner** or **template data** (`assets/Template_*/`) — never from prose written by whoever last touched the file. Grepping all 6 pages and finding they agree proves only that they agree.
+- **Copy proposals go in chat for approval BEFORE editing files** (owner directive, S140).
+- **Keep `docs/website-copy-EN.md` current as you go** — it's the source for the DE build; the point is to not re-litigate English copy during the German pass.
+- **Verify with `node qa/copy-pass-check.mjs <page…>`** (needs `npx serve . -p 8080`). **Args are bare page names, no `.html`** (`… collections about help`) — passing `collections.html` 404s every page. No args = all 11 marketing pages. Checks console errors, horizontal overflow, nav centring; shoots desktop + mobile into `sessions/qa-runs/`.
+- **Known QA 404s that are NOT regressions** — Joyride's mockups (`mockups/exp2/joyride/*`, owner is producing them on Windows) and Dorottya's portrait (`assets/artists/dorottya-juhasz/*`). Both degrade gracefully (`phBroken()` / `onerror`). Don't chase them.
+- **Background agents can die silently** — a 15-page audit agent vanished after 20+ min with no notification and no task ID. Three scoped agents did the same work in ~90s each. Split broad work; poll with `TaskOutput(block:false)` if an agent is quiet >10 min.
+- **`text-wrap: balance`** is on card/block headings to kill orphan words — keep it on new headings.
+- **Nav fix is desktop-scoped on purpose** (`min-width: 769px` in mobile.css) — below 768px the nav wraps into the burger and relies on flex `order`, which `flex: 1 1 0` would break.
+- **The pinned tour must not hijack scroll** — it only pins and crossfades; wheel/keyboard stay native. Its JS is gated behind `matchMedia('(min-width: 769px)')`.
+- **Artist form already posts to `partners@aevia.at`** (`functions/email.js:36`) — copy-only changes there, don't touch the wiring.
+- **Any new customer-facing copy needs a `/stop-slop` pass** (per CLAUDE.md) — but the owner wants it **flag-only with suggestions for approval**, never silent rewrites of good sentences.
+- **Joyride/PDF watch-outs are unchanged from S137** and still live: `gcloud` is installed but off PATH (`export CLOUDSDK_PYTHON=/home/codespace/google-cloud-sdk/platform/bundledpythonunix/bin/python3; export PATH=$PATH:/home/codespace/google-cloud-sdk/bin`); `gcloud run deploy --source .` ships the **working tree, not HEAD**; the renderer currently carries `1fb5986` — redeploy if `git diff 1fb5986..HEAD -- assets/ scripts/export-pdf.js` is non-empty, since it fails **silently**; never `--allow-unauthenticated`; always `europe-west1`.
 
 ## Untracked / flagged (not this session)
-- `assets/SiteFlowOpenAPI.json` — untracked 395 KB vendor spec, predates S134; deliberately left out of every commit.
-- `qa/_tmp-measure-edit.mjs` — S136 throwaway measurement script, untracked. Delete or adopt; don't let it rot silently (S94's lesson: deleting throwaway scripts lost the method).
-- **No `sessions/2026-07-15-s134.md` exists** — S134's work is described in the S133→S135 briefs/STATUS but its own log was never written. Historical gap only.
+- `assets/SiteFlowOpenAPI.json` — untracked 395 KB vendor spec, predates S134; deliberately left out of every commit (S140 too).
+- `qa/_tmp-measure-edit.mjs` — S136 throwaway, still unadopted and still uncommitted. Delete or adopt.
+- `assets/Template_Joyride/*` (`Joyride_sizing_full.csv`, `joyride-data.js`) — modified working-tree files from the Joyride sessions, still uncommitted; deliberately left out of the S140 commit as unrelated to the copy work.
+- **No `sessions/2026-07-15-s134.md` exists** and there is no S138 log — historical gaps only.

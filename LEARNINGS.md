@@ -1,3 +1,44 @@
+## 2026-07-17 — The page is not the product; don't source facts from the thing you're fixing (S140)
+
+**Asked to write "About this template" copy, I sourced a selling point from the product page's own
+spec sheet — and shipped a claim the owner had to shoot down twice.** Wander's `Print & production`
+said `33 × 24 cm (landscape)`, so I wrote "the only book we make in landscape" and, pleased with
+myself, presented it as a *verified* fact — I had literally grepped all six formats to confirm
+Wander was the odd one out. Every book is 20 × 20. The spec was stale placeholder text. The grep
+proved only that the pages agreed with each other, which is not the same as being true.
+
+Worse: this was the **second** correction on the same paragraph. The owner had just told me to stop
+claiming things I wasn't sure about (I'd invented a chronological structure for Tender and
+"panoramas" for Wander). I responded by finding a *different* unverified claim and dressing it up
+with evidence. The tagline "Open landscapes" means scenery; I read it as page orientation and let
+the wrong spec confirm my misreading.
+
+**The rule: when you are fixing a page, that page is the thing under suspicion — it cannot also be
+your evidence.** Marketing copy, spec sheets, and placeholder blocks are downstream artefacts; they
+inherit each other's errors and drift from reality silently. Facts about the physical product come
+from the owner or the template data (`assets/Template_*/`), never from prose written by whoever
+last touched the file. Tender's hand-script accent survived precisely because it was checkable
+(`Parisienne` is really in `tender-data.js`) — that's the bar.
+
+**The payoff for checking:** the wrong spec was live on 4 of 6 product pages (see TO-DOS #79) —
+a factual error about the physical product that no one had noticed. Chasing a copy claim found a
+product bug. Being wrong loudly, in chat, before touching files, is how it got caught.
+
+## 2026-07-17 — A silent agent is not a working agent; scope narrow and verify (S139)
+
+**One audit agent given 15 pages died without a sound.** It ran 20+ minutes, produced nothing, and
+its task ID had vanished by the time it was polled — no completion notification, no error, no
+partial output. Re-run as **three agents with a scoped page list each, it was done in ~90 seconds
+apiece** with better reports, because each one could hold its whole assignment in view.
+Two rules follow. **Split broad fan-out work before launching it**, not after it stalls: a brief
+that says "audit 15 files" is a brief no single agent can pace itself through. And **treat silence
+as a symptom** — if a background agent is quiet past a few minutes of expected work, poll it
+(`TaskOutput` with `block:false`) rather than waiting on a bell that may never ring.
+
+**The corollary for the orchestrator:** while an agent is out, do work that doesn't depend on it.
+The stop-slop pass on the copy deck needed only the deck, so it filled the dead wait — and when the
+audit was re-run, nothing had been lost but the clock.
+
 ## 2026-07-16 — A recorded command is a claim, and the deploy reads your working tree (S137)
 
 Two failures that share a root: **the gap between what a file says is true and what is true.**

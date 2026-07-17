@@ -1,0 +1,351 @@
+# Aevia website copy — DE (final, Австрия, «du»)
+
+*Чистовик. Зеркало `website-copy-EN.md`. Инструкции по блокам — курсивом, они те же, что в EN-файле, здесь повторены кратко. Места, где нужна проверка носителем, помечены ⚠ и собраны списком в конце.*
+
+---
+
+## Home
+
+Meta title: Aevia — Fotobücher, entworfen in Wien
+Meta description: Du wählst die Fotos, wir gestalten das ganze Buch. Fertiges Preview in 48 Stunden, bezahlt wird erst nach deiner Freigabe.
+
+### Hero
+*Статичный текст + ротация фото.*
+
+Das Fotobuch, das du schon lange machen wolltest.
+
+Du wählst die Fotos und hast das letzte Wort. Alles dazwischen ist unsere Arbeit. Das Ergebnis wird dir gefallen.
+
+[Finde deinen Anlass]   Wie es funktioniert
+
+Fertiges Preview in 48 Stunden · Bezahlt wird erst nach deiner Freigabe
+
+*Подписи к ротации фото (опционально):*
+Wander, für die Straßen, die bleiben.
+Tender, für den Tag, den du behalten willst.
+Scribble, für die Jahre, die zu schnell vergehen.
+
+### Collections
+
+Finde deinen Anlass
+
+Kuratierte Vorlagen. Das Layout übernehmen wir.
+
+**Love** — Warme Vorlagen für Hochzeiten, Verlobungen, Jahrestage und die Momente dazwischen. — Ab € 70 — [Zur Kollektion]
+
+**Adventure** — Offene Layouts für Reisetagebücher, Roadtrips und die Orte, die bleiben. — Ab € 70 — [Zur Kollektion]
+
+**Kids** — Sanfte Vorlagen für Neugeborene, erste Jahre und die kleinen Details, die du nicht vergessen willst. — Ab € 70 — [Zur Kollektion]
+
+### Process
+
+Du bringst die Momente. Wir machen das Buch.
+
+Fünf Schritte, keiner davon ist Designarbeit.
+
+I — **Wähle deine Vorlage.** Nimm die, die für deinen Anlass gemacht ist.
+
+II — **Schick uns deine Fotos.** Lade sie hoch und ergänze, was bleiben soll: Namen, Daten, erste Worte, ein paar Zeilen.
+
+III — **Wir machen dein Buch.** Unser Team gestaltet jede Doppelseite und setzt deine Worte in die Seiten. Fotos am Sonntag geschickt, fertiges Preview am Dienstag geöffnet.
+
+IV — **Freigeben, dann bezahlen.** Tausch ein Foto, pass eine Bildunterschrift an, gib das letzte Wort. Du bezahlst nur ein Buch, das dir gefällt, nichts davor.
+
+V — **Auspacken.** Wir drucken, binden und liefern dein Buch bis vor die Tür.
+
+Du brauchst Minuten. Das Buch sieht aus, als hätte es Wochen gebraucht.
+
+### Why Aevia
+
+The Aevia touch
+*(остаётся по-английски и в DE-версии — бренд-элемент)*
+
+**Ein Buch, kein Fotoabzug.**
+Von Künstlern gestaltet, nicht generiert. Und die Seiten halten mehr fest als Fotos: erste Worte, die Straßen einer Reise, das Eheversprechen.
+
+**Du machst nur das Schönste.**
+Du bringst die Erinnerungen und beurteilst das Ergebnis. Das Machen übernehmen wir. Bleibt eine letzte Pflicht: das Buch genießen, wenn es ankommt.
+
+**Fertig, bevor du einen Cent bezahlst.**
+Wir machen dein Buch zuerst. Du gibst frei, dann bezahlst du. Vertrauen funktioniert besser in dieser Reihenfolge.
+
+**Gemacht, um Jahre zu halten.**
+Dickes mattes Kunstdruckpapier, Fadenheftung, FSC-zertifiziert. Entworfen in Wien.
+
+### Inside every Aevia book
+
+In jedem Aevia-Buch
+
+Schlag eins auf. Der Unterschied liegt auf den Seiten.
+
+**Von Künstlern gemacht, für den Anlass.**
+Wachsmalkritzel für die Kleinkindjahre, ruhige Tuschelinien für Bergstraßen. Alles von Hand gezeichnet.
+
+**Kunst, die durchs ganze Buch läuft.**
+Vom Cover über die Vorsatzblätter bis zur letzten Doppelseite. Eine visuelle Geschichte, keine zufällige Dekoration.
+
+**Seiten für das, was Fotos nicht festhalten.**
+Story Pages: das Eheversprechen, die Route eurer Reise, die ersten Schritte mit Datum. Kostenlos in jedem Buch.
+
+### Early access
+
+Die ersten Bücher entstehen gerade.
+
+Aevia ist im Early Access. Jede Bestellung bekommt unsere volle Aufmerksamkeit und prägt, woran wir als Nächstes arbeiten. Wir würden uns freuen, wenn dein Buch eines der ersten ist.
+
+— Aevia Studio, Wien
+
+*Опционально:*
+Wenn dein Buch da ist: Teile es auf Instagram, markiere @aevia und bekomm € 15 Rabatt auf dein nächstes.
+
+### Final CTA
+
+Bereit, wenn du es bist.
+
+Wähl deinen Anlass, schick deine Fotos. Wir machen den Rest. Dein fertiges Preview kommt innerhalb von 48 Stunden.
+
+[Erstelle dein Buch]
+
+Du gibst frei, bevor wir drucken. Bezahlt wird erst, wenn du zufrieden bist.
+
+---
+
+## Collections page
+
+Meta title: Unsere Kollektionen — Aevia
+
+Unsere Kollektionen.
+
+Jede Vorlage ist für ihren Anlass entworfen, nicht aus einem Standardraster abgeleitet. Wähl deinen Moment, wähl dein Format.
+
+*Шесть активных, CTA на карточках: [Starte dein Buch].*
+
+### Love
+
+**Tender** — Warm und innig. Für Hochzeiten, Verlobungen und den Tag, an den du dich genau so erinnern willst, wie er sich angefühlt hat. — 40 Seiten / 80 Seiten — € 70
+
+### Adventures
+
+**Wander** — In Zusammenarbeit mit Kevin Lucbert — Klar und weit. Für Roadtrips, lange Reisen und die Landschaften, die bleiben. — 40 Seiten / 80 Seiten — € 70
+
+**Joyride** — In Zusammenarbeit mit Dorottya Juhász — Farbenfroh und sonnig. Für Sommertrips, Städtereisen und die Dolce-Vita-Tage, die du zurückhaben willst. — 40 Seiten / 80 Seiten — € 70
+
+### Kids
+
+**Newborn** — Sanft und mit Bedacht. Für die ersten Tage: die Geburtsgeschichte, die frühen Details und alles Kleine, das bleiben soll. — 40 Seiten / 80 Seiten — € 70
+
+**Scribble** — Verspielt und warm. Für Kleinkindjahre, Familienurlaube und das Chaos, das dir eines Tages fehlen wird. — 40 Seiten / 80 Seiten — € 70
+
+**Papercut** — Klare Formen, kräftige Farben: ein Buch, das so aussieht, wie sich Kindheit anfühlt. Papierschnitt-Formen über deinen Fotos. — 40 Seiten / 80 Seiten — € 70
+
+---
+
+## Product pages
+
+### Taglines
+
+Tender: Dein Hochzeitstag, gestaltet mit der Ruhe, die er verdient.
+Wander: Offene Landschaften und das Gefühl, unterwegs zu sein.
+Joyride: Für helle Städtetrips und die leichte Freude eines Sommers unterwegs. ⚠ *(единственное оставшееся место на проверку носителем)*
+Newborn: Für die ersten Tage, mit dem kleinen Menschen im Mittelpunkt.
+Scribble: Für die Jahre voller Kritzeln, Purzeln und Entdecken. Festgehalten, bevor sie zu schnell vergehen.
+Papercut: Für das Alter, in dem jeder Tag ein Bastelprojekt ist.
+
+### Цены
+
+40 Seiten € 70 · 80 Seiten € 100
+€ 70 inkl. Design & Druck
+
+### Полоска механизма
+
+Fotos schicken → Fertiges Preview in 48 Stunden → Bezahlt wird erst nach deiner Freigabe
+
+[Erstelle dein Buch]
+
+Du gibst frei, bevor wir drucken. Bezahlt wird erst, wenn du zufrieden bist.
+
+### Story Pages
+
+Story Pages. Alle kostenlos.
+
+Seiten für das, was Fotos nicht festhalten. Füg hinzu, was du magst; tippe auf ein Bild, um es oben anzusehen.
+
+### Who makes it
+
+Entworfen in unserem Wiener Studio. Deine Fotos werden von unserem Team gesetzt: nicht von einem Algorithmus allein, und nie von dir.
+
+*Для коллабораций:* Artwork von Kevin Lucbert / Artwork von Dorottya Juhász
+
+### Print & production
+
+Gedruckt auf 170 g/m² FSC-zertifiziertem, mattem Kunstdruckpapier. Hardcover, fadengeheftet.
+Entworfen in Wien · Gedruckt in der EU
+
+### Preparing your photos
+
+JPEG oder RAW, beides funktioniert. Die ideale Fotoanzahl sagen wir dir bei der Bestellung.
+
+### Delivery
+
+Preview in 48 Stunden → deine Freigabe → Druck und Versand in [X] Werktagen → Lieferung: Österreich 2–3 Werktage, restliche EU 5–7.
+
+Die Versandkosten siehst du im Checkout, bevor du bezahlst.
+
+---
+
+## About us
+
+Meta title: Über uns — Aevia
+
+Über uns
+
+Das Gegenteil eines leeren Bildschirms.
+
+Aevum. Lateinisch für ein Leben. Ein Zeitalter.
+
+Aevia hat mit unseren eigenen Fotos angefangen. Wir wollten etwas daraus machen, das bleibt, und jeder Dienst, den wir ausprobiert haben, hat uns einen leeren Bildschirm und hundert Entscheidungen hingestellt.
+
+Du wählst ein Layout, suchst einen Hintergrund aus, platzierst jedes Foto, richtest jede Bildunterschrift ein. Stunden später hast du etwas, das okay aussieht. Nur okay. Die meisten von uns haben nie gelernt, eine Seite zu gestalten, und man sieht es.
+
+Langsam haben wir verstanden: Das Problem waren nicht wir. Es war die endlose Auswahl. Wir treffen jeden Tag hunderte kleine Entscheidungen, und die wenigsten machen uns glücklicher. Manchmal willst du nicht mehr Optionen. Du willst weniger, und du willst dich darauf verlassen können, dass jede davon gut ist.
+
+Denk an eine kleine Küche mit einer kurzen Karte, jedes Gericht perfektioniert: Das ist besser als jede Wand voller Optionen, an denen du zweifeln musst.
+
+Also haben wir das Gegenteil eines leeren Bildschirms gebaut: ein kleines Studio in Wien, wenige Vorlagen, jede gestaltet mit Künstlern und Illustratoren, mit denen wir direkt zusammenarbeiten. Du wählst die, die zu deinem Anlass passt, schickst deine Fotos, und wir setzen das Buch von Hand. Du siehst das fertige Buch, und erst dann bezahlst du.
+
+Was dir bleibt, ist das, worum es die ganze Zeit ging: ein Buch, auf das du stolz bist, gemacht, um in Händen gehalten und weitergegeben zu werden. Das ist die Idee hinter unserem Namen. Aevum, ein Leben.
+
+Weniger Auswahl. Ein Buch, das bleibt.
+
+*Подпись фотосерии:*
+Das Studio, an den meisten Tagen.
+
+Wir fangen gerade erst an.
+
+Die ersten Bücher entstehen gerade, und jede Bestellung bekommt unsere volle Aufmerksamkeit. Wir würden uns freuen, wenn dein Buch eines der ersten ist.
+
+[Starte dein erstes Buch]
+
+Du gibst frei, bevor wir drucken. Bezahlt wird erst, wenn du zufrieden bist.
+
+---
+
+## Help / FAQ
+
+Meta title: Hilfe — Aevia
+
+Fragen & Antworten.
+
+Alles Wichtige rund um deine Bestellung und dein Buch.
+
+**Wie funktioniert das Bestellen?**
+
+Wähl deine Vorlage, lade deine Fotos und ein paar Worte hoch. Innerhalb von 48 Stunden bekommst du dein fertiges Preview: das ganze Buch, gestaltet von unserem Team. Mach letzte Anpassungen, wenn du magst, tausch ein Foto, pass eine Bildunterschrift an, dann gib frei. Erst dann bezahlst du, und dein Buch geht in den Druck.
+
+**Was, wenn mir mein Preview nicht gefällt?**
+
+Dann bezahlst du nicht. Das Preview ist kostenlos und unverbindlich. Bevor du gehst, aber: Du kannst es selbst anpassen, Fotos tauschen, Texte umschreiben, die Reihenfolge ändern. Und wenn etwas nicht passt, das du im Editor nicht ändern kannst, antworte einfach auf deine Preview-E-Mail, und ein echter Mensch schaut es sich an.
+
+**Wie bezahle ich?**
+
+Wir akzeptieren alle gängigen Kredit- und Debitkarten über Stripe, einen sicheren, etablierten Zahlungsanbieter. Abgebucht wird erst, nachdem du dein Buch freigegeben hast, nie im Voraus.
+
+**Wie viele Fotos brauche ich?**
+
+Das hängt von Vorlage und Seitenzahl ab. Die ideale Anzahl sagen wir dir bei der Bestellung. JPEG oder RAW, beides funktioniert.
+
+**Wie sehen gedruckte Fotos wirklich aus?**
+
+Gedruckte Fotos sehen immer anders aus als am Handybildschirm. Das ist kein Fehler, das ist Physik: Bildschirme leuchten, Papier reflektiert. Farben wirken etwas weniger leuchtend, und sehr dunkle Fotos oder Gegenlichtaufnahmen können dunkler gedruckt werden als erwartet. Eine gute Faustregel: Stell die Bildschirmhelligkeit auf 50 %, dann siehst du ungefähr, wie ein Foto im Druck wirkt.
+
+Die besten Ergebnisse bringen Fotos bei gutem Licht, mit dem Hauptmotiv groß im Bild. Kleine Gesichter in Gruppenfotos, weit entfernte Landschaften oder stark gefilterte Fotos können im Druck an Schärfe und Detail verlieren.
+
+**Warum wirken meine Fotos im Preview weicher, als ich erwarte?**
+
+Während du dein Buch prüfst, zeigt das Preview eine leichtere Version jedes Fotos, damit die Seiten schnell laden. Wer genau hinsieht oder hineinzoomt, dem können Fotos weicher vorkommen als das Original. Das ist so gedacht und hat keinen Einfluss auf dein gedrucktes Buch.
+
+Gedruckt wird von den Originaldateien in voller Auflösung, dein fertiges Buch sieht also schärfer und detailreicher aus als das Preview am Bildschirm. Nur wenn schon der Upload eine niedrige Auflösung hatte, druckt ein Foto in niedrigerer Qualität: ein Screenshot, ein stark beschnittenes Bild oder ein Foto aus WhatsApp. Wenn uns so eines auffällt, sagen wir dir Bescheid, bevor dein Buch in den Druck geht.
+
+**Welche Qualität sollten meine Fotos haben?**
+
+Deine Handykamera ist mehr als gut genug: Moderne Smartphones fotografieren in Auflösungen weit über dem, was der Druck braucht. Vermeiden solltest du vor allem: starke Instagram-Filter, extreme Ausschnitte und sehr dunkle Aufnahmen oder starkes Gegenlicht. Wenn du deine Fotos in einer App bearbeitet hast, ist das okay. Nur nicht zu stark nachschärfen oder die Farben zu kräftig bearbeiten.
+
+Wir drucken im sRGB-Farbprofil. Smartphone-Fotos sind automatisch in sRGB. Wenn du Fotos aus einer Spiegelreflexkamera hochlädst, kläre mit deinem Fotografen, dass das Farbprofil richtig eingestellt ist.
+
+Für die beste Qualität und die richtige Reihenfolge lade direkt vom Handy hoch oder übertrage per USB-Kabel oder AirDrop. Vermeide WhatsApp und E-Mail; beide reduzieren die Qualität und entfernen das Aufnahmedatum.
+
+**Liefert ihr auch außerhalb Österreichs?**
+
+Ja, in die ganze EU. Nach deiner Freigabe wird dein Buch in [X] Werktagen gedruckt und verschickt. Die Lieferung dauert 2–3 Werktage in Österreich und 5–7 in der restlichen EU. Die Versandkosten siehst du im Checkout, bevor du bezahlst.
+
+### Contact
+
+Noch Fragen?
+
+Wir helfen gern. Meld dich jederzeit.
+
+E-Mail: hello@aevia.at
+Wir antworten normalerweise innerhalb eines Werktags.
+
+Instagram: @aevia
+Schreib uns eine DM. Wir sind aktiv und antworten schnell.
+
+---
+
+## Our Artists
+
+Meta title: Unsere Künstler — Aevia
+
+Unsere Künstler
+
+Die Kunst in deinen Händen
+
+Aevia hat mit einer Überzeugung angefangen: Ein Fotobuch kann ein Kunstwerk sein, kein Behälter für Bilder. Etwas Gemachtes, nichts Zusammengesetztes. Also arbeiten wir mit Künstlern. Jede Vorlage wird von einer Illustratorin oder einem Designer geprägt. Bei manchen lebt ihre Arbeit am Cover, bei anderen zieht sie sich durch jede Doppelseite. Jede Zusammenarbeit ist anders. Jedes Buch ist einzigartig.
+
+Wir finden, diese Arbeit soll bezahlt werden. Unsere Künstler werden fair vergütet, solange ihre Arbeit in den bestellten Büchern weiterlebt. Ob du gerade anfängst oder längst etabliert bist: Wir würden gern sehen, was du machst.
+
+### Die Künstler
+
+**Kevin Lucbert** — Berlin & Paris — Zusammenarbeit: Wander
+
+Kevin Lucbert, geboren 1985 in Paris, arbeitet zwischen Berlin und Paris. 2008 schloss er sein Studium an der École Nationale Supérieure des Arts Décoratifs (ENSAD) ab. Mit Yann Bagot und Nathanaël Mikles gründete er das Künstlerkollektiv The Ensaders. Er nimmt an Performances und Ausstellungen teil und leitet Zeichenworkshops.
+
+Zu seinen Kunden zählen The New York Times, The New Yorker, Télérama, Les Échos, die Mondadori-Gruppe, Foscarini, Starbucks, Hermès, Hennessy und BIC. BIC erwarb mehrere seiner Arbeiten für die eigene Sammlung zeitgenössischer Kunst, gezeigt 2018 im Centquatre in Paris.
+
+Kevins Arbeiten ansehen →
+
+**Dorottya Juhász** — Wien — Zusammenarbeit: Joyride
+
+Dorottya Juhász ist in Ungarn geboren und aufgewachsen und hat den Großteil ihrer Laufbahn in Budapest gearbeitet. Sie ist Mitgründerin der Loungewear-Marke BEBI und lebt heute in Wien, wo sie als Creative Director der Kreativagentur FranzJohann arbeitet.
+
+Ihr Stil ist unverkennbar: Szenen aus dem Alltag, mit Frauen und ihrer Stärke als wiederkehrendem Thema. Sie hat für Marken jeder Größe gezeichnet, von ELLE bis zu lokalen Adressen wie dem Restaurant Twentysix in Budapest.
+
+Dorottyas Arbeiten ansehen →
+
+### Work with us
+
+Arbeite mit uns
+
+Ob du gerade anfängst oder längst etabliert bist: Wir würden gern sehen, was du machst. Erzähl uns ein wenig über deine Arbeit. Jede Nachricht wird gelesen.
+
+Name / E-Mail / Wo können wir deine Arbeit sehen? / Ein paar Worte über dich (optional) / [Senden]
+
+Danke. Wir haben deine Nachricht erhalten und melden uns. Jede Nachricht erreicht einen echten Menschen.
+
+---
+
+## Footer (все страницы)
+
+Fotobuch-Studio in Wien. Wir gestalten und machen dein Buch. Deins, für immer.
+
+*Company: ссылка «Für Künstler» → Unsere Künstler.*
+
+---
+
+## Статус проверки (2026-07-16, решения Xenia)
+
+Все спорные места решены: «Auspacken» (V), «The Aevia touch» остаётся по-английски, ряд примеров без притяжательных, «Story Pages» как англицизм, «Bereit, wenn du es bist.», Joyride-саб упрощён до «Farbenfroh und sonnig», кухонная метафора через «besser als», футер «Deins, für immer.»
+
+⚠ Единственное оставшееся место на проверку носителем: тэглайн Joyride «die leichte Freude eines Sommers unterwegs».
+
+UI-элементы (навигация, кнопки форм) в файл не входят — только контентные строки.

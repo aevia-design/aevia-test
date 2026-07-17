@@ -16,6 +16,16 @@
 }
 .nav-account:hover { color: var(--text); }
 
+/* The nav is space-between across logo | links | actions, which only centres
+   the links when both sides are equally wide. The right cluster is ~130px
+   wider than the logo, so the links landed 65px left of centre. Equal
+   flexible side columns put them on the true centre line. Desktop only —
+   below 768px the nav wraps into the burger menu and relies on flex order. */
+@media (min-width: 769px) {
+  .nav-logo, .nav-actions { flex: 1 1 0; }
+  .nav-actions { justify-content: flex-end; }
+}
+
 
 /* ═══════════════════════════════════════════════════
    MOBILE  (≤ 768px)

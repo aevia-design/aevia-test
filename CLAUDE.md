@@ -35,6 +35,8 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 - Customer engine design spec: `.interface-design/system.md`
 - Style guide: `context/style-guide.md`
 - Pricing (summary; `assets/js/prices.js` is canonical): `docs/pricing.md`
+- Website copy (EN master / DE mirror): `docs/website-copy-EN.md`, `docs/website-copy-DE.md`
+- Per-page copy deltas (what changes where; don't re-audit): `docs/website-copy-deltas.md`
 - Customer journey: `context/customer-journey-v1.md`
 - Session logs: `sessions/`
 - ADRs: `docs/decisions/`

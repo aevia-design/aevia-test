@@ -58,7 +58,7 @@
     .page-title {
       font-family: var(--serif); font-size: clamp(48px, 6vw, 80px);
       font-weight: 400; letter-spacing: -0.03em; line-height: 1.0;
-      color: var(--text);
+      color: var(--text); text-wrap: balance;
     }
 
     /* ══ STORY SECTION ══ */
@@ -110,6 +110,10 @@
     .img-placeholder svg { opacity: 0.28; }
     .img-placeholder-tall { aspect-ratio: 3/4; }
     .img-placeholder-sq { aspect-ratio: 1; }
+    .img-break-caption {
+      max-width: 1160px; margin: 0 auto; padding: 14px 56px 0;
+      font-size: 11px; color: var(--muted); text-align: right;
+    }
 
     /* ══ EARLY ACCESS SECTION ══ */
     .early {
@@ -187,7 +191,7 @@
 <div style="border-bottom: 1px solid var(--border);">
   <div class="page-header">
     <span class="page-tag">About us</span>
-    <h1 class="page-title">What Aevia<br>is about.</h1>
+    <h1 class="page-title">The opposite of a blank screen.</h1>
   </div>
 </div>
 
@@ -201,8 +205,8 @@
     <p class="lead">Aevia began with our own photos. We wanted to turn them into something worth keeping, and every service we tried handed us a blank screen and a hundred decisions.</p>
     <p>You choose a layout, pick a background, place each photo, size every caption. Hours later you have something that looks ok. Just ok. Most of us were never trained to design a page, and it shows.</p>
     <p>We slowly realised the problem wasn't us. It was the endless choice. We make hundreds of small decisions every day, and few of them leave us happier. Sometimes you don't want more options. You want fewer, and you want to trust that whichever you pick will be good.</p>
-    <p>A small kitchen with a short menu, every dish perfected, beats a wall of options you have to second-guess.</p>
-    <p>So we built the opposite of a blank screen. A few templates, each designed with artists and illustrators we work with directly. You choose the one that fits your occasion, send your photos, and we compose the book by hand. You see it finished before you pay anything.</p>
+    <p>Think of a small kitchen with a short menu, every dish perfected: it beats a wall of options you have to second-guess.</p>
+    <p>So we built the opposite of a blank screen: a small studio in Vienna, a few templates, each designed with artists and illustrators we work with directly. You choose the one that fits your occasion, send your photos, and we compose the book by hand. You see the finished book, and pay only then.</p>
     <p>What you're left with is the thing that mattered all along: a book you're proud of, made to be held and passed on. That is the idea behind our name. Aevum, a lifetime.</p>
     <p class="closing">Fewer choices. A book worth keeping.</p>
   </div>
@@ -235,13 +239,14 @@
     </div>
   </div>
 </div>
+<p class="img-break-caption">The studio, most days.</p>
 
 
 <!-- EARLY ACCESS -->
 <section class="early">
   <span class="early-tag">Early access</span>
   <h2 class="early-title">We're just getting started.</h2>
-  <p class="early-sub">Aevia is in early access. Each order gets our direct attention and care.</p>
+  <p class="early-sub">The first books are being made now, and each order gets our direct attention. We'd love your book to be one of the first.</p>
   <a href="home.html#collections" class="early-cta">Create your first book</a>
   <p class="early-note">You approve before we print. No charge until you're happy.</p>
 </section>
@@ -255,7 +260,7 @@
         <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia"
              onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');" />
       </div>
-      <p>A premium photo book studio in Vienna. We design and make your book; it's yours to keep.</p>
+      <p>Photo book studio in Vienna. We design and make your book. Yours to keep.</p>
       
     </div>
     <div class="foot-col">
@@ -268,7 +273,7 @@
     <div class="foot-col">
       <h5>Company</h5>
       <a href="about.html">Our story</a>
-      <a href="our-artists.html">Our artists</a>
+      <a href="our-artists.html">For artists</a>
       <a href="home.html#how">How it works</a>
       <a href="#">Quality promise</a>
     </div>
