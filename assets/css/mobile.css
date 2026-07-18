@@ -16,6 +16,16 @@
 }
 .nav-account:hover { color: var(--text); }
 
+/* Language switcher pill — links to the current page's counterpart in the other
+   language. Reads as a toggle, distinct from the plain Account text. Label is the
+   TARGET language (DE on English pages, EN on German pages). */
+.nav-lang {
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); border: 1px solid var(--border); border-radius: 100px;
+  padding: 6px 12px; transition: color 0.15s, border-color 0.15s;
+}
+.nav-lang:hover { color: var(--text); border-color: var(--text); }
+
 /* The nav is space-between across logo | links | actions, which only centres
    the links when both sides are equally wide. The right cluster is ~130px
    wider than the logo, so the links landed 65px left of centre. Equal
@@ -80,6 +90,16 @@
     padding: 12px 0;
     font-size: 13px;
     border-bottom: 1px solid var(--border);
+  }
+  /* In the burger menu the pill becomes a full-width row like the other links */
+  .nav-lang {
+    display: block;
+    width: 100%;
+    padding: 12px 0;
+    font-size: 13px;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
   }
 
   /* Open state */

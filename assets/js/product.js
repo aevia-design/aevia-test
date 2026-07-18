@@ -78,7 +78,9 @@
   };
   window.xtra = function (card) {
     card.classList.toggle('on');
-    card.querySelector('.sp-add').textContent = card.classList.contains('on') ? 'Added ✓' : 'Add';
+    // Labels overridable per page (the /de/ pages set German ones); EN defaults.
+    var L = cfg.labels || {};
+    card.querySelector('.sp-add').textContent = card.classList.contains('on') ? (L.added || 'Added ✓') : (L.add || 'Add');
   };
 
   // ── Accordion ──
@@ -93,7 +95,8 @@
   window.goToOrder = function () {
     var price = document.getElementById('price').textContent;
     var selectedChip = document.querySelector('.chip.on');
-    var pages = selectedChip ? selectedChip.querySelector('.chip-label').textContent.replace(' pages', '') : '40';
+    // parseInt instead of stripping ' pages' — works for "40 pages" and "40 Seiten" alike.
+    var pages = selectedChip ? String(parseInt(selectedChip.querySelector('.chip-label').textContent, 10) || 40) : '40';
     var selected = [];
     document.querySelectorAll('.sp-card.on').forEach(function (a) {
       var meta = (cfg.fp || {})[a.dataset.fp];
@@ -105,7 +108,8 @@
       params.set('addon_inputs', selected.map(function (m) { return m.inputType; }).join(','));
       params.set('addon_slugs', selected.map(function (m) { return m.slug; }).join(','));
     }
-    window.location.href = 'order.html?' + params.toString();
+    // The /de/ pages sit one level deeper and set orderUrl:'../order.html'.
+    window.location.href = (cfg.orderUrl || 'order.html') + '?' + params.toString();
   };
 
   // ── Nav background on scroll ──

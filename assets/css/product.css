@@ -19,7 +19,7 @@
 /* tagline sits directly above the page toggle when there's no collab line */
 .product-tagline:last-of-type{margin-bottom:32px;}
 .section-label{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
-.zone{display:grid;grid-template-columns:1fr 400px;gap:72px;max-width:1400px;margin:0 auto;padding:56px 56px;align-items:start;}.panel{position:sticky;top:90px;}
+.zone{display:grid;grid-template-columns:1fr 400px;gap:72px;max-width:1400px;margin:0 auto;padding:56px 56px;align-items:start;}.panel{position:sticky;top:90px;min-width:0;/* grid items default to min-width:auto — one long word (e.g. German compounds) can otherwise blow out the column */}
 
 /* ── Gallery (left) ── */
 .gallery-wrap{position:relative;}

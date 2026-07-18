@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tender — Aevia</title>
+  <link rel="stylesheet" href="../../assets/css/product.css">
+  <link rel="stylesheet" href="../../assets/css/type.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+</head>
+<body>
+<nav class="nav">
+  <a href="home.html" class="nav-logo"><img src="../../assets/images/aevia_logo_transparent.png" alt="Aevia" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"/><span class="nav-logo-text" style="display:none;">aevia</span></a>
+  <div class="nav-links"><a href="home.html">Home</a><a href="about.html">Über uns</a><a href="help.html">Hilfe</a></div>
+  <div class="nav-actions"><a href="../tender.html" class="nav-lang">EN</a><a href="../account.html" class="nav-account">Konto</a><a href="collections.html" class="nav-cta">Unsere Kollektionen</a></div>
+  <button class="nav-burger" aria-label="Menü öffnen" onclick="this.closest('.nav').classList.toggle('open')">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="crumb"><a href="collections.html">Vorlagen</a> <span>›</span> <a href="collections.html#love">Love</a> <span>›</span> Tender</div>
+<div class="zone">
+  <div>
+    <div class="gallery-wrap">
+      <button class="gallery-arrow prev" onclick="navArrow(-1)" aria-label="Vorheriges Bild"><svg viewBox="0 0 16 16"><polyline points="10,3 5,8 10,13"/></svg></button>
+      <div class="gallery-main" onclick="openLightbox(document.getElementById('gallery-img').src)"><img id="gallery-img" src="../../assets/images/mockups/exp2/tender/front.webp" alt="Tender Hochzeitsfotobuch — Vorderseite"/></div>
+      <button class="gallery-arrow next" onclick="navArrow(1)" aria-label="Nächstes Bild"><svg viewBox="0 0 16 16"><polyline points="6,3 11,8 6,13"/></svg></button>
+    </div>
+    <div class="thumbs" id="thumbs">
+      <button class="thumb-ph on" data-src="front.webp" onclick="setHero(this)"><img src="../../assets/images/mockups/exp2/tender/front.webp" alt="Vorderseite"/></button>
+      <button class="thumb-ph" data-src="back.webp"  onclick="setHero(this)"><img src="../../assets/images/mockups/exp2/tender/back.webp"  alt="Rückseite"/></button>
+      <button class="thumb-ph" data-src="sp1.webp" onclick="setHero(this)"><img src="../../assets/images/mockups/exp2/tender/sp1.webp" alt="Innenseite"/></button>
+      <button class="thumb-ph" data-src="sp2.webp" onclick="setHero(this)"><img src="../../assets/images/mockups/exp2/tender/sp2.webp" alt="Innenseite"/></button>
+      <button class="thumb-ph" data-src="sp3.webp" onclick="setHero(this)"><img src="../../assets/images/mockups/exp2/tender/sp3.webp" alt="Innenseite"/></button>
+      <button class="thumb-ph" data-src="sp4.webp" onclick="setHero(this)"><img src="../../assets/images/mockups/exp2/tender/sp4.webp" alt="Innenseite"/></button>
+      <button class="thumb-ph" data-src="fpintro.webp" onclick="setHero(this)"><img src="../../assets/images/mockups/exp2/tender/fpintro.webp" alt="Intro-Doppelseite"/></button>
+      <button class="thumb-ph" data-src="fpstory.webp" onclick="setHero(this)"><img src="../../assets/images/mockups/exp2/tender/fpstory.webp" alt="Unsere-Geschichte-Doppelseite"/></button>
+      <button class="thumb-ph" data-src="fpwords.webp" onclick="setHero(this)"><img src="../../assets/images/mockups/exp2/tender/fpwords.webp" alt="Worte-Doppelseite"/></button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="tag">Love</div>
+    <h1 class="product-title">Tender</h1>
+    <p class="product-tagline">Dein Hochzeitstag, gestaltet mit der Ruhe, die er verdient.</p>
+    <div class="page-toggle">
+      <div class="chips">
+        <div class="chip on" onclick="pick(this,70)"><span class="chip-label">40 Seiten</span><span class="chip-price">€ 70</span></div>
+        <div class="chip" onclick="pick(this,100)"><span class="chip-label">80 Seiten</span><span class="chip-price">€ 100</span></div>
+      </div>
+    </div>
+    <div class="addons">
+      <div class="section-label">Story Pages. Alle kostenlos.</div>
+      <div class="addons-note">Seiten für das, was Fotos nicht festhalten. Füg hinzu, was du magst; tippe auf ein Bild, um es anzusehen.</div>
+      <div class="sp-list">
+        <div class="sp-card" onclick="xtra(this)" data-fp="FPintro" data-photos="0">
+          <div class="sp-thumb" onclick="event.stopPropagation();setHeroFile('fpintro.webp')"><img src="../../assets/images/mockups/exp2/tender/fpintro.webp" alt="Intro-Doppelseite"/></div>
+          <div class="sp-body"><div class="sp-name">Intro</div><div class="sp-desc">Eine kurze Zeile zum Auftakt, die den Ton deines Buchs setzt.</div></div>
+          <span class="sp-add">Wählen</span>
+        </div>
+        <div class="sp-card" onclick="xtra(this)" data-fp="FPstory" data-photos="1">
+          <div class="sp-thumb" onclick="event.stopPropagation();setHeroFile('fpstory.webp')"><img src="../../assets/images/mockups/exp2/tender/fpstory.webp" alt="Unsere-Geschichte-Doppelseite"/></div>
+          <div class="sp-body"><div class="sp-name">Unsere Geschichte</div><div class="sp-desc">Ein Foto und ein paar Worte dazu, wie ihr zwei angefangen habt.</div></div>
+          <span class="sp-add">Wählen</span>
+        </div>
+        <div class="sp-card" onclick="xtra(this)" data-fp="FPwords" data-photos="1">
+          <div class="sp-thumb" onclick="event.stopPropagation();setHeroFile('fpwords.webp')"><img src="../../assets/images/mockups/exp2/tender/fpwords.webp" alt="Worte-Doppelseite"/></div>
+          <div class="sp-body"><div class="sp-name">Worte</div><div class="sp-desc">Euer Eheversprechen oder eine Lieblingszeile neben einem großen Foto.</div></div>
+          <span class="sp-add">Wählen</span>
+        </div>
+      </div>
+    </div>
+    <div class="price-row"><span class="price-sym">€</span><span class="price-val" id="price">70</span><span class="price-note">inkl. Design &amp; Druck</span></div>
+    <button class="cta" onclick="goToOrder()">Erstelle dein Buch</button>
+    <p class="cta-note">Du gibst frei, bevor wir drucken. Bezahlt wird erst, wenn du zufrieden bist.</p>
+  </div>
+</div>
+<div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lightbox-close" onclick="closeLightbox()" aria-label="Schließen">&times;</button><img id="lightbox-img" src="" alt="Vorschau der Doppelseite"/></div>
+<div class="acc-wrap">
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Über diese Vorlage<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Tender ist um deinen Hochzeitstag gebaut. Großzügige Ränder und ein zarter handschriftlicher Akzent geben jedem Bild den Raum, für sich zu sprechen. Die Story Pages halten die Worte fest, die ein Foto nicht halten kann: eine Zeile zum Auftakt, wie ihr zwei angefangen habt, und euer Eheversprechen neben einem seitenfüllenden Foto.</p></div></div>
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Druck &amp; Produktion<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Gedruckt auf 170 g/m² FSC-zertifiziertem, mattem Kunstdruckpapier. Hardcover mit Leinenstruktur, fadengeheftet. Entworfen in Wien · Gedruckt in der EU.</p><ul><li>Format: 20 × 20 cm (quadratisch)</li><li>Cover: Mattes Leinen-Hardcover, Elfenbein</li><li>Papier: 170 g/m² matt, archivbeständig</li><li>Bindung: Fadenheftung, gebundene Lagen</li></ul></div></div>
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Deine Fotos vorbereiten<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Nach der Bestellung bekommst du einen einfachen Upload-Link. JPEG oder RAW, beides funktioniert. Die ideale Fotoanzahl sagen wir dir bei der Bestellung. Alles, was nicht gut drucken würde, markieren wir, bevor wir anfangen.</p><ul><li>Mindestauflösung: 2000 px an der kurzen Kante</li><li>Farbraum: sRGB bevorzugt</li><li>Wir akzeptieren Google Drive, Dropbox oder direkten Upload</li></ul></div></div>
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Lieferung<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Preview in 48 Stunden → deine Freigabe → Druck und Versand in 2 Werktagen → Lieferung: Österreich 7 Werktage.</p><p>Die Versandkosten siehst du im Checkout, bevor du bezahlst.</p></div></div>
+</div>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="foot-brand"><div class="foot-logo"><img src="../../assets/images/aevia_logo_transparent.png" alt="Aevia" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');"/></div><p>Fotobuch-Studio in Wien. Wir gestalten und machen dein Buch. Deins, für immer.</p></div>
+    <div class="foot-col"><h5>Produkte</h5><a href="collections.html">Alle Vorlagen</a><a href="collections.html#love">Love</a><a href="collections.html#kids">Kids</a><a href="collections.html#adventures">Adventures</a></div>
+    <div class="foot-col"><h5>Unternehmen</h5><a href="about.html">Unsere Geschichte</a><a href="our-artists.html">Für Künstler</a><a href="home.html#how">Wie es funktioniert</a><a href="#">Qualitätsversprechen</a></div>
+    <div class="foot-col"><h5>Support</h5><a href="help.html">FAQ</a><a href="../account.html">Konto</a><a href="#">Instagram</a><a href="help.html#contact">Kontakt</a></div>
+  </div>
+  <div class="foot-base"><span>© 2026 Aevia. Alle Rechte vorbehalten.</span><span>AGB</span></div>
+</footer>
+<script>
+  window.PRODUCT = {
+    base:'../../assets/images/mockups/exp2/tender/', template:'Tender', category:'love', back:'de/tender.html',
+    orderUrl:'../order.html',
+    labels:{ add:'Wählen', added:'Gewählt ✓' },
+    fp:{ FPintro:{name:'Intro',inputType:'intro',slug:'fpintro'}, FPstory:{name:'Our story',inputType:'special',slug:'fpstory'}, FPwords:{name:'Words',inputType:'special',slug:'fpwords'} }
+  };
+</script>
+<script defer src="../../assets/js/prices.js"></script>
+<script defer src="../../assets/js/product.js"></script>
+</body>
+</html>

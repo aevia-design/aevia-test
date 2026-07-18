@@ -1,6 +1,6 @@
 # Aevia website copy — DE (final, Австрия, «du»)
 
-*Чистовик. Зеркало `website-copy-EN.md`. Инструкции по блокам — курсивом, они те же, что в EN-файле, здесь повторены кратко. Места, где нужна проверка носителем, помечены ⚠ и собраны списком в конце.*
+*Чистовик. Зеркало `website-copy-EN.md`. Инструкции по блокам — курсивом, они те же, что в EN-файле, здесь повторены кратко. Места, где нужна проверка носителем, помечены ⚠ и собраны списком в конце. Гармонизировано с EN-мастером в S141 (2026-07-18): EN выигрывает каждое противоречие.*
 
 ---
 
@@ -19,11 +19,6 @@ Du wählst die Fotos und hast das letzte Wort. Alles dazwischen ist unsere Arbei
 [Finde deinen Anlass]   Wie es funktioniert
 
 Fertiges Preview in 48 Stunden · Bezahlt wird erst nach deiner Freigabe
-
-*Подписи к ротации фото (опционально):*
-Wander, für die Straßen, die bleiben.
-Tender, für den Tag, den du behalten willst.
-Scribble, für die Jahre, die zu schnell vergehen.
 
 ### Collections
 
@@ -96,7 +91,7 @@ Aevia ist im Early Access. Jede Bestellung bekommt unsere volle Aufmerksamkeit u
 — Aevia Studio, Wien
 
 *Опционально:*
-Wenn dein Buch da ist: Teile es auf Instagram, markiere @aevia und bekomm € 15 Rabatt auf dein nächstes.
+Wenn dein Buch da ist: Teile es auf Instagram, markiere @aevia und bekomm € 10 Rabatt auf dein nächstes.
 
 ### Final CTA
 
@@ -141,6 +136,7 @@ Jede Vorlage ist für ihren Anlass entworfen, nicht aus einem Standardraster abg
 ---
 
 ## Product pages
+*Структура одинакова для всех шести. Уникальны: тэглайн, About this template, галерея, состав story pages.*
 
 ### Taglines
 
@@ -151,14 +147,38 @@ Newborn: Für die ersten Tage, mit dem kleinen Menschen im Mittelpunkt.
 Scribble: Für die Jahre voller Kritzeln, Purzeln und Entdecken. Festgehalten, bevor sie zu schnell vergehen.
 Papercut: Für das Alter, in dem jeder Tag ein Bastelprojekt ist.
 
+### About this template
+*НОВОЕ в DE (S141), переведено с EN-мастера (S140). Правила те же, что в EN: не утверждать
+того, чего нет; спеки на страницах — не источник правды; художника упоминать для книги целиком
+(«Entstanden in Zusammenarbeit mit X»), не для одной story page. Где есть художник — ссылка
+на якорь в our-artists.html. ⚠ Все шесть абзацев — новый немецкий текст, на проверку носителем.*
+
+**Tender**
+Tender ist um deinen Hochzeitstag gebaut. Großzügige Ränder und ein zarter handschriftlicher Akzent geben jedem Bild den Raum, für sich zu sprechen. Die Story Pages halten die Worte fest, die ein Foto nicht halten kann: eine Zeile zum Auftakt, wie ihr zwei angefangen habt, und euer Eheversprechen neben einem seitenfüllenden Foto.
+
+**Wander** *(artist: Kevin Lucbert → `our-artists.html#kevin-lucbert`)*
+Wander ist für Roadtrips und lange Reisen gemacht: offene Landschaften und das Gefühl, unterwegs zu sein. Klare, weite Doppelseiten lassen den Orten den Vortritt, und eine Story Page zeichnet die Route eurer Reise nach. Entstanden in Zusammenarbeit mit Kevin Lucbert.
+
+**Joyride** *(artist: Dorottya Juhász → `our-artists.html#dorottya-juhasz`)*
+Joyride ist für Städtetrips und Sommerreisen gemacht: die Märkte, die Dachterrassen, die falschen Abzweigungen, die sich als richtig herausgestellt haben. Kräftige Farbwelten und ein verspieltes quadratisches Layout halten die Energie der Tage fest, an die du dich erinnern willst. Die Story Pages ergänzen ein paar Worte zur Stimmung und eine Karte deiner Reise. Entstanden in Zusammenarbeit mit Dorottya Juhász.
+
+**Newborn**
+Newborn ist für die ersten Tage gemacht: eine ruhige Struktur um die kleinen Details, die bleiben sollen. Das Layout balanciert ganzseitige Bilder mit gesetzten Bildunterschriften und gibt jeder Doppelseite Raum zum Atmen. Die Story Pages halten die Geburtsgeschichte selbst fest, dazu eine Willkommenszeile und auf Wunsch das Sternzeichen deines Babys.
+
+**Scribble**
+Scribble ist für die Kleinkindjahre gemacht, wenn alles neu ist und nichts lange gleich bleibt. Wachsmalfarben, verspielte Kritzelmotive und ein Layout, das Meilensteine und Alltagschaos in Balance hält. Die Story Pages fangen ein, was Fotos verpassen: die lustigen Sprüche, das Lieblingsspielzeug, die ersten Schritte und eine Galerie für die eigenen Zeichnungen.
+
+**Papercut**
+Papercut ist um die Freude am Basteln gebaut: klare Papierschnitt-Formen und kräftige Farbblöcke, die die Farben der Kindheit feiern. Jede Doppelseite wirkt, als hätte dein Kind sie selbst gemacht. Die Story Pages machen Platz für den Rest: die lustigen Sprüche, das Lieblingsspielzeug, die ersten Schritte und eine Galerie der eigenen Kunstwerke.
+
 ### Цены
 
 40 Seiten € 70 · 80 Seiten € 100
 € 70 inkl. Design & Druck
 
-### Полоска механизма
-
-Fotos schicken → Fertiges Preview in 48 Stunden → Bezahlt wird erst nach deiner Freigabe
+### Полоска механизма — DROPPED (S140, owner)
+*Как в EN: собрана и откатана в той же сессии. Если вернёмся — full-width под CTA-панелью,
+над «About this template», не в сайдбаре.*
 
 [Erstelle dein Buch]
 
@@ -168,15 +188,11 @@ Du gibst frei, bevor wir drucken. Bezahlt wird erst, wenn du zufrieden bist.
 
 Story Pages. Alle kostenlos.
 
-Seiten für das, was Fotos nicht festhalten. Füg hinzu, was du magst; tippe auf ein Bild, um es oben anzusehen.
-
-### Who makes it
-
-Entworfen in unserem Wiener Studio. Deine Fotos werden von unserem Team gesetzt: nicht von einem Algorithmus allein, und nie von dir.
-
-*Для коллабораций:* Artwork von Kevin Lucbert / Artwork von Dorottya Juhász
+Seiten für das, was Fotos nicht festhalten. Füg hinzu, was du magst; tippe auf ein Bild, um es anzusehen.
 
 ### Print & production
+*Спеки (Format, Cover, Paper, Binding) — плейсхолдеры до визита на производство (TO-DOS #80),
+переводить как есть. «Who makes it» удалён в EN (S139) — в DE тоже нет.*
 
 Gedruckt auf 170 g/m² FSC-zertifiziertem, mattem Kunstdruckpapier. Hardcover, fadengeheftet.
 Entworfen in Wien · Gedruckt in der EU
@@ -186,8 +202,9 @@ Entworfen in Wien · Gedruckt in der EU
 JPEG oder RAW, beides funktioniert. Die ideale Fotoanzahl sagen wir dir bei der Bestellung.
 
 ### Delivery
+*Только Австрия (EN, S139): другие страны убрать.*
 
-Preview in 48 Stunden → deine Freigabe → Druck und Versand in [X] Werktagen → Lieferung: Österreich 2–3 Werktage, restliche EU 5–7.
+Preview in 48 Stunden → deine Freigabe → Druck und Versand in 2 Werktagen → Lieferung: Österreich 7 Werktage
 
 Die Versandkosten siehst du im Checkout, bevor du bezahlst.
 
@@ -248,7 +265,7 @@ Dann bezahlst du nicht. Das Preview ist kostenlos und unverbindlich. Bevor du ge
 
 **Wie bezahle ich?**
 
-Wir akzeptieren alle gängigen Kredit- und Debitkarten über Stripe, einen sicheren, etablierten Zahlungsanbieter. Abgebucht wird erst, nachdem du dein Buch freigegeben hast, nie im Voraus.
+Wir akzeptieren alle gängigen Kredit- und Debitkarten über Stripe. Abgebucht wird erst, nachdem du dein Buch freigegeben hast, nie im Voraus.
 
 **Wie viele Fotos brauche ich?**
 
@@ -264,7 +281,7 @@ Die besten Ergebnisse bringen Fotos bei gutem Licht, mit dem Hauptmotiv groß im
 
 Während du dein Buch prüfst, zeigt das Preview eine leichtere Version jedes Fotos, damit die Seiten schnell laden. Wer genau hinsieht oder hineinzoomt, dem können Fotos weicher vorkommen als das Original. Das ist so gedacht und hat keinen Einfluss auf dein gedrucktes Buch.
 
-Gedruckt wird von den Originaldateien in voller Auflösung, dein fertiges Buch sieht also schärfer und detailreicher aus als das Preview am Bildschirm. Nur wenn schon der Upload eine niedrige Auflösung hatte, druckt ein Foto in niedrigerer Qualität: ein Screenshot, ein stark beschnittenes Bild oder ein Foto aus WhatsApp. Wenn uns so eines auffällt, sagen wir dir Bescheid, bevor dein Buch in den Druck geht.
+Gedruckt wird von den Originaldateien in voller Auflösung, dein fertiges Buch sieht also schärfer und detailreicher aus als das Preview am Bildschirm. Nur wenn schon der Upload eine niedrige Auflösung hatte, druckt ein Foto in niedrigerer Qualität: ein Screenshot, ein stark beschnittenes Bild oder ein Foto aus WhatsApp. Ist ein Foto zu niedrig aufgelöst, um gut gedruckt zu werden, siehst du das direkt beim Hochladen markiert und kannst es noch vor Abschluss deiner Bestellung austauschen.
 
 **Welche Qualität sollten meine Fotos haben?**
 
@@ -276,19 +293,17 @@ Für die beste Qualität und die richtige Reihenfolge lade direkt vom Handy hoch
 
 **Liefert ihr auch außerhalb Österreichs?**
 
-Ja, in die ganze EU. Nach deiner Freigabe wird dein Buch in [X] Werktagen gedruckt und verschickt. Die Lieferung dauert 2–3 Werktage in Österreich und 5–7 in der restlichen EU. Die Versandkosten siehst du im Checkout, bevor du bezahlst.
+Nein, derzeit liefern wir nur innerhalb Österreichs. Weitere Länder folgen bald. Nach deiner Freigabe wird dein Buch in 2 Werktagen gedruckt und verschickt. Die Lieferung in Österreich dauert 7 Werktage. Die Versandkosten siehst du im Checkout, bevor du bezahlst.
 
 ### Contact
 
 Noch Fragen?
 
-Wir helfen gern. Meld dich jederzeit.
-
 E-Mail: hello@aevia.at
 Wir antworten normalerweise innerhalb eines Werktags.
 
 Instagram: @aevia
-Schreib uns eine DM. Wir sind aktiv und antworten schnell.
+Schreib uns eine DM, wir lesen alles.
 
 ---
 
@@ -346,6 +361,43 @@ Fotobuch-Studio in Wien. Wir gestalten und machen dein Buch. Deins, für immer.
 
 Все спорные места решены: «Auspacken» (V), «The Aevia touch» остаётся по-английски, ряд примеров без притяжательных, «Story Pages» как англицизм, «Bereit, wenn du es bist.», Joyride-саб упрощён до «Farbenfroh und sonnig», кухонная метафора через «besser als», футер «Deins, für immer.»
 
-⚠ Единственное оставшееся место на проверку носителем: тэглайн Joyride «die leichte Freude eines Sommers unterwegs».
+## Гармонизация с EN-мастером (2026-07-18, S141)
 
-UI-элементы (навигация, кнопки форм) в файл не входят — только контентные строки.
+EN выиграл каждое противоречие (правило S139):
+- €15 → **€ 10** Instagram-скидка (Early access).
+- Доставка: **только Австрия** — Delivery-блок продуктовых и FAQ-ответ переписаны
+  («Nein, derzeit nur innerhalb Österreichs», печать+отправка 2 Werktage, доставка 7 Werktage).
+- **«Who makes it» удалён** (удалён в EN в S139).
+- Полоска механизма → DROPPED-заметка (S140).
+- FAQ: у Stripe убрано «einen sicheren, etablierten Zahlungsanbieter»; low-res фото теперь
+  «флажок при загрузке» вместо «мы скажем перед печатью» (фактическая правка S140).
+- Contact: убрана строка «Wir helfen gern…», IG-строка → «Schreib uns eine DM, wir lesen alles.»
+- Подписи к ротации hero-фото удалены (в EN их нет).
+- **НОВОЕ: «About this template» ×6** — переведено с EN (S140).
+
+### Визуальная подгонка story-page карточек (S141)
+
+Немецкие слова длиннее → описания разворотов переносились на 3–4 строки и ломали
+единую высоту карточек. Причина оказалась структурной: кнопка **«Hinzufügen» (109px)**
+съедала ~53px ширины у каждого описания. Решения:
+- Кнопка story-page: **«Hinzufügen» → «Wählen»**, состояние «Hinzugefügt ✓» → **«Gewählt ✓»**
+  (на всех 6 продуктовых). Это одно изменение выровняло ВСЕ карточки на десктопе (макс. 3 строки).
+- Два описания подрезаны под мобильную ширину:
+  - Tender «Worte»: «…neben einem **seitenfüllenden** Foto» → «…neben einem **großen** Foto».
+  - Newborn «Geburt»: «Eine **Willkommenszeile** und, auf Wunsch,…» → «Eine **Begrüßung** und optional…».
+
+### Языковой переключатель (S141)
+EN/DE переключатель добавлен в шапку всех 11 маркетинговых страниц (обе версии). Ссылается
+на страницу-двойник. `.nav-lang` в `assets/css/mobile.css`. Продуктовые страницы `/de/`
+отдают заказ на англ. `order.html` (флоу заказа пока EN-only).
+
+⚠ На проверку носителем (Xenia):
+- Тэглайн Joyride «die leichte Freude eines Sommers unterwegs» (осталось с прошлого раза).
+- **Все 6 новых абзацев «About this template»** — свежий немецкий текст S141, особенно:
+  «lassen den Orten den Vortritt» (Wander), «die falschen Abzweigungen, die sich als richtig
+  herausgestellt haben» (Joyride), «Papierschnitt-Formen» (Papercut).
+- **UI-слова S141**: кнопка **«Wählen» / «Gewählt ✓»**; подрезки **«großen Foto»**,
+  **«Begrüßung»**; спеки Druck & Produktion (Fadenheftung, gebundene Lagen, Warmgrau/
+  Elfenbein/Schiefergrau) — переводы плейсхолдеров, финальные после визита на производство (#80).
+
+UI-элементы (навигация, кнопки форм) в остальном в файл не входят — только контентные строки.

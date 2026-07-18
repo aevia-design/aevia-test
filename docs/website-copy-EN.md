@@ -164,11 +164,12 @@ with the two of you and moves through the day in order» (структура н�
 «Made in collaboration with X» в конце. Не «этот разворот нарисован X» — читается так, будто
 художник сделал только одну страницу.
 
-🔴 **Размеры книг.** Владелец (S140): «все шаблоны 20×20, landscape-книг нет». wander починен
-в S140 (было `33 × 24 (landscape)` → стало `20 × 20 (square)`). **Осталось: newborn/scribble/papercut
-всё ещё говорят `21 × 21`** — подтвердить у владельца и починить ДО немецкой версии, иначе ошибка
-переедет в DE. См. TO-DOS #79. Спеки на страницах — **НЕ источник правды**, Cover/Paper/Binding
-тоже перепроверить.
+✅ **Размеры книг — починено (S141).** Владелец (S140): «все шаблоны 20×20, landscape-книг нет».
+wander починен в S140; newborn/scribble/papercut (было `21 × 21`) + осиротевшие horizon/sprout
+починены в S141 — все страницы теперь говорят `20 × 20 cm (square)`. TO-DOS #79 закрыт.
+Спеки на страницах — **НЕ источник правды**. Cover/Paper/Binding — **все неизвестны** (владелец,
+S141): плейсхолдеры, оставлены как есть до визита на производство (авг 2026); переводить в DE
+как есть. Гейт перед запуском: TO-DOS #80.
 
 **Tender**
 Tender is built around your wedding day. Generous margins and a delicate hand-script accent give every image the space to speak. Its story pages hold the words a photo can't: an opening note, how the two of you began, and your vows beside a full-bleed photo.
