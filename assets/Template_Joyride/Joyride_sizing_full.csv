@@ -16,8 +16,8 @@ Standard,n.a,3,Left V,1,95,95,98,98,120,160,no,yes,below (5mm from photo),95,185
 Standard,n.a,3,Right S,1,100,100,103,103,206,206,no,no,,,,,,,,,,,,,,,n.a,n.a,,-,03:02,square,rectangle,3,,200×200mm
 Standard,n.a,4,Left H,1,95,120,98,123,150,100,no,no,,,,,,,,,,,,,,,n.a,n.a,,#c2dbcc,03:02,horizontal,rectangle,3,,200×200mm
 Standard,n.a,4,Left V,1,79,104,82,107,120,160,no,no,,,,,,,,,,,,,,,n.a,n.a,,#c2dbcc,80:107,vertical,rectangle,3,,200×200mm
-Standard,n.a,4,Right M,1,60,66.7,63,69.7,80,107,no,yes,below (24mm from photo),43,166,46,169,53,46,left,top,Mulish,20pt,Light,0,1.28,n.a,n.a,#ffffff,#476045,03:02,vertical,rectangle,3,,200×200mm
-Standard,n.a,4,Right M,2,136,146,139,149,107,80,no,no,,,,,,,,,,,,,,,n.a,n.a,,#476045,03:04,horizontal,rectangle,3,,200×200mm
+Standard,n.a,4,Right M,1,60,66.7,63,69.7,81,108,no,yes,below (24mm from photo),43,166,46,169,53,46,left,top,Mulish,20pt,Light,0,1.28,n.a,n.a,#ffffff,#476045,03:02,vertical,rectangle,3,,200×200mm
+Standard,n.a,4,Right M,2,136,146,139,149,108,81,no,no,,,,,,,,,,,,,,,n.a,n.a,,#476045,03:04,horizontal,rectangle,3,,200×200mm
 Standard,n.a,5,Left S,1,95,100,98,103,90,90,no,no,,,,,,,,,,,,,,,n.a,n.a,,#f9d73c,03:02,square,rectangle,3,,200×200mm
 Standard,n.a,5,Right S,1,105,100,108,103,200,200,no,no,,,,,,,,,,,,,,,n.a,n.a,,#f2c7de,03:02,square,rectangle,3,,200×200mm
 Standard,n.a,6,Left H,1,95,100,98,103,150,100,no,yes,below (10mm from photo),95,165,98,168,115,10,center,top,Mulish,20pt,Light,0,1.28,n.a,n.a,#d94027,#f9d84d,03:02,horizontal,rectangle,3,,200×200mm
@@ -31,8 +31,8 @@ Standard,n.a,7,Right V,1,69,62,72,65,74,99,no,no,,,,,,,,,,,,,,,n.a,n.a,,#9eb7e0,
 Standard,n.a,7,Right V,2,152,138,155,141,74,99,no,no,,,,,,,,,,,,,,,n.a,n.a,,#9eb7e0,80:107,vertical,rectangle,3,,200×200mm
 Standard,n.a,8,Left H,1,95,120,98,123,150,100,no,no,,,,,,,,,,,,,,,n.a,n.a,,#f7e9dd,03:02,horizontal,rectangle,3,,200×200mm
 Standard,n.a,8,Left V,1,79,104,82,107,120,160,no,no,,,,,,,,,,,,,,,n.a,n.a,,#f7e9dd,80:107,vertical,rectangle,3,,200×200mm
-Standard,n.a,8,Right M,1,60,67,63,70,80,107,no,yes,below (24mm from photo),43,166,46,169,53,46,left,top,Mulish,20pt,Light,0,1.28,n.a,n.a,#231f20,#c2dbcc,03:02,vertical,rectangle,3,,200×200mm
-Standard,n.a,8,Right M,2,136,146,139,149,107,80,no,no,,,,,,,,,,,,,,,n.a,n.a,,#c2dbcc,03:04,horizontal,rectangle,3,,200×200mm
+Standard,n.a,8,Right M,1,60,67,63,70,81,108,no,yes,below (24mm from photo),43,166,46,169,53,46,left,top,Mulish,20pt,Light,0,1.28,n.a,n.a,#231f20,#c2dbcc,03:02,vertical,rectangle,3,,200×200mm
+Standard,n.a,8,Right M,2,136,146,139,149,108,81,no,no,,,,,,,,,,,,,,,n.a,n.a,,#c2dbcc,03:04,horizontal,rectangle,3,,200×200mm
 Standard,n.a,9,Left H,1,75,53,78,56,120,80,no,no,,,,,,,,,,,,,,,n.a,n.a,,#f2c7de,03:02,horizontal,rectangle,3,below,200×200mm
 Standard,n.a,9,Left H,2,114,147,117,150,120,80,no,no,,,,,,,,,,,,,,,n.a,n.a,,#f2c7de,03:02,horizontal,rectangle,3,below,200×200mm
 Standard,n.a,9,Left V,1,52,62,55,65,74,99,no,no,,,,,,,,,,,,,,,n.a,n.a,,#f2c7de,03:04,vertical,rectangle,3,below,200×200mm

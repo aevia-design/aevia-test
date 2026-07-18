@@ -184,8 +184,8 @@ window.JOYRIDE_DATA = {
           // M page — the mixed-orientation exception (see header note 3). Single
           // fixed variant: slot 1 vertical ON TOP (zIndex 2), slot 2 horizontal.
           default: { bgColor: '#476045', svg: 'SP Spread 4/SP 04 M Right.svg', mixed: true,
-            slots: [ { slot: 1, x: 60, y: 66.7, xBleed: 63, yBleed: 69.7, w: 80, h: 107, ratio: '80:107', orient: 'vertical', zIndex: 2, caption: { allowed: true, xMm: 46, yMm: 169, wMm: 53, hMm: 46, halign: 'left', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#ffffff' } },
-                     { slot: 2, x: 136, y: 146, xBleed: 139, yBleed: 149, w: 107, h: 80, ratio: '4:3', orient: 'horizontal', caption: { allowed: false } } ] },
+            slots: [ { slot: 1, x: 60, y: 66.7, xBleed: 63, yBleed: 69.7, w: 81, h: 108, ratio: '80:107', orient: 'vertical', zIndex: 2, caption: { allowed: true, xMm: 46, yMm: 169, wMm: 53, hMm: 46, halign: 'left', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#ffffff' } },
+                     { slot: 2, x: 136, y: 146, xBleed: 139, yBleed: 149, w: 108, h: 81, ratio: '4:3', orient: 'horizontal', caption: { allowed: false } } ] },
         },
       }
     },
@@ -252,8 +252,8 @@ window.JOYRIDE_DATA = {
         right: {
           // M page — same fixed mixed layout as SP4 right, sage colourway.
           default: { bgColor: '#c2dbcc', svg: 'SP Spread 8/SP 08 M Right.svg', mixed: true,
-            slots: [ { slot: 1, x: 60, y: 67, xBleed: 63, yBleed: 70, w: 80, h: 107, ratio: '80:107', orient: 'vertical', zIndex: 2, caption: { allowed: true, xMm: 46, yMm: 169, wMm: 53, hMm: 46, halign: 'left', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#231f20' } },
-                     { slot: 2, x: 136, y: 146, xBleed: 139, yBleed: 149, w: 107, h: 80, ratio: '4:3', orient: 'horizontal', caption: { allowed: false } } ] },
+            slots: [ { slot: 1, x: 60, y: 67, xBleed: 63, yBleed: 70, w: 81, h: 108, ratio: '80:107', orient: 'vertical', zIndex: 2, caption: { allowed: true, xMm: 46, yMm: 169, wMm: 53, hMm: 46, halign: 'left', valign: 'top', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#231f20' } },
+                     { slot: 2, x: 136, y: 146, xBleed: 139, yBleed: 149, w: 108, h: 81, ratio: '4:3', orient: 'horizontal', caption: { allowed: false } } ] },
         },
       }
     },
