@@ -91,8 +91,10 @@ Done **first**, so `aevia.at` is already gated the moment it goes live. All of i
 - **`pages/waitlist.html`** (new) — "Opening this autumn. Leave your email and we'll let you know." With an **embedded Brevo signup form** (Brevo → Contacts → Forms). Brevo is already in the stack; its hosted form brings double opt-in, consent capture and unsubscribe, and the list lands where marketing will use it. **No Cloud Function, no Firestore collection, no new abuse surface, no hand-rolled GDPR.**
   - Copy gets a **`/stop-slop`** pass (customer-facing).
   - **Avoid "beta"** — software register, wrong for a craft brand. **Avoid a hard date** — a stranger can screenshot a promise. "This autumn" is enough.
-- **`assets/js/site-mode.js`** (new, ~15 lines) — `location.hostname.endsWith('aevia.at')`. Two jobs: inject `<meta name="robots" content="noindex">` on the test rig, and act as the **belt** behind the Cloudflare gate (redirect `order.html` → waitlist if it somehow renders on the live host).
-- **Banner** on marketing pages when live: same message, links to the waitlist.
+- **`assets/js/site-mode.js`** (new, ~15 lines) — `location.hostname.endsWith('aevia.at')`. Two jobs: inject `<meta name="robots" content="noindex">` on the **test rig** (pages.dev stays noindex forever), and act as the **belt** behind the Cloudflare gate (redirect `order.html` → waitlist if it somehow renders on the live host). Note: the **live** `aevia.at` noindex is handled server-side by a Cloudflare header rule, not this JS — see Phase 3 step 6 and the S144 amendment.
+- **Banner** on marketing pages when live: same message, links to the waitlist. **Must be added to the 11 DE pages too** (`pages/de/*.html`) — the German site was built after this brief (S141) and shares no banner markup with EN.
+
+> **S144 additions — the DE site.** After this brief was written, a full German mirror shipped (`pages/de/` — 11 marketing pages, EN/DE switcher). DE has **no** order/account/preview pages; every DE product page points at the shared `../order.html`, so **the order gate (Phase 3 step 6) already covers German visitors — no rule change needed.** The DE deltas that DO need doing are all SEO-side and are folded into Phase 4 below.
 
 **Why not gate at the CTAs:** the 10 "Create your book" buttons call `goToOrder()`, whose implementation is **split** — 5 pages use shared `assets/js/product.js:108`; 5 have inline duplicates (`devotion.html:198`, `radiance.html:112`, `horizon.html:113`, `sprout.html:111`, `terrain.html:111`). Anyone gating at the button layer patches `product.js`, sees five pages behave, and misses the other five. **Gate at the destination.**
 
@@ -114,6 +116,7 @@ Done **first**, so `aevia.at` is already gated the moment it goes live. All of i
 6. **Two Cloudflare Redirect Rules** (Free plan, same dashboard session):
    - **The order gate** — `(http.host eq "aevia.at" or http.host eq "www.aevia.at") and starts_with(http.request.uri.path, "/pages/order")` → **302** → `/pages/waitlist`. Server-side, **fails closed**, works with JS off, obeyed by crawlers. `pages.dev` is not in the zone, so it cannot touch the test rig.
    - **`www` → apex** — `http.host eq "www.aevia.at"` → **301** → `https://aevia.at${uri.path}`. Without this, both hostnames serve the site and we ship duplicate content.
+   - **⭐ S144 (pending owner confirm) — live-site `noindex` until launch.** One **Response Header Transform Rule**: for `http.host eq "aevia.at" or http.host eq "www.aevia.at"`, set response header `X-Robots-Tag: noindex`. Server-side, obeyed by Google, no JS to fail. Keeps the whole live site out of Google's index while it shows draft copy / no photography — Google still *crawls* and discovers URLs (noindex ≠ blocked), so discovery is not lost. **Delete this one rule on launch day (~Sep)** — it is an explicit item in the Phase 6 launch checklist. Rationale + options in the S144 amendment under Phase 4.
 7. **Only now: change the nameservers at helloly** to the two Cloudflare gives you.
 8. **⚠ Leave the helloly zone completely intact for at least a week.** Do not delete records, do not tidy up, do not cancel DNS hosting. For hours after the switch some resolvers still read helloly and some read Cloudflare — **both authorities must answer identically.** This is the step most likely to go wrong on the owner's own initiative, because once "we've moved," cleaning up feels natural. It is also the rollback floor.
 9. **Test mail properly — arrival is NOT the test.** With DMARC at `p=none`, mail with broken DKIM/SPF **still arrives**; it just quietly starts landing in spam, and you find out weeks later when F&F testers say they never got their preview link. The test is the **`Authentication-Results` header**:
@@ -129,9 +132,18 @@ Done **first**, so `aevia.at` is already gated the moment it goes live. All of i
 Each of these gets **more expensive the longer we wait**, because URLs bake into emails and into Google's index.
 
 - **Homepage URL — owner decided: `aevia.at/`.** Change `_redirects` from `/ /pages/home.html 301` to a **200 rewrite**: `/ /pages/home.html 200`. Verified supported by Cloudflare Pages (proxying, relative paths only). Today the homepage costs two hops (`/` →301→ `/pages/home.html` →308→ `/pages/home`); after this it is served at the root.
-- **Canonical tags** — `<link rel="canonical" href="https://aevia.at/...">`. Host-independent, no JS. This is the *robust* fix for the pages.dev duplicate-content problem and backs up the JS `noindex`.
-- **A real `robots.txt`.** One already exists and is not ours: Cloudflare auto-injects a **Content Signals Policy** file (`pages.dev/robots.txt` → 200) containing no `Allow`/`Disallow`, only AI-licensing statements made on Aevia's behalf that nobody here has read. Committing a real one overrides it. Allow Google + AI crawlers on marketing pages; disallow `/pages/staff/*`, `/pages/order*`, `/pages/customer-preview*`.
+- **Canonical tags** — `<link rel="canonical" href="https://aevia.at/...">`. Host-independent, no JS. This is the *robust* fix for the pages.dev duplicate-content problem and backs up the JS `noindex`. **S144: every DE page needs its own self-referencing canonical** (`.../pages/de/home` → itself, not the EN page). Neither EN nor DE pages carry a canonical today (verified S144).
+- **⭐ S144 — hreflang tags (NEW; the DE site created this need).** Each EN page and its DE twin must cross-declare each other, or Google may treat them as duplicate content or serve the wrong language:
+  ```html
+  <link rel="alternate" hreflang="en" href="https://aevia.at/pages/home">
+  <link rel="alternate" hreflang="de" href="https://aevia.at/pages/de/home">
+  <link rel="alternate" hreflang="x-default" href="https://aevia.at/pages/home">
+  ```
+  Both pages in a pair carry the **same** block (bidirectional). The 5 EN-only product pages (`devotion`, `radiance`, `horizon`, `sprout`, `terrain`) have no DE twin — self-canonical only, no hreflang. Use the **`seo-hreflang`** skill to generate and validate.
+- **A real `robots.txt`.** One already exists and is not ours: Cloudflare auto-injects a **Content Signals Policy** file (`pages.dev/robots.txt` → 200) containing no `Allow`/`Disallow`, only AI-licensing statements made on Aevia's behalf that nobody here has read. Committing a real one overrides it. Allow Google + AI crawlers on marketing pages (**incl. `/pages/de/*`**); disallow `/pages/staff/*`, `/pages/order*`, `/pages/customer-preview*`. **Keep crawling open even while the live site is `noindex` (S144) — noindex is set by header, not by `Disallow`, precisely so Google still discovers URLs.**
 - **Search Console verification** for `aevia.at` — five minutes, and the only early warning of an indexing problem.
+
+> **⭐ S144 amendment — noindex the whole live site until launch (Q2, pending owner confirm).** The original plan indexes the live marketing pages now. Re-examined S144: since the ADR values an early "SEO head start" at ≈zero, and `noindex` via header still lets Google *crawl and discover* every URL, the only thing indexing-now buys (early discovery) is preserved either way — while indexing-now costs a draft-copy/thin-content first impression in search. **Recommendation: keep the live site `noindex` until the September launch** (Cloudflare header rule, Phase 3 step 6), then remove that one rule so Google's first indexed crawl is the finished, photographed site. Reversible one-line change; the only risk is forgetting to flip it at launch, mitigated by the Phase 6 checklist item. Test rig (pages.dev) stays noindex forever via `site-mode.js`. **If owner prefers early presence, skip the header rule and the plan's original "index now" stance stands.**
 
 **Note:** the `.html` → clean-URL 308 **does preserve the query string** (verified: `?token=…&payment=success` survives). `LINKS.md:5` claims the token is dropped — **that is wrong**; fix it. Emailed preview links are safe.
 
@@ -156,7 +168,9 @@ Each of these gets **more expensive the longer we wait**, because URLs bake into
 
 ## Phase 6 — Content-dependent SEO (DEFERRED to ~Sep, when copy + photography land)
 
-Meta descriptions, Open Graph, `Organization`/`LocalBusiness` schema (Vienna address, GISA 39598240 — already in the footer), `sitemap.xml`, and a `/seo-audit` run. These describe the content; writing them against placeholder copy means writing them twice. Nothing is lost by waiting — Google recrawls continuously, and there is no one-shot first impression to blow.
+Meta descriptions, Open Graph, `Organization`/`LocalBusiness` schema (Vienna address, GISA 39598240 — already in the footer), `sitemap.xml`, and a `/seo-audit` run.
+
+**⭐ Launch-day flip (S144, if the noindex recommendation is taken):** delete the Cloudflare `X-Robots-Tag: noindex` header rule (Phase 3 step 6) so the finished live site becomes indexable. **Forgetting this launches the site invisible to Google** — treat it as a hard gate on the launch checklist. Confirm in Search Console that pages start indexing within a week. These describe the content; writing them against placeholder copy means writing them twice. Nothing is lost by waiting — Google recrawls continuously, and there is no one-shot first impression to blow.
 
 **We are explicitly not relying on an "SEO head start" argument.** Six weeks of a thin, unlinked site ranks for nothing. The reasons to migrate now are the emails and the DNS risk (ADR-0009).
 
