@@ -59,14 +59,14 @@ window.WANDER_DATA = {
       pages: {
         right: {
           H: {
-            bgColor: '#f8ead9',
+            bgColor: '#f4f7f6',
             svg: 'SP Spread 0/SP 06 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 153, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
-            bgColor: '#f8ead9',
+            bgColor: '#f4f7f6',
             svg: 'SP Spread 0/SP 06 V Right.svg',
             slots: [
               { slot: 1, x: 85, y: 100, xBleed: 88, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 173, yMm: 43, wMm: 40, hMm: 40, halign: 'left', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
@@ -182,7 +182,7 @@ window.WANDER_DATA = {
             bgColor: '#f4f7f6',
             svg: 'SP Spread 3/SP 06 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
+              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 153, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
             ]
           },
           V: {
@@ -260,6 +260,8 @@ window.WANDER_DATA = {
         right: {
           H: {
             bgColor: '#f4f7f6',
+            // CSV overlay_position=below: SVG renders BEHIND the photos here.
+            overlayAbovePhotos: false,
             svg: 'SP Spread 5/SP 10 H Right.svg',
             slots: [
               { slot: 1, x: 105, y: 130, xBleed: 108, yBleed: 133, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 66.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
@@ -267,6 +269,8 @@ window.WANDER_DATA = {
           },
           V: {
             bgColor: '#f4f7f6',
+            // CSV overlay_position=below: SVG renders BEHIND the photos here.
+            overlayAbovePhotos: false,
             svg: 'SP Spread 5/SP 10 V Right.svg',
             slots: [
               { slot: 1, x: 105, y: 110, xBleed: 108, yBleed: 113, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 21.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
