@@ -1,7 +1,7 @@
 # 0009 — Serve the site from aevia.at now; gate the order flow; keep pages.dev as the test rig
 
 **Date:** 2026-07-14 (session 130)
-**Status:** Accepted — not yet executed (implementation plan: `docs/briefs/domain-migration.md`)
+**Status:** ✅ **EXECUTED 2026-07-20 (session 144)** — see "Executed / verified" at the foot of this file.
 **Relates to:** ADR-0001 (its supersession rationale expires — see Consequences), ADR-0002 (preview tokens survive the move untouched), ADR-0006 (anticipated this migration), ADR-0007 (Firebase authorized domains), ADR-0008 (Stripe redirect URLs move)
 
 ## Context
@@ -58,4 +58,44 @@ Key trade-offs:
 
 ## Next Steps
 
-Implementation plan: `docs/briefs/domain-migration.md` (rewritten for this ADR). Append an "Executed / verified" banner here once the cutover is done and mail authentication is confirmed passing, following the ADR-0006 precedent.
+Implementation plan: `docs/briefs/domain-migration.md` (rewritten for this ADR).
+
+---
+
+## Executed / verified — 2026-07-20 (session 144)
+
+Cutover completed in one afternoon. Zero mail downtime.
+
+**What shipped:** `aevia.at` serves the site from Cloudflare Pages; `www` 301s to apex; the order flow 302s to a new `pages/waitlist.html` (Brevo double-opt-in form, verified collecting); `aevia-test.pages.dev` remains the test rig with ordering intact; every customer-facing URL is now derived from `siteOrigin(req)`.
+
+**Verified after cutover** (from outside, not from a dashboard): homepage 200 with valid TLS; order gate 302→waitlist; www→apex 301; `X-Robots-Tag: noindex` present; DE pages 200; pages.dev ordering unaffected; `npm test` 228/228.
+
+**Mail — all green.** Brevo transactional to Yahoo: `dkim=pass (header.s=brevo2) · spf=pass · dmarc=pass`. Xenia's M365 to Gmail: pass. Inbound to `xenia@` and aliases: delivered. Firebase password-reset: delivered.
+
+### Three corrections to the brief, for whoever migrates a domain next
+
+1. **The record table was incomplete and the brief's own warning saved us.** The registrar export held **14** records, not the 9 the S130 DNS-probe found. The five extras were Firebase auth-email records (`firebase1/2._domainkey.auth`, `auth` SPF + verification). Nobody guesses the name `firebase1._domainkey.auth.aevia.at`, and Cloudflare's auto-scan missed them too — it guesses common names, the same blind spot. **Trusting the probe would have silently broken customer password resets and email verification.** Always export from the registrar.
+
+2. **Phase order was wrong: step 5 cannot precede step 7.** A Pages **apex** custom domain requires the zone to be *already active* on Cloudflare, so nameservers must move first. The corrected order — rules → nameservers → wait → **test mail** → attach Pages — is also safer: the domain shows the old parking page throughout, so mail is verified before anything goes public.
+
+3. **Cloudflare Rules only apply to proxied hostnames.** The gate and `noindex` rules stay inert until the Pages custom domain makes the hostname orange. No gap results (attaching Pages switches on the site and the rules together), but the rules look broken if tested early.
+
+### ⚠️ Outstanding at time of writing — NOT yet done
+
+These are dashboard-only settings. **They never appear in a diff, and every one of them fails silently**, which is exactly why they are written down here.
+
+| Task | Where | How it fails if skipped |
+|---|---|---|
+| Add `aevia.at` + `www.aevia.at` to **Authorised domains** | Firebase Console → Authentication → Settings | Password reset and email verification throw `auth/unauthorized-domain` on the live site (`pages/account.html`). Customers are locked out of their accounts. |
+| Add `www.aevia.at` to **allowed origins** (`aevia.at` already listed) | Geoapify dashboard | Address autocomplete in the order form dies with no error shown. |
+| **Redeploy functions** | `firebase deploy --only functions` | Until this runs, every customer-facing link still points at `pages.dev` — the Phase 5 code is inert. |
+| Replace the `www` A record (`185.198.232.16`) with the Pages custom domain | Cloudflare DNS | Harmless today because the www→apex rule catches it first, but if that rule is ever edited, `www` serves helloly's parking page. |
+
+Verify by testing on `aevia.at` after deploy: request a password reset and confirm the emailed link opens the account page, and type an address in the order form to confirm autocomplete populates.
+
+### Two things the next person must not forget
+
+- 🔴 **Delete the `noindex` Cloudflare rule at launch (~Sep 2026)** or the finished site launches invisible to Google.
+- 🔴 **The helloly zone stays intact until ~2026-07-27.** It is the rollback floor.
+
+**Deliberately deferred:** serving the homepage at `aevia.at/` (a 200 rewrite breaks the site's bare-filename relative links; needs a considered link refactor, and the `noindex` decision removed the urgency). Content-dependent SEO — meta descriptions, Open Graph, schema, sitemap — remains Phase 6, waiting on Xenia's copy and the photography.

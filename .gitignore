@@ -40,3 +40,12 @@ Thumbs.db
 # anchored to repo root so the web-ready assets under assets/images/mockups/ are NOT ignored
 /mockups/
 firebase-debug.log
+
+# DNS zone exports + dashboard screenshots gathered for the aevia.at migration
+# (infrastructure detail; keep local — see docs/briefs/domain-migration.md)
+docs/Zone file for aevia.at.txt
+docs/aevia.at.zone
+docs/*.zone
+docs/Brevo.png
+docs/Cloudflare*.txt
+docs/cloudflare-export*

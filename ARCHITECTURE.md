@@ -19,8 +19,8 @@ The system has five distinct surfaces inside one repository:
 |---|---|---|
 | Public website | Customers | Cloudflare Pages |
 | Order form | Customers | Cloudflare Pages |
-| Staff template engine | Founders (Evgenii, Xenia) | Cloudflare Pages (staff subdomain, Cloudflare Access) |
-| Staff dashboard | Founders | Cloudflare Pages (staff subdomain, Cloudflare Access) |
+| Staff template engine | Founders (Evgenii, Xenia) | Cloudflare Pages, `/pages/staff/*` — Firebase email/password auth |
+| Staff dashboard | Founders | Cloudflare Pages, `/pages/staff/*` — Firebase email/password auth |
 | Customer preview engine | Customers (post-assembly) | Cloudflare Pages |
 
 > **Reading the diagram:** This is a Mermaid C4 diagram. To preview it visually: paste the block at [mermaid.live](https://mermaid.live), open this file in VS Code with the "Markdown Preview Mermaid Support" extension (`Ctrl+Shift+V`), or push to GitHub (renders automatically).
@@ -250,6 +250,8 @@ These rules MUST NOT be broken. Violating them requires an explicit architectura
 
 5. **PDF fonts must be static TTF or OTF.** `@pdf-lib/fontkit` cannot decompress woff2. Variable TTF fonts produce wrong weights. Static per-weight font files only.
 
+6. **Customer-facing URLs are derived from one server-side origin allowlist; never hardcode a hostname.** (S144, ADR-0009.) Links in emails, Stripe `success_url`/`cancel_url` and Firebase auth-email continue URLs are built with `siteOrigin(req)` / `accountUrl(req)` in `functions/index.js`. Hardcoding `aevia.at` breaks the test rig — a test checkout would hand the customer to the live domain mid-payment. Hardcoding `pages.dev` puts test URLs in real customer mail. Background triggers (no `req`) correctly fall back to production. Adding a hostname means adding it to `SITE_ORIGINS` **and** to Firebase Authorised Domains.
+
 6. **Photo slot coordinates are centre-based.** All `x`, `y`, `xBleed`, `yBleed` coordinates in `scribble-data.js` refer to the centre of the slot, not the top-left corner. The engine and PDF script both rely on this convention.
 
 7. **Do not apply EXIF orientation swap.** Modern browsers auto-rotate on `naturalWidth`/`naturalHeight`. The swap was added and removed — do not re-add it.
@@ -272,7 +274,9 @@ These rules MUST NOT be broken. Violating them requires an explicit architectura
 | `sharp` | Image processing for PDF (+ likely web-derivative generation) | `scripts/export-pdf.js`; chunk-023 may use it server-side | Local today; target: in-region function (chunk-024) |
 | Stripe | Payment | Not yet integrated | Payment Links for MVP |
 | Elanders / SiteFlow API | Print house | Not yet integrated | P2 |
-| Cloudflare Pages | Frontend hosting | Public website + order form | Free tier |
+| Cloudflare Pages | Frontend hosting | Public website + order form | Free tier. Two hostnames off one build: `aevia.at` (production) and `aevia-test.pages.dev` (test rig) |
+| **Cloudflare DNS** | **Authoritative DNS for `aevia.at`** | Zone created S144 (ADR-0009) | ⚠️ **Mail resolution now depends on this zone.** MX (M365), SPF, DMARC, Brevo DKIM and Firebase auth-email DKIM all live here. Breaking the zone breaks Xenia's mail and every customer email. Never enable Cloudflare Email Routing — it rewrites MX. |
+| Cloudflare Rules | Pre-launch order gate + `noindex` | `aevia.at` zone only | 3 rules: order gate (302→waitlist), www→apex (301), `X-Robots-Tag: noindex`. **The noindex rule must be deleted at launch.** Rules only apply to proxied (orange) hostnames. |
 
 ---
 

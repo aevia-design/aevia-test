@@ -27,8 +27,10 @@
   if (isLive) {
     var path = location.pathname;
 
-    // Belt behind the Cloudflare order gate.
-    if (path.indexOf('/pages/order') === 0 || /\/order(\.html)?$/.test(path)) {
+    // Belt behind the Cloudflare order gate. Anchored to a whole path segment so
+    // it cannot swallow a future sibling route such as /pages/orders; the trailing
+    // match also covers a DE order page if one is ever added.
+    if (/\/order(\.html)?$/.test(path)) {
       location.replace('/pages/waitlist');
       return;
     }

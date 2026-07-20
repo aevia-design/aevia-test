@@ -500,7 +500,7 @@
       const allStatuses = ['uploading','new','review_sent','issue','approved','paid','sent_to_print','printing','in_delivery','delivered'];
 
       const previewUrl = o.previewToken
-        ? `https://aevia-test.pages.dev/pages/customer-preview.html?token=${esc(o.previewToken)}`
+        ? `${location.origin}/pages/customer-preview.html?token=${esc(o.previewToken)}`
         : null;
 
       // Nudge signal: how long ago the preview was sent, while still awaiting a

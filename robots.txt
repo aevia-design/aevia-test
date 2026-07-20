@@ -1,0 +1,33 @@
+# Aevia — photo book studio, Vienna. https://aevia.at
+#
+# This file replaces the Content Signals Policy file Cloudflare injects by
+# default. Cloudflare's version made AI-licensing statements on Aevia's behalf
+# that nobody here had read; this one says only what we mean.
+#
+# Note: crawling is deliberately left open. Until launch the live site is kept
+# out of Google by an "X-Robots-Tag: noindex" header set in Cloudflare, NOT by
+# blocking crawlers here. That way Google still discovers every URL and can
+# index them the moment the header rule is removed.
+
+User-agent: *
+Allow: /
+Disallow: /pages/staff/
+Disallow: /pages/order
+Disallow: /pages/customer-preview
+Disallow: /pages/account
+Disallow: /pages/spread-preview
+
+# AI model training. AI assistants that read the site to answer a person's
+# question are welcome (that is allowed at the Cloudflare edge); using Aevia's
+# copy and photography as training data is not.
+User-agent: GPTBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /

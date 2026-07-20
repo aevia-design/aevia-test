@@ -1,7 +1,19 @@
 const crypto = require('crypto');
 const { Storage } = require('@google-cloud/storage');
+// CORS is NOT an access control here — every function sets
+// Access-Control-Allow-Origin and authorisation is 100% bearer-credential
+// (ADR-0009). This list only keeps stray browsers off the upload endpoint.
+// Tidied S144: dropped the dead Webflow prototype origins, and anchored the
+// patterns — the old /\.pages\.dev$/ was unanchored, so ANY pages.dev project
+// in the world matched it.
 const cors = require('cors')({
-  origin: ['https://aevia.at', 'https://www.aevia.at', 'https://aevia-v1.webflow.io', /\.webflow\.io$/, /^http:\/\/localhost(:\d+)?$/, /\.pages\.dev$/],
+  origin: [
+    'https://aevia.at',
+    'https://www.aevia.at',
+    'https://aevia-test.pages.dev',
+    /^https:\/\/[a-z0-9-]+\.aevia-test\.pages\.dev$/, // branch preview deploys
+    /^http:\/\/localhost(:\d+)?$/,
+  ],
 });
 const admin = require('firebase-admin');
 const { createTransporter, FROM, renderEmail } = require('./email');

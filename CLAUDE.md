@@ -3,8 +3,8 @@
 ## What is Aevia
 Premium photo book service (Vienna). Customers order, upload photos; staff design and send a preview; customer approves and pays; book goes to print. Moving from fully manual toward semi-automated with a browser-based staff template engine.
 
-**Live site:** https://aevia-test.pages.dev/pages/home  
-**Target domain:** https://aevia.at  
+**Live site:** https://aevia.at/pages/home (production, since S144)  
+**Test rig:** https://aevia-test.pages.dev/pages/home — ordering works here; production is gated to a waitlist until launch (ADR-0009)  
 **Brand:** Premium, editorial, art-forward. Serif typography, generous whitespace, off-white/near-black.
 
 ---

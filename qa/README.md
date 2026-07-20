@@ -9,6 +9,14 @@ staff journey end-to-end against real Firebase/GCS/Stripe (test mode).
 Run from the **project root**. Artefacts (screenshots + logs) write to
 `sessions/qa-runs/…`, which is gitignored.
 
+> ⚠️ **`BASE` stays `aevia-test.pages.dev` — do not "update" it to `aevia.at`** (S144,
+> ADR-0009). pages.dev is deliberately the test rig: ordering works there, while
+> production 302s `/pages/order*` to the waitlist until launch. Pointing these
+> scripts at `aevia.at` would make every order-flow script fail at the gate.
+> Because customer-facing links are derived from the request origin
+> (`siteOrigin()` in `functions/index.js`), a test order started on pages.dev
+> round-trips entirely on pages.dev — Stripe redirects included.
+
 ## Reuse orders — don't mint new ones (owner directive, S126)
 
 Test against an order that **already exists**. Only place a new order when the case under test

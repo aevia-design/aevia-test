@@ -2,6 +2,8 @@
 
 > **⚠️ SUPERSEDED 2026-06-02 (session 20).** Option A (Cloudflare Access) was attempted and abandoned: path-scoped Access can't enforce on a single `*.pages.dev` project, and page-gating wouldn't close the real hole (open `firestore.rules` + scrapeable client-side secrets). **New decision: staff auth via Firebase Authentication** — see ROADMAP chunk-018 and the ROADMAP Decisions Log (2026-06-02). The "Decision" section below is retained for history but no longer reflects the current plan.
 
+> **📌 Footnote 2026-07-20 (S144):** the *reason* given above for abandoning Option A has expired. "Path-scoped Access can't enforce on a single `*.pages.dev` project" was true only while we had no Cloudflare zone; `aevia.at` is now one (ADR-0009), so path-scoped Access is technically available again. **We are deliberately not re-opening this** — Firebase Auth works and is deployed. This note exists so a future reader does not treat an obsolete technical constraint as still binding. The second reason given above (page-gating wouldn't close the real hole) never expired and remains the stronger argument.
+
 **Status:** Superseded by chunk-018 (Firebase Auth) — see banner above. (Originally: Committed — 2026-05-28)  
 **Date:** 2026-05-28  
 **Driver:** Staff template engine currently runs local only. Both founders need remote access.

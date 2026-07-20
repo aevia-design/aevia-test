@@ -42,7 +42,12 @@ const FROM = {
 // Logo is a hosted CDN URL (NOT base64) — this deliberately avoids the S105
 // base64-integrity bug (a truncated embedded copy rendered clipped). Email clients
 // load it like any other image.
-const LOGO_URL = 'https://cdn.prod.website-files.com/69b2a5d685caeaf8e1c11985/69b2a8dcbb742c4b653bd15b_ff02171a590b8dd9f5be28995c86baf1_Logo-wide-p-2000.png';
+// Served from our own domain (S144). It previously pointed at a Webflow CDN left
+// over from the old prototype — still responding, but an asset on infrastructure
+// we neither control nor pay for. Absolute and production-only on purpose: email
+// clients have no origin to resolve against, and a pages.dev URL would leak the
+// test rig into real customer mail.
+const LOGO_URL = 'https://aevia.at/assets/images/aevia_logo_transparent.png';
 
 // A primary call-to-action button (dark, centred). href + label.
 function emailButton(href, label) {

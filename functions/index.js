@@ -7,9 +7,34 @@ const { generateReferralCode, extractPromotionCodeId, referrerRewardDecision } =
 const { normalizePromoCode, promoValidationDecision, describeDiscount } = require('./promo-utils');
 const { createTransporter, FROM, renderEmail, emailButton } = require('./email');
 
-// Where the auth-email links send the customer back to after they click. Must be
-// an Authorised Domain in Firebase Console → Authentication → Settings.
-const ACCOUNT_URL = 'https://aevia-test.pages.dev/pages/account.html';
+// ── Customer-facing link origins (ADR-0009) ────────────────────────────────
+// Never hardcode a hostname in a customer-facing link. Links are built from the
+// origin the request actually came from, so a test order placed on the pages.dev
+// rig keeps every link — Stripe redirects included — on pages.dev, while a live
+// order stays on aevia.at. Without this the test rig stops round-tripping: a
+// test checkout would hand the customer off to the live domain mid-payment.
+//
+// This is an allowlist, not a trust decision. Nothing here authorises anything —
+// authorisation is 100% bearer-credential (Firebase ID token, preview UUID,
+// Stripe webhook signature) and no function trusts an origin. An unrecognised or
+// absent Origin simply falls back to production, which is also what background
+// triggers (no req) get.
+//
+// Every origin listed must also be an Authorised Domain in
+// Firebase Console → Authentication → Settings, or auth-email links break.
+const SITE_ORIGINS = [
+  'https://aevia.at',
+  'https://www.aevia.at',
+  'https://aevia-test.pages.dev',
+];
+const DEFAULT_SITE_ORIGIN = 'https://aevia.at';
+
+// req is optional — background triggers have none and get production.
+function siteOrigin(req) {
+  const origin = req && req.headers && req.headers.origin;
+  return SITE_ORIGINS.includes(origin) ? origin : DEFAULT_SITE_ORIGIN;
+}
+const accountUrl = (req) => `${siteOrigin(req)}/pages/account.html`;
 
 admin.initializeApp();
 
@@ -423,7 +448,7 @@ exports.reportOrderIssue = functions
                  <strong>Current status:</strong> ${orderData.status || '—'}</p>
               <p><strong>Their message:</strong></p>
               <blockquote style="margin:0;padding:10px 14px;border-left:3px solid #dc2626;background:#fff5f5;white-space:pre-wrap">${note.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</blockquote>
-              <p style="margin-top:16px"><a href="https://aevia-test.pages.dev/pages/staff/dashboard.html">Open the staff dashboard →</a></p>
+              <p style="margin-top:16px"><a href="${siteOrigin(req)}/pages/staff/dashboard.html">Open the staff dashboard →</a></p>
             </div>`,
         });
       } catch (mailErr) {
@@ -878,8 +903,9 @@ exports.createCheckoutSession = functions
         return res.status(409).json({ error: 'Order must be approved before payment' });
       }
 
-      // Construct success/cancel URLs with token
-      const baseUrl = 'https://aevia-test.pages.dev/pages/customer-preview.html';
+      // Construct success/cancel URLs with token. Derived from the caller's own
+      // origin so a pages.dev test checkout returns to pages.dev, not the live site.
+      const baseUrl = `${siteOrigin(req)}/pages/customer-preview.html`;
       const successUrl = `${baseUrl}?token=${token || order.previewToken}&payment=success`;
       const cancelUrl = `${baseUrl}?token=${token || order.previewToken}`;
 
@@ -1439,7 +1465,7 @@ exports.sendPreviewEmail = functions
       await ref.update(update);
 
       // Email the customer their preview link (S105-approved shell).
-      const previewUrl = `https://aevia-test.pages.dev/pages/customer-preview.html?token=${order.previewToken}`;
+      const previewUrl = `${siteOrigin(req)}/pages/customer-preview.html?token=${order.previewToken}`;
       const pagesRow = order.pageCount
         ? `<tr class="div">
              <td style="padding:6px 0;border-top:1px solid #f0eee9;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a8a8a">Pages</td>
@@ -1903,7 +1929,8 @@ exports.onUserCreated = functions
     if (!user.email || user.emailVerified) return; // Google/social already verified
     try {
       const link = await admin.auth().generateEmailVerificationLink(user.email, {
-        url: `${ACCOUNT_URL}?verify=1`,
+        // Auth trigger — no request, so this always points at production.
+        url: `${accountUrl()}?verify=1`,
         handleCodeInApp: false,
       });
       const transporter = createTransporter();
@@ -1967,7 +1994,7 @@ exports.resendVerificationEmail = functions
       await ref.set({ times: recent }, { merge: true });
 
       const link = await admin.auth().generateEmailVerificationLink(email, {
-        url: `${ACCOUNT_URL}?verify=1`,
+        url: `${accountUrl(req)}?verify=1`,
         handleCodeInApp: false,
       });
       const transporter = createTransporter();
@@ -2022,7 +2049,7 @@ exports.sendPasswordResetEmail = functions
       await ref.set({ times: recent }, { merge: true });
 
       const fbLink = await admin.auth().generatePasswordResetLink(email, {
-        url: `${ACCOUNT_URL}`,
+        url: `${accountUrl(req)}`,
         handleCodeInApp: false,
       });
       // Firebase mints the reset code, but we point the email at our OWN branded
@@ -2030,7 +2057,7 @@ exports.sendPasswordResetEmail = functions
       // wrap it into account.html?mode=resetPassword&oobCode=… . account.html then
       // verifies the code and lets the customer set a new password in-brand.
       const oobCode = new URL(fbLink).searchParams.get('oobCode');
-      const link = `${ACCOUNT_URL}?mode=resetPassword&oobCode=${encodeURIComponent(oobCode)}`;
+      const link = `${accountUrl(req)}?mode=resetPassword&oobCode=${encodeURIComponent(oobCode)}`;
       const transporter = createTransporter();
       await transporter.sendMail({
         ...FROM.account,
