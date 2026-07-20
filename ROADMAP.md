@@ -316,6 +316,8 @@ _Goal: Staff tool accessible remotely; full 9-template catalogue ready for launc
 
 **Decision:** Retired in favour of chunk-018 (Firebase Auth). Cloudflare Access not needed once the dashboard requires login and the data requires auth — a publicly-reachable but login-walled page is acceptable. May revisit only as optional defence-in-depth after aevia.at migration.
 
+> **S144 note (2026-07-20):** `aevia.at` **is now live and is a Cloudflare zone** (ADR-0009), so the "not yet live" blocker in the entries above has expired and path-scoped Access is technically available again. **We are not re-opening this** — Firebase Auth is deployed and works. Left here as history; see the footnote on ADR-0001 for the full reasoning. Do not treat the obsolete constraint as still binding.
+
 ---
 
 ### chunk-020: Multi-template engine seam
