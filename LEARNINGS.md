@@ -1,3 +1,37 @@
+## 2026-07-20 — "Verified" means asking the authority, not asking around it (S144)
+
+**The domain migration nearly broke customer password resets, and the thing that saved it was a
+warning the plan had written about itself.** A prior session had built a table of `aevia.at`'s DNS
+records by probing DNS from outside — nine records, cross-checked twice, independently. It read as
+thoroughly verified. It was missing five.
+
+The gap is structural, not careless: **DNS has no "list everything" operation from outside.** You
+can only ask "does this name exist?", so a record at a name nobody thought to guess is
+indistinguishable from a record that does not exist. The five missing ones were Firebase auth-email
+records at `firebase1._domainkey.auth.aevia.at` and `auth.aevia.at` — names you would never guess
+unless you already knew Firebase was configured to send from a subdomain. Cloudflare's own auto-scan
+missed them too, for exactly the same reason: it also works by guessing common names. Two
+independent tools, same blind spot, same confident-looking answer. Had we trusted either, password
+resets and email verification would have broken silently — arriving nowhere, with no error.
+
+What caught it was insisting on the **registrar's export** — the authority that actually holds the
+zone — rather than any number of observations *about* the zone. Same shape as the S140 lesson
+(don't source facts from the thing you're fixing), one layer down: there, the page agreed with
+itself and was wrong; here, two probes agreed with each other and were incomplete. **Agreement
+between observers is not evidence when they share a blind spot.**
+
+Two smaller versions of the same error in the same session. The brief's phase order was impossible —
+it had Pages custom domains attached before the nameserver move, but Cloudflare requires an *apex*
+domain's zone to be active first; reading the docs took two minutes and reordering made the whole
+sequence safer (mail gets verified while the site is still invisible). And I wrote `.gitignore`
+patterns matching the filenames I had *told* the owner to use, never checking what was actually on
+disk — two zone exports sat untracked until an independent critic pass caught it.
+
+**Rules of thumb:** when something must be complete rather than merely correct, name the authority
+that can enumerate it and go there. Before sequencing steps around a platform constraint, check the
+platform's docs rather than the plan's assumption. And verify config against the filesystem, not
+against your own instructions.
+
 ## 2026-07-17 — The page is not the product; don't source facts from the thing you're fixing (S140)
 
 **Asked to write "About this template" copy, I sourced a selling point from the product page's own
