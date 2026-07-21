@@ -554,7 +554,7 @@ _Goal: keep GCS egress (the dominant cost) negligible per order. See ADR-0005._
 
 **Type:** infrastructure
 **Component:** PDF export + Staff dashboard + Firebase backend
-**Status:** ✅ DONE — deployed + E2E verified + memory upgraded. Cloud Run `aevia-pdf-renderer` (europe-west1, `--memory 8Gi`). Dashboard triggers async render with live progress bar; signed preview PDF URL returned on completion. Spine caption fixed (fontkit metrics); SVG raster cache added; renderer throws loud on unknown template. See STATUS.md S70–S82 + brief `docs/briefs/chunk-024-server-side-pdf.md`.
+**Status:** ✅ DONE — deployed + E2E verified + memory upgraded. **S145: print mode migrated to the same Cloud Run path** — a second dashboard button renders `{order}_print_cover.pdf` + `{order}_print_inside.pdf` (two documents, single interior pages); owner-verified working. Cloud Run `aevia-pdf-renderer` (europe-west1, `--memory 8Gi`). Dashboard triggers async render with live progress bar; signed preview PDF URL returned on completion. Spine caption fixed (fontkit metrics); SVG raster cache added; renderer throws loud on unknown template. See STATUS.md S70–S82 + brief `docs/briefs/chunk-024-server-side-pdf.md`.
 **Size:** L
 **Priority:** Pre-launch ops requirement (ADR-0005). Also removes PDF egress.
 **Depends on:** chunk-007

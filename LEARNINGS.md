@@ -1,3 +1,38 @@
+## 2026-07-21 — Verifying a value is not verifying that anything reads it (S145)
+
+**S144 synced the Wander sizing CSV into `wander-data.js` and verified the result carefully: all
+36 standard slots checked against the CSV, character by character. The check passed. The change
+did nothing.** The CSV's new `overlay_position=below` on SP5 right became `overlayAbovePhotos:
+false` in the data file — the right intent, the wrong key. There are two vocabularies for overlay
+z-order, and they live at different levels: `overlayAbovePhotos` on a **spread**, `overlayBelow` on
+a **page variant**. Every reader checks exactly `spreadDef.overlayAbovePhotos === false ||
+variant.overlayBelow`. A spread-level key written on a variant matches neither branch, so the
+overlay kept its default `z-index:2` and went on painting over the photos — in the engine, the
+customer preview, *and* the PDF.
+
+The structural point: **a plain JS object has no schema, so an unread key is indistinguishable
+from an absent one.** No error, no warning, no visual tell that says "this line is decorative".
+And the S144 verification could not have caught it, because it was answering a different question.
+It compared *values* against the source of truth and found them faithful. Nobody asked the other
+question — *does any reader consume this key?* Both are necessary; only one was asked.
+
+The tell was available and cheap: **Joyride and Tender already expressed the same CSV column as
+`overlayBelow: true`.** Wander was the sole outlier across five templates. When one template does
+a shared thing differently, that is a finding, not a coincidence.
+
+What actually settled it was reading the **rendered DOM** rather than the data file — every SP5
+right overlay computing `z-index:0`, all 37 others at `2`. Same discipline as the standing rule
+about inspecting the live render before re-measuring assets: the data file states an intention,
+the DOM states a fact.
+
+Guard added: `tests/overlay-z-order.test.js` walks all five templates and fails if
+`overlayAbovePhotos` ever appears on an object carrying an `svg` (i.e. a page variant). Worth the
+twenty lines precisely because this failure mode is invisible — it renders plausibly and throws
+nothing. **Where a config key is silently optional, the test has to assert the key's *name*, not
+just its value.**
+
+---
+
 ## 2026-07-20 — "Verified" means asking the authority, not asking around it (S144)
 
 **The domain migration nearly broke customer password resets, and the thing that saved it was a

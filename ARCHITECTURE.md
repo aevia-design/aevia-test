@@ -147,13 +147,20 @@ Key functions:
 
 ### PDF pipeline
 
-`scripts/export-pdf.js` is a standalone Node.js script. It reads `book-state.json` (exported from the engine) and produces:
-- One cover PDF (445×236mm, 18mm bleed)
-- Per-page spread PDFs (206×206mm, 3mm bleed, 2433×2433px = 300 DPI)
+`scripts/export-pdf.js` holds the rendering logic (pdf-lib + sharp) and is shared by two callers:
 
-**Current state:** Runs locally on Evgenii's machine only. Input is `book-state.json`; photos are downloaded from GCS signed URLs embedded in the state file. No live Firebase call needed.
+**Cloud (the production path, chunk-024 + S145).** Dashboard button → `generatePdf` Cloud Function → Cloud Run `aevia-pdf-renderer` (`europe-west1`, 8Gi/4CPU/900s) → `generatePdfFromFirestore()`. It reads the book from the Firestore `staffBook*` fields written by the engine's **"Save book state"** — *not* `book-state.json` — and photos from `aevia-uploads-eu` in-region, so the PDF path incurs no internet egress (ADR-0005/0006). Render is async: the renderer writes `pdfRender{status,done,total,…}` to Firestore and the dashboard polls `getPdfStatus`, which signs the URLs (the Cloud Run SA has no private key and cannot sign).
 
-**Target state (chunk-024):** Run the render in-region (`europe-west1`) as a Cloud Function / Cloud Run job triggered from the dashboard, so either founder can generate PDFs without local Node — and so photo reads stay **inside** Google's network (no internet egress for the PDF path). Decided in ADR-0005 (primarily an ops requirement; the egress saving is a side benefit). Until built, the script must be runnable by either founder from their own machine with Node.js installed.
+Two modes, selected by the `mode` field on the request:
+
+| Mode | Output |
+|---|---|
+| `preview` | one `{order}_preview.pdf` — cover page + interior, for the customer |
+| `print` | **two** files: `{order}_print_cover.pdf` (wide wrap, 445×236mm, 18mm bleed) and `{order}_print_inside.pdf` (square single pages, 206×206mm, 3mm bleed, 2433² px = 300 DPI, blank QR page last) |
+
+**Print output is deliberately two documents.** The cover is a different page size from the interior, and print houses reject mixed-size PDFs. The interior stays **single pages, not reader spreads** — the print house does the imposition, and no Aevia artwork crosses the gutter (every page carries its own SVG with its own bleed). Colour is **RGB**; Elanders convert to CMYK themselves (settled S119).
+
+**CLI (legacy, debug only).** `npm run pdf -- AEV-XXX` reads `book-state.json` from GCS (written by the engine's separate **"Export book state"** button) and writes one file per page to disk. **Do not run it against a real order** — it pulls originals over the internet and bills egress, which is exactly what the cloud path removed. Its fate is TO-DOS #84.
 
 ---
 

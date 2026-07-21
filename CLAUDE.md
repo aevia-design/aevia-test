@@ -30,6 +30,8 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 - Architecture + codemap: `ARCHITECTURE.md`
 - Implementation roadmap: `ROADMAP.md`
 - Build status + next steps: `STATUS.md`
+- Numbered backlog (referenced as "TO-DOS #NN" throughout): `TO-DOS.md`
+- Codified insights from past sessions (read before repeating an old mistake): `LEARNINGS.md`
 - Captured ideas / future directions: `ideas.md`
 - Design principles: `context/design-principles.md` (website + staff engine)
 - Customer engine design spec: `.interface-design/system.md`
