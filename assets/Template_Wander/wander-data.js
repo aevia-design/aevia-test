@@ -261,7 +261,7 @@ window.WANDER_DATA = {
           H: {
             bgColor: '#f4f7f6',
             // CSV overlay_position=below: SVG renders BEHIND the photos here.
-            overlayAbovePhotos: false,
+            overlayBelow: true,
             svg: 'SP Spread 5/SP 10 H Right.svg',
             slots: [
               { slot: 1, x: 105, y: 130, xBleed: 108, yBleed: 133, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 66.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
@@ -270,7 +270,7 @@ window.WANDER_DATA = {
           V: {
             bgColor: '#f4f7f6',
             // CSV overlay_position=below: SVG renders BEHIND the photos here.
-            overlayAbovePhotos: false,
+            overlayBelow: true,
             svg: 'SP Spread 5/SP 10 V Right.svg',
             slots: [
               { slot: 1, x: 105, y: 110, xBleed: 108, yBleed: 113, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 21.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Cormorant Garamond', sizePt: 18, style: 'bold', letterSpacing: -0.02, lineSpacing: 1.28, color: '#262262' } }
