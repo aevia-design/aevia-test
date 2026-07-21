@@ -354,7 +354,7 @@ async function confirmUploadHandler(req, res) {
         </table>
 
         <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a8a8a">What happens next</p>
-        <p style="margin:0;font-size:15px;color:#6a6a6a;line-height:1.7">We'll have your preview ready within 24 hours. You'll get an email the moment it's ready for you to review and approve.</p>
+        <p style="margin:0;font-size:15px;color:#6a6a6a;line-height:1.7">We'll have your preview ready within 48 hours. You'll get an email the moment it's ready for you to review and approve.</p>
       `, { support: true }),
     });
 

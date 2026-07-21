@@ -449,7 +449,7 @@
     <div class="submit-section">
       <div class="error-msg" id="err-step2"></div>
       <button class="btn-primary" id="submit-btn" onclick="submitOrder()">Submit your order</button>
-      <p class="submit-note">No payment until you approve the design.<br>Preview within 24 hours.</p>
+      <p class="submit-note">No payment until you approve the design.<br>Preview within 48 hours.</p>
       <div class="step-nav" style="justify-content:center;margin-top:18px;">
         <button type="button" class="step-back" onclick="goToStep(currentStepIdx - 1)">&larr; Back</button>
       </div>
@@ -469,14 +469,14 @@
     </div>
     <div class="success-order" id="success-order-num"></div>
     <h2 class="success-heading">Your photos are in.</h2>
-    <p class="success-sub" id="success-sub">We've sent a confirmation to your email address. Our team will start designing and send you a preview within 24 hours.</p>
+    <p class="success-sub" id="success-sub">We've sent a confirmation to your email address. Our team will start designing and send you a preview within 48 hours.</p>
 
     <div class="success-steps">
       <div class="success-step">
         <div class="success-step-num">1</div>
         <div class="success-step-body">
           <strong>Design</strong>
-          <span>We arrange your photos into the <span id="success-template-name"></span> layout. You'll receive a preview link within 24 hours.</span>
+          <span>We arrange your photos into the <span id="success-template-name"></span> layout. You'll receive a preview link within 48 hours.</span>
         </div>
       </div>
       <div class="success-step">
@@ -2509,7 +2509,7 @@ function showSuccess(orderNumber, email) {
   document.getElementById('success-order-num').textContent   = 'Order ' + orderNumber;
   document.getElementById('success-template-name').textContent = ORDER.template;
   document.getElementById('success-sub').innerHTML =
-    `Confirmation sent to <strong>${email}</strong>. If that's not right, reply to us within 24h. Our team will start designing and send you a preview within 24 hours.`;
+    `Confirmation sent to <strong>${email}</strong>. If that's not right, reply to us within 24h. Our team will start designing and send you a preview within 48 hours.`;
 
   document.getElementById('success-screen').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
