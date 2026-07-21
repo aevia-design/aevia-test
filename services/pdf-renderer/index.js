@@ -175,8 +175,10 @@ async function writeStatus(orderNumber, patch) {
 async function handleGenerate(body) {
   const { orderNumber } = body;
   if (!orderNumber) throw new Error('orderNumber is required');
+  // 'preview' = one customer-facing PDF; 'print' = cover + inside for the print house.
+  const pdfMode = body.mode === 'print' ? 'print' : 'preview';
 
-  console.log(`\n📖 Generating PDF for order ${orderNumber}`);
+  console.log(`\n📖 Generating ${pdfMode} PDF for order ${orderNumber}`);
 
   // 1. Read order from Firestore
   const docSnap = await db.collection('orders').doc(orderNumber).get();
@@ -199,7 +201,7 @@ async function handleGenerate(body) {
 
   // Mark rendering immediately — the generatePdf function polls for this to confirm
   // the render actually started (covering Cloud Run cold-starts) before it returns.
-  await writeStatus(orderNumber, { status: 'rendering', done: 0, total, pageCount: state.pageCount });
+  await writeStatus(orderNumber, { status: 'rendering', mode: pdfMode, done: 0, total, pageCount: state.pageCount });
 
   // 3. Fetch photos from GCS in-region (no internet egress)
   const bufferMap = await fetchAllPhotos(storedNames);
@@ -213,23 +215,48 @@ async function handleGenerate(body) {
     lastWrite = now;
     await writeStatus(orderNumber, { status: 'rendering', done, total: tot, pageCount: state.pageCount });
   };
-  const pdfBytes = await generatePdfFromFirestore({
+  const result = await generatePdfFromFirestore({
     ordNum:    orderNumber,
     stateData: state,
     bufferMap,
     fName:     folderName,
     progressCb,
+    pdfMode,
   });
 
+  // 5. Upload to GCS (signing happens in the generatePdf / getPdfStatus Cloud Function)
+  if (pdfMode === 'print') {
+    // Two documents on purpose: the cover is a wide wrap (back|spine|front) and the
+    // inside is square single pages. Mixed page sizes in one PDF get rejected by the
+    // print house, so they never get merged.
+    const { coverBytes, insideBytes } = result || {};
+    if (!coverBytes || !coverBytes.length)  throw new Error('Print render returned no cover bytes');
+    if (!insideBytes || !insideBytes.length) throw new Error('Print render returned no inside bytes');
+
+    const coverPath  = `${folderName}/pdfs/${orderNumber}_print_cover.pdf`;
+    const insidePath = `${folderName}/pdfs/${orderNumber}_print_inside.pdf`;
+    await uploadPdf(coverBytes, coverPath);
+    await uploadPdf(insideBytes, insidePath);
+
+    console.log(`  ✅ Print PDFs uploaded: gs://${BUCKET_NAME}/${coverPath} + _print_inside.pdf`);
+    await writeStatus(orderNumber, {
+      status: 'done', mode: 'print', done: total, total, pageCount: state.pageCount,
+      coverPath, insidePath,
+      coverSizeBytes:  coverBytes.length,
+      insideSizeBytes: insideBytes.length,
+    });
+    return { coverPath, insidePath, coverSizeBytes: coverBytes.length, insideSizeBytes: insideBytes.length };
+  }
+
+  const pdfBytes = result;
   if (!pdfBytes || !pdfBytes.length) throw new Error('PDF render returned no bytes');
 
-  // 5. Upload to GCS (signing happens in the generatePdf / getPdfStatus Cloud Function)
   const gcsPath = `${folderName}/pdfs/${orderNumber}_preview.pdf`;
   await uploadPdf(pdfBytes, gcsPath);
 
   console.log(`  ✅ PDF uploaded: gs://${BUCKET_NAME}/${gcsPath}`);
   await writeStatus(orderNumber, {
-    status: 'done', done: total, total, pageCount: state.pageCount,
+    status: 'done', mode: 'preview', done: total, total, pageCount: state.pageCount,
     sizeBytes: pdfBytes.length, gcsPath,
   });
   return {

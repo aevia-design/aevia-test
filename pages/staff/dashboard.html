@@ -553,7 +553,8 @@
           ${nudge}
           <div class="pdf-links-row" id="pdf-row-${esc(o.orderNumber)}" style="display:flex;margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center;">
             ${['new','approved','paid'].includes(o.status)
-              ? `<button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(o.orderNumber)}', this)">Generate PDF</button>`
+              ? `<button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(o.orderNumber)}', this)">Generate PDF</button>
+                 <button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(o.orderNumber)}', this, false, 'print')">Generate print PDFs</button>`
               : ''}
           </div>
           <div class="print-action-row" id="print-action-${esc(o.orderNumber)}" style="margin-top:8px;">
@@ -593,8 +594,11 @@
       const row = document.getElementById(`pdf-row-${esc(order.orderNumber)}`);
       if (!row) return;
 
-      // Check preview + print PDFs concurrently; preserve order (preview first).
-      const found = await Promise.all(['preview', 'print'].map(async (type) => {
+      // Check every PDF flavour concurrently; preserve order (preview first).
+      // 'print' is the legacy single merged file; dashboard print renders now write
+      // print_cover + print_inside as two separate documents.
+      const PDF_TYPES = ['preview', 'print', 'print_cover', 'print_inside'];
+      const found = await Promise.all(PDF_TYPES.map(async (type) => {
         try {
           const res = await fetch(GET_PDF_URL_ENDPOINT, {
             method: 'POST',
@@ -609,11 +613,16 @@
         }
       }));
 
+      const PDF_LABELS = {
+        preview:      'Preview PDF',
+        print:        'Print PDF (old)',
+        print_cover:  'Print: cover ↓',
+        print_inside: 'Print: inside ↓',
+      };
       const pdfLinks = [];
       found.forEach((type) => {
         if (!type) return;
-        const label = type === 'preview' ? 'Preview PDF' : 'Print PDF';
-        pdfLinks.push(`<button class="pdf-link-btn" onclick="openPdf('${esc(order.orderNumber)}', '${type}')">${label}</button>`);
+        pdfLinks.push(`<button class="pdf-link-btn" onclick="openPdf('${esc(order.orderNumber)}', '${type}')">${PDF_LABELS[type]}</button>`);
       });
 
       if (pdfLinks.length > 0) {
@@ -621,6 +630,10 @@
         // generatable statuses, so staff can re-render after editing the book.
         if (['new','approved','paid'].includes(order.status)) {
           pdfLinks.push(`<button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(order.orderNumber)}', this, true)">Regenerate PDF</button>`);
+          // This row replaces the whole action row, so the print button must be
+          // re-offered here too — otherwise it disappears as soon as any PDF exists.
+          const hasPrint = found.includes('print_cover') || found.includes('print_inside');
+          pdfLinks.push(`<button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(order.orderNumber)}', this, ${hasPrint}, 'print')">${hasPrint ? 'Regenerate print PDFs' : 'Generate print PDFs'}</button>`);
         }
         row.innerHTML = pdfLinks.join('');
         row.style.display = 'flex';
@@ -634,8 +647,12 @@
   // The render runs async on Cloud Run (3–13 min). generatePdf just triggers it and
   // confirms it started; we then poll getPdfStatus for live progress and the final
   // signed URL. A progress bar replaces the old frozen "Generating…" label.
-  window.generatePdfFromDashboard = async function(orderNumber, btn, isRegenerate) {
-    if (isRegenerate && !confirm(`A PDF already exists for ${orderNumber}. Regenerate and overwrite it?`)) {
+  // mode: 'preview' (default) renders the customer-facing PDF; 'print' renders the
+  // two print-house documents (cover wrap + square single inside pages).
+  window.generatePdfFromDashboard = async function(orderNumber, btn, isRegenerate, mode) {
+    const pdfMode = mode === 'print' ? 'print' : 'preview';
+    const what = pdfMode === 'print' ? 'Print PDFs already exist' : 'A PDF already exists';
+    if (isRegenerate && !confirm(`${what} for ${orderNumber}. Regenerate and overwrite them?`)) {
       return;
     }
     const row = document.getElementById(`pdf-row-${esc(orderNumber)}`);
@@ -668,7 +685,7 @@
       const res = await fetch(GENERATE_PDF_ENDPOINT, {
         method: 'POST',
         headers: await staffHeaders(),
-        body: JSON.stringify({ orderNumber }),
+        body: JSON.stringify({ orderNumber, mode: pdfMode }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
@@ -696,10 +713,19 @@
 
         if (st.status === 'done') {
           barInner.style.width = '100%';
-          const mb = (st.sizeBytes / 1024 / 1024).toFixed(1);
+          const isPrintRender = (st.mode === 'print');
+          const mb = isPrintRender
+            ? (((st.coverSizeBytes || 0) + (st.insideSizeBytes || 0)) / 1024 / 1024).toFixed(1)
+            : (st.sizeBytes / 1024 / 1024).toFixed(1);
           cleanup();
           btn.disabled = false;
-          if (isRegenerate) {
+          if (isPrintRender) {
+            // A print render produces TWO files, so one button can't stand in for the
+            // result. Rebuild the row instead — updatePdfLinks gives each its own
+            // download button (and re-signs the URL on click).
+            btn.textContent = origLabel;
+            await updatePdfLinks();
+          } else if (isRegenerate) {
             // A "Preview PDF" button is already in this row, and openPdf() re-signs
             // the URL on click — so it serves the freshly regenerated file. Just
             // restore this button to "Regenerate PDF" instead of adding a duplicate.

@@ -1281,10 +1281,33 @@ async function fetchBookStateFromGCS() {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
+// Merge an array of single-page PDF buffers into one document, preserving order.
+async function mergePdfBuffers(buffers) {
+  const merged = await PDFDocument.create();
+  for (const bytes of buffers) {
+    const src   = await PDFDocument.load(bytes);
+    const pages = await merged.copyPages(src, src.getPageIndices());
+    pages.forEach(pg => merged.addPage(pg));
+  }
+  return merged.save();
+}
+
 async function main() {
   const isPrint = mode === 'print';
+  // Server (Cloud Run) print mode keeps pages in memory and returns cover + inside
+  // as two merged documents. The CLI keeps its original behaviour: one file per
+  // page on disk, merged afterwards in --order mode.
+  const isServer = !!photoBufferMap;
+  const printPages = [];         // server print mode: interior pages, in reading order
+  let   printCoverBytes = null;  // server print mode: the wide cover document
   const printDir = path.join(outDir, 'print');
-  if (isPrint) fs.mkdirSync(printDir, { recursive: true });
+  if (isPrint && !isServer) fs.mkdirSync(printDir, { recursive: true });
+
+  // Emit one finished print page: in memory for the server, one file per page for the CLI.
+  function emitPrintPage(label, bytes) {
+    if (isServer) printPages.push(bytes);
+    else fs.writeFileSync(path.join(printDir, label), bytes);
+  }
 
   await setupPhotoSource();
 
@@ -1326,8 +1349,7 @@ async function main() {
     const pg  = doc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
     pg.drawImage(img, { x: 0, y: 0, width: PAGE_SIZE_PT, height: PAGE_SIZE_PT });
     if (captionFn) captionFn(pg, fm);
-    const bytes = await doc.save();
-    fs.writeFileSync(path.join(printDir, label), bytes);
+    emitPrintPage(label, await doc.save());
   }
 
   // Helper: add a page to the preview PDF.
@@ -1368,7 +1390,12 @@ async function main() {
       const pg  = doc.addPage([COVER_W_PT, COVER_H_PT]);
       pg.drawImage(img, { x: 0, y: 0, width: COVER_W_PT, height: COVER_H_PT });
       drawCoverCaptions(pg, fm, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT);
-      fs.writeFileSync(path.join(printDir, 'cover.pdf'), await doc.save());
+      const coverBytes = await doc.save();
+      // The cover is a different page size (wide wrap incl. spine) from the square
+      // interior pages. Print houses reject mixed-size documents, so it stays its
+      // own file — never merged into the inside PDF.
+      if (isServer) printCoverBytes = coverBytes;
+      else fs.writeFileSync(path.join(printDir, 'cover.pdf'), coverBytes);
       console.log('  ✓ cover.pdf');
     } else {
       // For preview: add cover as first page (wide) then continue with square content pages
@@ -1447,7 +1474,7 @@ async function main() {
         } else {
           const doc = await PDFDocument.create();
           doc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
-          fs.writeFileSync(path.join(printDir, `page-${String(pageNum).padStart(3, '0')}.pdf`), await doc.save());
+          emitPrintPage(`page-${String(pageNum).padStart(3, '0')}.pdf`, await doc.save());
         }
         console.log(`  [${si+1}] ${spreadId} left — blank (page ${pageNum})`);
       }
@@ -1478,7 +1505,7 @@ async function main() {
     const doc = await PDFDocument.create();
     doc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
     const blankLabel = `page-${String(pageNum).padStart(3, '0')}.pdf`;
-    fs.writeFileSync(path.join(printDir, blankLabel), await doc.save());
+    emitPrintPage(blankLabel, await doc.save());
     console.log(`  ✓ ${blankLabel} (blank — QR code page for print house)`);
   } else {
     previewDoc.addPage([PAGE_SIZE_PT, PAGE_SIZE_PT]);
@@ -1502,6 +1529,15 @@ async function main() {
       fs.writeFileSync(outPath, pdfBytes);
       console.log(`   → ${outPath}`);
     }
+  } else if (isServer) {
+    // Server print mode: two documents, never one. Cover is the wide wrap; inside is
+    // the square interior pages as SINGLE pages (not reader spreads) — the print house
+    // does the imposition, and no Aevia artwork crosses the gutter.
+    const insideBytes = await mergePdfBuffers(printPages);
+    console.log(`\n✅ Done — cover + ${printPages.length} inside pages (incl. blank QR page)`);
+    console.log(`   Cover : ${(printCoverBytes ? printCoverBytes.length / 1024 / 1024 : 0).toFixed(1)} MB`);
+    console.log(`   Inside: ${(insideBytes.length / 1024 / 1024).toFixed(1)} MB\n`);
+    return { coverBytes: printCoverBytes, insideBytes, pageCount: printPages.length };
   } else {
     console.log(`\n✅ Done — cover + ${pageNum} pages (incl. blank QR page) → ${printDir}/`);
 
@@ -1586,7 +1622,9 @@ if (require.main === module) {
 // Injects pre-built state + pre-fetched photo buffers, runs the preview render,
 // returns the PDF bytes without touching disk or signing any URLs.
 // The caller (pdf-renderer/index.js) is responsible for photo fetching + GCS upload.
-async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, progressCb }) {
+// pdfMode: 'preview' (default) returns a single Buffer of the preview PDF;
+// 'print' returns { coverBytes, insideBytes, pageCount } — two separate documents.
+async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, progressCb, pdfMode }) {
   // Reset module globals for this invocation (Cloud Run handles one request at a time)
   orderNumber    = ordNum;
   state          = stateData;
@@ -1596,7 +1634,7 @@ async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, p
   photosDir      = null;
   gcsUrlByName   = null;
   gcsOrder       = null;
-  mode           = 'preview';
+  mode           = pdfMode === 'print' ? 'print' : 'preview';
   outDir         = '/tmp/pdf-out';
   Object.assign(photoCache, new Map()); // clear photo cache between requests
   photoCache.clear();

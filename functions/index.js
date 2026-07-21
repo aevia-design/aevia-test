@@ -580,6 +580,9 @@ exports.generatePdf = functions
 
     const { orderNumber } = req.body;
     if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+    // 'preview' (default) = the customer-facing PDF. 'print' = cover + inside for
+    // the print house. Anything else falls back to preview rather than erroring.
+    const pdfMode = req.body.mode === 'print' ? 'print' : 'preview';
 
     const rendererUrl = process.env.PDF_RENDERER_URL;
     if (!rendererUrl) return res.status(500).json({ error: 'PDF_RENDERER_URL not configured' });
@@ -607,7 +610,7 @@ exports.generatePdf = functions
 
       // Mark queued so the dashboard sees movement instantly, even before Cloud Run
       // (possibly cold-starting) writes its first 'rendering' status.
-      await docRef.update({ pdfRender: { status: 'starting', updatedAt: new Date() } });
+      await docRef.update({ pdfRender: { status: 'starting', mode: pdfMode, updatedAt: new Date() } });
 
       // Fire the renderer. We deliberately do NOT await it to completion — Cloud Run
       // continues server-side after we disconnect. .catch swallows the expected
@@ -615,7 +618,7 @@ exports.generatePdf = functions
       fetch(`${rendererUrl}/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderNumber }),
+        body: JSON.stringify({ orderNumber, mode: pdfMode }),
       }).catch(() => {});
 
       // Confirm the render actually started (Cloud Run sets status='rendering' first
@@ -670,18 +673,31 @@ exports.getPdfStatus = functions
         done:      pr.done    || 0,
         total:     pr.total   || 0,
         sizeBytes: pr.sizeBytes || 0,
+        mode:      pr.mode    || 'preview',
         error:     pr.error   || null,
       };
 
       if (pr.status === 'done') {
         const folderName = order.folderName;
-        const gcsPath = pr.gcsPath || `${folderName}/pdfs/${orderNumber}_preview.pdf`;
         const { Storage } = require('@google-cloud/storage');
         const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
         const bucket  = storage.bucket('aevia-uploads-eu');
         const expires = new Date(Date.now() + 60 * 60 * 1000);
-        const [url] = await bucket.file(gcsPath).getSignedUrl({ action: 'read', version: 'v4', expires });
-        out.previewUrl = url;
+        const sign = (p) => bucket.file(p).getSignedUrl({ action: 'read', version: 'v4', expires }).then(r => r[0]);
+
+        if (pr.mode === 'print') {
+          // Print renders produce TWO files; sign both so the dashboard can offer
+          // each as its own download.
+          const coverPath  = pr.coverPath  || `${folderName}/pdfs/${orderNumber}_print_cover.pdf`;
+          const insidePath = pr.insidePath || `${folderName}/pdfs/${orderNumber}_print_inside.pdf`;
+          out.coverUrl        = await sign(coverPath);
+          out.insideUrl       = await sign(insidePath);
+          out.coverSizeBytes  = pr.coverSizeBytes  || 0;
+          out.insideSizeBytes = pr.insideSizeBytes || 0;
+        } else {
+          const gcsPath = pr.gcsPath || `${folderName}/pdfs/${orderNumber}_preview.pdf`;
+          out.previewUrl = await sign(gcsPath);
+        }
       }
 
       return res.status(200).json(out);
@@ -1298,8 +1314,12 @@ exports.getPdfUrl = functions
 
     const { orderNumber, type } = req.body;
     if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
-    if (!type || !['preview', 'print'].includes(type)) {
-      return res.status(400).json({ error: 'type must be "preview" or "print"' });
+    // 'print' is the legacy single merged file (CLI --order mode). Print renders from
+    // the dashboard produce two documents instead — cover (wide wrap) and inside
+    // (square single pages) — because a print house rejects mixed page sizes in one PDF.
+    // The GCS path is `{order}_{type}.pdf`, so the type IS the filename suffix.
+    if (!type || !['preview', 'print', 'print_cover', 'print_inside'].includes(type)) {
+      return res.status(400).json({ error: 'type must be "preview", "print", "print_cover" or "print_inside"' });
     }
 
     try {
