@@ -2425,6 +2425,14 @@ async function submitOrder() {
 
     // Worker pool: 5 slots in parallel
     const CONCURRENCY = 5;
+    // S147: a stalled PUT never rejects, so the catch below never runs, the
+    // overlay spins forever and the failure leaves no trace at all — which is
+    // exactly what happened to AEV-075. Abort an attempt that goes quiet so a
+    // hang becomes a recorded, retryable failure instead of an invisible one.
+    // 60s is generous here (a whole 115 MB order uploads in ~15s on the studio
+    // connection) but it is a diagnostic threshold, not a tuned one: revisit
+    // before real customers upload over slow mobile links.
+    const ATTEMPT_TIMEOUT_MS = 60000;
     let nextIndex = 0;
     async function worker() {
       while (nextIndex < total) {
@@ -2439,11 +2447,14 @@ async function submitOrder() {
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           const attemptStartedAt = Date.now();
+          const ctrl  = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), ATTEMPT_TIMEOUT_MS);
           try {
             const putRes = await fetch(uploadUrls[i].url, {
               method:  'PUT',
               body:    fileObjects[i],
               headers: { 'Content-Type': uploadUrls[i].contentType },
+              signal:  ctrl.signal,
             });
 
             if (!putRes.ok) {
@@ -2468,9 +2479,15 @@ async function submitOrder() {
             success = true;
             break;
           } catch (e) {
+            // An AbortError here is our own timeout firing, not a user action —
+            // label it so the log distinguishes "stalled" from "refused".
+            const timedOut = e.name === 'AbortError';
             attemptLog.push({
               attempt,
-              error: `${e.name}: ${e.message}`,
+              error: timedOut
+                ? `TIMEOUT: no response within ${ATTEMPT_TIMEOUT_MS} ms`
+                : `${e.name}: ${e.message}`,
+              timedOut,
               ms: Date.now() - attemptStartedAt,
             });
             if (attempt === maxRetries) {
@@ -2491,6 +2508,8 @@ async function submitOrder() {
             }
             // Retry with short backoff
             await new Promise(r => setTimeout(r, 100 * attempt));
+          } finally {
+            clearTimeout(timer);
           }
         }
 
