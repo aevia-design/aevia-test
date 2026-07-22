@@ -1,7 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { createUploadSessionHandler, confirmUploadHandler } = require('./upload');
+const { createUploadSessionHandler, confirmUploadHandler, reportUploadFailureHandler } = require('./upload');
 const { normalizeEmail, projectOrderForCustomer, sortOrdersNewestFirst } = require('./account-utils');
 const { generateReferralCode, extractPromotionCodeId, referrerRewardDecision } = require('./referral-utils');
 const { normalizePromoCode, promoValidationDecision, describeDiscount } = require('./promo-utils');
@@ -75,6 +75,12 @@ exports.confirmUpload = functions
   .region('europe-west1')
   .runWith({ timeoutSeconds: 30, memory: '256MB' })
   .https.onRequest(confirmUploadHandler);
+
+// ── S147: record why an upload failed (diagnostics only, no status change) ──
+exports.reportUploadFailure = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(reportUploadFailureHandler);
 
 // ── Caption generator ────────────────────────────────────────────────────────
 // Accepts multipart/form-data: image (JPEG blob) + collection + note (optional)

@@ -369,3 +369,54 @@ async function confirmUploadHandler(req, res) {
 }
 
 exports.confirmUploadHandler = (req, res) => cors(req, res, () => confirmUploadHandler(req, res));
+
+// ─── S147: reportUploadFailure ───────────────────────────────────────────────
+// Diagnostics only. When a photo PUT gives up, the browser posts what it saw
+// (status codes, error text, timings) so the failure survives the tab being
+// closed. Deliberately does NOT change status or email anyone — an order left
+// at 'uploading' is still the signal that something went wrong; this only
+// explains WHY. Same token auth as confirmUpload.
+async function reportUploadFailureHandler(req, res) {
+  if (req.method === 'OPTIONS') return res.status(204).send('');
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { orderNumber, token, failures, userAgent } = req.body;
+
+    if (!orderNumber || !token) {
+      return res.status(400).json({ error: 'orderNumber and token are required' });
+    }
+
+    const db = admin.firestore();
+    const doc = await db.collection('orders').doc(orderNumber).get();
+    if (!doc.exists) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+
+    const order = doc.data();
+    if (!order.token || typeof order.token !== 'string' || order.token !== token) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+
+    // Bound what we store: a runaway client must not be able to bloat the doc
+    // (Firestore's hard limit is 1 MiB and this field is pure diagnostics).
+    const capped = (Array.isArray(failures) ? failures : []).slice(0, 25);
+
+    await db.collection('orders').doc(orderNumber).update({
+      uploadErrors:   capped,
+      uploadErrorAt:  admin.firestore.FieldValue.serverTimestamp(),
+      uploadErrorUA:  String(userAgent || '').slice(0, 300),
+    });
+
+    console.error(`[reportUploadFailure] ${orderNumber}:`, JSON.stringify(capped));
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('[reportUploadFailure] Error:', err);
+    return res.status(500).json({ error: 'Server error', detail: err.message });
+  }
+}
+
+exports.reportUploadFailureHandler = (req, res) => cors(req, res, () => reportUploadFailureHandler(req, res));

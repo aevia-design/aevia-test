@@ -511,6 +511,7 @@
 // ─────────────────────────────────────────────────────────────────
 const FUNCTION_URL = 'https://europe-west1-aevia-uploads.cloudfunctions.net/createUploadSession';
 const CONFIRM_URL = 'https://europe-west1-aevia-uploads.cloudfunctions.net/confirmUpload';
+const REPORT_UPLOAD_URL = 'https://europe-west1-aevia-uploads.cloudfunctions.net/reportUploadFailure';
 
 const ALBUM_NOTE_PLACEHOLDERS = {
   kids:        "e.g. Ann's first year — born 14 March 2023. We'd love to see the early mornings, first smiles, and bath time chaos.",
@@ -2336,6 +2337,12 @@ async function submitOrder() {
     setTimeout(() => { overlaySub.textContent = humourLines[humourIdx]; overlaySub.style.opacity = '1'; }, 400);
   }, 4000);
 
+  // Upload diagnostics (S147). Declared outside the try so the catch below can
+  // still report them after a failure. See docs/briefs/upload-failures.md.
+  const uploadFailures = [];
+  let reportOrderNumber = null;
+  let reportToken       = null;
+
   try {
     // Step 1: call Firebase function to create order + get signed URLs
     const res = await fetch(FUNCTION_URL, {
@@ -2364,6 +2371,8 @@ async function submitOrder() {
 
     const data = await res.json();
     const { orderNumber, uploadUrls, token } = data;
+    reportOrderNumber = orderNumber;
+    reportToken       = token;
 
     // Step 2: upload files to signed URLs — 5 concurrent
     const total = fileObjects.length;
@@ -2422,8 +2431,14 @@ async function submitOrder() {
         const i = nextIndex++;
         let success = false;
         const maxRetries = 3;
+        // S147 diagnostics: record what each attempt actually did, so a failure
+        // leaves evidence instead of vanishing. Timings matter as much as codes —
+        // a hang and a 403 need different fixes.
+        const attemptLog = [];
+        const fileStartedAt = Date.now();
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          const attemptStartedAt = Date.now();
           try {
             const putRes = await fetch(uploadUrls[i].url, {
               method:  'PUT',
@@ -2432,6 +2447,15 @@ async function submitOrder() {
             });
 
             if (!putRes.ok) {
+              // GCS puts the real reason in the body (e.g. SignatureDoesNotMatch).
+              const body = await putRes.text().catch(() => '');
+              attemptLog.push({
+                attempt,
+                status: putRes.status,
+                statusText: putRes.statusText || '',
+                ms: Date.now() - attemptStartedAt,
+                body: body.slice(0, 400),
+              });
               if (attempt < maxRetries) {
                 // Retry with short backoff (100ms * attempt)
                 await new Promise(r => setTimeout(r, 100 * attempt));
@@ -2444,7 +2468,27 @@ async function submitOrder() {
             success = true;
             break;
           } catch (e) {
-            if (attempt === maxRetries) throw e;
+            attemptLog.push({
+              attempt,
+              error: `${e.name}: ${e.message}`,
+              ms: Date.now() - attemptStartedAt,
+            });
+            if (attempt === maxRetries) {
+              const failure = {
+                slot:         i + 1,
+                storedName:   uploadUrls[i] ? uploadUrls[i].storedName : null,
+                originalName: filesMeta[i] ? filesMeta[i].name : null,
+                fileType:     filesMeta[i] ? filesMeta[i].fileType : null,
+                declaredType: filesMeta[i] ? filesMeta[i].type : null,
+                signedType:   uploadUrls[i] ? uploadUrls[i].contentType : null,
+                sizeBytes:    fileObjects[i] ? fileObjects[i].size : null,
+                totalMs:      Date.now() - fileStartedAt,
+                attempts:     attemptLog,
+              };
+              uploadFailures.push(failure);
+              console.error('[upload] gave up on slot', i + 1, failure);
+              throw e;
+            }
             // Retry with short backoff
             await new Promise(r => setTimeout(r, 100 * attempt));
           }
@@ -2495,6 +2539,27 @@ async function submitOrder() {
     overlay.classList.remove('active');
     errEl.textContent = err.message || 'Something went wrong. Please try again or email us at support@aevia.at.';
     errEl.style.display = 'block';
+
+    // S147 diagnostics: send whatever we learned to the order doc so a failure is
+    // visible in the dashboard rather than only in a console nobody had open.
+    // Best-effort — never let reporting mask the original error.
+    if (uploadFailures.length && reportOrderNumber && reportToken) {
+      console.error('[upload] failures for', reportOrderNumber, uploadFailures);
+      try {
+        await fetch(REPORT_UPLOAD_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderNumber: reportOrderNumber,
+            token:       reportToken,
+            failures:    uploadFailures,
+            userAgent:   navigator.userAgent,
+          }),
+        });
+      } catch (reportErr) {
+        console.warn('[upload] could not report failures:', reportErr);
+      }
+    }
   }
 }
 
