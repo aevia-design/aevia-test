@@ -86,6 +86,12 @@ now-disabled hosted promo field — **STALE**, do not copy selectors from it.
 | `p1-promo-adr8.mjs` | Apply a code on the pay page, optionally pay | `node qa/p1-promo-adr8.mjs <AEV-nnn> [CODE] [testmail-tag] [--approve] [--expect-denied] [--no-pay] [--expect-percent N] [--expect-amount N]` |
 | `p1-promo-stripe.mjs` | Read-only — list/lookup live coupons + promotion codes in Stripe TEST | `node qa/p1-promo-stripe.mjs [codeToLookUp ...]` |
 
+### Live-site behaviour (local files served under the real hostname)
+
+| Script | What it does | Touches staff? | Template-coupled? |
+|---|---|---|---|
+| `prelaunch-banner.mjs` | Verifies the `aevia.at` pre-launch banner: renders, EN/DE copy, colour, and — the actual bug it was written for — that the `position:fixed` `.nav` clears it instead of being clipped underneath. Checks 1440 + 390px, EN + DE. **Technique worth reusing:** `site-mode.js` is inert on localhost, so the script `ctx.route()`s `https://aevia.at/**` onto the dev server — `location.hostname` is genuinely `aevia.at` and the real production branch runs, no test-only flag needed. Needs `npx serve . -p 8080`. | no | template-agnostic |
+
 ### Engine render smoke tests (local, no order, no backend)
 
 These drive the staff engine in **Local** mode against `qa/test-photos/` — no order is minted,

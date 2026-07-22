@@ -35,14 +35,40 @@
       return;
     }
 
-    // "Opening this autumn" banner on every other (marketing) page.
+    // Pre-launch banner on every other (marketing) page. Deliberately slim: it
+    // sits above a fixed nav, so every pixel here costs a pixel of the page.
+    // DE pages live under /de/ and get the German string; there is no DE
+    // waitlist page yet, so both languages link to the same one.
+    var isDE = path.indexOf('/de/') !== -1;
+
     var bar = document.createElement('a');
     bar.href = '/pages/waitlist';
-    bar.textContent = 'Opening this autumn. Join the waitlist →';
+    bar.textContent = isDE
+      ? 'Unsere Website ist noch im Aufbau. Aevia eröffnet im Herbst 2026. Zur Warteliste →'
+      : 'Our site is still being built. Aevia opens autumn 2026. Join the waitlist →';
     bar.style.cssText =
-      'display:block;text-align:center;padding:10px 16px;background:#1a1a1a;' +
-      'color:#fafaf8;font:500 13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;' +
+      'display:block;text-align:center;padding:6px 16px;background:#9a3b26;' +
+      'color:#fdf6f0;font:500 12px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;' +
       'letter-spacing:0.04em;text-decoration:none;position:relative;z-index:2000;';
     document.body.insertAdjacentElement('afterbegin', bar);
+
+    // The site nav is position:fixed;top:0. Left alone it renders UNDER this
+    // banner and loses its top strip — that's what was clipping the logo.
+    // Push it down by exactly the banner's height. Page content needs no
+    // adjustment: the banner is in normal flow, so everything below it already
+    // shifts down by the same amount and the existing offsets still line up.
+    // Re-measured on resize because the text rewraps to two lines on narrow
+    // phones, which changes the height.
+    function offsetFixedNav() {
+      var h = bar.offsetHeight;
+      var navs = document.querySelectorAll('.nav');
+      for (var i = 0; i < navs.length; i++) navs[i].style.top = h + 'px';
+    }
+    offsetFixedNav();
+    if (window.ResizeObserver) {
+      new ResizeObserver(offsetFixedNav).observe(bar);
+    } else {
+      window.addEventListener('resize', offsetFixedNav);
+    }
   }
 })();
