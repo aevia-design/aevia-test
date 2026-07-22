@@ -42,6 +42,8 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 - Customer journey: `context/customer-journey-v1.md`
 - Session logs: `sessions/`
 - ADRs: `docs/decisions/`
+- Investigation briefs: `docs/briefs/` — one per feature or problem, incl. deferred decisions
+  (e.g. `ios-app.md`, `google-signin-ios.md`). **Check here before re-researching something.**
 - Unit tests: `tests/` (run with `npm test` from project root)
 - QA browser scripts: `qa/` (Playwright via Node; see `qa/README.md` for the script index, reusable techniques + gotchas; run artefacts in `sessions/qa-runs/`, gitignored)
 

@@ -1,3 +1,43 @@
+## 2026-07-22 — An unexamined number becomes load-bearing (S146)
+
+**Three times in one session, a figure entered the conversation unverified and started steering
+decisions. Each one was wrong, and each was wrong in the direction that made the work look bigger
+than it was.**
+
+The first: orders were assumed to be **1–4 GB**, which made "background upload that survives a
+locked screen" the strongest technical argument for building a native iOS app. The owner corrected
+it — a 40p book is ~55 photos, a 80p book ~110, so real orders are **~150–450 MB**, a range his
+existing iPhone tests already covered. The argument evaporated. The figure came from `CLAUDE.md`
+itself, under cost awareness, where it had been sitting unchallenged and is presumably also
+inflating cost estimates.
+
+The second: fixing the footer and nav was quoted at **28–29 files**, because that is how many pages
+duplicate the markup. That number framed the design question — it made an accordion look worth
+considering purely to avoid touching 28 files. But the mobile rules live in the **shared
+`assets/css/mobile.css`**, so every fix landed in **one file**. The nav reorder that "needed" 29
+markup edits was two `order:` declarations. **The cost of a change is a property of where the rule
+lives, not of how many places show the symptom.**
+
+The third was Claude's own: extracting the duplicated engine core was asserted to be a
+**prerequisite** for the app. It is not — a WKWebView can point at `customer-preview.html` exactly
+as it stands. The claim was made in passing, went unchallenged for two messages, and by then was
+being treated as a settled dependency with months of work behind it.
+
+The shape is identical each time: **an assertion made in passing acquires the status of a
+constraint, and nobody re-derives it because it arrived sounding like background rather than a
+claim.** The owner caught the third one himself, and his reason is the transferable part — he
+noticed it had *arrived incidentally*, as a side observation during unrelated work, and then rapidly
+gained strategic importance. That trajectory is the tell. Ideas that enter as asides and become
+load-bearing within a few exchanges have usually acquired their weight from conversational
+momentum, not evidence.
+
+Worth pairing with S145's lesson: there, a value was verified but nobody asked whether anything
+read it. Here, numbers were never verified at all, yet were quietly promoted to constraints. Both
+are the same underlying failure — **treating a stated number as a fact about the system rather than
+a claim that has an origin.** Ask where the number came from before letting it decide anything.
+
+---
+
 ## 2026-07-21 — Verifying a value is not verifying that anything reads it (S145)
 
 **S144 synced the Wander sizing CSV into `wander-data.js` and verified the result carefully: all

@@ -30,15 +30,17 @@ iOS Safari opens popups as new *tabs* and restricts popups not tied to a synchro
 
 Note also that `_redirects` cannot do this: Firebase requires *transparent proxying*, explicitly not 302 redirects.
 
-## Open question to resolve first
+## Device evidence (owner, S146)
 
-**What exactly fails on the device?** This was inferred, not observed — no reproduction was achieved locally (desktop WebKit on Windows does not faithfully reproduce iOS popup restrictions, so it was deliberately not attempted).
+**The tab does open on iOS Safari — but not every time.** The failure is **intermittent**, not absolute. This was reported by the owner after the first draft of this brief and it narrows the diagnosis considerably.
 
-On an iPhone, tapping the Google button:
-1. Does a new tab open **at all**?
-2. Does any error text appear on the Aevia page afterwards?
+Intermittency is the signature of the **user-gesture timing problem**, not of a blanket popup block. `signInWithPopup` in the modular SDK does asynchronous work (resolving config, preparing the auth iframe) *before* it calls `window.open`. iOS Safari only honours `window.open` while a user-gesture token is still live. On a warm cache that async work finishes fast enough and the tab opens; on a cold load or slow network it doesn't, the gesture has expired, and Safari blocks it.
 
-"Never opens" and "opens then strands you" point to different fixes. Answer this before building anything.
+That matters for option selection: **Option A is less useless than it first appeared.** Pre-warming the Firebase auth module before the click, so `signInWithPopup` has nothing async left to do, is a plausible cheap fix worth testing. It would not, however, help if the *return* leg is also broken.
+
+**Still unanswered:** when the tab *does* open, does sign-in actually complete and return the user to Aevia signed in — or does it still strand them on an unrelated tab? Answer this next; it decides whether a cheap gesture fix is sufficient or whether the redirect/proxy work (Option B) is genuinely required.
+
+No local reproduction was attempted: desktop WebKit on Windows does not faithfully reproduce iOS popup restrictions, so it would have been weak evidence either way.
 
 ## Options
 
