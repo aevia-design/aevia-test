@@ -14,3 +14,15 @@
 /* Base body bumped 15px -> 17px for legibility / premium feel. Pages with
    explicit per-element sizes (headings, taglines, captions) keep them. */
 body { font-size: 17px; }
+
+/* Widow control (S146). Two different jobs, two different values:
+     balance — evens out line LENGTHS. Correct for headings. Left as-is on
+               .touch-name / .step-name / .early-title in the page styles.
+     pretty  — prevents a lone last word. Correct for body copy.
+   Declared here (loads after each page's inline <style>) so it overrides the
+   `text-wrap: balance` those desc classes currently carry. Same specificity,
+   later source order. Browsers without support ignore it — no fallback needed. */
+p,
+.touch-desc,
+.step-desc,
+.collection-desc { text-wrap: pretty; }

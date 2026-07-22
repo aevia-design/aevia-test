@@ -84,8 +84,13 @@
     flex-direction: column;
     gap: 0;
   }
+  /* Order inside the burger menu: Account, then DE, then the CTA (order: 3).
+     DOM order is DE → Account, which put the language switcher in the middle of
+     the page links. Language is a setting, not a destination, so it sits after
+     Account. Reordered here rather than in the markup — that would be 29 files. */
   .nav-account {
     display: block;
+    order: 1;
     width: 100%;
     padding: 12px 0;
     font-size: 13px;
@@ -94,6 +99,7 @@
   /* In the burger menu the pill becomes a full-width row like the other links */
   .nav-lang {
     display: block;
+    order: 2;
     width: 100%;
     padding: 12px 0;
     font-size: 13px;
@@ -159,8 +165,12 @@
   .steps-line { display: none; }
 
 
-  /* ── Home — Aevia touch (4-col → 2-col) ── */
-  .touch-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+  /* ── Home — Aevia touch (4-col → 1-col) ──
+     Single column, not 2-up: at 2-up a card is ~165px wide, which breaks the
+     descriptions to 2–3 words per line. Stacking also removes the need for the
+     desktop `.touch-name { min-height }` heading equalisation — cards sit alone
+     on their row, so nothing can misalign beside them. */
+  .touch-grid { grid-template-columns: 1fr; gap: 20px; }
 
 
   /* ── Home — Testimonials ── */
@@ -197,9 +207,13 @@
   /* ── Help page — FAQ sidebar ── */
   .faq-sidebar { position: static; }
 
-  /* ── Footer ── */
-  .footer { padding: 48px 20px 36px; }
-  .footer-inner { grid-template-columns: 1fr; gap: 36px; }
+  /* ── Footer ──
+     Link groups sit 2-up rather than in one tall column: 12 short nav links
+     stacked singly made the footer endless and left the right half empty.
+     The brand blurb spans both columns above them. */
+  .footer { padding: 40px 20px 32px; }
+  .footer-inner { grid-template-columns: 1fr 1fr; gap: 28px 20px; }
+  .foot-brand { grid-column: 1 / -1; }
   .foot-base { flex-direction: column; gap: 8px; }
 
 
@@ -255,7 +269,7 @@
    SMALL PHONES  (≤ 400px) — fine-tuning
 ═══════════════════════════════════════════════════ */
 @media (max-width: 400px) {
-  .touch-grid { grid-template-columns: 1fr; }
+  /* .touch-grid is already 1-col from ≤768px — no override needed here. */
   .steps      { grid-template-columns: 1fr; }
   .hero-headline { font-size: 30px; }
   #la .product-title { font-size: 30px; }
