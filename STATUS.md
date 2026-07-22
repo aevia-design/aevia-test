@@ -1,56 +1,63 @@
 # Session Status
-_Last updated: 2026-07-22 (session 146)_
-_Context at save: **The mobile site was polished and shipped — cards, footer, widows and nav order, all CSS-only in shared files, verified on device by the owner.** A native iOS app was explored in depth and deliberately deferred until after the F&F trial; the reasoning is briefed so it can be resumed rather than re-argued. Google sign-in is broken on iPhone in two places, one of them inside the purchase path — diagnosed and briefed, not yet fixed. The owner is away on a trip; nothing is left half-finished._
+_Last updated: 2026-07-22 (session 147)_
+_Context at save: **A real customer-facing bug — photo uploads occasionally stall and strand the order — was investigated properly, instrumented, and left unsolved.** That is the honest state: the evidence overturned the starting assumption, two real defects were found, diagnostics are deployed and waiting for the next occurrence. The pre-launch banner was fixed, recoloured and rewritten (live). The QA history was traced: P0/P1 green, P2 never started, nothing re-run in 8 days. Nothing is half-finished; working tree clean._
 
 ## Status
-**Session 146 (2026-07-21/22) — mobile polish shipped, iOS app deferred, sign-in bug briefed.**
+**Session 147 (2026-07-22) — upload failure instrumented (not fixed), banner shipped, QA history traced.**
 
-1. **Mobile fixes (`2bd4a84`).** Value cards go 1-up (were ~165px wide, breaking descriptions to 2–3 words per line); footer link groups go 2-up with the brand spanning both; `text-wrap: pretty` on body copy site-wide; burger menu reordered so Account precedes DE. **All CSS-only in `mobile.css` + `type.css`** — no copy, no markup, no per-page edits. Verified with Playwright at 390/375/1440px, desktop unchanged. **Owner confirmed on his phone.**
-2. **Native iOS app — deferred, not rejected (`docs/briefs/ios-app.md`).** Owner time is the binding constraint (2–3 months part-time vs print house Aug → F&F Sep → marketing year-end). Revisit after the first real orders. TO-DOS #40 repointed; its "Capacitor wrap" framing is superseded by native shell + engine in a WKWebView.
-3. **Google sign-in on iPhone (`docs/briefs/google-signin-ios.md`, TO-DOS #86).** Diagnosed, four options costed (all €0), deferred by the owner to after his trip.
-4. **TO-DOS #87** — `waitlist.html` may have no mobile styling, and it is the production gate page. Unverified.
+1. **Upload bug (`bde868b`, `91ea866`, TO-DOS #88).** Orders strand at `status: uploading`. **Root cause NOT found.** "Stalls on the last photo" turned out to be a display artefact — 5 parallel workers finish out of order, so any single hung file renders as "N−1 of N". Real pattern: **Papercut is missing exactly `special_pages/fp4.png` in 3 of 4 orders** (AEV-073/074/075 failed, AEV-076 passed); AEV-067 (Wander) lost a trailing block of 7. Diagnostics + a 60s stall timeout are deployed and waiting. Full evidence log and reporting procedure: **`docs/briefs/upload-failures.md`**.
+2. **Pre-launch banner (`6b66bb1`).** Live on aevia.at. The overlap was **not** thickness — `.nav` is `position:fixed;top:0` and the banner sits in normal flow, so the nav rendered underneath and lost its top strip. Fixed by offsetting the nav by the banner's measured height. New EN/DE copy, deep terracotta `#9a3b26`. Verified 16/16 via `qa/prelaunch-banner.mjs`.
+3. **`confirmUpload` deployed** — pending since S145. The 48h preview promise is finally live.
+4. **QA traced (no code).** P0 (S124) and P1 (S125) green; S127 caught a critical promo-payment bug. **P2 never started** — its agents died at a session limit and it was never resumed. **No QA run since 14 Jul**, across Joyride, a domain migration and a mobile overhaul.
 
 ## Recent decisions
-- **The iOS app waits for evidence, not enthusiasm (S146):** an app is a retention tool and there are zero customers to retain. Triggers that would revive it are written down in the brief.
-- **If the app is built: native shell + engine in a WKWebView (S146).** Never a native rebuild of the rendering engine — it is print-critical geometry, and two implementations that must agree exactly is how a customer approves a preview that doesn't match what prints.
-- **Engine extraction is parked (S146).** It was claimed to be a prerequisite for the app. It is not — a webview can point at `customer-preview.html` as-is. Revisit only on independent merit.
-- **Copy must not diverge between mobile and desktop (S146, owner).** Desktop is verified and the DE mirrors double any divergence. Mobile problems get layout fixes, not shortened copy.
-- **Working assumption: 20% VAT on photo books (S145, owner):** CEWE and Journi both charge it. Steuerberater to confirm; 10% would be ~€5/book.
-- **Print interior is single pages, not reader spreads; print output is two files, never one (S145).**
-- **RGB is settled, do not re-ask (S119, reconfirmed S145).** Elanders convert to CMYK themselves.
+- **Diagnose before fixing, even under repetition (S147).** Three failures in, the temptation was to patch the retry logic. The evidence instead showed the symptom was a display artefact and the real failure was a single named file. A patch would have hidden it.
+- **The retry backoff stays broken on purpose (S147).** 100/200ms is far too fast to survive a real transient — but if a retry fails identically, that is evidence the failure is deterministic rather than transient. Fix it only after the cause is known.
+- **`reportUploadFailure` does not change status or email (S147).** An order stuck at `uploading` is already the signal; the diagnostics only explain why. Keeping it inert means it cannot distort the dashboard mid-diagnosis.
+- **A season + year is not a hard date (S147, owner).** S130 avoided a launch date because a stranger can screenshot a promise; "autumn 2026" was accepted as soft enough. Flagged rather than silently overwritten.
+- **No fire-engine red on a craft brand (S147).** A saturated red reads as discount-sale; terracotta `#9a3b26` is as prominent and stays in the warm editorial family.
+- **The iOS app waits for evidence, not enthusiasm (S146).** Triggers to revive it are in `docs/briefs/ios-app.md`.
+- **Copy must not diverge between mobile and desktop (S146, owner).** Mobile problems get layout fixes, not shortened copy.
+- **Working assumption: 20% VAT on photo books (S145, owner).** Steuerberater to confirm.
+- **RGB is settled, do not re-ask (S119, reconfirmed S145).**
 - **The live site stays `noindex` until launch (S144)** — Cloudflare header rule, deleted on launch day (TO-DOS #81).
 
 ## Next steps (priority order)
-1. **Deploy `confirmUpload`** — `firebase deploy --only functions:confirmUpload`. Still pending from S145. The 48h email copy is committed but not live until this runs. Then place a test order and confirm the email says 48 hours.
-2. **Correct the 1–4 GB/order figure in `CLAUDE.md`** — it is wrong (real orders are ~150–450 MB) and it inflates every cloud cost estimate that references it. **Needs the owner's real number**; Claude should not guess.
+1. **Wait for the upload bug to recur, then follow `docs/briefs/upload-failures.md`.** The critical step is **not closing the tab** — a stalled fetch only reports once the 60s timeout fires. The decisive unknown: is the photo assigned to fp4 also used elsewhere in the same order?
+2. **Correct the 1–4 GB/order figure in `CLAUDE.md`** — wrong (real orders are ~150–450 MB) and it inflates every cloud cost estimate. **Needs the owner's real number.**
 3. **Verify TO-DOS #87** — does `waitlist.html` render unstyled on a phone? It is what every real aevia.at visitor currently sees.
-4. **TO-DOS #86 (Google sign-in)** — next step is one question on a real iPhone: when the tab opens, does sign-in complete or still strand the user? That decides cheap fix vs proxy work.
-5. **Decide on `devotion.html` + `radiance.html`** — dead pages, still live, advertising shipping-included delivery to DE/CH/UK/USA. Delete, or noindex + drop from sitemap.
-6. **Confirm `prices.js` €70 is gross, not net** — if those figures are what Aevia receives, the VAT label is untrue and the real price is €84.
-7. **Xenia native-speaker check** of all German — flagged in `docs/website-copy-DE.md`.
-8. **Localise the order flow / emails / account to DE** — still English. Write the preview promise as 48h from the start.
-9. **TO-DOS #80** — real print specs after the production visit; before launch; mirror to DE.
+4. **TO-DOS #86 (Google sign-in)** — one question on a real iPhone: when the tab opens, does sign-in complete?
+5. **Decide what to do about QA** — re-run the scripted P0 suite (cheap, reusable) to check the last 8 days did not regress the customer path, and decide whether P2 gets built before real customers. Owner parked this deliberately in S147.
+6. **Decide on `devotion.html` + `radiance.html`** — dead pages, still live, advertising shipping to DE/CH/UK/USA.
+7. **Confirm `prices.js` €70 is gross, not net.**
+8. **Xenia native-speaker check** of all German — now includes the new banner string.
+9. **Localise the order flow / emails / account to DE.**
+10. **TO-DOS #80** — real print specs after the production visit.
 
 ## Open questions
-- **When the Google sign-in tab does open on iOS, does sign-in complete?** Decides the fix. See `docs/briefs/google-signin-ios.md`.
+- **Is the fp4 photo a duplicate of another photo in the same order?** The one observation that confirms or kills the duplicate-`File` hypothesis. See `docs/briefs/upload-failures.md`.
 - **What is the real per-order upload size?** Needed to fix `CLAUDE.md`.
+- **When the Google sign-in tab does open on iOS, does sign-in complete?** See `docs/briefs/google-signin-ios.md`.
+- **Should a customer be able to resume a failed upload at all**, or is the order abandoned and re-placed? (TO-DOS #90.)
 - **For Elanders:** is the blank QR page inside the 40 pages or does it make 41 — and do they need a multiple of four for binding? Plus their Q1 (spine formula) and Q6 (single pages vs spreads).
 - **For the Steuerberater:** 10% book rate or 20% standard on a personalised photo book?
-- **VAT research unfinished:** the Austrian price-display statute citation, the 2025 EU cross-border SME scheme, and whether the 14-day withdrawal right applies to personalised goods. The last matters for the terms.
-- **Would a PWA** deliver the app's loyalty goals at a fraction of the cost? Rejected on preference in S146, never on merit.
-- **DE order flow** — when localised, decide `/de/order.html` vs a language-aware single page.
-- **Joyride mockups** (owner) + **Dorottya's portrait photo** still gate a clean Joyride merge; the only QA 404s.
+- **VAT research unfinished:** the Austrian price-display statute, the 2025 EU cross-border SME scheme, and whether the 14-day withdrawal right applies to personalised goods.
+- **DE order flow** — `/de/order.html` vs a language-aware single page. Related: there is **no DE waitlist page**, so the German banner links to the English one.
+- **Joyride mockups** (owner) + **Dorottya's portrait photo** still gate a clean Joyride merge.
 
 ## Watch-outs for the next session
-- 🔴 **Ask where a number came from before letting it decide anything.** Three unverified figures steered decisions in S146 and all three were wrong in the direction that made work look bigger. See LEARNINGS 2026-07-22.
-- 🔴 **A "29-file" CSS change is often a 1-file change.** Mobile rules live in shared `assets/css/mobile.css`; only markup changes cost per-page. Check where the rule lives before quoting a cost.
+- 🔴 **A stalled `fetch` never rejects.** No timeout means no error, no catch, no report — the failure leaves zero trace and the overlay spins forever. This is why AEV-075 recorded nothing. Any long-running `fetch` needs an `AbortController`.
+- 🔴 **Check a page is actually deployed before reading anything into a test.** AEV-075 was placed 7 minutes before the diagnostics were pushed, so it ran old code and "proved" nothing. Also: `curl` on `/pages/order.html` returns a **308** to the extensionless URL — without `-L` you are grepping a redirect, not the page.
+- 🔴 **Do not call something deterministic on a sample of three.** Papercut/fp4 was 3-for-3, then AEV-076 passed.
+- 🔴 **Ask where a number came from before letting it decide anything** (S146). Three unverified figures steered decisions and all three were wrong.
 - 🔴 **`devotion.html` + `radiance.html` contradict live shipping policy.** Harmless only while the site is `noindex`.
 - 🔴 **The Cloudflare `noindex` rule must be deleted at launch** (TO-DOS #81) or the finished site launches invisible.
-- **Cloudflare Pages auto-detects a root `functions/` dir** — and this repo's is Firebase Cloud Functions. Anything needing a Pages Function (e.g. the sign-in proxy) must resolve that collision first.
-- **`text-wrap`: `balance` evens line lengths (headings), `pretty` prevents lone last words (body).** Both now in use; don't swap them.
+- **A fixed-position nav does not move for injected content.** `.nav` is `position:fixed;top:0`; anything inserted at the top of `<body>` renders underneath it. Offset the nav, not the content.
+- **`site-mode.js` is inert on localhost by design.** To test it, route `https://aevia.at/**` onto the dev server (see `qa/prelaunch-banner.mjs`) rather than adding a test-only flag.
+- **Cloudflare Pages auto-detects a root `functions/` dir** — and this repo's is Firebase Cloud Functions. Anything needing a Pages Function must resolve that collision first.
 - **Never run the PDF CLI against a real order** — it pulls originals over the internet and bills egress. The dashboard path is in-region and free.
+- **Reuse QA orders, don't mint new ones** (owner directive, S126) — except when the order-creation path itself is under test.
 - **Engine parity still applies** to the staff/customer engines.
 - **DE pages are N inline copies** — `docs/website-copy-deltas.md` maps where strings live.
-- **`product.js` is locale-aware (S141)**; **`.step-name{min-height:2.6em}` is DE-home-only (S142)**; **`product.css` `.panel{min-width:0}` (S141)** — keep all three.
 - **PowerShell splits unquoted comma lists** — `firebase deploy --only "functions:a,functions:b"` must be quoted.
 - **Known QA 404s that are NOT regressions** — Joyride mockups + Dorottya's portrait.

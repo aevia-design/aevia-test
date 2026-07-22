@@ -1,3 +1,50 @@
+## 2026-07-22 — A parallel worker pool makes every failure look like the last item (S147)
+
+**The reported symptom was "it stalls when one photo is left." That was never true, and believing
+it would have sent the fix to the wrong place.**
+
+The uploader runs five workers in parallel and increments a counter as each file *completes*.
+Completions arrive out of order. So a single file hanging **anywhere** in the queue — first, middle,
+last — always renders as "N−1 of N". The progress display cannot distinguish "one file left to
+start" from "one file stuck since the beginning."
+
+The actual failure was `special_pages/fp4.png`, **slot 4 of 50** — one of the first files sent, not
+the last. It was only visible by listing what landed in GCS and diffing it against the Firestore
+manifest. The lesson generalises past this bug: **with a concurrent worker pool, the progress
+counter tells you how many succeeded, never which one failed.** Any bug report phrased in terms of
+"the last one" should be re-derived from server-side state before it shapes a diagnosis.
+
+Corollary from the same session: **do not call something deterministic on a sample of three.**
+Papercut/fp4 failed three times in a row, was described as deterministic, and then passed on the
+fourth run.
+
+## 2026-07-22 — Instrumentation that only fires in `catch` cannot see a hang (S147)
+
+**Diagnostics were added to record why an upload failed. The next failure recorded nothing — because
+the failure mode was a stall, and a stalled `fetch` never rejects.**
+
+The reporting code lived in the `catch` of the upload loop. That only runs if a promise **rejects**.
+When the owner reported "the tab was never closed, the upload just never finished", it meant the
+request had gone quiet and stayed quiet: `Promise.all` never settles, the catch never runs, the
+overlay spins forever, and the order strands with **zero** evidence. The instrumentation had the same
+blind spot as the bug it was built to observe.
+
+Fixed with an `AbortController` timeout per attempt, so a stall becomes a rejection and therefore a
+record. `AbortError` is labelled `TIMEOUT` in the log, because "stalled" and "refused" need opposite
+fixes and are otherwise indistinguishable after the fact.
+
+**The general rule: `fetch` has no default timeout.** Any request that can be slow — uploads,
+renders, third-party calls — needs an explicit abort, or its worst failure mode is silence. When
+adding diagnostics, ask what the *quietest* possible failure looks like and check the instrumentation
+can still see it.
+
+Two process notes from the same investigation, both of which nearly produced false conclusions:
+
+- **Confirm the code under test is actually deployed.** AEV-075 was placed seven minutes *before*
+  the diagnostics were pushed. Its empty result looked like a finding; it was stale code.
+- **`curl` on `/pages/order.html` returns a 308** to the extensionless URL. Without `-L` you grep a
+  redirect body, not the page, and conclude the deploy failed when it did not.
+
 ## 2026-07-22 — An unexamined number becomes load-bearing (S146)
 
 **Three times in one session, a figure entered the conversation unverified and started steering
