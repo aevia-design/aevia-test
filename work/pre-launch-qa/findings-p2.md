@@ -100,6 +100,32 @@ side-scrolls reads as broken.
 
 ---
 
+## Batch 2 — P2-6, P2-7 (S150, 2026-08-04)
+
+Script: `qa/p2-pay-abuse.mjs`. Ran on **AEV-042** (approved → now **paid**; consumed by
+design, with the owner's go-ahead). Stripe TEST mode, so no real money moved.
+
+**PASS — 0 findings.**
+
+| Check | Result |
+|---|---|
+| P2-6 — two clicks on Pay, 120ms apart | **1** `createCheckoutSession` call, not 2 |
+| P2-6 — payment completes | AEV-042 reached `paid` via the webhook |
+| P2-7 — order state after Back | still `paid` |
+| P2-7 — reloaded preview | pay button hidden, `_readOnly` true, success notice shown |
+| P2-7 — further checkout sessions after Back | none |
+
+P2-6 is judged on **network calls, not the UI**: a button that merely looks disabled can
+still have fired twice. Counting requests to `createCheckoutSession` is what proves it.
+
+**Observation, not a finding:** the browser Back button from the success page lands on the
+*expired Stripe checkout URL*, so the customer sees Stripe's own session-expired page rather
+than anything of ours. Our state is correct throughout and returning to the preview shows
+the paid state properly. It looks slightly odd but is Stripe's own behaviour on a consumed
+session, and the customer is one click from the right place.
+
+---
+
 ## Not yet run — and what each needs
 
 | Case | Blocker |
