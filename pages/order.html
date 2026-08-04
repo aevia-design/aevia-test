@@ -1854,13 +1854,29 @@ let _fileCounter = 0;
 let _uploadQueue = [];
 let _uploadBusy  = false;
 
+// S150 (QA case P2-3): the `accept=".jpg,.jpeg,.png,.heic"` attribute only filters the
+// OS file picker. A drag-and-drop walks straight past it, so a .txt or .pdf used to be
+// accepted, shown as a tile, and COUNTED toward the required photo total — letting a
+// customer reach the exact count with files that can never render. Rejecting silently is
+// almost as bad (they end up short with no idea why), so always say what was refused.
+function rejectMainFiles(names, reason) {
+  if (!names.length) return;
+  const list = names.length > 3
+    ? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more`
+    : names.join(', ');
+  showStepError('step2', `Couldn't use ${list} — ${reason}`);
+}
+
 function handleMainFiles(fileList) {
   const existingNames = new Set(mainFiles.map(f => f.name));
+  const rejected = [];
   const newFiles = Array.from(fileList).filter(f => {
     if (existingNames.has(f.name)) return false;
+    if (!isImage(f)) { rejected.push(f.name); return false; }
     existingNames.add(f.name);
     return true;
   });
+  rejectMainFiles(rejected, 'we can only use photos (JPG, PNG or HEIC).');
   _uploadQueue.push(...newFiles);
   drainUploadQueue();
 }
@@ -1919,9 +1935,20 @@ async function processAndAddFile(f) {
     appendPhotoThumb(f);
     updatePhotoStatusBar();
 
-    // Resolution check — updates badge only, no grid rebuild
-    if (f._objUrl && /\.(jpe?g|png)$/i.test(f.name)) {
-      await checkResolution(f);
+    // Resolution check — updates badge only, no grid rebuild. Widened from jpg/png to
+    // every non-HEIC image so the decode result below covers all of them.
+    if (f._objUrl) {
+      const decoded = await checkResolution(f);
+      if (!decoded) {
+        // Claims to be a photo but the browser cannot decode it: a renamed text file, a
+        // truncated download, or a corrupt image. It would occupy a book slot that can
+        // never render, so drop it and say so rather than let it count (QA case P2-3).
+        const idx = mainFiles.indexOf(f);
+        if (idx !== -1) removeMainFile(idx);
+        rejectMainFiles([f.name], "it isn't a readable photo — it may be damaged, or not really an image.");
+        updatePhotoStatusBar();
+        return;
+      }
       if (f._lowRes) {
         refreshThumbBadge(f);
         updatePhotoStatusBar();
@@ -1933,14 +1960,17 @@ async function processAndAddFile(f) {
 }
 
 // Await a resolution check; sets f._lowRes if too small
+// Resolves TRUE if the browser could actually decode the file as an image, FALSE if not.
+// The decode result is the only reliable "is this really a photo" signal — isImage()
+// matches on extension, so a text file renamed .jpg passes it (QA case P2-3).
 function checkResolution(f) {
   return new Promise(resolve => {
     const checker = new Image();
     checker.onload = () => {
       if (Math.min(checker.naturalWidth, checker.naturalHeight) < 1575) f._lowRes = true;
-      resolve();
+      resolve(true);
     };
-    checker.onerror = resolve;
+    checker.onerror = () => resolve(false);
     checker.src = f._objUrl;
   });
 }

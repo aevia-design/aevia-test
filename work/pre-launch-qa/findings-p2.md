@@ -148,9 +148,20 @@ and emoji including skin-tone modifiers, smart quotes and non-BMP mathematical s
 Raw `<script>` **is** stored in Firestore. That is fine on its own — escaping is a render
 concern, and the render is clean. Storing the literal text the customer typed is correct.
 
-**Note:** the confirmation email carries **no `reply-to` header**. The success screen tells
-the customer "reply to us within 24h", so replies land on the `From` address
-(`orders@aevia.at`). Worth confirming that mailbox is monitored; not raised as a finding.
+**Correction (same session):** an earlier version of this note claimed the confirmation email
+carried **no `reply-to` header**. That was wrong — testmail's API does not expose headers at
+all (the `headers` object comes back empty), so absence of data was misread as absence of a
+header. `FROM.customer` sets `replyTo: 'support@aevia.at'` (`functions/email.js:30`). Do not
+try to assert on mail headers via testmail; assert on `from`, `subject` and body instead.
+
+**Mail routing, confirmed from source** (staff notifications go to `EMAIL_NOTIFY`):
+
+| Mailbox | Receives |
+|---|---|
+| `orders@aevia.at` | Staff "New Order" (`upload.js:199`) + "Payment received" (`index.js:1261`) |
+| `support@aevia.at` | Customer-reported issues only (`index.js:447`); also the reply-to on customer mail |
+| `hello@aevia.at` | Artist-collaboration form (`index.js:1616`) |
+| Customer's inbox | Confirmation, preview-ready, payment receipt |
 
 **Incidental verification of TO-DOS #92:** AEV-078 came out at `status: new`,
 `uploadComplete: true`, so the fixed `confirmUpload` (commit `769b47e`) works on the happy
