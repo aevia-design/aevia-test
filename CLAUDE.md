@@ -41,6 +41,10 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 - Per-page copy deltas (what changes where; don't re-audit): `docs/website-copy-deltas.md`
 - Customer journey: `context/customer-journey-v1.md`
 - Session logs: `sessions/`
+- Business-case financial model: `assets/Aevia - Business case v11.xlsx` (**use v11, v10 is corrupted**).
+  Edit via openpyxl with Excel closed; no calc engine here so verify numbers by opening in Excel.
+  Tabs: Business case - Quarterly view, Marketing (drives orders + spend), Assumptions, Tax & Founder income.
+  Assumptions challenged + sourced in `docs/briefs/marketing-assumptions-research.md`.
 - ADRs: `docs/decisions/`
 - Investigation briefs: `docs/briefs/` — one per feature or problem, incl. deferred decisions
   (e.g. `ios-app.md`, `google-signin-ios.md`). **Check here before re-researching something.**
@@ -52,7 +56,11 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 ---
 
 ## Coding conventions
-- Plain HTML/CSS/JS — no frameworks, no build tools
+- Plain HTML/CSS/JS on the frontend — no frontend framework, no build step, no npm on the frontend
+- Third-party libraries ARE allowed and already used (exifr, heic2any, Geoapify, Firebase SDK).
+  The constraint is delivery, not dependency: a frontend library must work as a plain
+  `<script>` tag. Backend and tooling (`functions/`, `scripts/`, `services/`, `qa/`) use npm
+  normally. Ask before adding one either side.
 - Inline styles acceptable for one-off layout tweaks
 - Nav/footer: copy pattern from an existing page
 - Asset paths from `pages/`: `../assets/images/filename`
