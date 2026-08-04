@@ -2526,17 +2526,58 @@ async function submitOrder() {
     uploadInFlight = false;
 
     // Chunk 5: call confirmUpload to finalize the order and trigger customer email.
-    // Wrap in its own try/catch so a confirmUpload failure doesn't block the success screen
-    // (photos already uploaded successfully; a missing customer email is recoverable).
-    try {
-      await fetch(CONFIRM_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderNumber, token }),
-      });
-    } catch (err) {
-      // Log but don't throw — success screen must still show
-      console.warn('confirmUpload failed (order details recorded; customer email may be delayed):', err);
+    // It does two things server-side: flips the order to status 'new' / uploadComplete,
+    // THEN sends the customer email. So a 500 means one of two very different things —
+    // an SMTP failure (order is fine, email missing) or a Firestore/auth failure (order
+    // stranded at 'uploading' with every photo already in GCS).
+    //
+    // S150 (#92): `fetch` only rejects on network failure — a 403 or 500 resolves
+    // normally, so the old unchecked call reported a stranded order as success. Check
+    // res.ok. confirmUpload is idempotent (200 straight back when uploadComplete is
+    // already true), so retrying is safe.
+    let confirmed = false;
+    let confirmDetail = '';
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const res = await fetch(CONFIRM_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderNumber, token }),
+        });
+        if (res.ok) { confirmed = true; break; }
+        const body = await res.text().catch(() => '');
+        confirmDetail = `HTTP ${res.status} ${body.slice(0, 200)}`;
+      } catch (err) {
+        confirmDetail = `${err.name}: ${err.message}`;
+      }
+      // Real backoff, unlike the per-photo retry (#88): 1s then 3s. A cold start or a
+      // brief SMTP hiccup can actually recover inside that.
+      if (attempt < 3) await new Promise(r => setTimeout(r, attempt === 1 ? 1000 : 3000));
+    }
+
+    if (!confirmed) {
+      // Still show success: every photo is in GCS and there is nothing useful the
+      // customer can do with this error. Leave staff a trail instead —
+      // reportUploadFailure writes to uploadErrors without changing status or emailing.
+      console.warn('[confirmUpload] gave up after 3 attempts:', confirmDetail);
+      try {
+        await fetch(REPORT_UPLOAD_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderNumber,
+            token,
+            failures: [{
+              stage:  'confirmUpload',
+              detail: confirmDetail,
+              at:     new Date().toISOString(),
+            }],
+            userAgent: navigator.userAgent,
+          }),
+        });
+      } catch (reportErr) {
+        console.warn('[confirmUpload] could not report:', reportErr);
+      }
     }
 
     clearInterval(humourTimer);
