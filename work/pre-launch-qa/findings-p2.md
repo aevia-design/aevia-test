@@ -186,16 +186,70 @@ from the outside, which is its own argument for the ownership check.
 
 ---
 
-## Not yet run — and what each needs
+## Batch 4 — P2-10 refresh mid-upload (S150, 2026-08-04)
 
-| Case | Blocker |
+Script: `qa/p2-order-abuse.mjs scribble --refresh`. Minted **AEV-079** as a deliberate ghost.
+
+### F-P2-04 · S2 · A refresh mid-upload strands the order with no resume path
+
+Refreshed at **"3 of 50 photos · 427 KB / 497 MB"**. Twenty seconds later AEV-079 sits at
+`status: uploading`, `uploadComplete: false`, with three photos in GCS and no way to finish.
+
+Two things make it worse than a lost session:
+
+- **Staff already have a "New Order" email.** `createUploadSession` sends it before any photo
+  uploads, so the studio is told an order arrived that will never complete. Failure mode D2
+  in `docs/briefs/order-flow-failure-map.md`.
+- **The customer's order vanishes from their side.** The refreshed page reads
+  *"Choose a template first"* — the wizard has no memory of the order it just created. From
+  the customer's point of view the order is gone; from Firestore's it exists and is broken.
+
+This is not a new defect — it is TO-DOS **#89** (status ambiguity) and **#90** (stranded
+orders with no resume path) reproduced deliberately and on demand, in about 30 seconds. That
+matters: #90's open design question is *"should a customer be able to resume a failed upload
+at all"*, and until now there was no cheap way to recreate the state to test an answer
+against. There is now.
+
+Note the `beforeunload` guard (order-flow-hardening Ch3) does fire; Playwright dismisses it,
+which is exactly what a customer who wants to refresh does.
+
+---
+
+## Cleanup owed (TO-DOS #60)
+
+Orders this batch created, all on the test rig:
+
+| Order | State | Why |
+|---|---|---|
+| AEV-078 | `new`, complete | P2-5 / P2-12. Carries deliberately hostile text — **do not** use it as a demo book. |
+| AEV-079 | `uploading` (ghost) | P2-10, stranded by design. Belongs with AEV-067/073/074 in **#90**. |
+| AEV-042 | `approved` → `paid` | Consumed by P2-6/P2-7 with the owner's go-ahead. Not junk — a legitimately completed test order. |
+
+---
+
+## Status: P2 COMPLETE — 12 of 12 cases run
+
+| Case | Result |
 |---|---|
-| P2-5 weird text in names/captions | Needs a submitted order (the storage/escaping path is server-side). Would mint 1. |
-| P2-6 double-click the pay button | Needs an approved, unpaid order — **AEV-042** fits, but paying it consumes it. |
-| P2-7 back button after paying | Same order as P2-6, and ends it in `paid`. |
-| P2-10 refresh mid-upload | Creates an incomplete order **by design** — that is the pass criterion. Overlaps TO-DOS #88. |
-| P2-12 each transactional email | **Hard blocked:** needs `qa/.env` (testmail credentials), which is gitignored and absent on this machine. |
+| P2-1 too few photos | ✅ PASS |
+| P2-2 too many / delete mid-upload | ✅ PASS |
+| P2-3 wrong file type | ❌ F-P2-01, F-P2-02 |
+| P2-4 low-res badge | ✅ PASS |
+| P2-5 weird text | ✅ PASS |
+| P2-6 double-click pay | ✅ PASS |
+| P2-7 back after paying | ✅ PASS |
+| P2-8 tampered token | ✅ PASS |
+| P2-9 re-approve | ✅ PASS |
+| P2-10 refresh mid-upload | ❌ F-P2-04 (= #89/#90) |
+| P2-11 cross-browser | ❌ F-P2-03 |
+| P2-12 transactional email | ⚠️ **PARTIAL** — confirmation only |
 
-`qa/test-photos/` is also gitignored and absent, so `p0-1-template.mjs` and
-`p2-upload-probe.mjs` cannot run as written. The new P2 scripts sidestep this by using
-`assets/test photos/DTS_PARENTHOOD`, which is checked in.
+**P2-12 is the one loose end.** The catalogue asks for five emails (confirm, preview,
+payment, dispatch, reset); only the **confirmation** email was verified here. The rest need
+an order driven through the full staff → preview → approve → pay → dispatch lifecycle, which
+is `p0-2`/`p0-3` territory. The catalogue also calls for a one-time **real-client render and
+spam eyeball by the owner**, which no script can do.
+
+`qa/test-photos/` remains gitignored and absent, so `p0-1-template.mjs` and
+`p2-upload-probe.mjs` still cannot run as written. The P2 scripts sidestep this by using
+`assets/test photos/DTS_PARENTHOOD`, which is checked in — worth copying that pattern.
