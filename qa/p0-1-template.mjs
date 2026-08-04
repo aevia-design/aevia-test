@@ -13,12 +13,31 @@
 // Every step validates and refuses to move on, so we advance() then ASSERT the next
 // step is visible — a silent block is a finding.
 
-import { chromium } from '@playwright/test';
+// S149 — two optional dimensions, both OFF by default so existing runs are unchanged:
+//   --device="iPhone 13"   run at a real phone profile instead of 1440×950 desktop
+//   --browser=webkit       run the Safari engine instead of Chromium
+//   --heic=N               swap N main photos for real .heic files (iPhone default format)
+// Every QA run to date has been desktop Chromium. Customers arrive on phones, and
+// the S147 upload failures were all Safari — both are untested configurations.
+// `--device="iPhone 13" --browser=webkit` is the closest we get to a real customer.
+
+import { chromium, webkit, devices } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { address, waitForEmail, extractLinks } from './testmail.mjs';
 
-const TEMPLATE = (process.argv[2] || '').toLowerCase();
+const argv = process.argv.slice(2);
+const argVal = (n, d) => { const a = argv.find(x => x.startsWith(`--${n}=`)); return a ? a.slice(n.length + 3).replace(/^["']|["']$/g, '') : d; };
+
+const TEMPLATE = (argv.find(a => !a.startsWith('--')) || '').toLowerCase();
+const DEVICE = argVal('device', null);
+const BROWSER = argVal('browser', 'chromium');
+const HEIC_N = parseInt(argVal('heic', '0'), 10) || 0;
+
+if (DEVICE && !devices[DEVICE]) {
+  console.error(`Unknown device "${DEVICE}". Try: ${Object.keys(devices).filter(d => /iPhone 1[34]|Pixel 7|iPad/.test(d)).join(' | ')}`);
+  process.exit(1);
+}
 
 // Per-template spec.  Only what genuinely differs: the configurator page, the photo
 // library, which add-ons to select, and the cover captions (keys differ per template).
@@ -72,7 +91,9 @@ const FIELD_VALUES = {
 };
 
 const BASE = 'https://aevia-test.pages.dev/pages';
-const RUN_DIR = path.resolve('sessions/qa-runs', `${new Date().toISOString().slice(0, 10)}-p0-1-${TEMPLATE}`);
+// Suffix the run dir so a phone run doesn't overwrite the desktop baseline.
+const VARIANT = [DEVICE && DEVICE.replace(/\s+/g, ''), BROWSER !== 'chromium' && BROWSER, HEIC_N && `heic${HEIC_N}`].filter(Boolean).join('-');
+const RUN_DIR = path.resolve('sessions/qa-runs', `${new Date().toISOString().slice(0, 10)}-p0-1-${TEMPLATE}${VARIANT ? '-' + VARIANT : ''}`);
 const PHOTO_DIR = path.resolve('qa/test-photos', SPEC.photoDir);
 fs.mkdirSync(RUN_DIR, { recursive: true });
 
@@ -94,20 +115,54 @@ const photos = fs.readdirSync(PHOTO_DIR, { recursive: true })
   .filter(f => /\.(jpe?g|png)$/i.test(f)).sort()
   .map(f => path.join(PHOTO_DIR, f));
 
+// HEIC is what an iPhone shoots by default, so a real customer's upload is mixed
+// JPG + HEIC. The form accepts .heic and converts server-side (convertHeic), which
+// order-hardening-mock.mjs only ever exercises MOCKED — nothing has tested a real
+// conversion. Keep N small: each HEIC is one Cloud Function invocation, and a
+// realistic library is a handful of HEIC among JPGs, not fifty.
+const HEIC_DIR = path.resolve('assets/test photos');
+const heicFiles = HEIC_N
+  ? fs.existsSync(HEIC_DIR)
+    ? fs.readdirSync(HEIC_DIR).filter(f => /\.heic$/i.test(f)).sort().slice(0, HEIC_N).map(f => path.join(HEIC_DIR, f))
+    : []
+  : [];
+if (HEIC_N && !heicFiles.length) {
+  console.error(`--heic=${HEIC_N} requested but no .heic files found in ${HEIC_DIR}`);
+  process.exit(1);
+}
+
 const log = [], findings = [];
 const note = (m) => { const l = `[${new Date().toISOString().slice(11, 19)}] ${m}`; console.log(l); log.push(l); };
 const finding = (sev, msg) => { findings.push({ sev, id: 'P0-1', template: TEMPLATE, msg }); note(`  ⚠️  ${sev} ${msg}`); };
-const shot = async (p, n) => { await p.screenshot({ path: path.join(RUN_DIR, n), fullPage: true }); note(`📸 ${n}`); };
+// On a phone profile, every screenshot doubles as a horizontal-overflow check —
+// side-scroll is the classic "not built for mobile" signal, and the wizard steps
+// past step 2 have never been looked at on a phone at all (mobile-audit.mjs stops
+// at step 2). Desktop runs are unaffected.
+const overflowSeen = new Set();
+const shot = async (p, n) => {
+  await p.screenshot({ path: path.join(RUN_DIR, n), fullPage: true });
+  note(`📸 ${n}`);
+  if (!DEVICE) return;
+  const o = await p.evaluate(() => ({ vw: window.innerWidth, docW: document.documentElement.scrollWidth })).catch(() => null);
+  if (o && o.docW - o.vw > 2 && !overflowSeen.has(n)) {
+    overflowSeen.add(n);
+    finding('S2', `Horizontal overflow at ${n}: content ${o.docW}px wide in a ${o.vw}px viewport (${o.docW - o.vw}px of side-scroll)`);
+  }
+};
 
 const consoleMsgs = [], netFails = [];
 let photoIdx = 0;
 const nextPhoto = () => photos[photoIdx++];
 
-note(`═══ P0-1 ${TEMPLATE.toUpperCase()} ═══`);
+note(`═══ P0-1 ${TEMPLATE.toUpperCase()}${VARIANT ? ` — ${VARIANT}` : ''} ═══`);
 note(`Photos: ${photos.length} in ${SPEC.photoDir} | Inbox: ${EMAIL}`);
+note(`Browser: ${BROWSER} | Profile: ${DEVICE || 'desktop 1440×950'}${heicFiles.length ? ` | HEIC: ${heicFiles.length} (${heicFiles.map(f => path.basename(f)).join(', ')})` : ''}`);
 
-const browser = await chromium.launch({ headless: true });
-const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 } });
+const engine = BROWSER === 'webkit' ? webkit : chromium;
+const browser = await engine.launch({ headless: true });
+const ctx = await browser.newContext(
+  DEVICE ? { ...devices[DEVICE] } : { viewport: { width: 1440, height: 950 } }
+);
 const page = await ctx.newPage();
 page.on('console', m => { if (['error', 'warning'].includes(m.type())) consoleMsgs.push(`${m.type()}: ${m.text()}`); });
 page.on('pageerror', e => consoleMsgs.push(`pageerror: ${e.message}`));
@@ -256,6 +311,12 @@ try {
 
   const mainSet = photos.slice(photoIdx, photoIdx + target);
   if (mainSet.length < target) finding('S1', `Only ${mainSet.length} photos left in ${SPEC.photoDir}, need ${target}`);
+  // Swap the tail for HEIC rather than appending — the photo count must match the
+  // target EXACTLY or the form refuses to advance (README gotcha, S124).
+  if (heicFiles.length) {
+    for (let i = 0; i < heicFiles.length && i < mainSet.length; i++) mainSet[mainSet.length - 1 - i] = heicFiles[i];
+    note(`Mixed set: ${mainSet.length - heicFiles.length} JPG/PNG + ${heicFiles.length} HEIC (as an iPhone library would be)`);
+  }
   note(`Uploading ${mainSet.length} main photos…`);
   await page.setInputFiles('#dz-main input[type=file]', mainSet);
   await page.waitForFunction(
@@ -270,6 +331,19 @@ try {
   // (newborn scores 0). Deliberate low-res behaviour is covered by P2-4.
   const lowRes = await page.$$eval('#photo-grid .low-res-badge', els => els.length);
   note(`LOW RES badges: ${lowRes} of ${target} (expected >0 on libraries with upscaled sources)`);
+
+  // HEIC has no browser-native preview, so "No preview" in the grid is EXPECTED and
+  // not a defect. What matters is that the file is accepted, counted, and survives
+  // to submit — server-side convertHeic does the rest. A HEIC that never appears in
+  // the grid, or that leaves the count short, IS a defect.
+  if (heicFiles.length) {
+    const grid = await page.$$eval('#photo-grid .photo-thumb', els => els.length);
+    const noPreview = await page.$$eval('#photo-grid', g =>
+      (g[0]?.innerText.match(/No preview/gi) || []).length).catch(() => 0);
+    note(`HEIC: grid holds ${grid}/${target} thumbs, ${noPreview} "No preview" tile(s) (expected ≈ ${heicFiles.length})`);
+    if (grid < target) finding('S1', `HEIC in the set left the grid short: ${grid}/${target} thumbs — the form will not advance`);
+  }
+
   await shot(page, '05-photos.png');
 
   // ── F. Submit ─────────────────────────────────────────────────
@@ -364,7 +438,9 @@ otherFails.slice(0, 10).forEach(m => note('  ' + m));
 
 fs.writeFileSync(path.join(RUN_DIR, 'run-log.txt'), log.join('\n'));
 fs.writeFileSync(path.join(RUN_DIR, 'findings.json'), JSON.stringify(
-  { template: TEMPLATE, orderNumber, email: EMAIL, tag: TAG, findings, gcsAborts: aborts, otherNetFails: otherFails, consoleMsgs: [...new Set(consoleMsgs)] }, null, 2));
+  { template: TEMPLATE, browser: BROWSER, device: DEVICE || 'desktop 1440x950',
+    heic: heicFiles.map(f => path.basename(f)),
+    orderNumber, email: EMAIL, tag: TAG, findings, gcsAborts: aborts, otherNetFails: otherFails, consoleMsgs: [...new Set(consoleMsgs)] }, null, 2));
 note(`Artefacts → ${RUN_DIR}`);
 
 await browser.close();

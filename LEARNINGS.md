@@ -1,3 +1,28 @@
+## 2026-08-04 — Six sessions of QA never used the browser or the device the customers do (S149)
+
+**Every recorded upload failure was Safari/macOS. Every QA script runs headless Chromium at
+1440×950. The one configuration that was known to break was the one configuration never tested.**
+
+The blind spot survived because the harness looked thorough: P0 green across five templates,
+a P1 staff suite, a promo track, findings logs per batch. Breadth of *cases* masked the absence
+of variety in *environment*. Every one of those runs made the same two silent assumptions —
+Chromium, desktop — and the assumptions were invisible precisely because nothing ever varied them.
+
+The same gap exists on viewport. `mobile-audit.mjs` covers four pages and stops at order step 2,
+so the cover, special-page, photo-grid and submit screens — the densest in the flow — had never
+been rendered at phone width, while the customer base is expected to arrive overwhelmingly on
+phones.
+
+**The rule: a test suite's environment matrix is an assumption set, and unvaried assumptions
+read as facts.** When a bug is reported with an environment attached (a browser, a device, an
+OS), check whether the harness can even reach that environment before trusting a green run.
+"We tested it" means nothing until "in what?" is answered.
+
+Corollary on emulation: Playwright's WebKit is Safari's rendering and JS engine but **not** its
+networking stack. For a transport-layer bug that is exactly the wrong place to diverge — a
+reproduction is strong evidence, a clean pass is close to none. Match the fidelity of the tool
+to the layer the bug lives in.
+
 ## 2026-07-22 — A parallel worker pool makes every failure look like the last item (S147)
 
 **The reported symptom was "it stalls when one photo is left." That was never true, and believing

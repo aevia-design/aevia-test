@@ -49,3 +49,7 @@ docs/*.zone
 docs/Brevo.png
 docs/Cloudflare*.txt
 docs/cloudflare-export*
+
+# Excel lock/temp files
+~$*.xlsx
+~$*.xls

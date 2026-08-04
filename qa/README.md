@@ -58,6 +58,38 @@ in `work/pre-launch-qa/findings_v1.md`.
 The `<testmail-tag>` for an order is in its P0-1 run's `findings.json`.
 `p0-1-newborn.mjs` is the original calibration script, superseded by `p0-1-template.mjs`.
 
+#### P0-1 variants (S149) — phone profile, Safari engine, HEIC
+
+Every P0 run to date was **desktop Chromium at 1440×950**. Customers arrive on phones,
+and every S147 upload failure was Safari — two configurations that had never been tested.
+All three flags are **off by default**, so existing runs and the P0 baseline are unchanged.
+
+```bash
+node qa/p0-1-template.mjs papercut --device="iPhone 13"                    # phone layout
+node qa/p0-1-template.mjs papercut --device="iPhone 13" --browser=webkit   # ≈ real iPhone
+node qa/p0-1-template.mjs papercut --heic=3                                # mixed JPG + HEIC
+```
+
+| Flag | Effect |
+|---|---|
+| `--device="iPhone 13"` | real phone profile (viewport, UA, touch, DPR). Any Playwright device name; `iPhone 13`, `Pixel 7`, `iPad Mini` are the useful ones. |
+| `--browser=webkit` | Safari's engine instead of Chromium |
+| `--heic=N` | swaps the **tail** of the main set for N real `.heic` files from `assets/test photos/` (count must stay exact or the form won't advance) |
+
+**On a phone profile every screenshot doubles as a horizontal-overflow check** and raises
+an S2 per step that side-scrolls. This covers the wizard steps `mobile-audit.mjs` never
+reaches — it stops at step 2, so cover, special pages, photos and submit have **never**
+been seen at phone width.
+
+**HEIC** is what an iPhone shoots by default, so a real customer's library is mixed. The
+form accepts `.heic` and converts server-side; `order-hardening-mock.mjs` only ever
+exercised that **mocked**. "No preview" tiles in the grid are expected and not a defect —
+what matters is the file is accepted and the count stays exact. Keep N small: each HEIC is
+one `convertHeic` Cloud Function invocation, and a realistic library has a handful, not fifty.
+
+Run artefacts land in a **suffixed** directory (`…-p0-1-papercut-iPhone13-webkit/`) so a
+phone run never overwrites the desktop baseline.
+
 ### P1 staff-side suite (S125)
 
 | Script | Case | Run |
@@ -72,6 +104,49 @@ The `<testmail-tag>` for an order is in its P0-1 run's `findings.json`.
 and "the render finished" live in Firestore, not the DOM, and the dashboard is a module
 script so its `allOrders` is **not** reachable from `page.evaluate()`. `orderPhotoBytes()`
 lists object metadata only — it never downloads an object, so it costs **no GCS egress**.
+
+### P2 upload transport probe (S149) — TO-DOS #88
+
+`p2-upload-probe.mjs` — the automated half of the upload-stall investigation
+(`docs/briefs/upload-failures.md`). **Not yet run.**
+
+**The gap it closes:** every recorded upload failure was Safari/macOS; every script
+above runs headless Chromium. We have never tested the engine where the bug happens.
+This probe defaults to **WebKit** and keeps a ledger of every GCS PUT — status,
+duration, outcome — so a stall shows up as a request that *never resolves* rather than
+as a hung script with nothing to show for it.
+
+```bash
+node qa/p2-upload-probe.mjs papercut                        # dry run, WebKit, reuse
+node qa/p2-upload-probe.mjs papercut --distinct             # control
+node qa/p2-upload-probe.mjs papercut --throttle=slow3g      # H2
+node qa/p2-upload-probe.mjs papercut --browser=chromium     # A/B the engine
+```
+
+| Flag | Effect |
+|---|---|
+| `--browser=webkit\|chromium` | default **webkit** |
+| `--device="iPhone 13"` | phone profile; with `webkit` this is the closest available to the real failing setup (iPhone Safari) |
+| `--reuse` / `--distinct` | default `--reuse`: pins ONE photo into cover + every special zone + the whole pool, mirroring Xenia's set (H1). `--distinct` is the control. |
+| `--throttle[=slow3g\|fast3g]` | H2 — real CDP conditions on Chromium; on WebKit an approximate per-request delay (**indicative only**, no CDP equivalent) |
+| `--dry-run` | drive the form, stop before submit — no order, no email. For checking the harness itself drives WebKit correctly. |
+| `--headed` | watch it |
+
+Like the other minting scripts, a normal run creates a real order and the usual staff +
+customer emails go out.
+
+⚠ **Playwright's WebKit is not Safari.** Same rendering/JS engine, **different
+networking stack**, no Safari ITP. Since the suspected fault is in the transport layer,
+this is exactly where the divergence is largest: a clean run **does not clear the code**,
+it only means the harness isn't Safari enough. The authoritative test stays a real Safari
+order on Xenia's Mac following the brief's procedure.
+
+**Prerequisite:** `npx playwright install webkit` (Chromium-only installs won't have it).
+
+**Reads out:** PUT ledger (ok / aborted / failed / http-error / **never-resolved**),
+slowest PUTs, and a **slot → file map** that ties a specific photo to the `fp4` slot —
+the one observation that confirms or kills H1. On a live run, follow with
+`node scripts/inspect-upload-failure.js AEV-0nn` for the server-side record.
 
 ### P1 promo track (S125/S127)
 

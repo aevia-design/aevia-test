@@ -74,6 +74,36 @@ customers upload over slow mobile links.
 
 ---
 
+## Automated probe (S149) — built, not yet run
+
+`qa/p2-upload-probe.mjs`. Closes a gap that had gone unnoticed: **every failure was
+Safari/macOS, every QA script runs headless Chromium.** The engine where the bug
+happens had never been tested. The probe defaults to WebKit and logs every GCS PUT's
+status, duration and outcome, so a stall registers as a *never-resolved* request
+instead of vanishing.
+
+It targets the two hypotheses directly:
+
+- **H1 (duplicate source photo)** — `--reuse` pins one photo into cover + every special
+  zone + the whole pool, the strongest form of Xenia's set. `--distinct` is the control.
+  The run log prints a **slot → file map**, which is the single observation that
+  confirms or kills the hypothesis.
+- **H2 (decorative retry)** — `--throttle` slows the link so the ~50 benign
+  `ERR_ABORTED`s seen on a fast studio link get a chance to exhaust the
+  3 × (100 ms, 200 ms) retry.
+
+**Limit to hold onto: Playwright's WebKit is not Safari.** Same rendering and JS engine,
+different networking stack, no ITP. The suspected fault is *in the transport layer*,
+which is precisely where they diverge — so a clean run does not exonerate the code.
+Treat a reproduction as gold and a pass as inconclusive.
+
+The authoritative test remains a **real Safari order on the Mac where it already
+failed**, following the procedure below. Worth making that run decisive rather than
+another wait-and-see: place **two** Papercut orders — one where a single photo is used
+for cover, fp4 and the pool, one where every photo is distinct.
+
+---
+
 ## If an upload stalls — what to do
 
 **1. Do not close or refresh the tab.** Closing it loses the report. This is the
