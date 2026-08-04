@@ -1,52 +1,76 @@
 # Session Status
-_Last updated: 2026-08-04 (session 149)_
-_Context at save: **QA tooling session — no product code, nothing run against the live site.** Business-case thread parked by the owner pending a conversation with Xenia about the personal/aevia finance boundary. Built the next round of QA probes (upload transport + phone profile + HEIC) and deliberately left them **unrun** until Xenia's email alias rules settle. Working tree carries both S148's and S149's changes, uncommitted; nothing broken._
+_Last updated: 2026-08-04 (session 150)_
+_Context at save: **The pre-launch QA gate is essentially cleared.** P0 and P1 were already green; P2 ran end to end this session — 12 cases, 4 findings, 2 product fixes shipped and verified on the live rig. TO-DOS #88, the upload failure that dominated three sessions, is **closed on the owner's call without a proven root cause**. Working tree clean and pushed. One decision waits on the owner: whether a customer can resume a failed upload (#90)._
 
 ## Status
-**Session 149 (2026-08-04) — QA probes built and parked; finance thread on hold.**
+**Session 150 (2026-08-04) — P2 QA complete, two product fixes live, #88 closed.**
 
-1. **Expert-panel plugin: declined.** Owner asked about `wan-huiyan/agent-review-panel`. Advised against — unvetted third-party code next to the GCS/Gmail secrets, and more importantly it is a **diff-shaped tool for a system-shaped question**. Proved by running `/code-review`, which correctly returned "(none)" because the only pending change was a Markdown brief. `ultra` would have returned the same nothing and billed usage credits for it.
-2. **The finding that drove the session.** Every recorded upload failure was **Safari/macOS**; every QA script runs **headless Chromium at 1440×950**. The one configuration known to break had never been tested, and neither had the device most customers will use. `mobile-audit.mjs` stops at order step 2, so cover / special pages / photo grid / submit have **never** been rendered at phone width. Codified in `LEARNINGS.md`.
-3. **`qa/p2-upload-probe.mjs` — new (TO-DOS #88).** WebKit by default; ledger of every GCS PUT (status, duration, outcome) so a stall registers as **never-resolved** instead of vanishing; prints a **slot → file map**, the observation the brief calls decisive. `--reuse`/`--distinct` tests the duplicate-photo hypothesis, `--throttle` tests the decorative retry.
-4. **`qa/p0-1-template.mjs` — extended, all flags default-off** so the P0 baseline is unchanged. `--device="iPhone 13"` (every screenshot doubles as a horizontal-overflow check), `--browser=webkit`, `--heic=N` (real `.heic` from `assets/test photos/`, swapped into the tail so the count stays exact).
-5. **Both scripts pass `node --check`. Neither has been executed.** `qa/test-photos/` is gitignored and local-only, so they could not be smoke-tested.
+1. **P2 QA batch: 12 of 12 cases run.** Findings in `work/pre-launch-qa/findings-p2.md`.
+   Cost only **two new orders** — ten cases either never reach the backend or reuse existing
+   ones, honouring the S126 "reuse, don't mint" directive. Five new scripts (`qa/p2-*.mjs`),
+   none of which need the still-absent `qa/test-photos/`.
+2. **Two product fixes shipped and verified live.**
+   - **#92** — `confirmUpload` treated HTTP errors as success (`fetch` only rejects on network
+     failure), so a 500 showed the customer a success screen while the order stranded at
+     `uploading` with every photo already in GCS. Now checks `res.ok` and retries 3× (the
+     handler is idempotent), reporting to staff on final failure. Verified: AEV-078 came out
+     `status: new`, `uploadComplete: true`.
+   - **#93 / F-P2-01/02** — `.txt` and `.pdf` were accepted into the photo grid and **counted
+     toward the required photo total**; a text file renamed `.jpg` got in too. Now rejected on
+     both axes (not an image / will not decode), each with a message to the customer.
+3. **#88 CLOSED — owner's call, root cause never proven.** Xenia had left the upload tab open
+   a long time; a fresh order completed normally. **Read `docs/briefs/upload-failures.md`
+   before reopening.** It was **100% deterministic** (four Papercut orders, each missing
+   exactly `special_pages/fp4.png`), the template is ruled out, the file genuinely was sent,
+   the S147 diagnostics **never fired** (shipped two hours after the last failure), and it does
+   not reproduce in Chromium.
+4. **Codex wired in as an independent reviewer.** `AGENTS.md` at the repo root gives it the
+   invariants and a settled-decisions list. Use the personal `delegating-to-codex` skill, not
+   the plugin's herdr-based one. Strong at demolishing a *stated* mechanism, unreliable at
+   proposing root causes — **verify every claim before relaying it**.
+5. **The dependency rule was recorded wrong.** There was never a "no new dependencies" rule —
+   the frontend already loads exifr, heic2any, Geoapify and Firebase. The real constraint is
+   **delivery**: no build step, no npm on the frontend. Reworded in `CLAUDE.md` and `AGENTS.md`.
 
 ## Recent decisions
-- **QA is parked until Xenia's email rules settle (S149, owner).** She is reworking alias→folder rules and they aren't working yet. No order-minting run until she says go.
-- **QA email behaviour must NOT change (S149, owner).** Claude added a `QA_ALLOW_EMAIL=1` gate; rejected and removed. Pausing QA is scheduling, not a code change — normal emails must still fire when QA runs.
-- **Business case parked (S149, owner).** The cashflow tab mixes personal and *aevia* finances; that boundary needs agreeing with Xenia first.
-- **CAC modelling deprioritised (S149, owner).** "Until we try some pilot 1k budget to understand OUR own CAC, this exercise is a bit useless." Consistent with the S148 watch-out that CVR and CAC are priors, not forecasts.
-- **TO-DOS #86 downgraded, not closed (S149, owner).** Google sign-in works on his iPhone now; he attributes the original symptom to ~500 open Safari tabs hitting the limit. Kept at Medium — the S146 structural finding (cross-domain `authDomain` restricted on Safari 16.1+) is independent of tab count.
+- **#88 closed without root cause (S150, owner).** Xenia's account: tab left open a long time,
+  fresh order fine. Evidence and the unexplained asymmetry are recorded in the brief.
+- **Resume-on-failure: recommendation made, NOT decided (S150).** See next steps.
+- **Codex is for second opinions, not routine work (S150).** Not for running tests, not on a
+  schedule. One review of #88 earned its keep by killing a wrong mechanism.
+- **AEV-042 consumed deliberately (S150, owner).** Used for P2-6/P2-7; now `paid`.
+- **QA scripts must verify order ownership before asserting (S150).** A loose `/AEV-\d{3}/`
+  scrape graded one of Xenia's real orders and produced two confident, false findings.
+- **Business case parked (S148/S149, owner).** Personal/aevia boundary needs agreeing with Xenia.
+- **CAC modelling deprioritised (S149, owner).** Needs a real pilot budget first.
+- **TO-DOS #86 downgraded, not closed (S149, owner).** Re-verify on a clean iPhone before F&F.
 - **Price is an OUTPUT of the business case, not an input (S148).**
-- **No price rise at launch (S148, owner).** Can't out-trust CEWE (~€60 incl. delivery) on day one.
-- **Consulting stays OUT of aevia's standalone P&L on purpose (S148, owner).**
-- **Elanders is not take-or-pay (S148, corrected).**
+- **No price rise at launch (S148, owner).**
 - **Working assumption: 20% VAT on photo books (S145, owner).** Steuerberater to confirm.
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **Wait for Xenia's email rules.** Then, in order: `node qa/p0-1-template.mjs papercut --device="iPhone 13" --browser=webkit`, then the upload probe `--reuse` vs `--distinct`. Expect selector fixes on the first phone run.
-2. **`npx playwright install webkit`** before any of the above — a Chromium-only install won't have it.
-3. **Ask Xenia for two real Safari orders on her Mac** — one reusing a single photo across cover/fp4/pool, one all-distinct. This is the **authoritative** test; the WebKit probe is the cheap parallel shot.
-4. **Printsmarter call about the API** (tomorrow, 2026-08-05) — same production line? same SiteFlow API + carry-over? samples before committing?
-5. **Cashflow tab** — blocked on the Xenia conversation, then on four owner inputs: opening cash, personal draw, realistic 2027 consulting, funding scenario.
-6. **Write `docs/briefs/business-case-model.md`** — durable map of which tab/row drives what (still owed from S148).
-7. Carried: SVS tab fixes #3/#4; correct the 1–4 GB/order figure in `CLAUDE.md`; `waitlist.html` on mobile (#87); `devotion.html`/`radiance.html` dead pages; decide the delivery-charge question (below).
+1. **Decide the resume question (#90).** `/solutioning` recommendation in
+   `sessions/2026-08-04-s150.md` §6: ship #89's staff-side visibility **plus** a client-side
+   "your upload was interrupted" recovery (today a refresh shows "Choose a template first"),
+   and **defer** a real resume link until a root cause is known. **Owner's call.**
+2. **Finish P2-12.** Confirmation and payment emails verified; **preview-ready and dispatch are
+   not**. Needs a lifecycle run (`p0-2`, `p0-3`) on an existing order. The real-client
+   render/spam check is the owner's and cannot be scripted.
+3. **Triage the two open findings.** F-P2-03 (preview side-scrolls 64px at 1440, both engines,
+   `div.spread-pages`, cosmetic) and F-P2-04 (= #89/#90).
+4. **TO-DOS #91** — pin and vendor the four CDN libraries before launch. No build step needed.
+5. **Cleanup (#60)** — AEV-078 (hostile text, **never use as a demo book**), AEV-079 (ghost),
+   AEV-080, plus the older stranded orders in #90.
 
 ## Open questions
-- **Where is the personal / *aevia* finance boundary?** Blocks the cashflow tab. For the Xenia conversation.
-- **Does the site charge for delivery at all?** Stripe collects a shipping address and shows **no delivery line** (Batch 4), while S148 models delivery as a €4.99-capped customer charge. The product currently earns €0 on something the model earns on. Owner deprioritised it; it is a **product/PRD gap, not a QA gap**.
-- **Is Printsmarter the same production line + same SiteFlow API as Elanders?**
-- **Real cold-paid conversion rate** — only the €500–1,000 promo test answers it.
-- **For the Steuerberater:** combined SVS/tax with consulting; 10% vs 20% VAT on a personalised photo book; the €8,085/mo max SVS base for 2026.
-
-## Watch-outs for the next session
-- 🔴 **Do not run QA until Xenia confirms.** Any order-minting script emails staff on creation (`createUploadSession`, failure mode D2). Unavoidable client-side.
-- 🔴 **Playwright's WebKit is not Safari** — same rendering/JS engine, different networking stack, no ITP. The suspected fault is *in* the transport layer, exactly where they diverge. **A reproduction is gold; a clean pass proves nothing.**
-- 🔴 **The new QA scripts have never run.** Expect selector fixes at phone width. If a phone run passes first time, be suspicious.
-- 🔴 **Use v11 of the business case, not v10** — v10 is corrupted. Consider deleting v10.
-- 🔴 **Close Excel before any openpyxl write** — an open workbook locks the file.
-- 🔴 **Conversion rate and CAC are priors, not forecasts** — the promo test replaces them.
-- **Keep `--heic` small** — each HEIC is one `convertHeic` Cloud Function invocation.
-- **Nothing product-facing changed this session** — the S147 upload bug and QA state are unchanged.
-- **Uncommitted:** S148 (v11 xlsx, briefs, print quotes, session log) **and** S149 (QA scripts + docs) are both sitting in the working tree.
+- **Can a customer resume a failed upload?** (#90) — recommendation made, not decided.
+- **Staff test password is now `Claude-test`** — set via the Admin SDK (Firebase stores only a
+  hash, so it cannot be looked up). Weak for an account that can read real customer orders;
+  change before launch.
+- **`qa/.env` was recreated this session** after the machine migration lost it. Gitignored and
+  local-only — it will not survive another migration either.
+- **`qa/test-photos/` is still missing.** `p0-1-template.mjs` and `p2-upload-probe.mjs` cannot
+  run until it is restored, or until they point at `assets/test photos/` as the P2 scripts do.
+- **`ARCHITECTURE.md` has two invariants numbered 6** (hostname rule, centre-based
+  coordinates), so everything after is off by one. `AGENTS.md` renumbers 1–9; the two disagree.

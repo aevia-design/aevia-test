@@ -46,13 +46,19 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   Tabs: Business case - Quarterly view, Marketing (drives orders + spend), Assumptions, Tax & Founder income.
   Assumptions challenged + sourced in `docs/briefs/marketing-assumptions-research.md`.
 - ADRs: `docs/decisions/`
+- Guidance for **non-Claude agents** (Codex etc.): `AGENTS.md` — invariants, settled decisions
+  that must not be re-raised, and a reviewer protocol. Keep it in step with this file.
 - Investigation briefs: `docs/briefs/` — one per feature or problem, incl. deferred decisions
   (e.g. `ios-app.md`, `google-signin-ios.md`). **Check here before re-researching something.**
   - `upload-failures.md` — **CLOSED S150** (owner's call; root cause never proven). Instrumentation
     is deployed and untriggered. Read it before touching the upload path or re-diagnosing a stall:
     it records what was ruled out, and the one variable never tested.
 - Unit tests: `tests/` (run with `npm test` from project root)
-- QA browser scripts: `qa/` (Playwright via Node; see `qa/README.md` for the script index, reusable techniques + gotchas; run artefacts in `sessions/qa-runs/`, gitignored)
+- QA browser scripts: `qa/` (Playwright via Node; see `qa/README.md` for the script index, reusable techniques + gotchas; run artefacts in `sessions/qa-runs/`, gitignored).
+  Pre-launch QA plan + findings: `work/pre-launch-qa/` (`case-catalogue_v1.md` is the sign-off
+  gate; `findings_v1.md` P0, `findings-p1-*.md`, `findings-p2.md`). **P0/P1/P2 all run as of S150.**
+  `qa/.env` and `qa/test-photos/` are gitignored and local-only — `test-photos` is currently
+  MISSING, so prefer `assets/test photos/` as the P2 scripts do.
 
 ---
 

@@ -247,7 +247,7 @@ PII stored: customer name, email address, uploaded photos. All in GCS + Firestor
 
 These rules MUST NOT be broken. Violating them requires an explicit architectural decision and update to this document.
 
-1. **No frameworks on the frontend.** No React, Vue, Angular, Svelte, or any framework. No npm on the frontend. No build step. Plain HTML/CSS/JS only.
+1. **No frameworks on the frontend.** No React, Vue, Angular, Svelte, or any framework. No npm on the frontend. No build step. Plain HTML/CSS/JS only. **This constrains DELIVERY, not dependencies** (clarified S150): third-party libraries are allowed and already used — exifr, heic2any, Geoapify, the Firebase SDK — they simply have to work as a plain `<script>` tag. Backend and tooling (`functions/`, `scripts/`, `services/`, `qa/`) use npm normally. Read as a dependency ban it invites the opposite defect: hand-rolling what a mature library already does.
 
 2. **Template logic lives in the data file, not the pipeline.** `template-engine.html`, `order.html`, and `export-pdf.js` MUST remain template-agnostic. All template-specific values come from `<name>-data.js`.
 
@@ -259,11 +259,11 @@ These rules MUST NOT be broken. Violating them requires an explicit architectura
 
 6. **Customer-facing URLs are derived from one server-side origin allowlist; never hardcode a hostname.** (S144, ADR-0009.) Links in emails, Stripe `success_url`/`cancel_url` and Firebase auth-email continue URLs are built with `siteOrigin(req)` / `accountUrl(req)` in `functions/index.js`. Hardcoding `aevia.at` breaks the test rig — a test checkout would hand the customer to the live domain mid-payment. Hardcoding `pages.dev` puts test URLs in real customer mail. Background triggers (no `req`) correctly fall back to production. Adding a hostname means adding it to `SITE_ORIGINS` **and** to Firebase Authorised Domains.
 
-6. **Photo slot coordinates are centre-based.** All `x`, `y`, `xBleed`, `yBleed` coordinates in `scribble-data.js` refer to the centre of the slot, not the top-left corner. The engine and PDF script both rely on this convention.
+7. **Photo slot coordinates are centre-based.** All `x`, `y`, `xBleed`, `yBleed` coordinates in `scribble-data.js` refer to the centre of the slot, not the top-left corner. The engine and PDF script both rely on this convention.
 
-7. **Do not apply EXIF orientation swap.** Modern browsers auto-rotate on `naturalWidth`/`naturalHeight`. The swap was added and removed — do not re-add it.
+8. **Do not apply EXIF orientation swap.** Modern browsers auto-rotate on `naturalWidth`/`naturalHeight`. The swap was added and removed — do not re-add it.
 
-8. **Screen surfaces load the web derivative; print loads the original.** The staff engine and customer preview MUST load the ~1600px web-resolution derivative of each photo, never the full-res original — loading originals on screen is the dominant GCS egress cost (see ADR-0005). The PDF script (`export-pdf.js`) is the ONLY surface that loads full-res originals (300 DPI print needs them). Any new render or photo-load path must honour this split or it reintroduces the egress (screen) or degrades print quality (PDF). _Pending chunk-023 — until built, all surfaces still load originals._
+9. **Screen surfaces load the web derivative; print loads the original.** The staff engine and customer preview MUST load the ~1600px web-resolution derivative of each photo, never the full-res original — loading originals on screen is the dominant GCS egress cost (see ADR-0005). The PDF script (`export-pdf.js`) is the ONLY surface that loads full-res originals (300 DPI print needs them). Any new render or photo-load path must honour this split or it reintroduces the egress (screen) or degrades print quality (PDF). _Pending chunk-023 — until built, all surfaces still load originals._
 
 ---
 

@@ -1,3 +1,52 @@
+## 2026-08-04 — A test that identifies its subject by scraping can grade the wrong one (S150)
+
+**A QA script lost track of which order it had created, scraped `/AEV-\d{3}/` off the page as a
+fallback, matched one of Xenia's real orders, and produced two confident, detailed, entirely
+false findings.** They were one step from being filed as product bugs.
+
+The failure had two stages and both are worth recognising. First, an **unhandled modal** meant
+the submit never happened, so no order existed — the script then waited out a 15-minute timeout
+that looked exactly like a stalled upload. Second, a **loose fallback identifier** silently
+substituted someone else's data rather than failing. The findings that came out were plausible
+in shape ("emoji did not survive into Firestore") because they were real measurements — of the
+wrong subject.
+
+The general rule: **a test must prove it is looking at its own subject before it asserts
+anything.** Identify by a value you *created* or that the system *returned to you* — never by
+pattern-matching whatever is on screen. Where a cheap ownership check exists (here: does the
+order carry this run's own inbox?), assert it first and abort loudly if it fails. A regex
+fallback that "usually works" converts a harness bug into a product bug report, and the report
+will be specific enough to be believed.
+
+Corollary: **a stalled harness and a stalled system are indistinguishable from the outside.**
+Fifteen minutes of silence was read as evidence for the very bug under investigation. Anything
+that waits should be able to say what it is waiting for.
+
+---
+
+## 2026-08-04 — "No evidence was recorded" is sometimes chronology, not a reporting gap (S150)
+
+Three sessions waited for the S147 upload diagnostics to catch a failure. Every affected order
+showed `uploadErrors: 0`, which was read as the instrumentation not firing — a reporting
+problem to be debugged.
+
+**It was arithmetic.** All five orders were created on 22 July between 07:23 and 08:59. The
+diagnostics commit shipped at 10:44 **the same day**. The instrumentation had never been exposed
+to a failure at all, and the evidence being waited on was never going to arrive from those orders.
+
+**Before concluding instrumentation failed, compare the incident timestamp with the deploy
+timestamp.** It is one `git log -1 --format=%ci <sha>` against a `createdAt` field, and it either
+kills the theory or makes it real. The same check applies to any "the logging didn't work"
+conclusion.
+
+Related: the same investigation had recorded a **mechanism that could not produce the observed
+evidence** (a rejected `Promise.all` "abandoning the queue" — it does not cancel the other
+promises, so one dead file costs one file, not seven). A written-down mechanism becomes load-
+bearing fast. It is worth periodically asking of an open bug: *does the explanation on record
+actually predict what we observed?*
+
+---
+
 ## 2026-08-04 — Six sessions of QA never used the browser or the device the customers do (S149)
 
 **Every recorded upload failure was Safari/macOS. Every QA script runs headless Chromium at
