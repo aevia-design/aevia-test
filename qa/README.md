@@ -116,6 +116,15 @@ cases are pre-submit form behaviour, three reuse existing orders (the S126 direc
 | `p2-preview-abuse.mjs` | P2-8 tampered/expired token · P2-9 re-approve | `node qa/p2-preview-abuse.mjs AEV-042 AEV-060` |
 | `p2-crossbrowser.mjs` | P2-11 WebKit + Chromium × desktop + mobile | `node qa/p2-crossbrowser.mjs AEV-060` |
 
+⚠ **The queue-idle wait is unreliable on WebKit (S150).** The photo grid drains through
+`_uploadQueue` / `_uploadBusy`, and on WebKit the queue momentarily reads empty *between*
+batches — a S150 run moved on with **24 of 44** photos in the grid, so submit was correctly
+blocked and the run then sat out its 15-minute timeout having done nothing. On Chromium the
+same wait is stable. **Before asserting on WebKit, wait for the grid to reach the target count
+itself** (`#photo-grid .photo-thumb` length ≥ target), not for the queue to look idle. This is
+the first thing to fix before any WebKit order run — it is why the S150 WebKit attempt produced
+no data. (No stray order: the guard below refused rather than guessing.)
+
 **They need neither `qa/.env` nor `qa/test-photos/`** (both gitignored, absent on a fresh
 clone). Photos come from `assets/test photos/DTS_PARENTHOOD`, which is checked in, and
 preview tokens are read straight from Firestore via `orderState().previewToken` instead of
