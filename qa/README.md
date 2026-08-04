@@ -105,6 +105,29 @@ and "the render finished" live in Firestore, not the DOM, and the dashboard is a
 script so its `allOrders` is **not** reachable from `page.evaluate()`. `orderPhotoBytes()`
 lists object metadata only — it never downloads an object, so it costs **no GCS egress**.
 
+### P2 suite (S150) — the broad "won't break for many" net
+
+Findings log: `work/pre-launch-qa/findings-p2.md`. **These three create NO orders** — four
+cases are pre-submit form behaviour, three reuse existing orders (the S126 directive).
+
+| Script | Cases | Run |
+|---|---|---|
+| `p2-form-guards.mjs` | P2-1 too few · P2-2 too many + delete · P2-3 wrong file type · P2-4 low-res badge | `node qa/p2-form-guards.mjs <scribble\|papercut\|newborn\|tender>` |
+| `p2-preview-abuse.mjs` | P2-8 tampered/expired token · P2-9 re-approve | `node qa/p2-preview-abuse.mjs AEV-042 AEV-060` |
+| `p2-crossbrowser.mjs` | P2-11 WebKit + Chromium × desktop + mobile | `node qa/p2-crossbrowser.mjs AEV-060` |
+
+**They need neither `qa/.env` nor `qa/test-photos/`** (both gitignored, absent on a fresh
+clone). Photos come from `assets/test photos/DTS_PARENTHOOD`, which is checked in, and
+preview tokens are read straight from Firestore via `orderState().previewToken` instead of
+scraping the staff dashboard. Copy that pattern — it removes the main reason a QA script
+can't be run on a machine that hasn't been set up by hand.
+
+`p2-form-guards.mjs` builds its own fixtures at runtime (a `.txt`, a `.pdf`, a text file
+renamed `.jpg`, and a 900×600 JPEG via `sharp`) into the run dir. It is the one script that
+deliberately clicks Submit — with too few photos, because "can't submit incomplete" is the
+pass criterion — and it watches the network for `createUploadSession`, reporting **S1** if
+that call ever fires.
+
 ### P2 upload transport probe (S149) — TO-DOS #88
 
 `p2-upload-probe.mjs` — the automated half of the upload-stall investigation
