@@ -126,6 +126,66 @@ session, and the customer is one click from the right place.
 
 ---
 
+## Batch 3 — P2-5, P2-12 (confirmation leg) (S150, 2026-08-04)
+
+Script: `qa/p2-order-abuse.mjs`. Minted **AEV-078** (scribble, 44 photos).
+
+**PASS — 0 findings.**
+
+Hostile input pushed through the customer name, all four cover captions, every special-page
+text field and the funny-word rows. Three shapes: an injection payload
+(`<script>window.__XSS_FIRED=1</script><img src=x onerror=…>`), a 300-character run of `Ω`,
+and emoji including skin-tone modifiers, smart quotes and non-BMP mathematical script.
+
+| Check | Result |
+|---|---|
+| Name field accepts 151 hostile chars | stored **151 chars intact** in Firestore |
+| Emoji / non-ASCII round-trip | survived intact |
+| Cover captions | truncated to their `maxLength` (10/60/20/10) — by design, not a defect |
+| **Injected script on customer-preview** | **did NOT execute** — `window.__XSS_FIRED` never set, zero dialogs, payload not even rendered as visible text |
+| Confirmation email | arrived: *"Your Aevia order AEV-078 is confirmed"* from `Aevia <orders@aevia.at>` |
+
+Raw `<script>` **is** stored in Firestore. That is fine on its own — escaping is a render
+concern, and the render is clean. Storing the literal text the customer typed is correct.
+
+**Note:** the confirmation email carries **no `reply-to` header**. The success screen tells
+the customer "reply to us within 24h", so replies land on the `From` address
+(`orders@aevia.at`). Worth confirming that mailbox is monitored; not raised as a finding.
+
+**Incidental verification of TO-DOS #92:** AEV-078 came out at `status: new`,
+`uploadComplete: true`, so the fixed `confirmUpload` (commit `769b47e`) works on the happy
+path. #92 can be closed.
+
+### ⚠ Harness failure worth reading — a QA script graded a stranger's order
+
+The first attempt at this case produced **two confident, plausible, completely wrong
+findings**, and they were nearly filed as product bugs. What happened:
+
+1. Clicking `#submit-btn` opened the **pre-submit warning modal** (`#confirm-proceed` —
+   low-res photos / cover-orientation mismatch). The script never dismissed it, so nothing
+   submitted: no order, no upload. The run then sat for **15 minutes** waiting for a success
+   screen that could never appear. `p0-1-template.mjs` already handles this modal; the new
+   script simply hadn't copied that leg.
+2. With no order number captured, a fallback `body.match(/AEV-\d{3}/)` scraped an order
+   number off the page and landed on **AEV-075 — a real order belonging to Xenia**. Every
+   assertion after that ran against her data, producing "emoji did not survive into
+   Firestore" (really: measuring `"Xenia Buttt"`, 11 chars) and "no confirmation email"
+   (true, but about an order this run never created).
+
+**Two rules now enforced in the script, and worth applying to every future QA script:**
+
+- **Never identify an order by scraping the page for `/AEV-\d+/`.** Read it from
+  `#success-order-num`, or capture it from the `createUploadSession` response.
+- **Verify ownership before asserting.** The script now re-reads the order and aborts with
+  S1 unless `order.email` matches the run's own testmail address. Without that guard, a
+  script silently grading someone else's live order looks exactly like a real finding.
+
+The 15-minute run also briefly looked like a reproduction of TO-DOS #88. It was not —
+nothing was uploading at all. A stalled harness and a stalled upload are indistinguishable
+from the outside, which is its own argument for the ownership check.
+
+---
+
 ## Not yet run — and what each needs
 
 | Case | Blocker |

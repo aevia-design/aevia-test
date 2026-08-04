@@ -159,6 +159,18 @@ try {
 
   await page.click('#submit-btn');
 
+  // preSubmitConfirm() opens a modal when collectSubmitWarnings() finds low-res photos
+  // or a cover-orientation mismatch. Both are expected with an arbitrary photo set. If
+  // it is not dismissed, NOTHING happens — no order, no upload — and the run just waits
+  // out its timeout. (Cost one 15-minute run to learn; p0-1-template.mjs already knew.)
+  const proceed = await page.waitForSelector('#confirm-proceed', { state: 'visible', timeout: 8000 }).catch(() => null);
+  if (proceed) {
+    const issues = await page.$$eval('#confirm-list li', els => els.map(e => e.textContent.replace(/\s+/g, ' ').trim()));
+    note(`  pre-submit modal: ${issues.length ? issues.join(' | ') : '(NO issues listed)'}`);
+    await shot(page, '01b-confirm-modal.png');
+    await proceed.click();
+  }
+
   if (REFRESH) {
     // ── P2-10 — refresh mid-upload ──
     note('── P2-10: refresh mid-upload ──');
@@ -204,11 +216,21 @@ try {
     await page.waitForTimeout(5000);
     await shot(page, '02-success.png');
 
+    // Read the order number from the success screen, never by scraping the page for
+    // /AEV-\d{3}/. A loose regex once matched an unrelated order that happened to be
+    // in the DOM, and every assertion after that ran against SOMEONE ELSE'S data.
     if (!orderNumber) {
-      const m = (await page.textContent('body').catch(() => '') || '').match(/AEV-\d{3}/);
+      const txt = await page.textContent('#success-order-num').catch(() => '');
+      const m = (txt || '').match(/AEV-\d+/i);
       orderNumber = m ? m[0] : null;
     }
-    if (!orderNumber) { finding('S1', 'P2-5', 'could not determine the order number after submit'); throw new Error('no order number'); }
+    if (!orderNumber) { finding('S1', 'P2-5', 'could not determine the order number after submit — refusing to guess'); throw new Error('no order number'); }
+    // Belt and braces: the order must carry OUR inbox, or we are inspecting a stranger's.
+    const own = await getOrder(orderNumber);
+    if (own?.email !== EMAIL) {
+      finding('S1', 'P2-5', `${orderNumber} belongs to ${own?.email} not ${EMAIL} — aborting rather than reporting on another order`);
+      throw new Error('order ownership mismatch');
+    }
     note(`Order: ${orderNumber}`);
 
     // ── P2-5: stored safely? ──
