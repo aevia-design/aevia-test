@@ -17,7 +17,7 @@
 //
 // Artefacts → sessions/qa-runs/<date>-p2-order-abuse-<template>[-refresh]/
 
-import { chromium } from '@playwright/test';
+import { chromium, webkit } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { address, getEmails } from './testmail.mjs';
@@ -26,6 +26,7 @@ import { orderState, getOrder } from './firestore.mjs';
 const argv = process.argv.slice(2);
 const TEMPLATE = argv.find(a => !a.startsWith('--')) || 'scribble';
 const REFRESH  = argv.includes('--refresh');
+const BROWSER  = (argv.find(a => a.startsWith('--browser=')) || '--browser=chromium').split('=')[1];
 
 const SPECS = {
   scribble: { addons: ['FP1', 'FP2', 'FP3', 'FP4', 'FP5'], coverPhoto: true },
@@ -44,7 +45,7 @@ const LONG  = 'Ω'.repeat(300);
 const EMOJI = '👶🏽🎉 Mila & Père — “quotes” & <tags> & \'apostrophes\' 😀𝔘𝔫𝔦𝔠𝔬𝔡𝔢';
 
 const BASE = 'https://aevia-test.pages.dev/pages';
-const RUN_DIR = path.resolve('sessions/qa-runs', `${new Date().toISOString().slice(0, 10)}-p2-order-abuse-${TEMPLATE}${REFRESH ? '-refresh' : ''}`);
+const RUN_DIR = path.resolve('sessions/qa-runs', `${new Date().toISOString().slice(0, 10)}-p2-order-abuse-${TEMPLATE}${REFRESH ? '-refresh' : ''}${BROWSER !== 'chromium' ? '-' + BROWSER : ''}`);
 fs.mkdirSync(RUN_DIR, { recursive: true });
 
 const PHOTO_DIR = path.resolve('assets/test photos/DTS_PARENTHOOD');
@@ -65,13 +66,42 @@ const nextPhoto = () => photos[photoIdx++ % photos.length];
 note(`═══ P2 ORDER ABUSE — ${TEMPLATE.toUpperCase()}${REFRESH ? ' (--refresh / P2-10)' : ' (P2-5 + P2-12)'} ═══`);
 note(`Inbox: ${EMAIL}`);
 
-const browser = await chromium.launch({ headless: true });
+const browser = await (BROWSER === 'webkit' ? webkit : chromium).launch({ headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 } });
 const page = await ctx.newPage();
 page.on('dialog', d => d.accept().catch(() => {}));
 
 const consoleMsgs = [];
 page.on('pageerror', e => consoleMsgs.push(`pageerror: ${e.message}`));
+
+// TO-DOS #88: ledger of every signed-URL PUT to GCS. The stored diagnostics only fire
+// when the client reaches its catch block, so a hang or a closed tab leaves nothing.
+// Watching from outside the page records the attempt either way — including PUTs that
+// never resolve at all, which is the case the in-page code cannot report on.
+const puts = new Map();
+const putName = (u) => { try { return decodeURIComponent(new URL(u).pathname.split('/').slice(2).join('/')); } catch { return u.slice(0, 60); } };
+page.on('request', r => {
+  if (r.method() !== 'PUT' || !/storage\.googleapis\.com/.test(r.url())) return;
+  puts.set(r, { name: putName(r.url()), started: Date.now(), status: null, outcome: 'pending' });
+});
+page.on('response', async r => {
+  const rec = puts.get(r.request());
+  if (!rec) return;
+  rec.status = r.status();
+  rec.ms = Date.now() - rec.started;
+  rec.outcome = r.status() < 400 ? 'ok' : 'http-error';
+  if (r.status() >= 400) rec.body = (await r.text().catch(() => '')).slice(0, 300);
+});
+page.on('requestfailed', r => {
+  const rec = puts.get(r);
+  if (!rec) return;
+  // A 2xx already came back — Chromium reports ERR_ABORTED on a fast link after the
+  // response lands (the body is never read). That is benign; do not downgrade it.
+  if (rec.status && rec.status < 400) { rec.abortedAfterOk = true; return; }
+  rec.ms = Date.now() - rec.started;
+  rec.outcome = 'failed';
+  rec.err = r.failure()?.errorText || '';
+});
 
 let orderNumber = null;
 const submitTs = Date.now();
@@ -287,6 +317,23 @@ try {
   finding('S1', 'HARNESS', `run aborted: ${err.message.slice(0, 200)}`);
   await shot(page, 'ERROR-final.png').catch(() => {});
 } finally {
+  // ── PUT ledger (#88) ──
+  const recs = [...puts.values()];
+  if (recs.length) {
+    const by = (o) => recs.filter(r => r.outcome === o);
+    note('');
+    note(`── PUT ledger: ${recs.length} total | ok ${by('ok').length} | http-error ${by('http-error').length} | failed ${by('failed').length} | NEVER RESOLVED ${by('pending').length} ──`);
+    for (const r of recs.filter(r => r.outcome !== 'ok')) {
+      note(`   ${r.outcome.toUpperCase()} ${r.name} — status ${r.status ?? 'none'} ${r.err || ''} ${r.body || ''}`.trim());
+    }
+    const slow = recs.filter(r => r.ms).sort((a, b) => b.ms - a.ms).slice(0, 3);
+    slow.forEach(r => note(`   slowest: ${r.name} ${r.ms}ms (${r.outcome})`));
+    // The whole point: a PUT that never resolves is invisible to the in-page handler.
+    if (by('pending').length) {
+      finding('S1', '#88', `${by('pending').length} PUT(s) NEVER RESOLVED: ${by('pending').map(r => r.name).join(', ')}`);
+    }
+    fs.writeFileSync(path.join(RUN_DIR, 'put-ledger.json'), JSON.stringify(recs.map(r => ({ ...r })), null, 2));
+  }
   if (consoleMsgs.length) { note(`Page errors: ${consoleMsgs.length}`); consoleMsgs.slice(0, 8).forEach(m => note(`   ${m}`)); }
   note('');
   note(`═══ RESULT: ${findings.length} finding(s) ═══`);

@@ -1,7 +1,38 @@
 # Upload failures — evidence log and reporting procedure
 
-**Status:** open, root cause NOT found. TO-DOS #88.
+**Status:** **CLOSED S150 (2026-08-04) — owner's call, root cause never proven.** TO-DOS #88.
 **Created:** 2026-07-22 (S147)
+
+> **Why it was closed.** Xenia's account: she had left the upload tab open for a very long
+> time before submitting, and a fresh order placed from scratch completed normally. Nothing
+> was blocked on it, and the S147 instrumentation is now live so a recurrence leaves
+> evidence instead of vanishing.
+>
+> **What S150 established (corrects several claims below — read before reopening):**
+> - **It was 100% deterministic, not intermittent.** AEV-073/074/075/076 are each missing
+>   exactly `special_pages/fp4.png` and nothing else — 4 for 4. (An independent Codex review
+>   reported AEV-076 as a success. It is not; it is also stranded at `uploading`.)
+> - **The template is ruled out.** Papercut and Scribble define FP4 identically (`count: 1`)
+>   and emit the identical key `AEV-xxx/special_pages/fp4.png` through identical signing and
+>   transport code. Nothing template-specific touches the upload path.
+> - **The file was genuinely sent.** `photoManifest` is built server-side from the client's
+>   `fileList` (`functions/upload.js:137-158`), so fp4 was in the payload and did get a
+>   signed URL. A transport failure, not a slot-key bug that dropped it silently.
+> - **The diagnostics have never seen a failure.** All five orders were created 2026-07-22
+>   between 07:23 and 08:59; `bde868b` shipped at 10:44 the same day. `uploadErrors: 0`
+>   everywhere is chronology, not a reporting gap — so the evidence this brief was waiting
+>   for was never going to arrive from these orders.
+> - **It does not reproduce in Chromium.** AEV-080 (Papercut, 50 files including fp4)
+>   completed cleanly: `node qa/p2-order-abuse.mjs papercut`, which now keeps a full PUT
+>   ledger (status, timing, and PUTs that never resolve) in `put-ledger.json`.
+>
+> **The loose end.** A stale tab or an expired signed URL should hit whichever files are in
+> flight, not the same slot four times out of four across four separate submissions. That
+> asymmetry is unexplained.
+>
+> **If it recurs:** `node scripts/inspect-upload-failure.js AEV-0nn` will now return real
+> `uploadErrors`, and the untested variable is the **exact source file used for FP4
+> "First steps"** — get that file from Xenia and upload it alone.
 
 Photo uploads occasionally stall and never finish. The order strands at
 `status: uploading`, the customer gets no confirmation email, and staff get a

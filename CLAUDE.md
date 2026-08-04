@@ -48,8 +48,9 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 - ADRs: `docs/decisions/`
 - Investigation briefs: `docs/briefs/` — one per feature or problem, incl. deferred decisions
   (e.g. `ios-app.md`, `google-signin-ios.md`). **Check here before re-researching something.**
-  - `upload-failures.md` is **live**: an open bug with instrumentation deployed and a procedure to
-    follow when an upload stalls. Read it before touching the upload path or re-diagnosing.
+  - `upload-failures.md` — **CLOSED S150** (owner's call; root cause never proven). Instrumentation
+    is deployed and untriggered. Read it before touching the upload path or re-diagnosing a stall:
+    it records what was ruled out, and the one variable never tested.
 - Unit tests: `tests/` (run with `npm test` from project root)
 - QA browser scripts: `qa/` (Playwright via Node; see `qa/README.md` for the script index, reusable techniques + gotchas; run artefacts in `sessions/qa-runs/`, gitignored)
 
