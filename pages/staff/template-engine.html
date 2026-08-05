@@ -869,7 +869,7 @@
     <div class="fp-group" id="fp-group"></div>
   </div>
 
-  <input type="file" id="photo-file-input" accept=".jpg,.jpeg,.heic,.heif" multiple hidden />
+  <input type="file" id="photo-file-input" accept=".jpg,.jpeg,.png,.heic,.heif" multiple hidden />
 
   <div style="flex:1"></div>
 
@@ -913,31 +913,31 @@
     <span class="special-zone-label">Cover photo</span>
     <button class="special-upload-btn" data-fp="cover" data-max="1">+ Upload photo</button>
     <div class="special-thumbs" id="special-thumbs-cover"></div>
-    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="cover" />
+    <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" hidden data-fp-input="cover" />
   </div>
   <div class="special-zone" id="special-zone-FP1" style="display:none;">
     <span class="special-zone-label">Birthday photo</span>
     <button class="special-upload-btn" data-fp="FP1" data-max="1">+ Upload photo</button>
     <div class="special-thumbs" id="special-thumbs-FP1"></div>
-    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP1" />
+    <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" hidden data-fp-input="FP1" />
   </div>
   <div class="special-zone" id="special-zone-FP3" style="display:none;">
     <span class="special-zone-label">Favourite toy</span>
     <button class="special-upload-btn" data-fp="FP3" data-max="1">+ Upload photo</button>
     <div class="special-thumbs" id="special-thumbs-FP3"></div>
-    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP3" />
+    <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" hidden data-fp-input="FP3" />
   </div>
   <div class="special-zone" id="special-zone-FP4" style="display:none;">
     <span class="special-zone-label">First steps</span>
     <button class="special-upload-btn" data-fp="FP4" data-max="1">+ Upload photo</button>
     <div class="special-thumbs" id="special-thumbs-FP4"></div>
-    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP4" />
+    <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" hidden data-fp-input="FP4" />
   </div>
   <div class="special-zone" id="special-zone-FP5" style="display:none;">
     <span class="special-zone-label">Art gallery (1–2)</span>
     <button class="special-upload-btn" data-fp="FP5" data-max="2">+ Upload artwork</button>
     <div class="special-thumbs" id="special-thumbs-FP5"></div>
-    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden data-fp-input="FP5" />
+    <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" hidden data-fp-input="FP5" />
   </div>
   <!-- Newborn Labour spread: 2 photos (left+right) + zodiac select. Local-tester
        scaffolding to mimic the order flow before the Newborn order form (Stage 4). -->
@@ -945,7 +945,7 @@
     <span class="special-zone-label">Labour — 2 photos (1st → left, 2nd → right)</span>
     <button class="special-upload-btn" data-fp="FPlabour" data-max="2">+ Upload 2 photos</button>
     <div class="special-thumbs" id="special-thumbs-FPlabour"></div>
-    <input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden multiple data-fp-input="FPlabour" />
+    <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" hidden multiple data-fp-input="FPlabour" />
   </div>
   <div class="special-zone" id="special-zone-zodiac" style="display:none;">
     <span class="special-zone-label">Zodiac</span>
@@ -1787,12 +1787,28 @@
      COVER RENDERER
   ═══════════════════════════════════════════ */
 
+  // Spine width in mm, derived from page count.
+  // Printsmarter spec: 40pp → 10mm, 80pp → 14mm, unknown → 9mm (fallback).
+  function getSpineWidthMm(pageCount) {
+    if (pageCount === 40) return 10;
+    if (pageCount === 80) return 14;
+    return 9;  // fallback for unknown page count or existing orders
+  }
+
   function renderCover() {
     const coverDef = getActiveTemplateData().cover;
     if (!coverDef) return null;
 
-    const secs  = coverDef.sections;
-    const totalW = (secs.back.wMm + secs.spine.wMm + secs.front.wMm) * SCALE; // 1227px
+    const secs = coverDef.sections;
+
+    // Page-count-dependent spine width (Printsmarter spec: 40pp→10mm, 80pp→14mm).
+    // Falls back to 9mm for unknown page count (existing orders without pageCount field).
+    const pageCount = parseInt(document.getElementById('page-count-select')?.value || '9', 10);
+    const spineWidthMm = getSpineWidthMm(pageCount);
+    const referenceSpineMm = coverDef.referenceSpineMm !== undefined ? coverDef.referenceSpineMm : 9;
+    const delta = spineWidthMm - referenceSpineMm;  // shift for front-panel items (mm)
+
+    const totalW = (secs.back.wMm + spineWidthMm + secs.front.wMm) * SCALE;
 
     const row = document.createElement('div');
     row.className = 'spread-row';
@@ -1812,12 +1828,17 @@
 
     const canvas = document.createElement('div');
     canvas.className = 'page-canvas cover-canvas';
+    // Dynamic cover width based on spine size. CSS defaults to 1227px (409mm at s=9);
+    // set inline with !important to override the CSS rule.
+    const canvasWidthPx = (secs.back.wMm + spineWidthMm + secs.front.wMm) * SCALE;
+    canvas.style.cssText = `width: ${canvasWidthPx}px !important; height: 600px !important;`;
 
     // Canvas background gradient — covers full height at any zoom/rounding.
     // Back and spine colors come from the SVG; front bgColor is the only user-facing config.
+    // Gradient boundaries follow the dynamic spine width.
     {
       const spineStartPx = secs.back.wMm * SCALE;
-      const frontStartPx = (secs.back.wMm + secs.spine.wMm) * SCALE;
+      const frontStartPx = (secs.back.wMm + spineWidthMm) * SCALE;  // use dynamic spine width
       const backColor  = secs.back.bgColor  || '#3d1f5c';
       const spineColor = secs.spine.bgColor || '#fdd16f';
       const frontColor = secs.front.bgColor || '#f8ead9';
@@ -1832,26 +1853,53 @@
     // correct for Scribble/Newborn (transparent photo window, decorations on top). When
     // the cover sets overlayAbovePhotos:false (Papercut), drop the SVG below the photo
     // so the photo prints on top of the graphics.
-    const svgImg = document.createElement('img');
-    svgImg.className = 'svg-overlay';
-    svgImg.src = SVG_BASE + coverDef.svg;
-    svgImg.alt = '';
-    if (coverDef.overlayAbovePhotos === false) svgImg.style.zIndex = '0';
-    svgImg.onerror = () => {
-      console.warn('SVG overlay failed to load:', svgImg.src);
-      svgImg.style.outline = '3px solid #e05252';
+    //
+    // The SVG is authored at the 9mm-spine sheet width (409mm) and must NEVER stretch —
+    // stretching moves the artwork while the photo slots (positioned independently in mm)
+    // stay put, so they drift apart. Instead we render the SVG TWICE at its natural width:
+    //   copy 1 (back):  anchored left, clipped to the back panel — never moves;
+    //   copy 2 (front): clipped to the front panel, translated right by delta.
+    // The spine band between them is painted by the canvas gradient above (flat colour —
+    // lossless at any width). At delta=0 the two copies tile back into today's exact render.
+    const svgNaturalPx = (secs.back.wMm + referenceSpineMm + secs.front.wMm) * SCALE; // 1227px
+    const backEndPx    = secs.back.wMm * SCALE;                       // back|spine boundary in SVG space
+    const frontStartSvgPx = (secs.back.wMm + referenceSpineMm) * SCALE; // spine|front boundary in SVG space
+    const deltaPx      = delta * SCALE;
+
+    const zIdx = coverDef.overlayAbovePhotos === false ? '0' : '';
+    const mkSvgCopy = (leftPx, clipLeftPx, clipRightPx) => {
+      const img = document.createElement('img');
+      img.className = 'svg-overlay';
+      img.src = SVG_BASE + coverDef.svg;
+      img.alt = '';
+      // Natural (reference) width so the artwork is never scaled; position + clip select the panel.
+      img.style.cssText = `width:${svgNaturalPx}px;left:${leftPx}px;` +
+        `clip-path:inset(0 ${svgNaturalPx - clipRightPx}px 0 ${clipLeftPx}px);`;
+      if (zIdx) img.style.zIndex = zIdx;
+      img.onerror = () => {
+        console.warn('SVG overlay failed to load:', img.src);
+        img.style.outline = '3px solid #e05252';
+      };
+      return img;
     };
-    canvas.appendChild(svgImg);
+    // Back copy: shows 0 → back|spine boundary (spine colour comes from the gradient).
+    canvas.appendChild(mkSvgCopy(0, 0, backEndPx));
+    // Front copy: shows spine|front boundary → end, shifted right by delta.
+    canvas.appendChild(mkSvgCopy(deltaPx, frontStartSvgPx, svgNaturalPx));
 
     // Photo slots (center-based coords from CSV). Most templates have exactly one
     // cover photo; Wander's cover is free-text only (cover.slots === []); Joyride has
     // FOUR (top/left/right/bottom around the centred title). Loop over every slot —
     // Wander's empty array makes this a no-op, single-slot templates run once.
     const COVER_BLEED_MM = 18;  // cover CSV coords include 18mm bleed on each side
+    // Front panel starts at back+spine boundary (in with-bleed space).
+    const frontPanelBoundary = 18 + 200 + referenceSpineMm;  // 18 + back + reference spine
     coverDef.slots.forEach((slotDef, slotIdx) => {
       const slotW   = slotDef.wMm * SCALE;
       const slotH   = slotDef.hMm * SCALE;
-      const slotL   = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2;
+      // Shift front-panel slots (xMm >= frontPanelBoundary) by delta in mm space, then convert to px.
+      const slotDeltaPx = slotDef.xMm >= frontPanelBoundary ? delta * SCALE : 0;
+      const slotL   = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2 + slotDeltaPx;
       const slotT   = (slotDef.yMm - COVER_BLEED_MM) * SCALE - slotH / 2;
 
       const slot = document.createElement('div');
@@ -1877,7 +1925,11 @@
         cp.setAttribute('id', clipId);
         cp.setAttribute('clipPathUnits', 'userSpaceOnUse');
         const p = document.createElementNS(ns, 'path');
-        p.setAttribute('transform', `translate(${(-slotL).toFixed(2)},${(-slotT).toFixed(2)}) scale(${f.toFixed(5)})`);
+        // clipDef.d is authored against the ORIGINAL sheet (reference spine). When the page
+        // count widens the spine the front SVG copy shifts right by slotDeltaPx, so the
+        // opening in the artwork moves — but the path does not. Add the same shift, or the
+        // silhouette stays where the artwork used to be (a crescent of misregistration).
+        p.setAttribute('transform', `translate(${(slotDeltaPx - slotL).toFixed(2)},${(-slotT).toFixed(2)}) scale(${f.toFixed(5)})`);
         p.setAttribute('d', clipDef.d);
         cp.appendChild(p); defs.appendChild(cp); svg.appendChild(defs);
         slot.appendChild(svg);
@@ -1916,11 +1968,30 @@
       canvas.appendChild(slot);
     });
 
-    // Captions — coords are with-bleed (18mm); subtract before converting to canvas px
+    // Captions — coords are with-bleed (18mm); subtract before converting to canvas px.
+    // Spine captions are positioned at the spine centre + their offset (normally 0).
     const savedCoverCaps = window.bookCaptions['cover'] || {};
     coverDef.captions.forEach(capDef => {
       const capW  = capDef.wMm * SCALE;
-      const capCX = (capDef.xMm - COVER_BLEED_MM) * SCALE;
+
+      // Determine caption position. Spine captions sit at spine centre + offset (default 0).
+      // Detect spine by checking if caption key starts with 'spine' (convention).
+      const isSpineCaption = capDef.key && capDef.key.toLowerCase().startsWith('spine');
+      let capCX;
+      if (isSpineCaption) {
+        // Spine centre in without-bleed space: 200 + s/2
+        // capDef.xMm is absolute with-bleed; convert to offset from spine centre.
+        const offset = (capDef.xMm - COVER_BLEED_MM) - (200 + referenceSpineMm / 2);
+        // Position at new spine centre + offset
+        const newSpineCenterWithoutBleed = 200 + spineWidthMm / 2;
+        capCX = (newSpineCenterWithoutBleed + offset) * SCALE;
+      } else {
+        // Non-spine captions: shift front-panel captions by delta (others unchanged).
+        const isFrontCaption = capDef.xMm >= frontPanelBoundary;
+        const capDeltaPx = isFrontCaption ? delta * SCALE : 0;
+        capCX = (capDef.xMm - COVER_BLEED_MM) * SCALE + capDeltaPx;
+      }
+
       const capCY = (capDef.yMm - COVER_BLEED_MM) * SCALE;
 
       // Merge CSV defaults with any user overrides
@@ -3967,7 +4038,7 @@
         '<span class="special-zone-label">' + label + (count > 1 ? ' (' + count + ')' : '') + '</span>' +
         '<button class="special-upload-btn" data-fp="' + s.id + '" data-max="' + count + '">+ Upload ' + (count > 1 ? count + ' photos' : 'photo') + '</button>' +
         '<div class="special-thumbs" id="special-thumbs-' + s.id + '"></div>' +
-        '<input type="file" accept=".jpg,.jpeg,.heic,.heif" hidden ' + (count > 1 ? 'multiple ' : '') + 'data-fp-input="' + s.id + '" />';
+        '<input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" hidden ' + (count > 1 ? 'multiple ' : '') + 'data-fp-input="' + s.id + '" />';
       panel.appendChild(zone);
       if (!SPECIAL_LABELS[s.id]) SPECIAL_LABELS[s.id] = label;
     });

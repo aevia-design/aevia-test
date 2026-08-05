@@ -6,6 +6,7 @@ window.SCRIBBLE_DATA = {
 
   cover: {
     svg: 'Cover/Artboard 1.svg',
+    referenceSpineMm: 9,  // spine width this cover was authored at
     sections: {
       back:  { xMm: 0,   wMm: 200, bgColor: '#3d1f5c' },
       spine: { xMm: 200, wMm: 9,   bgColor: '#fdd16f' },
@@ -21,8 +22,8 @@ window.SCRIBBLE_DATA = {
     captions: [
       { key: 'year', xMm: 327, yMm: 43, wMm: 180, font: 'EB Garamond', sizePt: 33, align: 'center', color: '#493955', label: 'Front — year', placeholder: '2026', maxLength: 10 },
       { key: 'name', xMm: 327, yMm: 193, wMm: 180, font: 'NT Somic', sizePt: 28, align: 'center', color: '#493955', label: 'Front — album name', placeholder: 'Our sweet Ann', maxLength: 60 },
-      { key: 'spineName', xMm: 222, yMm: 158, wMm: 130, font: 'NT Somic', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — name', placeholder: 'Ann', maxLength: 20 },
-      { key: 'spineYear', xMm: 222, yMm: 78, wMm: 70, font: 'EB Garamond', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — year', placeholder: '2026', maxLength: 10 },
+      { key: 'spineName', xMm: 222.5, yMm: 158, wMm: 130, font: 'NT Somic', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — name', placeholder: 'Ann', maxLength: 20 },
+      { key: 'spineYear', xMm: 222.5, yMm: 78, wMm: 70, font: 'EB Garamond', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — year', placeholder: '2026', maxLength: 10 },
     ]
   },
 

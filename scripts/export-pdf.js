@@ -125,9 +125,11 @@ function initializePrintConstants() {
   // corrupting SVG viewBoxes and the cover canvas dimensions.
   SPREAD_SVG_BLEED_UNITS = BLEED_MM * 72 / 25.4;       // ~8.504
   BLEED_PT      = BLEED_MM * MM_TO_PT;
-  COVER_FULL_W_PX = Math.round(COVER_FULL_W_MM * MM_TO_PX); // 5256px
-  COVER_FULL_H_PX = Math.round(COVER_FULL_H_MM * MM_TO_PX); // 2787px
-  COVER_BLEED_PX  = Math.round(COVER_BLEED_MM * MM_TO_PX);  // 213px
+  // Cover pixel dimensions are NOT set here: since the spine width became a function of
+  // page count (S152), the cover width is per-render. renderCoverImage() derives its own
+  // COVER_FULL_W_PX_LOCAL / COVER_FULL_H_PX_LOCAL / COVER_BLEED_PX_LOCAL from
+  // computeCoverDimensions(pageCount). The old module-wide globals were left assigned here
+  // and referenced COVER_FULL_W_MM, which no longer exists — a ReferenceError on every render.
 }
 
 // ── Multi-template seam ──
@@ -972,45 +974,71 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
 }
 
 // ── Cover rendering ───────────────────────────────────────────────────────────
-// Cover canvas: back(200mm) + spine(9mm) + front(200mm) = 409mm wide × 200mm tall
-// With 18mm bleed on all outer edges: 445×236mm total
+// Cover canvas: back(200mm) + spine(s mm) + front(200mm) = (400+s)mm wide × 200mm tall
+// With 18mm bleed on all outer edges: (436+s)×236mm total
+// Spine width is now per-render (derived from page count); these constants are no longer valid at module load.
+// Moved into renderCoverImage() and computeCoverDimensions() below.
 const COVER_BLEED_MM    = 18;
-const COVER_CONTENT_W   = 200 + 9 + 200;   // 409mm
-const COVER_CONTENT_H   = 200;              // 200mm
-const COVER_FULL_W_MM   = COVER_CONTENT_W + COVER_BLEED_MM * 2;   // 445mm
-const COVER_FULL_H_MM   = COVER_CONTENT_H + COVER_BLEED_MM * 2;   // 236mm
-let   COVER_FULL_W_PX;   // assigned in initializePrintConstants() — depends on lazy MM_TO_PX
-let   COVER_FULL_H_PX;   // (5256px)
-let   COVER_BLEED_PX;    // (213px)
-// Cover SVG: 409mm wide → 1159.37 user units; 18mm bleed → 51.024 user units.
-const COVER_SVG_BLEED_UNITS = COVER_BLEED_MM * 72 / 25.4;  // ~51.024
+const COVER_CONTENT_H   = 200;              // 200mm (constant)
+const COVER_FULL_H_MM   = COVER_CONTENT_H + COVER_BLEED_MM * 2;   // 236mm (constant)
+
+// Spine width in mm, derived from page count.
+// Printsmarter spec: 40pp → 10mm, 80pp → 14mm, unknown → 9mm (fallback).
+// Exported for testability.
+function getSpineWidthMm(pageCount) {
+  if (pageCount === 40) return 10;
+  if (pageCount === 80) return 14;
+  return 9;  // fallback for unknown page count or existing orders
+}
+
+// Compute cover dimensions for a given spine width.
+// Returns { spineWidthMm, contentWidthMm, fullWidthMm, svgBleedUnits }.
+// Exported for testability.
+function computeCoverDimensions(pageCount) {
+  const spineWidthMm = getSpineWidthMm(pageCount);
+  const contentWidthMm = 400 + spineWidthMm;  // back(200) + spine(s) + front(200)
+  const fullWidthMm = contentWidthMm + COVER_BLEED_MM * 2;  // add bleed on both sides
+  const svgBleedUnits = COVER_BLEED_MM * 72 / 25.4;  // ~51.024 (constant, independent of s)
+  return { spineWidthMm, contentWidthMm, fullWidthMm, svgBleedUnits };
+}
 
 // Render the full cover spread as a PNG buffer.
 // coverDef = DATA.cover; coverPhoto = filename string; coverCaptions = { year, name, spineName, spineYear }
-async function renderCoverImage(coverDef, coverPhotoNames, heartCrop = {}) {
+// pageCount: order's page count (affects spine width)
+async function renderCoverImage(coverDef, coverPhotoNames, heartCrop = {}, pageCount = undefined) {
   const { sections, slots, svg } = coverDef;
   // One cover photo for most templates, four for Joyride — normalise to an array.
   const names = Array.isArray(coverPhotoNames) ? coverPhotoNames : [coverPhotoNames];
   // Cover SVG lives in the same Spreads/ folder as content SVGs (ASSET_BASE already points there)
   const COVER_ASSET_BASE = ASSET_BASE;
 
-  // Cover compositing strategy:
-  //   The cover SVG already contains the back section background and spine background,
-  //   both extended into the bleed area. We expand the SVG's viewBox by COVER_SVG_BLEED_UNITS
-  //   on each side and render it at origin so the SVG provides back + spine + their bleed.
-  //   The front section has NO background in the SVG (no Front_BG_Color element), so we
-  //   use the front colour as the canvas background — it fills the entire canvas including
-  //   the front area and the top/bottom/right bleed of the front section.
-  //   Composite order: canvas bg (front colour) → photo → SVG (draws back+spine on top).
+  // Compute cover dimensions for this render's page count.
+  const { spineWidthMm, fullWidthMm, svgBleedUnits } = computeCoverDimensions(pageCount);
+  const COVER_FULL_W_PX_LOCAL = Math.round(fullWidthMm * MM_TO_PX);
+  const COVER_FULL_H_PX_LOCAL = Math.round(COVER_FULL_H_MM * MM_TO_PX);
+
+  // Cover compositing strategy (updated):
+  //   The cover SVG is rendered at natural reference width, then split into back and front panels.
+  //   Back panel: SVG clipped to [0, 200mm], positioned at x=0, paints its own background + bleed.
+  //   Spine: SVG painted as flat colour from sections.spine.bgColor (width varies with page count).
+  //   Front panel: SVG clipped to [200+s, end] mm in SVG space, shifted right by delta to accommodate
+  //   the widened spine. The engine's canvas background provides the front colour fill.
+  //   Composite order: canvas bg (front colour) → photo → SVG back panel → SVG front panel.
   const frontColor = hexToSharpColor(sections.front.bgColor);
 
   // Canvas background = front colour (covers front area + all its bleed margins).
   let canvas = sharp({
-    create: { width: COVER_FULL_W_PX, height: COVER_FULL_H_PX, channels: 4,
+    create: { width: COVER_FULL_W_PX_LOCAL, height: COVER_FULL_H_PX_LOCAL, channels: 4,
                background: { r: frontColor.r, g: frontColor.g, b: frontColor.b, alpha: 1 } }
   }).png();
 
   const composites = [];
+
+  // Front-panel shift in mm and px. Spine width varies with page count; front-panel items
+  // shift by delta = s − 9. Back-panel items (xMm < 200+18=218) never move.
+  const referenceSpineMm = coverDef.referenceSpineMm !== undefined ? coverDef.referenceSpineMm : 9;
+  const deltaMm = spineWidthMm - referenceSpineMm;
+  const deltaPx = Math.round(deltaMm * MM_TO_PX);
 
   // ── Photo slots (BEFORE SVG so decorations overlay) ───────────────────────
   // One slot for most templates; Joyride has four (top/left/right/bottom). Each
@@ -1022,15 +1050,21 @@ async function renderCoverImage(coverDef, coverPhotoNames, heartCrop = {}) {
     const photoData = await loadPhoto(coverPhotoName);
     if (photoData) {
       // slot.xMm/yMm are CENTER coords already including the 18mm bleed — do NOT add COVER_BLEED_PX.
+      // Front-panel slots (xMm >= 209 in reference space) shift by deltaMm when spine width changes.
+      const frontPanelBoundary = 200 + 18;  // 218mm: where front panel starts in with-bleed space
+      const isFrontSlot = slot.xMm >= frontPanelBoundary;
+      const slotXMm = isFrontSlot ? slot.xMm + deltaMm : slot.xMm;
+
       const sw = Math.round(slot.wMm * MM_TO_PX);
       const sh = Math.round(slot.hMm * MM_TO_PX);
-      const sx = Math.round((slot.xMm - slot.wMm / 2) * MM_TO_PX);
+      const sx = Math.round((slotXMm - slot.wMm / 2) * MM_TO_PX);
       const sy = Math.round((slot.yMm - slot.hMm / 2) * MM_TO_PX);
       // Custom photo silhouette (data-driven clip, e.g. Newborn's scalloped frame).
       // The path lives in cover-SVG space (clipDef.pxPerMm, trim-origin, NO bleed).
       // Mirror the engine's translate(-slotL,-slotT) scale(f): here the PDF canvas
       // origin is the bleed edge and sx/sy are bleed-origin, so map a path point P to
       // slot-local px = P*g + COVER_BLEED_PX − sx, where g = MM_TO_PX / clipDef.pxPerMm.
+      // When the front panel shifts by deltaPx, the path must shift with it (or misregistration appears).
       const clipDef = slot.clipShape && coverDef.clipShapes
         ? coverDef.clipShapes[slot.clipShape] : null;
       try {
@@ -1043,8 +1077,11 @@ async function renderCoverImage(coverDef, coverPhotoNames, heartCrop = {}) {
         const photoBuffer = await coverExtract(photoData, sw, sh, cropX, cropY);
         if (clipDef) {
           const g  = MM_TO_PX / clipDef.pxPerMm;
-          const tx = COVER_BLEED_PX - sx;
-          const ty = COVER_BLEED_PX - sy;
+          const COVER_BLEED_PX_LOCAL = Math.round(COVER_BLEED_MM * MM_TO_PX);
+          // Add deltaPx to the x-translate for front-panel slots, matching the engine's slotDeltaPx.
+          const txBase = COVER_BLEED_PX_LOCAL - sx;
+          const tx = isFrontSlot ? txBase + deltaPx : txBase;
+          const ty = COVER_BLEED_PX_LOCAL - sy;
           const maskSvg = Buffer.from(
             `<svg xmlns="http://www.w3.org/2000/svg" width="${sw}" height="${sh}">` +
             `<path transform="translate(${tx.toFixed(2)},${ty.toFixed(2)}) scale(${g.toFixed(5)})" d="${clipDef.d}" fill="white"/>` +
@@ -1066,39 +1103,72 @@ async function renderCoverImage(coverDef, coverPhotoNames, heartCrop = {}) {
     }
   }
 
-  // ── SVG overlay (back + spine, with bleed) ───────────────────────────────
-  // Expand the SVG viewBox by 18mm (COVER_SVG_BLEED_UNITS) each side so the back BG
-  // and spine BG colour rects Kseniia drew into the bleed area are visible. Render to
-  // the full bleed-inclusive canvas size at origin.
+  // ── SVG overlay — two-panel split (mirrors both browser engines) ────────────
+  // The SVG is authored at the REFERENCE spine width and must never be rescaled:
+  // rescaling moves the artwork while the photo slots (positioned from mm) stay put,
+  // so they drift apart. Instead rasterise ONCE at reference size and composite the
+  // two panels separately:
+  //   back  = pixels [0 .. bleed+200mm]           → placed at x = 0 (never moves)
+  //   spine = flat colour from sections.spine.bgColor, width s (varies with page count)
+  //   front = pixels [bleed+200+refSpine .. end]  → placed at x = bleed+200+s (shifted by delta)
+  // The SVG's own spine strip falls in the gap between the two panels and is therefore
+  // NOT drawn — the flat band replaces it, which is why sections.spine.bgColor must match
+  // the artwork's spine fill. At delta = 0 the panels tile back into today's exact render.
   if (svg) {
     const svgPath = path.join(COVER_ASSET_BASE, svg);
     if (fs.existsSync(svgPath)) {
       try {
         const svgStr      = fs.readFileSync(svgPath, 'utf8');
-        const svgShrunk   = await shrinkOversizedSvg(svgStr, COVER_FULL_W_PX);
-        // Strip the root <svg> width/height (e.g. width="409mm" height="200mm") so the
-        // (bleed-expanded) viewBox alone governs the coordinate mapping. The cover is
-        // NON-square (409×200mm), so once we widen the viewBox by 18mm bleed its aspect
-        // (1.886) no longer matches the mm box's aspect (2.045); with width/height present,
-        // librsvg applies preserveAspectRatio "meet" and letterboxes the artwork, shifting
-        // the decorative frame off the photo clip (the clip is computed directly in px and
-        // stays put). Removing width/height makes the viewBox stretch to fill — matching the
-        // photo clip exactly. (Square spread SVGs are unaffected; Scribble's cover, which
-        // ships without width/height, was always correct — this brings the others in line.)
-        const svgExpanded = expandSvgViewBox(svgShrunk, COVER_SVG_BLEED_UNITS)
+        const svgShrunk   = await shrinkOversizedSvg(svgStr, COVER_FULL_W_PX_LOCAL);
+        // Strip the root <svg> width/height to let the (bleed-expanded) viewBox govern mapping.
+        const svgExpanded = expandSvgViewBox(svgShrunk, svgBleedUnits)
           .replace(/<svg\b[^>]*>/i, t => t.replace(/\s(?:width|height)="[^"]*"/gi, ''));
+
+        // Render SVG at REFERENCE dimensions (spine at referenceSpineMm, not current spineWidthMm).
+        const COVER_REF_W_MM = 400 + referenceSpineMm;
+        const COVER_REF_FULL_W_MM = COVER_REF_W_MM + COVER_BLEED_MM * 2;
+        const COVER_REF_W_PX = Math.round(COVER_REF_FULL_W_MM * MM_TO_PX);
+        const COVER_REF_H_PX = COVER_FULL_H_PX_LOCAL;
+
         const svgBuffer   = await sharp(Buffer.from(svgExpanded))
-          .resize(COVER_FULL_W_PX, COVER_FULL_H_PX, { fit: 'fill' })
+          .resize(COVER_REF_W_PX, COVER_REF_H_PX, { fit: 'fill' })
           .png().toBuffer();
-        // Z-order: default (push) draws the cover SVG on top of the photo — correct for
-        // Scribble/Newborn, whose SVG has a transparent photo window + decorations on top.
-        // Papercut's cover sets overlayAbovePhotos:false: the photo must sit ON TOP of the
-        // graphics, so insert the SVG BEFORE the (already-pushed) photo composite.
-        if (coverDef.overlayAbovePhotos === false) {
-          composites.unshift({ input: svgBuffer, left: 0, top: 0 });
-        } else {
-          composites.push({ input: svgBuffer, left: 0, top: 0 });
-        }
+
+        // Panel boundaries. Back and spine are measured in the FINAL canvas; the front
+        // panel is extracted at its REFERENCE position and then placed at its final one.
+        const backEndPx      = Math.round((COVER_BLEED_MM + 200) * MM_TO_PX);                    // back|spine
+        const spineEndPx     = Math.round((COVER_BLEED_MM + 200 + spineWidthMm) * MM_TO_PX);     // spine|front (final)
+        const refSpineEndPx  = Math.round((COVER_BLEED_MM + 200 + referenceSpineMm) * MM_TO_PX); // spine|front (in the SVG)
+
+        // Back panel — includes the left/top/bottom bleed, cut clean at the spine boundary.
+        const backBuf = await sharp(svgBuffer)
+          .extract({ left: 0, top: 0, width: backEndPx, height: COVER_REF_H_PX })
+          .png().toBuffer();
+
+        // Spine band — flat colour, replaces the SVG strip that falls in the gap.
+        const spineColor = hexToSharpColor(sections.spine.bgColor);
+        const spineBuf = await sharp({
+          create: { width: Math.max(1, spineEndPx - backEndPx), height: COVER_REF_H_PX, channels: 4,
+                    background: { r: spineColor.r, g: spineColor.g, b: spineColor.b, alpha: 1 } }
+        }).png().toBuffer();
+
+        // Front panel — from the reference spine|front boundary to the far bleed edge,
+        // re-placed at the FINAL boundary so it moves right by exactly delta.
+        const frontSrcW = COVER_REF_W_PX - refSpineEndPx;
+        const frontBuf = await sharp(svgBuffer)
+          .extract({ left: refSpineEndPx, top: 0, width: frontSrcW, height: COVER_REF_H_PX })
+          .png().toBuffer();
+
+        // Paint order within the SVG layer: back → spine → front (left to right).
+        const svgParts = [
+          { input: backBuf,  left: 0,          top: 0 },
+          { input: spineBuf, left: backEndPx,  top: 0 },
+          { input: frontBuf, left: spineEndPx, top: 0 },
+        ];
+        // overlayAbovePhotos:false (Papercut) drops the artwork BELOW the photo.
+        // unshift with a spread preserves left-to-right order at the head of the array.
+        if (coverDef.overlayAbovePhotos === false) composites.unshift(...svgParts);
+        else                                       composites.push(...svgParts);
       } catch (e) {
         console.warn(`  ⚠ Cover SVG overlay failed: ${e.message}`);
       }
@@ -1113,10 +1183,15 @@ async function renderCoverImage(coverDef, coverPhotoNames, heartCrop = {}) {
 
 // Draw cover captions onto a pdf-lib page.
 // coverDef.captions has: key, xMm, yMm, font, sizePt, align, rotate (optional)
-// xMm/yMm are center coords measured from the left edge of the back section (not including bleed)
-function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionStyles, pageSizeWPt, pageSizeHPt) {
+// xMm/yMm are center coords in with-bleed space (with 18mm bleed included).
+// pageCount: order's page count (affects spine caption positioning).
+function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionStyles, pageSizeWPt, pageSizeHPt, pageCount = undefined) {
   if (!coverCaptions) return;
   const COVER_BLEED_PT = COVER_BLEED_MM * MM_TO_PT;
+
+  // Compute spine width for caption positioning.
+  const { spineWidthMm } = computeCoverDimensions(pageCount);
+  const referenceSpineMm = coverDef.referenceSpineMm !== undefined ? coverDef.referenceSpineMm : 9;
 
   for (const capDef of coverDef.captions) {
     // Route through stripHtml (like spread captions) so NBSP (U+00A0) and any stray
@@ -1190,11 +1265,18 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
         ? measureNoLig(font, l, sizePt, charSpacing)
         : font.widthOfTextAtSize(l, sizePt);
 
-      // Center the glyph line-box on the spine center, matching the engine (which rotates the
-      // caption box about its center → text visual-center sits on xMm). After 90° CCW rotation
-      // ascenders extend LEFT of the baseline (by ascent) and descenders RIGHT (by descent), so
-      // the content-box horizontal center = baseline_x − (ascent − descent)/2. Solving for the
-      // baseline so that center lands on xMm gives the +(ascent − descent)/2 offset below.
+      // Center the glyph line-box on the NEW spine center (218 + s/2 mm), matching the engine.
+      // capDef.xMm is an offset from the OLD spine centre (218 + 9/2 = 222.5 for reference spine).
+      // Convert to an offset, then recompute from the new centre.
+      // E.g., Scribble's spineName has capDef.xMm=222.5 → offset = 0, so it should centre on 218 + s/2.
+      const referenceSpineCentreMm = COVER_BLEED_MM + 200 + referenceSpineMm / 2;  // 218 + ref/2
+      const spineCapOffsetMm = capDef.xMm - referenceSpineCentreMm;  // offset from reference centre
+      const newSpineCentreMm = COVER_BLEED_MM + 200 + spineWidthMm / 2;  // 218 + s/2
+      const spineCapXMm = newSpineCentreMm + spineCapOffsetMm;
+
+      // Glyph centering: after 90° CCW rotation, ascenders extend LEFT and descenders RIGHT.
+      // The content-box horizontal center = baseline_x − (ascent − descent)/2. Solving for the
+      // baseline so that center lands on spineCapXMm gives the +(ascent − descent)/2 offset.
       //
       // IMPORTANT: read ascent/descent from the underlying fontkit font, NOT pdf-lib's
       // heightAtSize. pdf-lib returns INVERTED ascent/descent for some fonts (e.g. Parisienne:
@@ -1212,7 +1294,7 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
         const descenderPt = font.heightAtSize(sizePt) - ascenderPt;
         spineOffsetPt = (ascenderPt - descenderPt) / 2;
       }
-      const spineXPt   = capDef.xMm * MM_TO_PT + spineOffsetPt;
+      const spineXPt   = spineCapXMm * MM_TO_PT + spineOffsetPt;
       const yCenterPt  = pageSizeHPt - capDef.yMm * MM_TO_PT;
       const totalW     = lines.reduce((sum, l) => sum + measure(l), 0)
                        + (lines.length - 1) * lineSpacing;
@@ -1377,9 +1459,11 @@ async function main() {
     : [_coverName(specialPhotos.cover)];
 
   try {
-    const coverBuf = await renderCoverImage(coverDef, coverPhotoNames, state.heartCrop || {});
+    const coverBuf = await renderCoverImage(coverDef, coverPhotoNames, state.heartCrop || {}, parseInt(state.pageCount));
 
-    const COVER_W_PT = COVER_FULL_W_MM / 25.4 * 72;
+    // Cover dimensions now depend on spine width (derived from page count).
+    const { fullWidthMm: COVER_FULL_W_MM_RENDER } = computeCoverDimensions(parseInt(state.pageCount));
+    const COVER_W_PT = COVER_FULL_W_MM_RENDER / 25.4 * 72;
     const COVER_H_PT = COVER_FULL_H_MM / 25.4 * 72;
 
     if (isPrint) {
@@ -1389,7 +1473,7 @@ async function main() {
       const img = await doc.embedPng(coverBuf);
       const pg  = doc.addPage([COVER_W_PT, COVER_H_PT]);
       pg.drawImage(img, { x: 0, y: 0, width: COVER_W_PT, height: COVER_H_PT });
-      drawCoverCaptions(pg, fm, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT);
+      drawCoverCaptions(pg, fm, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT, parseInt(state.pageCount));
       const coverBytes = await doc.save();
       // The cover is a different page size (wide wrap incl. spine) from the square
       // interior pages. Print houses reject mixed-size documents, so it stays its
@@ -1402,7 +1486,7 @@ async function main() {
       const img = await previewDoc.embedPng(coverBuf);
       const pg  = previewDoc.addPage([COVER_W_PT, COVER_H_PT]);
       pg.drawImage(img, { x: 0, y: 0, width: COVER_W_PT, height: COVER_H_PT });
-      drawCoverCaptions(pg, previewFontMap, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT);
+      drawCoverCaptions(pg, previewFontMap, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT, parseInt(state.pageCount));
       console.log('  ✓ cover added to preview');
     }
   } catch (e) {
@@ -1646,4 +1730,4 @@ async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, p
   return main();  // main() returns previewPdfBytes in server mode
 }
 
-module.exports = { generatePdfFromFirestore, coverCaptionStyle, lookupFont, FONT_FILE_MAP };
+module.exports = { generatePdfFromFirestore, coverCaptionStyle, lookupFont, FONT_FILE_MAP, getSpineWidthMm, computeCoverDimensions };

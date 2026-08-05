@@ -46,9 +46,15 @@ window.TENDER_DATA = {
     svg: 'Cover/Artboard 1.svg',
     sections: {
       back:  { xMm: 0,   wMm: 200, bgColor: '#fbf8f6' },
-      spine: { xMm: 200, wMm: 9,   bgColor: '#fbf8f6' },
+      // Spine bgColor must match the SVG's own spine rect (#8a817a, dark taupe) — since the
+      // page-count spine change (S152) the engine's gradient paints the spine band instead of
+      // the SVG strip, so a mismatch here changes the visible spine colour.
+      spine: { xMm: 200, wMm: 9,   bgColor: '#8a817a' },
       front: { xMm: 209, wMm: 200, bgColor: '#fbf8f6' },
     },
+    // Spine width the cover artwork + coordinates were authored against (mm). The engine
+    // shifts front-panel items by (actual spine − this) when page count changes the spine.
+    referenceSpineMm: 9,
     mockupEdges: { front: '#fbf8f6', spine: '#fbf8f6', back: '#fbf8f6' },
     // Cover coords are WITH-BLEED (18mm) and box-CENTRE; the render subtracts COVER_BLEED_MM.
     // The cover photo is clipped to clipShapes.coverFrame (the elliptical opening).
@@ -71,7 +77,7 @@ window.TENDER_DATA = {
     captions: [
       { key: 'name',     xMm: 328, yMm: 175, wMm: 150, hMm: 20, font: 'Parisienne', sizePt: 48, align: 'center', color: '#7c746e', letterSpacing: 0.01, label: 'Front — title',    placeholder: 'Our wedding',   maxLength: 60 },
       { key: 'subtitle', xMm: 328, yMm: 195, wMm: 150, hMm: 12, font: 'Parisienne', sizePt: 18, align: 'center', color: '#7c746e', letterSpacing: 0.01, label: 'Front — subtitle',  placeholder: 'We found love', maxLength: 60 },
-      { key: 'spine',    xMm: 222, yMm: 118, wMm: 45,  hMm: 8,  font: 'Parisienne', sizePt: 18, align: 'center', color: '#fbf8f6', letterSpacing: 0.01, rotate: 270, label: 'Spine — label', placeholder: 'Our wedding', maxLength: 60 },
+      { key: 'spine',    xMm: 222.5, yMm: 118, wMm: 120, hMm: 8,  font: 'Parisienne', sizePt: 18, align: 'center', color: '#fbf8f6', letterSpacing: 0.01, rotate: 270, label: 'Spine — label', placeholder: 'Our wedding', maxLength: 60 },
     ]
   },
 

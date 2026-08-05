@@ -1623,7 +1623,28 @@
     const color     = ov.color !== undefined ? ov.color : (capDef.color || '#493955');
 
     const capW  = capDef.wMm * SCALE;
-    const capCX = (capDef.xMm - COVER_BLEED_MM) * SCALE;
+
+    // Page-count-dependent spine width and caption positioning (mirrors template-engine.html;
+    // the page count comes from the order document here, not a select control).
+    const spineWidthMm = getSpineWidthMm(getOrderPageCount());
+    const coverDef = getActiveTemplateData().cover;
+    const referenceSpineMm = coverDef.referenceSpineMm !== undefined ? coverDef.referenceSpineMm : 9;
+    const delta = spineWidthMm - referenceSpineMm;
+    const frontPanelBoundary = 18 + 200 + referenceSpineMm;
+
+    // Determine caption position. Spine captions sit at spine centre + offset (default 0).
+    const isSpineCaption = capDef.key && capDef.key.toLowerCase().startsWith('spine');
+    let capCX;
+    if (isSpineCaption) {
+      const offset = (capDef.xMm - COVER_BLEED_MM) - (200 + referenceSpineMm / 2);
+      const newSpineCenterWithoutBleed = 200 + spineWidthMm / 2;
+      capCX = (newSpineCenterWithoutBleed + offset) * SCALE;
+    } else {
+      const isFrontCaption = capDef.xMm >= frontPanelBoundary;
+      const capDeltaPx = isFrontCaption ? delta * SCALE : 0;
+      capCX = (capDef.xMm - COVER_BLEED_MM) * SCALE + capDeltaPx;
+    }
+
     const capCY = (capDef.yMm - COVER_BLEED_MM) * SCALE;
     const fontSize = (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
     const lineH    = (sizePt * lineSpacing * SCALE * 25.4 / 72).toFixed(1) + 'px';
@@ -1665,12 +1686,34 @@
     while (cap.scrollHeight > capH && s > minSizePt) { s -= 1; applySize(s); }
   }
 
+  // Spine width in mm, derived from page count.
+  // Printsmarter spec: 40pp → 10mm, 80pp → 14mm, unknown → 9mm (fallback).
+  function getSpineWidthMm(pageCount) {
+    if (pageCount === 40) return 10;
+    if (pageCount === 80) return 14;
+    return 9;  // fallback for unknown page count or existing orders
+  }
+
+  // Page count for the loaded order. Unlike the staff engine (which reads its
+  // #page-count-select control), customer-preview has no such element — the value
+  // comes from the order document. Firestore stores it as a string ('40'/'80').
+  function getOrderPageCount() {
+    return parseInt(window.orderData?.pageCount, 10) || 0;  // 0 → 9mm fallback
+  }
+
   // Port of the staff engine's renderCover (editable captions like the rest of the book).
   function renderCover() {
     const coverDef = getActiveTemplateData().cover;
     if (!coverDef) return null;
 
     const secs = coverDef.sections;
+
+    // Page-count-dependent spine width (Printsmarter spec: 40pp→10mm, 80pp→14mm).
+    // Falls back to 9mm for orders without a pageCount field. The value comes from
+    // the order document — customer-preview has no page-count select control.
+    const spineWidthMm = getSpineWidthMm(getOrderPageCount());
+    const referenceSpineMm = coverDef.referenceSpineMm !== undefined ? coverDef.referenceSpineMm : 9;
+    const delta = spineWidthMm - referenceSpineMm;  // shift for front-panel items (mm)
 
     const row = document.createElement('div');
     row.className = 'spread-row';
@@ -1690,10 +1733,14 @@
 
     const canvas = document.createElement('div');
     canvas.className = 'page-canvas cover-canvas';
+    // Dynamic cover width based on spine size. CSS defaults to 1227px (409mm at s=9);
+    // set inline with !important to override the CSS rule.
+    const canvasWidthPx = (secs.back.wMm + spineWidthMm + secs.front.wMm) * SCALE;
+    canvas.style.cssText = `width: ${canvasWidthPx}px !important; height: 600px !important;`;
 
     {
       const spineStartPx = secs.back.wMm * SCALE;
-      const frontStartPx = (secs.back.wMm + secs.spine.wMm) * SCALE;
+      const frontStartPx = (secs.back.wMm + spineWidthMm) * SCALE;  // use dynamic spine width
       const backColor  = secs.back.bgColor  || '#3d1f5c';
       const spineColor = secs.spine.bgColor || '#fdd16f';
       const frontColor = secs.front.bgColor || '#f8ead9';
@@ -1704,15 +1751,32 @@
       canvas.style.backgroundClip = 'padding-box';
     }
 
-    // Cover SVG z-order — mirrors template-engine.html. overlayAbovePhotos:false
-    // (Papercut) drops the SVG below the photo so the photo prints on top.
-    const svgImg = document.createElement('img');
-    svgImg.className = 'svg-overlay';
-    svgImg.src = SVG_BASE + coverDef.svg;
-    svgImg.alt = '';
-    if (coverDef.overlayAbovePhotos === false) svgImg.style.zIndex = '0';
-    svgImg.onerror = () => { console.warn('Cover SVG failed to load:', svgImg.src); };
-    canvas.appendChild(svgImg);
+    // Cover SVG — mirrors template-engine.html. The SVG is authored at the 9mm-spine
+    // sheet width (409mm) and must NEVER stretch: stretching moves the artwork while
+    // the photo slots (positioned independently in mm) stay put. Render it TWICE at
+    // natural width — back copy anchored left and clipped to the back panel, front
+    // copy clipped to the front panel and translated right by delta. The spine band
+    // between them is the canvas gradient (flat colour — lossless at any width).
+    // At delta=0 the two copies tile back into today's exact render.
+    // overlayAbovePhotos:false (Papercut) drops the SVG below the photo.
+    const svgNaturalPx    = (secs.back.wMm + referenceSpineMm + secs.front.wMm) * SCALE;
+    const backEndPx       = secs.back.wMm * SCALE;
+    const frontStartSvgPx = (secs.back.wMm + referenceSpineMm) * SCALE;
+    const deltaPx         = delta * SCALE;
+    const zIdx = coverDef.overlayAbovePhotos === false ? '0' : '';
+    const mkSvgCopy = (leftPx, clipLeftPx, clipRightPx) => {
+      const img = document.createElement('img');
+      img.className = 'svg-overlay';
+      img.src = SVG_BASE + coverDef.svg;
+      img.alt = '';
+      img.style.cssText = `width:${svgNaturalPx}px;left:${leftPx}px;` +
+        `clip-path:inset(0 ${svgNaturalPx - clipRightPx}px 0 ${clipLeftPx}px);`;
+      if (zIdx) img.style.zIndex = zIdx;
+      img.onerror = () => { console.warn('Cover SVG failed to load:', img.src); };
+      return img;
+    };
+    canvas.appendChild(mkSvgCopy(0, 0, backEndPx));                       // back panel
+    canvas.appendChild(mkSvgCopy(deltaPx, frontStartSvgPx, svgNaturalPx)); // front panel, shifted
 
     // Photo slot (center-based coords, with-bleed). Some templates (e.g. Wander)
     // have a free-text cover with no photo slot (cover.slots === []) — skip it then,
@@ -1720,10 +1784,14 @@
     // Most templates have one cover photo; Wander's is free-text (slots === []);
     // Joyride has four (top/left/right/bottom). Loop every slot — mirrors template-engine.html.
     const COVER_BLEED_MM = 18;  // cover CSV coords include 18mm bleed on each side
+    // Front panel starts at back+spine boundary (in with-bleed space).
+    const frontPanelBoundary = 18 + 200 + referenceSpineMm;  // 18 + back + reference spine
     coverDef.slots.forEach((slotDef, slotIdx) => {
       const slotW = slotDef.wMm * SCALE;
       const slotH = slotDef.hMm * SCALE;
-      const slotL = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2;
+      // Shift front-panel slots (xMm >= frontPanelBoundary) by delta in mm space, then convert to px.
+      const slotDeltaPx = slotDef.xMm >= frontPanelBoundary ? delta * SCALE : 0;
+      const slotL = (slotDef.xMm - COVER_BLEED_MM) * SCALE - slotW / 2 + slotDeltaPx;
       const slotT = (slotDef.yMm - COVER_BLEED_MM) * SCALE - slotH / 2;
 
       const slot = document.createElement('div');
@@ -1749,7 +1817,11 @@
         cp.setAttribute('id', clipId);
         cp.setAttribute('clipPathUnits', 'userSpaceOnUse');
         const pth = document.createElementNS(ns, 'path');
-        pth.setAttribute('transform', `translate(${(-slotL).toFixed(2)},${(-slotT).toFixed(2)}) scale(${f.toFixed(5)})`);
+        // clipDef.d is authored against the ORIGINAL sheet (reference spine). When the page
+        // count widens the spine the front SVG copy shifts right by slotDeltaPx, so the
+        // opening in the artwork moves — but the path does not. Add the same shift, or the
+        // silhouette stays where the artwork used to be (mirrors template-engine.html).
+        pth.setAttribute('transform', `translate(${(slotDeltaPx - slotL).toFixed(2)},${(-slotT).toFixed(2)}) scale(${f.toFixed(5)})`);
         pth.setAttribute('d', clipDef.d);
         cp.appendChild(pth); defs.appendChild(cp); svg.appendChild(defs);
         slot.appendChild(svg);

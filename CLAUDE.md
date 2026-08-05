@@ -104,8 +104,11 @@ bound or measure it before committing.
 
 ## Local dev
 ```bash
-npx serve . -p 8080   # from project root
+npx http-server . -p 8080 -c-1   # from project root
 ```
+Use `http-server`, **not** `npx serve` — `serve` 404s and strips the `?token=` query locally.
+Always use the `.html` form locally; clean URLs are a Cloudflare feature and 404 on both local servers.
+
 Pages: `http://localhost:8080/pages/home.html`  
 Engine: `http://localhost:8080/pages/staff/template-engine.html`
 
