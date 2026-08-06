@@ -43,14 +43,15 @@ rather than the superseded one.
 - [ ] `pages` is sent per order (40 or 80); one `product_id` covers both page counts and all five templates.
 - [ ] `file_cover` and `file_content` are URLs to the two PDFs `scripts/export-pdf.js --mode print` already emits.
 - [ ] Status responses are **German free text**, not enum codes. Real values are collected before any string is matched against.
-- [ ] The shipping postback endpoint authenticates its caller, or is otherwise not forgeable by anyone who learns the URL.
+- [ ] The shipping postback endpoint is not forgeable by anyone who learns the URL. Preferred: a shared secret or signature from Printsmarter (asked, answer pending). Fallback if they offer none: a long unguessable path segment in the URL we register, **plus** a plausibility check before acting — the order exists, has been submitted, and is not already shipped. No dispatch email fires on a request that fails either.
 
 ## Constraints
 
 - **Format:** Two Cloud Functions in `functions/index.js` (submit, postback receiver) plus a small `functions/printsmarter.js` client. Prefer ~100 lines over ~1000.
-- **Blocked on Printsmarter:** our `product_id` does not exist yet. `printsmartergmbh_hardcover` is their example — a 126-page book of unknown trim. **Nothing can be submitted until they issue ours.** Treat it as a config value and build around the gap.
+- **Blocked on Printsmarter, but only at the last step:** our `product_id` does not exist yet — their 2026-08-05 email confirms product setup is on their side and coming, alongside a contract, a spine definition table and delivery options. **Build everything against a `PRINTSMARTER_PRODUCT_ID` config value that fails loudly when unset**; unit-test the payload against their documented examples; make no live call until the ID arrives. Going live should then be filling in config and flipping the kill-switch, not writing code.
 - **No dry-run exists.** Site Flow had a free `validate` endpoint; this API documents none. Assume the first real call prints and invoices a real book unless they confirm a sandbox.
-- **Trigger point undecided:** whether submission fires automatically on staff approval or from a button on the dashboard is an open decision, not an assumption to make quietly. See Context.
+- **Trigger is a button, not automatic (decided S155, owner).** A *Send to print* button on the staff dashboard, with an are-you-sure confirm showing order number, page count and shipping address. Automatic submission on approval may come later, once the pipeline is boringly reliable — the guards below stay either way.
+- **Two guards under the button (decided S155):** a `PRINTSMARTER_LIVE=false` kill-switch in config — the submit function refuses unless explicitly enabled — and a once-only check: an order that already has a `printsmarterOrderId` in Firestore cannot be submitted again.
 - **Out of scope:** GDPR erasure on their side (a contract question here, not an API call), shipping price and carrier selection at checkout, and anything that changes cover geometry.
 
 ## Success Criteria
@@ -81,10 +82,14 @@ The deliverable is complete when:
 - Cover geometry is settled: spine 10mm at 40pp, 14mm at 80pp, verified in printed PDFs in S153.
 - The token is a bearer credential with no signing and no documented expiry. It was decided **not** to rotate it now — it already exists in plaintext email, so rotating only the local copy is theatre. The cheap moment to rotate, if ever, is before go-live while nothing depends on it.
 
-**Open decisions the implementer must not resolve silently:**
-- **Automatic on approval, or a staff button?** Automatic scales; a button means a human sees the book once more before money is spent on a physical object that cannot be un-printed. Given there is no dry-run, this is the owner's call.
-- **What goes in `price`** — our retail price or what we pay them — and whether it appears on a delivery note the customer sees. Unanswered since the S123 brief (Q13).
-- **What goes in `return_address`.** Their example is an Elanders address. A failed delivery must not arrive at a flat in Vienna.
+**Decided in S155 (do not re-open):**
+- **Button first, automatic later** — see Constraints.
+- **Testing uses test-mode Stripe** through the full customer pipeline (order → upload → approve → pay → submit → tracking email). One real-Stripe order on the owner's own card ~1 week before the F&F launch to prove live keys and webhooks. Pure print samples (calibration books) may bypass the customer pipeline entirely via direct submission — Printsmarter never checks payment; "paid" is our internal gate only.
+- **`price` defaults to what the customer paid** (€70/€100) — the honest number if it ever appears on paperwork. One config line to change if Printsmarter's pending answer says otherwise.
+
+**Still open, the implementer must not resolve silently:**
+- **What goes in `return_address`.** Their example is an Elanders address. A failed delivery must not arrive at a flat in Vienna. Contract-round question.
+- **Five questions are with Printsmarter (emailed 2026-08-06), answers pending:** sandbox availability; duplicate `order_id_client` behaviour; postback authentication; file size limit and URL lifetime; confirmation of our file spec (cover = flat back–spine–front sheet, 18mm bleed; content = single 200×200mm pages, 3mm bleed, no crop marks, RGB). Check the answers before hard-coding any assumption these cover.
 
 **Known risks:**
 - **No sandbox.** Testing costs a real book unless they provide one. This may be acceptable — it doubles as the sample round — but it should be a decision, not a discovery.
