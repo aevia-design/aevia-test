@@ -1536,7 +1536,7 @@ exports.printsmarterPostback = functions
               <p style="margin:0 0 22px">Your book is printed, bound, and on its way to you.</p>
               ${trackingBlock}
               <p style="margin:22px 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a8a8a">Delivery</p>
-              <p style="margin:0;font-size:15px;color:#6a6a6a;line-height:1.7">${trackingNumber ? `Tracking number: ${trackingNumber}. ` : ''}Most deliveries arrive within a few working days.</p>
+              <p style="margin:0;font-size:15px;color:#6a6a6a;line-height:1.7">${trackingNumber ? `Tracking number: ${trackingNumber}. ` : ''}Most deliveries arrive within 7 days.</p>
             `, { support: true }),
           });
         } catch (mailErr) {
