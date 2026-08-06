@@ -15,9 +15,18 @@ window.WANDER_DATA = {
 
   cover: {
     svg: 'Cover/Cover.svg',
+    referenceSpineMm: 9,  // spine width this cover's COORDINATES were authored at
+    // Audited S154: the SVG's own panel bands are back −18.04→201.14, spine 201.14→208.21,
+    // front 208.21→427.04 — i.e. the drawn spine band is 7.07mm and sits 1.14mm right of
+    // the 200/209 model every other template follows. The captions still use the 9mm
+    // coordinate scheme (222.5 = spine centre), so 9 is right here; the artwork band is
+    // the thing that is off. Consequence of the panel split: the visible colour boundaries
+    // move by ~1.1mm at the back hinge and ~0.8mm at the front. At a cased-hardcover fold
+    // that is not obviously wrong, but it is a real change from Xenia's artwork — flag to
+    // her rather than assume. Pre-existing, not introduced by the spine work.
     sections: {
       back:  { xMm: 0,   wMm: 200, bgColor: '#6F454C' },
-      spine: { xMm: 200, wMm: 9,   bgColor: '#86A37B' },
+      spine: { xMm: 200, wMm: 9,   bgColor: '#86A37B' },  // audited S154 — matches the SVG spine rect (rgb(134,163,123))
       front: { xMm: 209, wMm: 200, bgColor: '#f2ede3' },
     },
     // Visible per-surface cover colours (sampled from the real cover) used by the mockup

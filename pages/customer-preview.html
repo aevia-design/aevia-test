@@ -1613,7 +1613,11 @@
     // hardcoded 400/non-italic — mirrors template-engine.html (Newborn subtitle).
     const weight   = ov.weight !== undefined ? ov.weight : (capDef.weight !== undefined ? capDef.weight : 400);
     const italic   = ov.italic !== undefined ? ov.italic : (capDef.italic || false);
-    const sizePt   = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
+    // Spine captions get +2pt at 80pp (wider spine). The bump applies to the CSV default
+    // ONLY — an explicit staff override wins outright. Mirrors template-engine.html.
+    const isSpineCaption = capDef.key && capDef.key.toLowerCase().startsWith('spine');
+    const sizePt   = ov.sizePt  !== undefined ? ov.sizePt
+                   : capDef.sizePt + (isSpineCaption ? getSpineFontBumpPt(getOrderPageCount()) : 0);
     const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
     const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
     const halign    = ov.align !== undefined ? ov.align : (capDef.halign || capDef.align || 'center');
@@ -1633,7 +1637,6 @@
     const frontPanelBoundary = 18 + 200 + referenceSpineMm;
 
     // Determine caption position. Spine captions sit at spine centre + offset (default 0).
-    const isSpineCaption = capDef.key && capDef.key.toLowerCase().startsWith('spine');
     let capCX;
     if (isSpineCaption) {
       const offset = (capDef.xMm - COVER_BLEED_MM) - (200 + referenceSpineMm / 2);
@@ -1692,6 +1695,13 @@
     if (pageCount === 40) return 10;
     if (pageCount === 80) return 14;
     return 9;  // fallback for unknown page count or existing orders
+  }
+
+  // Spine caption size bump in points, derived from page count. An 80pp spine is 14mm
+  // wide against 10mm at 40pp, so a font sized for the narrow spine looks undersized on
+  // the wide one. Owner's call (S154): +2pt at 80pp, programmatic, not a CSV column.
+  function getSpineFontBumpPt(pageCount) {
+    return pageCount === 80 ? 2 : 0;
   }
 
   // Page count for the loaded order. Unlike the staff engine (which reads its

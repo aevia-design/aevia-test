@@ -1795,6 +1795,13 @@
     return 9;  // fallback for unknown page count or existing orders
   }
 
+  // Spine caption size bump in points, derived from page count. An 80pp spine is 14mm
+  // wide against 10mm at 40pp, so a font sized for the narrow spine looks undersized on
+  // the wide one. Owner's call (S154): +2pt at 80pp, programmatic, not a CSV column.
+  function getSpineFontBumpPt(pageCount) {
+    return pageCount === 80 ? 2 : 0;
+  }
+
   function renderCover() {
     const coverDef = getActiveTemplateData().cover;
     if (!coverDef) return null;
@@ -2002,7 +2009,11 @@
       // italic 500 by default. User overrides (ov.*) still win.
       const weight   = ov.weight !== undefined ? ov.weight : (capDef.weight !== undefined ? capDef.weight : 400);
       const italic   = ov.italic !== undefined ? ov.italic : (capDef.italic || false);
-      const sizePt   = ov.sizePt  !== undefined ? ov.sizePt  : capDef.sizePt;
+      // Spine captions get +2pt at 80pp (wider spine). The bump applies to the CSV
+      // default ONLY — an explicit staff override wins outright, so setting 16 renders
+      // 16 at both page counts rather than silently becoming 18.
+      const sizePt   = ov.sizePt  !== undefined ? ov.sizePt
+                     : capDef.sizePt + (isSpineCaption ? getSpineFontBumpPt(pageCount) : 0);
       const lineSpacing  = ov.lineSpacing  !== undefined ? ov.lineSpacing  : 1.1;
       const letterSpacing = ov.letterSpacing !== undefined ? ov.letterSpacing : 0;
       const halign    = ov.align !== undefined ? ov.align : (capDef.halign || capDef.align || 'center');

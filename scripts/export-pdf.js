@@ -991,6 +991,14 @@ function getSpineWidthMm(pageCount) {
   return 9;  // fallback for unknown page count or existing orders
 }
 
+// Spine caption size bump in points, derived from page count. An 80pp spine is 14mm wide
+// against 10mm at 40pp, so a font sized for the narrow spine looks undersized on the wide
+// one. Owner's call (S154): +2pt at 80pp, programmatic, not a CSV column.
+// Exported for testability. Mirrored in template-engine.html and customer-preview.html.
+function getSpineFontBumpPt(pageCount) {
+  return pageCount === 80 ? 2 : 0;
+}
+
 // Compute cover dimensions for a given spine width.
 // Returns { spineWidthMm, contentWidthMm, fullWidthMm, svgBleedUnits }.
 // Exported for testability.
@@ -1220,7 +1228,13 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
     // Auto-shrink (Joyride): step the font down 1pt at a time (floor 50%) until the
     // word-wrapped text fits the fixed hMm box — mirrors the engine's fitCoverCaption.
     // Non-autoShrink captions keep the original \n-split, no-wrap behaviour untouched.
-    let sizePt = ov.sizePt || capDef.sizePt || 20;
+    // Spine captions get +2pt at 80pp (wider spine). The bump applies to the data-file
+    // default ONLY — an explicit staff override wins outright. Mirrors both engines.
+    // Detected by key prefix, the same semantic test the engines use; note this file's
+    // positioning branch below keys off capDef.rotate instead. The two sets coincide
+    // today (every spine caption is rotated, no other cover caption is).
+    const isSpineCaption = capDef.key && capDef.key.toLowerCase().startsWith('spine');
+    let sizePt = ov.sizePt || (capDef.sizePt || 20) + (isSpineCaption ? getSpineFontBumpPt(pageCount) : 0);
     let lines;
     if (capDef.autoShrink && capDef.hMm) {
       const capHPt = capDef.hMm * MM_TO_PT;
@@ -1730,4 +1744,4 @@ async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, p
   return main();  // main() returns previewPdfBytes in server mode
 }
 
-module.exports = { generatePdfFromFirestore, coverCaptionStyle, lookupFont, FONT_FILE_MAP, getSpineWidthMm, computeCoverDimensions };
+module.exports = { generatePdfFromFirestore, coverCaptionStyle, lookupFont, FONT_FILE_MAP, getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions };

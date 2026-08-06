@@ -63,14 +63,35 @@ async function measure(label, pageCountValue) {
     const slot  = canvas.querySelector('.photo-slot');
     const caps  = [...canvas.querySelectorAll('.cover-caption, [class*=caption]')];
     const spineCap = caps.find(c => /rotate\(270/.test(c.style.transform || c.style.cssText));
+    // offsetLeft/offsetWidth are PRE-transform, which is what the rotated spine caption
+    // needs — getBoundingClientRect would return its rotated bounding box instead.
     const rel = el => el ? { left: el.offsetLeft, width: el.offsetWidth } : null;
+    // The slot, however, is unrotated and can sit on a half pixel (Newborn's centre is at
+    // a half millimetre → 724.5). offsetLeft rounds that away, which made the clip
+    // registration check disagree with a correct render by 0.5px (S154). Measure exactly.
+    const relExact = el => {
+      if (!el) return null;
+      // clientLeft = the canvas's left border width. getBoundingClientRect measures from
+      // the BORDER box while offsetLeft measures from the padding box, and the cover
+      // canvas has a 1px frame border — without this the whole measurement sits 1px right.
+      const c = canvas.getBoundingClientRect(), r = el.getBoundingClientRect();
+      const left = r.left - c.left - canvas.clientLeft;
+      return { left: Number(left.toFixed(2)), width: Number(r.width.toFixed(2)) };
+    };
     // The clipShape path transform — this is what proves the silhouette tracks the artwork.
     const clipPath = canvas.querySelector('.photo-slot clipPath path');
     const clipTx = clipPath ? clipPath.getAttribute('transform') : null;
     return {
       canvasW: canvas.offsetWidth,
       svgCopies: svgs.map(s => ({ left: s.offsetLeft, width: s.offsetWidth, clip: s.style.clipPath || '(none)' })),
-      slot: rel(slot),
+      slot: relExact(slot),
+      // Baseline slot left, derived from the template's own data instead of a hardcoded
+      // per-template table: (xMm − bleed)*SCALE − wMm*SCALE/2. The table only knew
+      // Scribble and Tender, so every other template reported a false FAIL (S154).
+      slotBase: (() => {
+        const sd = window.getActiveTemplateData?.()?.cover?.slots?.[0];
+        return sd ? (sd.xMm - 18) * 3 - sd.wMm * 3 / 2 : null;
+      })(),
       spineCap: rel(spineCap),
       clipTx,
     };
@@ -104,8 +125,10 @@ for (const [i, s, d] of [[1, 10, 3], [2, 14, 15]]) {
     pass &= check(`${r.label} svg[${j}] natural width`, c.width, 1227);
   if (r.svgCopies[1]) pass &= check(`${r.label} front svg left`, r.svgCopies[1].left, d);
   if (r.svgCopies[0]) pass &= check(`${r.label} back svg left`, r.svgCopies[0].left, 0);
-  // Slot baseline left = (xMm−18)*3 − wMm*3/2. Scribble 327/140 → 717; Tender 327/150 → 702.
-  const slotBase = TEMPLATE === 'tender' ? 702 : 717;
+  // Slot baseline left = (xMm−18)*3 − wMm*3/2, read from the template data in the page.
+  // Scribble 327/140 → 717; Tender 327/150 → 702; Papercut 328/140 → 720;
+  // Newborn 327/135 → 724.5. Wander has no cover photo slot, so these checks are skipped.
+  const slotBase = r.slotBase;
   if (r.slot) pass &= check(`${r.label} slot left`, r.slot.left, slotBase + d);
   // Registration: the clip path's x-translate must equal (slotDeltaPx − slotL), i.e. it must
   // track the slot AND the shifted artwork. Compare against the baseline transform shifted

@@ -30,9 +30,10 @@ window.NEWBORN_DATA = {
 
   cover: {
     svg: 'Cover/Artboard 1.svg',
+    referenceSpineMm: 9,  // spine width this cover was authored at
     sections: {
       back:  { xMm: 0,   wMm: 200, bgColor: '#142a4f' },
-      spine: { xMm: 200, wMm: 9,   bgColor: '#c0d5ee' },
+      spine: { xMm: 200, wMm: 9,   bgColor: '#c0d5ee' },  // audited S154 — matches the SVG spine rect exactly
       front: { xMm: 209, wMm: 200, bgColor: '#142a4f' },
     },
     // Visible per-surface cover colours used by the mockup composers (scripts/compose-*.mjs)

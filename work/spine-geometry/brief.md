@@ -109,7 +109,23 @@ Scribble proves the geometry: it is the simplest cover, with a plain rectangular
 6. Total sheet width becomes `400 + s` content / `436 + s` with bleed. **Sweep for hardcoded constants** — known: `scripts/export-pdf.js:978` (`COVER_CONTENT_W = 200 + 9 + 200`) and `:980` (`COVER_FULL_W_MM` = 445). Search for `409`, `445`, and literal `9` in cover context across all four surfaces; the two found are unlikely to be the only ones.
 7. `clipShape` x-translate corrected by `delta * SCALE` for front-panel slots (see Geometry).
 
-**Phase 2 — propagate** to Papercut, Newborn and Wander after the owner signs off on Scribble and Tender.
+**Phase 2 — propagate** to Papercut, Newborn and Wander. **Unblocked: the owner signed off on Phase 1 (S154)** — Tender rendered correctly at 40pp and 80pp, and Scribble at 80pp, the hardest case (two spine captions). Phase 2 carries three pieces of work:
+
+8. **Declare `referenceSpineMm: 9`** in the Papercut, Newborn and Wander cover CSVs and their `*-data.js`. Same value as Phase 1 — all six covers were authored against a 9mm spine.
+9. **Convert spine caption X to an offset** in those three. Newborn and Wander are at `222.5` (with-bleed) = true centre → offset `0`. **Papercut's `spineName` and `spineYear` are both at `222`**, the half-millimetre leftover noted in Context; normalise to `222.5` → offset `0` rather than preserving a −0.5mm nudge nobody chose.
+10. **Spine-colour audit — required, not optional.** Since the SVG split, `sections.spine.bgColor` is the *only* source of the spine colour; the SVG's own spine rect is no longer what the viewer sees across the widened gap. **Tender's was wrong** (declared cream, artwork taupe) and was caught only because it was rendered. For each of Papercut (`#8bb8d8`), Newborn (`#c0d5ee`) and Wander (`#86A37B`), compare the declared value against the actual fill of the `Spine` group's background rect in the cover SVG and correct the data to match the artwork. Also confirm per template that the spine carries nothing but captions — no rule, hairline or logo drawn there — since a flat band is what makes widening lossless.
+
+**Watch out (Wander):** its front caption is `align: right` and its spine caption `align: left`. For left/right-aligned captions the text is pinned to a box edge, not the centre, so any change to `wMm` **moves the text**. Wander is the only template affected.
+
+### Spine caption font size scales with page count (S154, owner)
+
+A 14mm spine at 80pp is visibly wider than a 10mm spine at 40pp, and a font sized for the narrow spine looks undersized on the wide one. **Spine captions get +2pt at 80pp, for all six templates, derived programmatically — not a CSV column.**
+
+- Sibling to `getSpineWidthMm`: `80 → +2`, everything else → `+0`. Two entries, not a framework, and it lives next to the width function so the two page-count facts stay together.
+- **Applies to the data-file default only.** If a staff member has set an explicit size override in the engine (`window.coverCaptionStyles[key].sizePt`), that value wins outright — the bump is not stacked on top, or "I set it to 16" would silently render 18.
+- Applies to spine captions only, detected the same way the position code already does it (`capDef.key` starts with `spine`). Front and back captions are unaffected: those panels do not change size.
+- Must land on all three rendering surfaces (`template-engine.html`, `customer-preview.html`, `export-pdf.js`) or screen and print disagree.
+- **`autoShrink` was considered and declined (S154, owner).** 120mm is a wide enough box; if a customer enters an unusually long title, staff reduce the size by hand in the engine. So `hMm` stays inert on cover captions outside Joyride, and the +2pt bump has no box-fitting logic to interact with.
 
 **Surfaces to carry the change.** All four already read `pageCount`, so no new data has to flow:
 
@@ -122,7 +138,8 @@ Scribble proves the geometry: it is the simplest cover, with a plain rectangular
 
 ## Constraints
 
-- **Phase 1 is Scribble and Tender only.** Do not touch Papercut, Newborn or Wander until the owner has tested.
+- ~~**Phase 1 is Scribble and Tender only.**~~ **Lifted (S154)** — the owner has tested and signed off. Phase 2 may now touch Papercut, Newborn and Wander. Joyride remains out of scope: its cover CSV is structurally different (see Context) and it is the only template with a sync script.
+- **Do not re-derive the Phase 1 pattern.** Scribble and Tender are the reference implementation and are verified in print. Phase 2 propagates that pattern; it does not redesign it. If a template appears to need a different approach, stop and report rather than inventing one.
 - **Inside pages are out of scope entirely.** Spine width does not enter their geometry. Do not modify `*_sizing_full.csv`, spread data, or any inside-page rendering.
 - **Do not touch** the upload path, `order.html`, or the uncommitted stall-detection work — a parallel session owns those files.
 - **Do not run a local PDF render** — that bills GCS egress to the owner. He generates via the dashboard, in-region.
@@ -141,6 +158,13 @@ Complete when:
 5. **Spine captions sit on the true spine centre at both sizes** without per-size tuning.
 6. **No regression at any other surface** — customer-preview matches the staff engine, the print PDF cover width is `400 + s`, and **inside pages are byte-identical to before**.
 7. All requirements from standards are met, with verification output included in the report.
+
+**Phase 2 adds:**
+
+8. **Papercut, Newborn and Wander each render a 10mm spine at 40pp and a 14mm spine at 80pp**, front artwork shifted 1mm / 5mm right, verified from live DOM geometry in both engines.
+9. **Papercut's and Newborn's shaped `coverFrame` openings register with their photos at both sizes** — the same crescent test that proved Tender.
+10. **Each of the three templates' `sections.spine.bgColor` matches its SVG spine artwork**, stated as a before/after per template (unchanged is a valid result, but must be asserted, not assumed).
+11. **Spine captions render 2pt larger at 80pp than at 40pp on all six templates**, on all three surfaces, and an explicit staff size override is *not* bumped.
 
 ## References
 

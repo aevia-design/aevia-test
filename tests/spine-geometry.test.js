@@ -6,9 +6,53 @@
  * Cover geometry is derived from spine width; tests verify the formulas match the brief.
  */
 
-const { getSpineWidthMm, computeCoverDimensions } = require('../scripts/export-pdf.js');
+const fs = require('fs');
+const path = require('path');
+const { getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions } = require('../scripts/export-pdf.js');
 
 describe('Spine geometry', () => {
+  describe('getSpineFontBumpPt', () => {
+    test('80 pages → +2pt (the 14mm spine needs a larger face)', () => {
+      expect(getSpineFontBumpPt(80)).toBe(2);
+    });
+
+    test('40 pages → no bump', () => {
+      expect(getSpineFontBumpPt(40)).toBe(0);
+    });
+
+    test('unknown page count → no bump', () => {
+      expect(getSpineFontBumpPt(60)).toBe(0);
+      expect(getSpineFontBumpPt(undefined)).toBe(0);
+      expect(getSpineFontBumpPt(null)).toBe(0);
+      expect(getSpineFontBumpPt('80')).toBe(0);  // strict: callers must parseInt
+    });
+  });
+
+  // The bump must exist on all three rendering surfaces or screen and print disagree
+  // silently — and only the print is real. These are source-level checks because the
+  // engines are HTML pages with no module boundary to import.
+  describe('spine font bump parity across surfaces', () => {
+    const surfaces = [
+      'pages/staff/template-engine.html',
+      'pages/customer-preview.html',
+      'scripts/export-pdf.js',
+    ];
+
+    test.each(surfaces)('%s defines getSpineFontBumpPt with the same 80→2 rule', (rel) => {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      expect(src).toMatch(/function getSpineFontBumpPt\(pageCount\)\s*\{\s*return pageCount === 80 \? 2 : 0;\s*\}/);
+    });
+
+    test.each(surfaces)('%s applies the bump to the default only, never to an override', (rel) => {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      // The override branch must not contain the bump call: an explicit staff size wins
+      // outright, or setting 16 would silently render 18 at 80pp.
+      const call = /ov\.sizePt[^\n]*\n?[^\n]*getSpineFontBumpPt/;
+      expect(src).toMatch(call);
+      expect(src).not.toMatch(/ov\.sizePt \+ getSpineFontBumpPt/);
+    });
+  });
+
   describe('getSpineWidthMm', () => {
     test('40 pages → 10mm spine', () => {
       expect(getSpineWidthMm(40)).toBe(10);

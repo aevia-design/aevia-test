@@ -7,19 +7,34 @@ window.PAPERCUT_DATA = {
   cover: {
     svg: 'Cover/Artboard 1.svg',
     overlayAbovePhotos: false,
+    referenceSpineMm: 9,  // spine width this cover was authored at
     sections: {
       back:  { xMm: 0,   wMm: 200, bgColor: '#8bb8d8' },
-      spine: { xMm: 200, wMm: 9,   bgColor: '#8bb8d8' },
+      // Spine is GREEN, not the cover blue. Corrected S154 from #8bb8d8 after reading the
+      // SVG: the spine rect (x=566.929 w=25.512 → exactly 200–209mm) is fill="#79ba9b".
+      // Since the panel split, this value is the ONLY source of the printed spine colour,
+      // so the old blue would have printed a mismatched band. Same class of error as
+      // Tender's (declared cream, artwork taupe).
+      spine: { xMm: 200, wMm: 9,   bgColor: '#79ba9b' },
       front: { xMm: 209, wMm: 200, bgColor: '#8bb8d8' },
     },
     // Exposed board-edge colours for the offline mockup composites (compose-all.mjs).
-    // Kept SEPARATE from sections[].bgColor (which drives the real cover render). The
-    // Papercut cover is a uniform blue, so all three edges share it; resample per-surface
-    // if the tinted board edges read off.
+    // Kept SEPARATE from sections[].bgColor (which drives the real cover render).
+    // NOTE: spine here still says blue and is wrong for the same reason as above, but
+    // mockups are pre-baked images and the composers are out of scope for this brief —
+    // correct it when the mockups are next re-composited.
     mockupEdges: { front: '#8bb8d8', spine: '#8bb8d8', back: '#8bb8d8' },
     // Cover coords are WITH-BLEED (18mm) and box-CENTRE; the render subtracts COVER_BLEED_MM.
+    // Slot enlarged S154 to cover the clipShape silhouette. The CSV's 140×100 box at
+    // 328/118 was SMALLER than the artwork's own photo opening (clipPath #ac): the
+    // silhouette reached 2.97mm above and 1.39mm below it. The <g data-name="Image">
+    // group in the SVG holds a violet #914c77 placeholder rect clipped to that same
+    // silhouette, so those uncovered bands showed as a violet stripe along the top of
+    // every Papercut cover photo. Box is now the silhouette's bbox, rounded outward.
+    // Consequence: the photo box is no longer 7:5 (139.6×104.4), so the crop differs
+    // slightly — the silhouette is the authority for what is actually visible.
     slots: [
-      { xMm: 328, yMm: 118, wMm: 140, hMm: 100, pool: 'cover', orientation: 'landscape', clipShape: 'coverFrame' }
+      { xMm: 327.65, yMm: 117.21, wMm: 139.6, hMm: 104.4, pool: 'cover', orientation: 'landscape', clipShape: 'coverFrame' }
     ],
     // Custom photo silhouette — polygon from <clipPath id="ac"> in Cover/Artboard 1.svg.
     // ViewBox 1159.37×566.929 over 409mm trim cover → 2.835 px/mm, origin at trim top-left.
@@ -31,10 +46,19 @@ window.PAPERCUT_DATA = {
       }
     },
     captions: [
-      { key: 'year',      xMm: 301, yMm: 180, wMm: 120, font: 'Source Sans 3', sizePt: 26, weight: 'bold', align: 'center',  color: '#4a4b40', label: 'Front — year',       placeholder: '2026',          maxLength: 10 },
-      { key: 'name',      xMm: 390, yMm: 180, wMm: 60,  font: 'Source Sans 3', sizePt: 28, weight: 'regular', align: 'center', color: '#4a4b40', label: 'Front — album name', placeholder: 'Our sweet Ann', maxLength: 60 },
-      { key: 'spineName', xMm: 222, yMm: 158, wMm: 98,  font: 'Source Sans 3', sizePt: 16, weight: 'regular', color: '#4a4b40', rotate: 270, label: 'Spine — name', placeholder: 'Ann',  maxLength: 20 },
-      { key: 'spineYear', xMm: 222, yMm: 78,  wMm: 38,  font: 'Source Sans 3', sizePt: 16, weight: 'regular', color: '#4a4b40', rotate: 270, label: 'Spine — year', placeholder: '2026', maxLength: 10 },
+      // Front captions corrected S154 against Xenia's artboard: the ALBUM NAME sits left
+      // in the wide 120mm box in Source Sans Bold 26pt, and the YEAR sits right in the
+      // narrow 60mm box in Regular 28pt. The CSV had the box geometry and fonts right but
+      // attached the label/placeholder/maxlength to the wrong one, so the engine rendered
+      // the year on the left and the name on the right. Swapped the GEOMETRY between the
+      // two rows rather than the keys, so any caption text already saved against
+      // 'name'/'year' stays with the right field.
+      { key: 'name',      xMm: 301, yMm: 180, wMm: 120, font: 'Source Sans 3', sizePt: 26, weight: 'bold', align: 'center',  color: '#4a4b40', label: 'Front — album name', placeholder: 'Our sweet Ann', maxLength: 60 },
+      { key: 'year',      xMm: 390, yMm: 180, wMm: 60,  font: 'Source Sans 3', sizePt: 28, weight: 'regular', align: 'center', color: '#4a4b40', label: 'Front — year',       placeholder: '2026',          maxLength: 10 },
+      // Spine order corrected S154: the artboard puts the NAME at the top of the spine
+      // and the YEAR below it; the y values were the wrong way round. Swapped yMm only.
+      { key: 'spineName', xMm: 222.5, yMm: 78,  wMm: 98,  font: 'Source Sans 3', sizePt: 16, weight: 'regular', color: '#4a4b40', rotate: 270, label: 'Spine — name', placeholder: 'Ann',  maxLength: 20 },
+      { key: 'spineYear', xMm: 222.5, yMm: 158, wMm: 38,  font: 'Source Sans 3', sizePt: 16, weight: 'regular', color: '#4a4b40', rotate: 270, label: 'Spine — year', placeholder: '2026', maxLength: 10 },
     ]
   },
 
