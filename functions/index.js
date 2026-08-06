@@ -1518,8 +1518,31 @@ exports.printsmarterPostback = functions
         })
       });
 
-      // TODO (step 5): send the customer their dispatch email with trackingUrl
-      // (designed S105; copy needs the owner + a /stop-slop pass before shipping).
+      // Dispatch email (designed S105, built S155). A failed send must not 500
+      // the postback — Printsmarter would retry and we'd re-process — so email
+      // errors are logged, never thrown.
+      if (order.email) {
+        try {
+          const transporter = createTransporter();
+          const trackingBlock = trackingUrl
+            ? emailButton(trackingUrl, 'Track your delivery')
+            : '';
+          await transporter.sendMail({
+            ...FROM.customer,
+            to: order.email,
+            subject: 'Your Aevia book has shipped',
+            html: renderEmail(`
+              <p style="margin:0 0 18px">Hi ${order.customerName || ''},</p>
+              <p style="margin:0 0 22px">Your book is printed, bound, and on its way to you.</p>
+              ${trackingBlock}
+              <p style="margin:22px 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a8a8a">Delivery</p>
+              <p style="margin:0;font-size:15px;color:#6a6a6a;line-height:1.7">${trackingNumber ? `Tracking number: ${trackingNumber}. ` : ''}Most deliveries arrive within a few working days.</p>
+            `, { support: true }),
+          });
+        } catch (mailErr) {
+          console.error('printsmarterPostback: dispatch email failed for', orderNumber, mailErr);
+        }
+      }
 
       return res.status(200).json({ received: true });
     } catch (err) {
