@@ -4,7 +4,7 @@ const http    = require('http');
 const path    = require('path');
 const { Firestore }  = require('@google-cloud/firestore');
 const { Storage }    = require('@google-cloud/storage');
-const { generatePdfFromFirestore } = require('../../scripts/export-pdf.js');
+const { generatePdfFromFirestore, checkPageCountAgainstSequence } = require('../../scripts/export-pdf.js');
 
 const PORT        = process.env.PORT || 8080;
 const BUCKET_NAME = process.env.GCS_BUCKET || 'aevia-uploads-eu';
@@ -199,6 +199,22 @@ async function handleGenerate(body) {
   const total = state.sequence.length;
   console.log(`  Template: ${state.template}, ${total} spreads, ${state.pageCount} pages`);
 
+  // The cover spine is sized from pageCount while the interior comes from the sequence;
+  // if they disagree the book prints with a spine that does not match its own thickness.
+  // Note buildStateFromOrder defaults a missing pageCount to 40, so an 80pp order with
+  // no field would otherwise get a 10mm spine silently — this catches that too.
+  const msg = checkPageCountAgainstSequence(state.pageCount, total);
+  if (msg) {
+    if (pdfMode === 'print') {
+      // Print reaches the print house and the error is unrecoverable once bound. Stop.
+      throw new Error(msg);
+    }
+    // Preview is for eyeballing, so let it render — but make the mismatch impossible to
+    // miss rather than leaving it in container logs the owner never reads.
+    console.warn(`  ⚠ ${msg}`);
+    state.pageCountWarning = msg;
+  }
+
   // Mark rendering immediately — the generatePdf function polls for this to confirm
   // the render actually started (covering Cloud Run cold-starts) before it returns.
   await writeStatus(orderNumber, { status: 'rendering', mode: pdfMode, done: 0, total, pageCount: state.pageCount });
@@ -258,6 +274,8 @@ async function handleGenerate(body) {
   await writeStatus(orderNumber, {
     status: 'done', mode: 'preview', done: total, total, pageCount: state.pageCount,
     sizeBytes: pdfBytes.length, gcsPath,
+    // Spread only when set — Firestore rejects undefined field values.
+    ...(state.pageCountWarning ? { warning: state.pageCountWarning } : {}),
   });
   return {
     gcsPath,

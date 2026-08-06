@@ -999,6 +999,25 @@ function getSpineFontBumpPt(pageCount) {
   return pageCount === 80 ? 2 : 0;
 }
 
+// Page count drives the COVER geometry (spine width) while the interior comes from the
+// built sequence, so the two can disagree with nothing to catch it — a 14mm spine over a
+// 40-page book block prints without error and is only wrong in the bound object. The
+// engine builds pageCount/2 spreads, so they must match exactly.
+// Returns null when consistent, or an explanatory message when not.
+// Exported for testability; called by services/pdf-renderer/index.js before rendering.
+function checkPageCountAgainstSequence(pageCount, spreadCount) {
+  const pages = parseInt(pageCount, 10);
+  if (!Number.isFinite(pages)) {
+    return `Page count is missing or unreadable (got ${JSON.stringify(pageCount)}). ` +
+           `The cover spine is sized from it, so it cannot be guessed.`;
+  }
+  const expected = pages / 2;
+  if (spreadCount === expected) return null;
+  return `Page count mismatch: order declares ${pages} pages (expects ${expected} spreads) ` +
+         `but the built sequence has ${spreadCount}. The cover spine is sized from the ` +
+         `declared page count, so these must agree.`;
+}
+
 // Compute cover dimensions for a given spine width.
 // Returns { spineWidthMm, contentWidthMm, fullWidthMm, svgBleedUnits }.
 // Exported for testability.
@@ -1744,4 +1763,4 @@ async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, p
   return main();  // main() returns previewPdfBytes in server mode
 }
 
-module.exports = { generatePdfFromFirestore, coverCaptionStyle, lookupFont, FONT_FILE_MAP, getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions };
+module.exports = { generatePdfFromFirestore, coverCaptionStyle, lookupFont, FONT_FILE_MAP, getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions, checkPageCountAgainstSequence };

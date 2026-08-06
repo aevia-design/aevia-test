@@ -8,7 +8,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions } = require('../scripts/export-pdf.js');
+const { getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions,
+        checkPageCountAgainstSequence } = require('../scripts/export-pdf.js');
 
 describe('Spine geometry', () => {
   describe('getSpineFontBumpPt', () => {
@@ -25,6 +26,39 @@ describe('Spine geometry', () => {
       expect(getSpineFontBumpPt(undefined)).toBe(0);
       expect(getSpineFontBumpPt(null)).toBe(0);
       expect(getSpineFontBumpPt('80')).toBe(0);  // strict: callers must parseInt
+    });
+  });
+
+  // The spine is sized from pageCount but the interior comes from the built sequence.
+  // If they disagree the book prints a spine that does not match its own thickness —
+  // no error, plausible PDF, wrong physical object.
+  describe('checkPageCountAgainstSequence', () => {
+    test('40 pages with 20 spreads is consistent', () => {
+      expect(checkPageCountAgainstSequence(40, 20)).toBeNull();
+    });
+
+    test('80 pages with 40 spreads is consistent', () => {
+      expect(checkPageCountAgainstSequence(80, 40)).toBeNull();
+    });
+
+    test('Firestore stores page count as a string — that must still pass', () => {
+      expect(checkPageCountAgainstSequence('80', 40)).toBeNull();
+    });
+
+    test('80 pages built as a 40-page book is caught', () => {
+      const msg = checkPageCountAgainstSequence(80, 20);
+      expect(msg).toMatch(/declares 80 pages/);
+      expect(msg).toMatch(/has 20/);
+    });
+
+    test('40 pages built as an 80-page book is caught', () => {
+      expect(checkPageCountAgainstSequence(40, 40)).toMatch(/declares 40 pages/);
+    });
+
+    test('a missing page count is reported, never guessed', () => {
+      expect(checkPageCountAgainstSequence(undefined, 20)).toMatch(/missing or unreadable/);
+      expect(checkPageCountAgainstSequence(null, 20)).toMatch(/missing or unreadable/);
+      expect(checkPageCountAgainstSequence('', 20)).toMatch(/missing or unreadable/);
     });
   });
 
