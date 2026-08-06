@@ -1,0 +1,4 @@
+# Git hooks must keep LF endings. core.autocrlf=true would otherwise check them out
+# with CRLF on Windows, and /bin/sh fails with "bad interpreter: ^M" — the hook would
+# silently stop protecting anything.
+.githooks/** text eol=lf
