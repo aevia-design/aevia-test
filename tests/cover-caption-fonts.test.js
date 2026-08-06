@@ -82,3 +82,64 @@ describe('coverCaptionStyle precedence', () => {
     expect(lookupFont(fontMapStub, 'Mulish', 'regular')).toBeNull();
   });
 });
+
+// S154: the same silent-degradation shape, different cause. Papercut declared
+// `weight: 'bold'` as a STRING. The style ladder compares numerically, and
+// 'bold' >= 700 is false (the string coerces to NaN), so every branch fell through to
+// 'regular' and the PDF drew the regular cut. Both engines rendered it bold anyway,
+// because `font-weight: bold` is valid CSS — so screen and print disagreed, and only
+// the print is real.
+describe('caption weight resolution accepts CSS keywords (S154)', () => {
+  const fontMap = {
+    'Source Sans 3_regular': 'REG', 'Source Sans 3_bold': 'BOLD',
+    'Source Sans 3_semibold': 'SEMI', 'Source Sans 3_medium': 'MED',
+  };
+  const resolve = (weight) => lookupFont(fontMap, 'Source Sans 3', coverCaptionStyle({ weight }, {}));
+
+  test('numeric 700 resolves to the bold cut', () => {
+    expect(resolve(700)).toBe('BOLD');
+  });
+
+  test("the string 'bold' resolves to the bold cut, not regular", () => {
+    expect(resolve('bold')).toBe('BOLD');
+  });
+
+  test('capitalised and hyphenated keywords resolve', () => {
+    expect(resolve('Bold')).toBe('BOLD');
+    expect(resolve('Semi-Bold')).toBe('SEMI');
+    expect(resolve('medium')).toBe('MED');
+  });
+
+  test("'regular' and 400 both resolve to the regular cut", () => {
+    expect(resolve('regular')).toBe('REG');
+    expect(resolve(400)).toBe('REG');
+  });
+
+  test('a numeric string resolves by value', () => {
+    expect(resolve('700')).toBe('BOLD');
+  });
+
+  test('an unrecognised weight degrades to regular rather than throwing', () => {
+    expect(resolve('chunky')).toBe('REG');
+  });
+
+  // The normaliser makes string weights work, but numeric is the repo convention and
+  // keeps the data files honest. Xenia's CSVs name fonts as "Source Sans 3 Bold", so
+  // the word is what gets copied in — this is the guard against it happening again.
+  test('every template data file declares weight numerically', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const assets = path.join(__dirname, '..', 'assets');
+    const files = fs.readdirSync(assets)
+      .filter(d => d.startsWith('Template_'))
+      .flatMap(d => fs.readdirSync(path.join(assets, d))
+        .filter(f => f.endsWith('-data.js'))
+        .map(f => path.join(assets, d, f)));
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) {
+      const stringWeights = (fs.readFileSync(file, 'utf8').match(/weight:\s*'[^']*'/g) || []);
+      expect({ file: path.basename(file), stringWeights })
+        .toEqual({ file: path.basename(file), stringWeights: [] });
+    }
+  });
+});

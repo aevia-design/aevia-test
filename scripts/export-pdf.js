@@ -712,11 +712,33 @@ function drawTextNoLig(pg, text, opts) {
 // FONT_FILE_MAP without a `_regular` cut, so lookupFont() returned null and
 // drawCoverCaptions() skipped the caption entirely — the sub-labels were simply
 // missing from the cover, with no error. See tests/cover-caption-fonts.test.js.
+// Weight may arrive as a number (400/700) or as a CSS keyword ('bold', 'regular') —
+// Xenia's CSVs name fonts as "Source Sans 3 Bold", so the word gets copied into the data
+// files. The browser accepts both (`font-weight: bold` is valid CSS) but the comparisons
+// below are numeric, and 'bold' >= 700 is false, so a string weight silently resolved to
+// 'regular' and the PDF drew regular text where both engines showed bold (S154, Papercut).
+// Numbers pass through untouched, so this is a no-op for every template that used them.
+// Exported for testability.
+const FONT_WEIGHT_KEYWORDS = {
+  thin: 100, hairline: 100, extralight: 200, ultralight: 200, light: 300,
+  normal: 400, regular: 400, book: 400, medium: 500,
+  semibold: 600, demibold: 600, bold: 700, extrabold: 800, ultrabold: 800,
+  black: 900, heavy: 900,
+};
+function normaliseWeight(weight, fallback = 400) {
+  if (typeof weight === 'number' && Number.isFinite(weight)) return weight;
+  if (typeof weight !== 'string') return fallback;
+  const key = weight.trim().toLowerCase().replace(/[\s-]/g, '');
+  if (key in FONT_WEIGHT_KEYWORDS) return FONT_WEIGHT_KEYWORDS[key];
+  const n = Number(key);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 function coverCaptionStyle(capDef = {}, ov = {}) {
   const declaresWeight = ov.weight !== undefined || ov.italic !== undefined
                       || capDef.weight !== undefined || capDef.italic !== undefined;
   if (!declaresWeight) return capDef.style || 'regular';
-  const capWeight = ov.weight !== undefined ? ov.weight : (capDef.weight !== undefined ? capDef.weight : 400);
+  const capWeight = normaliseWeight(ov.weight !== undefined ? ov.weight : (capDef.weight !== undefined ? capDef.weight : 400));
   const capItalic = ov.italic !== undefined ? ov.italic : (capDef.italic || false);
   return (capItalic && capWeight >= 500 && capWeight < 600) ? 'mediumitalic'
        : capWeight >= 700 ? 'bold'
@@ -798,7 +820,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     }
     const fontName = ov.font          !== undefined ? ov.font     : capDef.font;
     const ovStyle  = ov.weight !== undefined
-      ? (ov.weight >= 700 ? 'bold' : ov.weight >= 600 ? 'semibold' : ov.weight >= 500 ? 'medium' : ov.italic ? 'italic' : 'regular')
+      ? (w => w >= 700 ? 'bold' : w >= 600 ? 'semibold' : w >= 500 ? 'medium' : ov.italic ? 'italic' : 'regular')(normaliseWeight(ov.weight))
       : (ov.italic ? 'italic' : capDef.style || 'regular');
     const font = lookupFont(fontMap, fontName, ovStyle);
     if (!font) { console.warn(`  ⚠ Caption font not found: ${fontName} ${ovStyle}`); continue; }
@@ -868,7 +890,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     const ov = scsOverrides['textPanelTitle'] || {};
     const fontName = ov.font !== undefined ? ov.font : capDef.font;
     const ovStyle  = ov.weight !== undefined
-      ? (ov.weight >= 600 ? (ov.weight >= 700 ? 'bold' : 'semibold') : ov.italic ? 'italic' : 'regular')
+      ? (w => w >= 600 ? (w >= 700 ? 'bold' : 'semibold') : ov.italic ? 'italic' : 'regular')(normaliseWeight(ov.weight))
       : (ov.italic ? 'italic' : capDef.style || 'regular');
     const font = lookupFont(fontMap, fontName, ovStyle);
     if (font) {
@@ -915,7 +937,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     const ov = scsOverrides['textPanel'] || {};
     const fontName = ov.font !== undefined ? ov.font : capDef.font;
     const ovStyle  = ov.weight !== undefined
-      ? (ov.weight >= 600 ? (ov.weight >= 700 ? 'bold' : 'semibold') : ov.italic ? 'italic' : 'regular')
+      ? (w => w >= 600 ? (w >= 700 ? 'bold' : 'semibold') : ov.italic ? 'italic' : 'regular')(normaliseWeight(ov.weight))
       : (ov.italic ? 'italic' : capDef.style || 'regular');
     const font = lookupFont(fontMap, fontName, ovStyle);
     if (font) {
