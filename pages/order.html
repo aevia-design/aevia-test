@@ -2432,9 +2432,14 @@ async function submitOrder() {
       return `${m} min`;
     }
 
+    // Track in-flight bytes per worker so progress bar reflects partial file transfers.
+    // Declared before updateProgress' first call — a const read before its declaration
+    // throws, and the first call happens before the worker pool is set up.
+    const workerInFlightBytes = {};
+
     function updateProgress() {
       // Include in-flight bytes from active workers in the total displayed
-      const inFlightTotal = Object.values(workerInFlightBytes || {}).reduce((sum, b) => sum + b, 0);
+      const inFlightTotal = Object.values(workerInFlightBytes).reduce((sum, b) => sum + b, 0);
       const displayedBytes = uploadedBytes + inFlightTotal;
       const sizeLabel = totalBytes > 0 ? ` · ${fmtBytes(displayedBytes)} / ${fmtBytes(totalBytes)}` : '';
       overlayCount.textContent = `${uploadedCount} of ${total} photos${sizeLabel}`;
@@ -2466,8 +2471,6 @@ async function submitOrder() {
     const STALL_TIMEOUT_MS = 30000;
     const MAX_ATTEMPT_MS = 900000; // 15 min — absolute ceiling, pathological case guard
     let nextIndex = 0;
-    // Track in-flight bytes per worker so progress bar reflects partial file transfers
-    const workerInFlightBytes = {};
 
     async function worker() {
       while (nextIndex < total) {
