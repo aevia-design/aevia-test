@@ -20,6 +20,7 @@ import fs from 'fs';
 import path from 'path';
 import { createCanvas } from '@napi-rs/canvas';
 import * as ag from 'ag-psd';
+import { wrapGeometry } from './lib/cover-wrap.mjs';
 
 ag.initializeCanvas((w, h) => createCanvas(w, h));
 
@@ -123,13 +124,17 @@ function warp(art, sw, sh, dst) {
   return { warped, ow, oh, minX, minY };
 }
 
-// Wrap geometry: back 200mm | spine 9mm | front 200mm, 9px/mm.
+// Wrap geometry: back 200mm | spine | front 200mm. Neither the total width nor the spine
+// is fixed — the spine follows page count since S154 (10mm at 40pp, 14mm at 80pp) — and the
+// capture carries ~3px of canvas-border chrome on each edge. Both are derived rather than
+// assumed; hardcoding 409 put 4px of spine on the front face at 40pp and 22px at 80pp.
 const wrap = sharp(WRAP);
-const wm = await wrap.metadata();
-const pxPerMm = wm.width / 409;
-const frontX = Math.round((200 + 9) * pxPerMm);
-const aw = wm.width - frontX, ah = wm.height;
-const artBuf = await wrap.clone().extract({ left: frontX, top: 0, width: aw, height: ah }).ensureAlpha().raw().toBuffer();
+const geo = await wrapGeometry(WRAP);
+const pxPerMm = geo.pxPerMm;
+const spineMm = geo.wrapMm - 400;              // back(200) + spine + front(200)
+const frontX = geo.left + Math.round((200 + spineMm) * pxPerMm);
+const aw = geo.left + geo.width - frontX, ah = geo.height;
+const artBuf = await wrap.clone().extract({ left: frontX, top: geo.top, width: aw, height: ah }).ensureAlpha().raw().toBuffer();
 
 // Front cover → top-face quad.
 const cover = warp(artBuf, aw, ah, DST);
@@ -150,9 +155,10 @@ const A = [403, 746], B = [1107, 1627]; // hinge corners (Edge copy alpha: top/l
 const EXT = [-4, 77];                   // constant board-thickness extrusion → outer spine edge
 const C = [B[0] + EXT[0], B[1] + EXT[1]];
 const D = [A[0] + EXT[0], A[1] + EXT[1]];
-const sx0 = Math.round(200 * pxPerMm), sx1 = Math.round(209 * pxPerMm);
+// Spine band = 200mm → 200+spineMm, in the trimmed content box (not the raw capture).
+const sx0 = geo.left + Math.round(200 * pxPerMm), sx1 = geo.left + Math.round((200 + spineMm) * pxPerMm);
 const sw = sx1 - sx0;
-const spineBuf = await wrap.clone().extract({ left: sx0, top: 0, width: sw, height: ah }).ensureAlpha().raw().toBuffer();
+const spineBuf = await wrap.clone().extract({ left: sx0, top: geo.top, width: sw, height: ah }).ensureAlpha().raw().toBuffer();
 const spine = warp(spineBuf, sw, ah, [D, A, B, C]);
 
 // The Edge-copy mask is fractionally LARGER than the book — it pokes a few px past the

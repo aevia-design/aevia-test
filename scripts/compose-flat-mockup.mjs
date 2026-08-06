@@ -33,6 +33,7 @@
 import * as ag from 'ag-psd';
 import { createCanvas } from '@napi-rs/canvas';
 import sharp from 'sharp';
+import { wrapGeometry } from './lib/cover-wrap.mjs';
 import fs from 'fs';
 import path from 'path';
 
@@ -83,8 +84,11 @@ const webpDir       = path.join(ROOT, 'assets/images/mockups', template);
 fs.mkdirSync(outDir, { recursive: true });
 if (!SCRATCH) fs.mkdirSync(webpDir, { recursive: true });
 
-// Cover wrap = [back|spine|front], front face = right 200/409, back = left 200/409
-const WRAP_TOTAL_W = 409, FACE_W = 200;
+// Cover wrap = [back|spine|front]. The face is 200mm of it, but the TOTAL is not fixed:
+// the spine grew with page count in S154 (9mm authored, 10mm at 40pp, 14mm at 80pp), so a
+// 409 constant slices the wrong column. The wrap is always 200mm TALL, so derive the total
+// from the aspect instead of hardcoding it — correct at any spine width.
+const FACE_W = 200;
 
 function findLayer(layers, name) {
   for (const l of layers) {
@@ -94,11 +98,11 @@ function findLayer(layers, name) {
 }
 
 async function extractFace(coverWrapPath, side) {
-  const meta = await sharp(coverWrapPath).metadata();
-  const faceW = Math.round(meta.width * FACE_W / WRAP_TOTAL_W);
-  const left  = side === 'front' ? meta.width - faceW : 0;
+  const box   = await wrapGeometry(coverWrapPath);
+  const faceW = Math.round(FACE_W * box.pxPerMm);
+  const left   = box.left + (side === 'front' ? box.width - faceW : 0);
   return sharp(coverWrapPath)
-    .extract({ left, top: 0, width: faceW, height: meta.height })
+    .extract({ left, top: box.top, width: faceW, height: box.height })
     .resize(1128, 1127, { fit: 'cover' })
     .raw().toBuffer({ resolveWithObject: true });
 }
