@@ -252,7 +252,7 @@ When Kseniia needs to trigger renders remotely, add a GitHub Actions workflow on
 **Depends on:** chunk-007
 **Files:** `pages/dashboard.html`, `functions/index.js`
 
-**Description:** Dashboard button on paid orders: "Mark approved for print." Updates Firestore status → `sent_to_print`. Human checkpoint before print house submission. For MVP, actual PDF hand-off to Elanders is manual (staff downloads PDF and uploads to SiteFlow). The button records the decision and changes status.
+**Description:** Dashboard button on paid orders: "Mark approved for print." Updates Firestore status → `sent_to_print`. Human checkpoint before print house submission. For MVP, actual PDF hand-off is manual. (**S155:** a *Send to Printsmarter* button now sits beside this one on the unmerged `api-integration` branch; the manual button is deliberately kept. Site Flow is not involved — that was ruled out by the 2026-08-05 call.)
 
 ---
 
@@ -607,4 +607,4 @@ Tried to implement chunk-009. Discovered (a) path-scoped Cloudflare Access can't
 
 ### 2026-05-28: "Approved for print" is a manual checkpoint for MVP
 
-Print house hand-off (Elanders SiteFlow API) is P2. chunk-008 records the approval decision and changes status, but actual PDF submission to Elanders is manual. API integration deferred to post-MVP.
+Print house hand-off is P2. chunk-008 records the approval decision and changes status. **Superseded S155:** the print house is **Printsmarter** and we integrate against *their* API, not Site Flow — built end to end on the unmerged `api-integration` branch and inert until the kill-switch is flipped. See `work/print-api/brief.md` on that branch.

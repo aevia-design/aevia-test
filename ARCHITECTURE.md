@@ -43,7 +43,7 @@ C4Context
   System_Ext(firebase, "Firebase", "Cloud Functions (Node.js), Firestore, GCS")
   System_Ext(stripe, "Stripe", "Payment Links / Checkout Sessions")
   System_Ext(captionai, "Caption AI API", "OpenAI GPT-4o mini today; switchable")
-  System_Ext(elanders, "Elanders / SiteFlow", "Print house API (P2 — manual hand-off for MVP)")
+  System_Ext(elanders, "Printsmarter", "Print house API — their own, not Site Flow (S155). Elanders prints on the same specs but is reached via Printsmarter, never by us. Built on branch api-integration, unmerged + switched off.")
 
   Rel(customer, website, "Browses templates, submits order, previews and approves book")
   Rel(staff, engine, "Loads order, assembles book, generates preview link")
@@ -203,7 +203,7 @@ Two modes, selected by the `mode` field on the request:
      → Firestore: status → 'paid'
      → Email: staff notified
 
-6. PRINT (MVP: manual hand-off; P2: SiteFlow API)
+6. PRINT (MVP: manual hand-off; Printsmarter API built S155 on `api-integration`, unmerged and gated behind a kill-switch)
    Staff exports PDF → uploads to Elanders manually
 ```
 
@@ -280,7 +280,7 @@ These rules MUST NOT be broken. Violating them requires an explicit architectura
 | `pdf-lib` + `@pdf-lib/fontkit` | PDF generation | `scripts/export-pdf.js` | No woff2, no variable fonts |
 | `sharp` | Image processing for PDF (+ likely web-derivative generation) | `scripts/export-pdf.js`; chunk-023 may use it server-side | Local today; target: in-region function (chunk-024) |
 | Stripe | Payment | Not yet integrated | Payment Links for MVP |
-| Elanders / SiteFlow API | Print house | Not yet integrated | P2 |
+| Printsmarter API | Print house | Built S155, UNMERGED on `api-integration`, kill-switch off | P2 |
 | Cloudflare Pages | Frontend hosting | Public website + order form | Free tier. Two hostnames off one build: `aevia.at` (production) and `aevia-test.pages.dev` (test rig) |
 | **Cloudflare DNS** | **Authoritative DNS for `aevia.at`** | Zone created S144 (ADR-0009) | ⚠️ **Mail resolution now depends on this zone.** MX (M365), SPF, DMARC, Brevo DKIM and Firebase auth-email DKIM all live here. Breaking the zone breaks Xenia's mail and every customer email. Never enable Cloudflare Email Routing — it rewrites MX. |
 | Cloudflare Rules | Pre-launch order gate + `noindex` | `aevia.at` zone only | 3 rules: order gate (302→waitlist), www→apex (301), `X-Robots-Tag: noindex`. **The noindex rule must be deleted at launch.** Rules only apply to proxied (orange) hostnames. |

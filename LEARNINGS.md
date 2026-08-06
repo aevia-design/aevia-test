@@ -1,3 +1,69 @@
+## 2026-08-06 — Bugs that were always there, revealed by a change elsewhere (S154)
+
+**Three separate defects surfaced this session, none of them newly introduced. Each had been
+wrong for months and was masked by a coincidence that the spine change removed.**
+
+1. The flat mockup composer sliced the front cover from a wrap it assumed was 409mm wide. It also
+   inherited ~3px of canvas-border chrome from the capture. Neither mattered, because
+   `resize(..., {fit:'cover'})` happened to crop about 3px vertically at the old wrap width. The
+   10mm spine widened the wrap by 9px, the aspect shifted, the crop fell to 0.4px, and the border
+   appeared as a white strip on a customer-facing mockup.
+2. `coverCaptionStyle` picks a font cut with a numeric ladder. Papercut declared `weight: 'bold'`
+   as a string, `'bold' >= 700` is false, and the PDF drew regular. It was invisible because both
+   engines render the same value as CSS, where `font-weight: bold` is valid — so screen was right
+   and print was wrong, with no error anywhere.
+3. Papercut's photo slot was smaller than the artwork's own photo opening, exposing a violet
+   placeholder rect. That had shipped in the live mockups since June and nobody saw it until the
+   slot geometry was under scrutiny for other reasons.
+
+**The pattern: a system can carry a defect indefinitely while some unrelated constant holds it
+still.** Changing a dimension somewhere else does not cause these bugs, it reveals them — so when
+one change produces several unrelated-looking failures, suspect exposure rather than breakage, and
+resist "fixing" the change that revealed them. In all three cases the correct fix was upstream of
+the symptom: derive the wrap width instead of assuming it, normalise the weight before comparing,
+size the slot from the silhouette.
+
+**Corollary for verification:** all three passed every test we had. The tests asserted the things
+that were easy to assert and none of them compared two representations of the same object —
+artwork against slot, engine against PDF, capture against composer. That comparison is where this
+class of bug lives.
+
+## 2026-08-06 — Element positions are not proof that artwork landed (S154)
+
+**Wander's cover SVG was re-exported with a viewBox framing the full bleed artboard (445x236mm)
+instead of the trim (409x200mm), twice.** The engine sizes the cover SVG to exactly 409mm, so
+445mm of artwork got squeezed into it: everything ~8% small, and the outer ~16mm of the front
+cover fell outside the artwork entirely and filled with the flat fallback colour — which in print
+is a blank band down the edge of a cover.
+
+**`qa/verify-spine-s152.mjs` reported 14/14 PASS on the broken file.** It measures where elements
+sit — canvas width, panel boundaries, caption centres — and every one of those was correct,
+because the engine's split paints them regardless of what the SVG contains. Nothing measured
+whether the artwork inside the SVG reached the edges it was supposed to reach. The defect was
+found by sampling pixels along the right edge and noticing the colour was the data file's
+`bgColor` rather than anything Xenia drew.
+
+**Rule: after any asset re-export, a green geometry run means nothing.** Look at the render, or
+assert something about the artwork itself. `tests/cover-svg-viewbox.test.js` now does the latter
+for this specific trap, asserting the viewBox RATIO (trim 2.045 vs full-bleed 1.886) rather than
+absolute units, since templates legitimately export at different scales.
+
+**Second occurrence of this exact bug on this exact file.** The first is recorded in the bleed
+model notes. Twice is a pattern, which is why it is now a test rather than a warning.
+
+## 2026-08-06 — Re-derive a subagent's measurements before acting on them (S154)
+
+A read-only subagent audited three cover SVGs for spine colour. It got Papercut right — a real
+mismatch worth catching — and Wander wrong, reporting a rect that sits on the back panel as the
+spine. The error was mechanical: it read the rect's `x` and `width` attributes without applying
+the enclosing `<g transform="matrix(...)">`, and its own summary admitted the evidence was
+"confirmed by x width 335.315", a number meaningless without the transform.
+
+The conclusion happened to be correct anyway (the colour did match), which is the dangerous part:
+a wrong method that produces a right answer survives review. **For anything geometric in an SVG,
+the transform stack is the measurement** — re-derive it before changing data. Delegating the
+*search* was still worth it; delegating the *arithmetic* was not.
+
 ## 2026-08-05 — Green tests that measure the wrong thing are worse than no tests (S152)
 
 **Two delegated agents shipped work that violated the brief's single central prohibition, and

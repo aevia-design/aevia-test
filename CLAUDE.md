@@ -53,6 +53,18 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   - `upload-failures.md` — **CLOSED S150** (owner's call; root cause never proven). Instrumentation
     is deployed and untriggered. Read it before touching the upload path or re-diagnosing a stall:
     it records what was ruled out, and the one variable never tested.
+  - ⚠ **`print-api-integration.md` is obsolete** — it was written for Site Flow, which the
+    2026-08-05 call ruled out. Its replacement (`printsmarter-api.md`, the print house's real API
+    contract) and the integration brief (`work/print-api/brief.md`) exist **only on the unmerged
+    `api-integration` branch**, along with `functions/printsmarter.js` and its tests. Read them
+    with `git show api-integration:<path>` or in the `C:/Users/evgmy/aevia-api` worktree. Do not
+    plan print-API work from what is on `main`.
+- Cover geometry is page-count dependent: `work/spine-geometry/brief.md` is the authority for the
+  numbers (40pp → 10mm spine, 80pp → 14mm). **A cover SVG's viewBox must frame the TRIM
+  (409×200mm) with bleed outside it** — a full-bleed viewBox renders 8% small with a blank band
+  down the cover edge. `tests/cover-svg-viewbox.test.js` enforces this; run `npm test` after any
+  SVG re-export from Xenia, and do not trust `qa/verify-spine-s152.mjs` alone (it checks element
+  positions, not whether the artwork landed).
 - Unit tests: `tests/` (run with `npm test` from project root)
 - QA browser scripts: `qa/` (Playwright via Node; see `qa/README.md` for the script index, reusable techniques + gotchas; run artefacts in `sessions/qa-runs/`, gitignored).
   Pre-launch QA plan + findings: `work/pre-launch-qa/` (`case-catalogue_v1.md` is the sign-off

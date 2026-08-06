@@ -124,7 +124,7 @@ The MVP is successful when, across 20–30 test orders:
 
 - **Customer account / order history** — Customers can log in to see past orders and reorder. Not needed for the first 20–30 test orders.
 - **Automated preview delivery** — Staff currently triggers the preview link manually; automate on `designing → review_sent` status transition.
-- **Print house API integration (SiteFlow / Elanders)** — Automatically transmit print PDF to Elanders via their SiteFlow API on staff approval. Currently the hand-off will be manual for MVP.
+- **Print house API integration (Printsmarter)** — Transmit the print PDFs on a staff *Send to print* button. **Site Flow was ruled out by the 2026-08-05 call (S155);** it is Printsmarter's own API, four webhook operations behind a static token. Built on the unmerged `api-integration` branch, switched off. Hand-off is manual until it is merged and enabled.
 
 ---
 
@@ -163,7 +163,7 @@ Nine templates are planned for MVP. The pipeline is template-agnostic — each t
 - **Customer preview interface:** Desktop-only. Mobile shows a friendly gate directing to desktop. No mobile-optimised interaction layer required.
 - **Performance:** Upload flow must handle large batches (50–100+ photos) without stalling. AI caption response within 5 seconds. No other specific targets.
 - **Security / data:** Photos stored in GCS with access controlled via signed URLs. Order data in Firestore. Staff tool protected by a staff key. Customer preview protected by an unguessable per-order token. No personal data beyond name, email, and uploaded photos.
-- **Print house:** Elanders (preliminary choice), SiteFlow API capable. PDF hand-off is manual for MVP; API integration is P2.
+- **Print house:** **Printsmarter** (Elanders prints on the same specs, reached via Printsmarter's API, never directly). Site Flow ruled out S155. PDF hand-off is manual until the `api-integration` branch merges and is enabled.
 
 ---
 

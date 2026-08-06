@@ -1,116 +1,112 @@
 # Session Status
-_Last updated: 2026-08-05 (session 153)_
-_Context at save: **The spine work is verified in real PDFs and committed** (`f181a5c`) — the owner rendered Tender covers at 40pp and 80pp from the dashboard and both were correct, with no colour seam. **Committed but NOT pushed.** `pages/order.html` (S151 stall detection, still unverified) was deliberately left out of that commit and remains uncommitted in the tree._
+_Last updated: 2026-08-06 (sessions 154 + 155, reconciled)_
+_Context at save: **Two sessions ran in parallel today and this file covers both.** S154 worked `main` in the main tree — spine Phase 2, four Papercut cover bugs, two Wander SVG problems, mockups regenerated. **All 12 commits pushed to `main`; working tree clean apart from the business-case spreadsheet.** S155 worked the `aevia-api` worktree on branch **`api-integration`** and built the Printsmarter print-API integration end to end — **8 commits, UNMERGED, and inert until several deliberate acts.** Merging that branch is its own explicit step._
 
 ## Status
-**Session 153 (2026-08-05) — spine geometry proven in print and committed. Caption boxes now live in the cover CSVs.**
+**Sessions 154 + 155 (2026-08-06) — the spine brief is complete on screen and proven in print for three of six templates; the Printsmarter integration exists but is switched off on a branch.**
 
-1. **The 9mm hardcoded spine is gone.** Printsmarter specified **10mm at 40pp, 14mm at 80pp**.
-   Because the cover is one flat sheet (back | spine | front), the old fixed value did not just
-   make the spine wrong — it **shifted the front artwork out of position by the same amount**, on
-   every book. Fails silently: no error, plausible on screen, wrong only in the printed object.
-   **Cover only** — inside pages are individual 200×200mm pages and the spine is not in their geometry.
-2. **Coordinates became panel-relative.** The enabling discovery: cover CSV X values are *already*
-   panel centres (Scribble's front slot `xMm: 327` = `18+200+9+100` exactly), and the `Type` column
-   already names the panel. So this was arithmetic in the loader, not a bulk data edit.
-   Authority for the numbers: `work/spine-geometry/brief.md` → Geometry.
-3. **The cover SVG is split by panel, never stretched.** Photo slots are positioned independently
-   of the SVG, so stretching it moves artwork *without* moving the photo beneath — 5mm of drift at
-   80pp, visible as a crescent on shaped openings. Instead the SVG renders twice at natural width:
-   back clipped `0→200mm` anchored left, front clipped from `209mm` shifted right by delta, flat
-   colour band between. **Xenia re-authors nothing.**
-4. **Done in both engines and the PDF path.** `template-engine.html`, `customer-preview.html`,
-   `scripts/export-pdf.js` (module constants made per-render; same split via sharp
-   `extract`+`composite`). `services/pdf-renderer/index.js` needed **no change** — it only imports
-   `generatePdfFromFirestore`.
-5. **Verified — 34/34 live-DOM checks** (`qa/verify-spine-s152.mjs`, Scribble + Tender, both page
-   counts) and **252 tests pass** incl. 19 new in `tests/spine-geometry.test.js`. Owner confirmed
-   Tender's oval clip registers visually. (Superseded by §6: the PDF compositing has now run.)
-6. **Verified in print (S153).** Tender rendered at both page counts from the dashboard: spine
-   correct, **no colour seam where the spine meets the front cover** — the highest-risk item. This
-   was the **first real execution of the PDF cover compositing**. Scribble has still not been
-   rendered through the PDF path (it is the only template with two spine captions).
-7. **A crash blocked every template's PDF (S153).** `initPrintConstants()` still assigned
-   `COVER_FULL_W_PX` from `COVER_FULL_W_MM`, which S152 had removed — `ReferenceError` before any
-   drawing. All three globals were already dead, so they were deleted. **252 tests never caught it**:
-   they call `computeCoverDimensions()` directly and never run the init path.
-8. **Caption box sizes now live in the cover CSVs (S153)** — all six templates. Only one value
-   changed on sync: Tender's spine `wMm` 45 → 120.
-9. **Both delegated agents returned DONE with the brief's central constraint violated** — the
-   engine agent stretched the SVG *and* left customer-preview reading a control that only exists in
-   the staff engine; the PDF agent never implemented the split at all. Caught by reading the diff.
-   Third and fourth occurrence in two sessions.
+### S154 — `main`, pushed (`895fa31` → `8cb161f`)
+1. **Spine Phase 2 done.** Papercut, Newborn and Wander declare `referenceSpineMm: 9` and carry
+   the panel-split treatment. **Papercut rendered correctly through the PDF path** — the fourth
+   template proven in print, after Scribble and Tender in S153.
+2. **Papercut's spine was the wrong colour** — declared `#8bb8d8` blue, artwork `#79ba9b` green.
+   Since the split, `sections.spine.bgColor` is the ONLY source of the printed spine colour, so
+   it would have printed a mismatched band. Same class as Tender's in S153. Newborn and Wander
+   audited and correct. Joyride checked too: 16/16 geometry, colour matches.
+3. **Spine captions render +2pt at 80pp** (owner's call), derived in code on all three surfaces,
+   applied to the data default only so a staff override wins outright. `autoShrink` declined.
+4. **Three Papercut front-cover bugs Xenia found, all fixed.** Front captions were swapped; spine
+   name/year were vertically inverted; a violet placeholder rect showed along the top of every
+   cover photo because the slot was smaller than the artwork's own photo opening.
+5. **A fourth found on the way:** captions declaring `weight: 'bold'` as a **string** printed
+   regular, because the PDF's style ladder compares numerically and `'bold' >= 700` is false.
+   Both engines rendered bold anyway — `font-weight: bold` is valid CSS — so screen and print
+   disagreed silently.
+6. **Wander's cover SVG was re-exported twice.** The spine band is now correct (9.00mm), but both
+   exports framed the viewBox on the full bleed artboard. Patched to the trim using the file's own
+   `#cover` guide rect, and **a test now catches this class of export automatically.**
+7. **Papercut mockups regenerated** — the violet was baked into the live `closed.webp` and
+   `exp2/front.webp`. Fixing that exposed a second defect in both composers (capture chrome plus a
+   hardcoded 409mm wrap); both now share `scripts/lib/cover-wrap.mjs`.
+8. **A page-count guard** now fails a print render when the declared page count and the built
+   sequence disagree — a 14mm spine over a 40-page block used to render silently.
+9. **S151's stall detection finally shipped** (`10536f2`) and is live on the test rig, **still
+   unverified at runtime**.
+10. **281 tests pass** across 19 suites (was 252).
+
+### S155 — `api-integration` worktree, UNMERGED (`f3d665a` → `fa3f33a`)
+Full detail in `sessions/2026-08-06-s155.md` and `work/print-api/brief.md`. Summary only here.
+11. **Printsmarter, not Site Flow.** Their own API — four webhook operations behind a static
+    token. The 2026-08-05 call killed the entire S123 Site Flow prep: no HMAC, no €900 setup fee,
+    no volume commitment.
+12. **Built end to end, TDD:** a pure client (`functions/printsmarter.js`), `submitPrintOrder` with
+    layered guards, a dashboard *Send to Printsmarter* button, a `printsmarterPostback` receiver
+    on a secret URL path, and the dispatch email designed back in S105.
+13. **Nothing can fire.** It needs `PRINTSMARTER_PRODUCT_ID` set, the kill-switch flipped to
+    `true`, functions deployed, the dashboard pushed, and the postback URL sent to them. **Five
+    questions are still with Printsmarter** — sandbox, duplicate-order behaviour, postback auth,
+    file size/URL lifetime, file-spec confirmation.
 
 ## Recent decisions
-- **Caption boxes read from the cover CSVs, artboard frame (S153).** Rotated spine rows declare
-  `width` = across the spine, `height` = along it; the sync swaps them for the engine, keyed off
-  `Captions_1_direction`. Newborn and Joyride already used this frame, Wander used the opposite —
-  no precedent existed, so artboard won 2-to-1 as the frame Xenia measures in.
-- **Spine reference declared, not hardcoded (S152).** Cover CSVs carry `referenceSpineMm: 9`; the
-  engine derives the shift. Chosen over per-size CSVs (10 hand-synced files, no generator).
-- **Spine caption X kept as an offset, not removed (S152, owner).** Optical centring differs by
-  font and size. Under the old absolute scheme any hand-tuned value silently broke when the spine
-  changed — as an offset it is tuned once and holds for every size.
-- **Re-authoring SVGs per size rejected (S152).** Would need 2 SVGs, 2 clip paths and 2 `pxPerMm`
-  per template, and would *still* require the coordinate shift. Two-way door if print looks wrong.
-- **Overhang, hinge gap and turn-in are NOT open questions (S152, owner).** Samples were already
-  printed with Elanders on exactly this geometry, from Illustrator, before any engine existed.
-  Claude had escalated them to blocking risks — "not written down" was misread as "unknown".
-  **The spine is the only cover dimension that varies with page count.**
-- **Cloud import dropped (S151).** Phone pickers already reach iCloud/Google Photos natively.
-- **Stall detection chosen over raising the timeout (S151).** `STALL_TIMEOUT_MS = 30000` and the
-  2s/5s backoff are judgement calls, not measurements.
-- **#88 closed without root cause (S150, owner).** Read `docs/briefs/upload-failures.md` header
-  before reopening. Leading untested hypothesis: the FP4 source was an **iCloud placeholder**.
-- **Resume-on-failure: recommendation made, NOT decided (S150).**
-- **Codex is for second opinions, not routine work (S150).**
-- **Business case parked (S148/S149); CAC modelling deprioritised (S149).**
-- **No price rise at launch (S148, owner).** Price is an OUTPUT of the business case (S148).
+- **Whichever parallel session ends LAST reconciles STATUS.md (S155).** S154 ended last, so this
+  file covers both. Neither branch had touched it; both were still on session 153.
+- **Wander's viewBox patched in-repo, Xenia not asked again (S154, owner).** The file carries its
+  own trim guide, so the correct viewBox was derivable. She is not being chased on it.
+- **The violet hairline is not critical (S154, owner).** It is absent from the PDF, so print is
+  safe. It remains visible in `customer-preview`, which customers see. One attribute in Xenia's
+  SVG would remove it; not scheduled.
+- **`autoShrink` declined for Tender's spine (S154, owner).** 120mm is a wide enough box; staff
+  reduce long titles by hand in the engine.
+- **Printsmarter token NOT rotated (S155, owner).** It arrived by email and already sits in two
+  inboxes; rotating the local copy is theatre. **The token must never appear in any summary,
+  session log or memory file.**
+- **Button-first, never auto-submit on approval (S155).** Plus a kill-switch and a once-only
+  guard, because there is no documented sandbox — the first real call prints and invoices a book.
+- **Caption boxes read from the cover CSVs, artboard frame (S153).**
+- **Spine reference declared, not hardcoded (S152).** Cover CSVs carry `referenceSpineMm: 9`.
+- **Overhang, hinge gap and turn-in are NOT open questions (S152, owner).**
+- **#88 closed without root cause (S150, owner).** Read `docs/briefs/upload-failures.md` first.
+- **No price rise at launch (S148, owner).** Price is an OUTPUT of the business case.
 - **Working assumption: 20% VAT on photo books (S145, owner).** Steuerberater to confirm.
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **Decide autoShrink for Tender's spine, then redeploy Cloud Run once.** The owner wants long
-   titles to shrink rather than wrap onto the cover — that is the `autoShrink` flag, and no CSV
-   column was added for it. Either set it in `tender-data.js` or add `captions1_autoshrink`.
-   Turning it on makes `hMm` live (Tender's spine `8` is correct). **A second redeploy is needed
-   regardless**: the deploy carrying the crash fix went out *before* the 120mm box landed.
-2. **Render Scribble through the PDF path.** Same code as Tender, but it is the only template with
-   two spine captions — the fiddliest case for the panel-relative arithmetic.
-3. **Phase 2 — propagate to Papercut, Newborn, Wander**, including the **spine-colour audit**:
-   since the split, `sections.spine.bgColor` is the *only* source of the spine colour, and Tender's
-   was wrong (declared cream, artwork taupe). Those three are unaudited.
-4. **Verify the stall-detection change (#94).** Four tests. Blocker is authorisation, not effort —
-   the live rig runs deployed code. Test (a), a throttled upload exceeding 60s that **succeeds**,
-   is the one that proves it, because it fails on `main` today.
-5. **Review the untracked QA scripts** before trusting or committing any. At least one is known
-   broken (`qa/quick-stall-test.mjs`). `qa/verify-spine-geometry.mjs` is **superseded** by
-   `qa/verify-spine-s152.mjs` (now committed) and should be deleted.
-6. **Decide the resume question (#90).** `/solutioning` recommendation in
-   `sessions/2026-08-04-s150.md` §6. **Owner's call.** S151 argument that shifts it: a resume
-   attempt is *itself* the diagnostic never captured.
-7. **Finish P2-12.** Confirmation and payment emails verified; preview-ready and dispatch are not.
-8. **Triage F-P2-03** (preview side-scrolls 64px at 1440, both engines, cosmetic).
-9. **TO-DOS #91** — pin and vendor the four CDN libraries before launch. No build step needed.
-10. **Cleanup (#60)** — AEV-078 (hostile text, **never use as a demo book**), AEV-079, AEV-080.
+1. **Decide when `api-integration` merges to `main`.** It is 8 commits and diverged from 12 on
+   `main`; both touch `functions/` and the dashboard. The longer it sits, the worse the merge.
+   Nothing on it can fire while the kill-switch is off, so merging early is low-risk.
+2. **Render Newborn at 80pp.** The last unproven shaped clip — its scalloped opening is the
+   fiddliest of the set. Closes the spine brief. No redeploy needed. Wander too, for completeness.
+3. **Verify the stall detection (#94).** Live on the rig since `10536f2`. The decisive test is a
+   **throttled upload exceeding 60s that succeeds**, because that fails on the previous code.
+   Then: dead connection aborting in ~30s, the byte counter climbing mid-transfer, and
+   `inspect-upload-failure.js` still parsing a real record. `qa/quick-stall-test.mjs` is broken.
+4. **Chase Printsmarter on the five open questions** (S155) — the sandbox answer gates any real
+   test, and the duplicate-order answer gates how much we trust the once-only guard.
+5. **Fix `qa/capture-cover-wrap.mjs` to clip to the canvas content box.** It promises "no UI
+   chrome" and delivers 3px of border on every edge. Needs a re-capture, so bundle it with the
+   next mockup run rather than doing it alone.
+6. **Clean up the QA scripts (#60/#95).** 14 untracked files in `qa/`, at least one known broken.
+7. **Finish P2-12** — preview-ready and dispatch emails still unverified (the dispatch email now
+   exists, built in S155).
+8. **TO-DOS #91** — pin and vendor the four CDN libraries before launch.
 
 ## Open questions
-- 🔴 **Committed (`f181a5c`) but NOT pushed — and `order.html` is still loose.** The spine work
-  is in a commit; S151's unverified stall detection was deliberately left out and is still modified
-  in the working tree. A `git push` ships only what is committed, but `git commit -a` or a careless
-  `git add .` would sweep `order.html` in. #94 needs a push to be testable at all — make that a
-  **conscious** decision, not a side effect.
-- **Only a printed book settles the cover geometry.** The PDF is the last checkable proxy.
-- **Is 10/14mm a formula or two data points?** `spine = 6 + 0.1 × pages` fits exactly (≈0.2mm per
-  leaf on 160gsm). Low risk either way — only two constants move. Worth one sentence to Printsmarter.
-- **Is Printsmarter the same production line and API as Elanders?** Assumed since S148, never
-  confirmed. The quality signal (Journi books seen on the Elanders floor) rests entirely on it.
-- **Can a customer resume a failed upload?** (#90) — recommendation made, not decided.
-- **Android is entirely untested on real hardware.** Emulation-only; emulated Chrome uses the
-  desktop file dialog, so the thing that matters cannot be tested that way. Owner's plan: cover it
-  in the F&F pilot. Specific check: file inputs use extension-based `accept` (`.jpg,.jpeg,.png,.heic`)
-  rather than `image/*`, and Android's picker thinks in MIME types. Unverified suspicion.
-- **Staff test password is `Claude-test`** — weak for an account that can read real customer orders.
-- **`qa/test-photos/` is still missing.** Prefer `assets/test photos/DTS_PARENTHOOD`.
-- **`ARCHITECTURE.md` has two invariants numbered 6** (hostname rule, centre-based coordinates), so
-  everything after is off by one. `AGENTS.md` renumbers 1–9; the two disagree.
+- 🔴 **`api-integration` is unmerged and diverging.** See next step 1. This is the single biggest
+  structural risk in the tree right now.
+- **Pre-13-July Papercut orders have `name`/`year` swapped in Firestore.** The old form put
+  `maxLength: 10` on the name field, so a long album name was impossible to enter correctly.
+  Order data, not template data — our fix does not touch it. AEV-043 was corrected by hand.
+  Unknown whether any real orders are affected.
+- **Customer "Save changes" never reaches the PDF, and approval overwrites blindly.** Working as
+  designed, but `approveOrder` copies `customer*` → `staff*` with no merge and no staleness
+  check, so a customer approving after a staff edit silently discards it (and vice versa).
+- **Newborn's cover slot is 0.11mm short** on its left edge. Flagged, deliberately not fixed.
+- **Is Printsmarter idempotent on `order_id_client`?** Unconfirmed. Until answered, assume a retry
+  could print two books; our once-only guard is the only defence.
+- **Prices now live in THREE places** — Stripe, `assets/js/prices.js`, and
+  `PRICE_BY_PAGE_COUNT` in `functions/`. Sync all three on any change.
+- **Is 10/14mm a formula or two data points?** `spine = 6 + 0.1 × pages` fits exactly.
+- **Android is entirely untested on real hardware.** Owner's plan: cover it in the F&F pilot.
+- **`ARCHITECTURE.md` has two invariants numbered 6**, so everything after is off by one;
+  `AGENTS.md` renumbers 1–9 and the two disagree.
+- **Staff test password is weak** for an account that can read real customer orders.
