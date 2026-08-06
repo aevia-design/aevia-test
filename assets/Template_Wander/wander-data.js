@@ -16,14 +16,15 @@ window.WANDER_DATA = {
   cover: {
     svg: 'Cover/Cover.svg',
     referenceSpineMm: 9,  // spine width this cover's COORDINATES were authored at
-    // Audited S154: the SVG's own panel bands are back −18.04→201.14, spine 201.14→208.21,
-    // front 208.21→427.04 — i.e. the drawn spine band is 7.07mm and sits 1.14mm right of
-    // the 200/209 model every other template follows. The captions still use the 9mm
-    // coordinate scheme (222.5 = spine centre), so 9 is right here; the artwork band is
-    // the thing that is off. Consequence of the panel split: the visible colour boundaries
-    // move by ~1.1mm at the back hinge and ~0.8mm at the front. At a cased-hardcover fold
-    // that is not obviously wrong, but it is a real change from Xenia's artwork — flag to
-    // her rather than assume. Pre-existing, not introduced by the spine work.
+    // Audited S154: the SVG's spine band was 7.07mm and sat 1.14mm right of the 200/209
+    // model every other template follows. Xenia re-exported the cover the same day and it
+    // now measures 199.95 → 208.95mm — 9.00mm, matching the coordinate scheme the captions
+    // already used (222.5 = spine centre). Resolved; no discrepancy remains.
+    //
+    // Her export framed the viewBox on the full artboard INCLUDING bleed, which the engine
+    // cannot use — see the commit that landed it. The viewBox is set to her own `#cover`
+    // trim rect. If this file is ever re-exported, check the viewBox frames 409×200mm
+    // (11.811 px/mm on both axes) before trusting the render.
     sections: {
       back:  { xMm: 0,   wMm: 200, bgColor: '#6F454C' },
       spine: { xMm: 200, wMm: 9,   bgColor: '#86A37B' },  // audited S154 — matches the SVG spine rect (rgb(134,163,123))
