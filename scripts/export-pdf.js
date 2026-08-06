@@ -1234,6 +1234,20 @@ async function renderCoverImage(coverDef, coverPhotoNames, heartCrop = {}, pageC
 // coverDef.captions has: key, xMm, yMm, font, sizePt, align, rotate (optional)
 // xMm/yMm are center coords in with-bleed space (with 18mm bleed included).
 // pageCount: order's page count (affects spine caption positioning).
+// How far a cover caption moves when the spine is wider than the width the artwork was
+// authored at. The front panel sits to the RIGHT of the spine, so it shifts by the whole
+// delta; the back panel is left of it and never moves. Spine captions return 0 because
+// they are recentred on the new spine centre by their own branch below.
+//
+// This mirrors renderCoverImage's front-panel slot shift and the engine's `capDeltaPx`
+// (template-engine.html). All three must agree, or a caption centred under its photo on
+// screen prints beside it — which is exactly what Newborn at 80pp did.
+function coverCaptionShiftMm(capDef, spineWidthMm, referenceSpineMm = 9) {
+  const FRONT_PANEL_BOUNDARY_MM = 200 + COVER_BLEED_MM;  // 218mm in with-bleed space
+  if (capDef.key && capDef.key.toLowerCase().startsWith('spine')) return 0;
+  return capDef.xMm >= FRONT_PANEL_BOUNDARY_MM ? spineWidthMm - referenceSpineMm : 0;
+}
+
 function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionStyles, pageSizeWPt, pageSizeHPt, pageCount = undefined) {
   if (!coverCaptions) return;
   const COVER_BLEED_PT = COVER_BLEED_MM * MM_TO_PT;
@@ -1387,7 +1401,7 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
         const textW = isLigFront
           ? measureNoLig(font, line, sizePt, charSpacing)
           : font.widthOfTextAtSize(line, sizePt) + charSpacing * Math.max(0, line.length - 1);
-        const centerXPt = capDef.xMm * MM_TO_PT;
+        const centerXPt = (capDef.xMm + coverCaptionShiftMm(capDef, spineWidthMm, referenceSpineMm)) * MM_TO_PT;
         const xPt = capDef.align === 'left'  ? centerXPt - capDef.wMm / 2 * MM_TO_PT
                   : capDef.align === 'right' ? centerXPt + capDef.wMm / 2 * MM_TO_PT - textW
                   :                            centerXPt - textW / 2;
@@ -1785,4 +1799,4 @@ async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, p
   return main();  // main() returns previewPdfBytes in server mode
 }
 
-module.exports = { generatePdfFromFirestore, coverCaptionStyle, lookupFont, FONT_FILE_MAP, getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions, checkPageCountAgainstSequence };
+module.exports = { generatePdfFromFirestore, coverCaptionStyle, lookupFont, FONT_FILE_MAP, getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions, checkPageCountAgainstSequence, coverCaptionShiftMm };
