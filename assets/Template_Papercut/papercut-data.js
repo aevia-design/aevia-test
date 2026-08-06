@@ -20,10 +20,9 @@ window.PAPERCUT_DATA = {
     },
     // Exposed board-edge colours for the offline mockup composites (compose-all.mjs).
     // Kept SEPARATE from sections[].bgColor (which drives the real cover render).
-    // NOTE: spine here still says blue and is wrong for the same reason as above, but
-    // mockups are pre-baked images and the composers are out of scope for this brief —
-    // correct it when the mockups are next re-composited.
-    mockupEdges: { front: '#8bb8d8', spine: '#8bb8d8', back: '#8bb8d8' },
+    // Spine corrected S154 to match the artwork (was #8bb8d8, the cover blue). Takes
+    // effect only when the mockups are next re-composited — they are pre-baked images.
+    mockupEdges: { front: '#8bb8d8', spine: '#79ba9b', back: '#8bb8d8' },
     // Cover coords are WITH-BLEED (18mm) and box-CENTRE; the render subtracts COVER_BLEED_MM.
     // Slot enlarged S154 to cover the clipShape silhouette. The CSV's 140×100 box at
     // 328/118 was SMALLER than the artwork's own photo opening (clipPath #ac): the
