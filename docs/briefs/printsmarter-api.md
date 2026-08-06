@@ -155,12 +155,15 @@ Ordered by what blocks work.
 
 ## 6. Watch-outs
 
-- **The token was pasted into a chat transcript.** Ask Printsmarter to reissue it before it is used
-  against production. It is a bearer credential with no signing and no expiry documented: whoever
-  holds it can place and cancel orders on our account, and we are on **post-payment monthly
-  invoicing**, so a misused token becomes an invoice.
-- **Static token, no expiry, no rotation mechanism documented.** It must live server-side only —
-  in a Cloud Function, never in `assets/js/` or anything the browser loads.
+- **Rotation was considered and declined (S155).** The token is a bearer credential with no signing
+  and no documented expiry: whoever holds it can place and cancel orders on our account, and we are
+  on **post-payment monthly invoicing**, so misuse becomes an invoice. But Printsmarter sent it by
+  **email**, so it already sits in plaintext in two inboxes and two mail providers — reissuing over
+  a local copy is theatre. The cheap moment to rotate, if ever, is **before go-live**, while
+  nothing depends on it. No rotation mechanism is documented, so ask before assuming one exists.
+- **The handling rule is what matters.** Server-side only — in a Cloud Function, read from
+  `functions/.env`. Never in `assets/js/` or anything the browser loads. A frontend leak exposes it
+  to every visitor and is a different order of problem from a local log file.
 - **`order_id_client` is our idempotency key.** Nothing in the docs says a repeated
   `order_id_client` is rejected. Until we confirm it is, assume a retry could print two books.
 - **Status is German free text**, so string-matching it is brittle. Collect the real values before
