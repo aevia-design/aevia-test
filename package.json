@@ -2,7 +2,8 @@
   "name": "aevia-test",
   "private": true,
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "qa:order": "node qa/order-hardening-mock.mjs"
   },
   "jest": {
     "testMatch": [
