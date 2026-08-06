@@ -53,3 +53,9 @@ docs/cloudflare-export*
 # Excel lock/temp files
 ~$*.xlsx
 ~$*.xls
+
+# Business-case model — openpyxl rewrites the whole binary on every edit, so it
+# showed as modified constantly and every save was a full 79K blob in history.
+# Untracked from S156; the last tracked version is in commit 0edb8ee if needed.
+# NOTE: this file is no longer backed up by git — keep a copy elsewhere.
+assets/Aevia - Business case v*.xlsx
