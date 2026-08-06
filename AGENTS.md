@@ -38,6 +38,15 @@ change. The ones most often violated by newcomers to this codebase:
 8. **Do not apply an EXIF orientation swap.** It was added, then removed. Do not re-add it.
 9. **Screen surfaces load the ~1600px web derivative; only the PDF script loads
    full-res originals.** Breaking this reintroduces the dominant cost (GCS egress).
+10. **`npm test` does NOT execute `pages/order.html`.** The tests that name it transcribe
+    its logic and assert the copy behaves, so a green suite says nothing about whether the
+    page runs. A crash reached the live rig this way in S154 with 281 tests passing, and
+    every upload failed for a day. Run `npm run qa:order` (mocked, no cloud cost) before
+    pushing any change to the order form; `.githooks/pre-push` does it automatically.
+11. **The cover's front panel shifts right when the spine widens.** Front-panel photo slots
+    AND front-panel captions move by `spineWidth − referenceSpineMm`, on all three surfaces
+    (both engines and `export-pdf.js`). Change one and you must change all three, or print
+    disagrees with screen — see S156.
 
 ## Engineering principles
 
