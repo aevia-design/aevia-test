@@ -1363,9 +1363,199 @@ exports.getPdfUrl = functions
     }
   });
 
+// ── Submit order to Printsmarter (S155) ─────────────────────────────────────
+// Staff-triggered from the dashboard "Send to print" button. Builds the
+// add_Order payload from the order document + signed URLs for the two print
+// PDFs, submits it, stores their order id and transitions to 'sent_to_print'.
+//
+// Three layers of protection, because this spends money on a physical book:
+//   1. Once-only: an order that already has a printsmarterOrderId is refused —
+//      our own guard against double printing, independent of whatever their
+//      API does with a duplicate order_id_client (answer pending).
+//   2. State guard: only a 'paid' order can be submitted.
+//   3. Kill-switch: submitOrder() itself refuses unless PRINTSMARTER_LIVE=true —
+//      lives inside the client so no caller can forget it.
+// Vendor contract lives entirely in ./printsmarter.js.
+exports.submitPrintOrder = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 60, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (!(await isStaff(req))) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+
+    try {
+      const { printsmarterConfig, buildOrderPayload, submitOrder } = require('./printsmarter');
+      // Throws if any PRINTSMARTER_* env is missing (incl. the product id we
+      // are still waiting on) — better a clear 500 here than a bad payload out.
+      const config = printsmarterConfig(process.env);
+
+      const db = admin.firestore();
+      const doc = await db.collection('orders').doc(orderNumber).get();
+      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+      const order = doc.data();
+
+      if (order.printsmarterOrderId) {
+        return res.status(409).json({
+          error: `Order already submitted to Printsmarter (their id: ${order.printsmarterOrderId})`,
+        });
+      }
+      if (order.status !== 'paid') {
+        return res.status(409).json({ error: `Order status '${order.status}' — only paid orders can be sent to print` });
+      }
+
+      // The print PDFs must have been rendered (dashboard: Generate PDF → print
+      // mode) before submission. Verify they exist in GCS — Printsmarter fetches
+      // by URL later, and a 404 on their side is a silent stuck order on ours.
+      const folderName = order.folderName;
+      if (!folderName) return res.status(400).json({ error: 'Order has no folderName' });
+      const { Storage } = require('@google-cloud/storage');
+      const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
+      const bucket = storage.bucket('aevia-uploads-eu');
+      const coverPath  = `${folderName}/pdfs/${orderNumber}_print_cover.pdf`;
+      const insidePath = `${folderName}/pdfs/${orderNumber}_print_inside.pdf`;
+      const [coverExists]  = await bucket.file(coverPath).exists();
+      const [insideExists] = await bucket.file(insidePath).exists();
+      if (!coverExists || !insideExists) {
+        return res.status(400).json({
+          error: 'Print PDFs not found — generate the print PDF from the dashboard before sending to print',
+        });
+      }
+
+      // 7-day signed URLs (v4 maximum): we don't yet know how long after
+      // submission they fetch, so give the longest window available.
+      const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const sign = (p) => bucket.file(p).getSignedUrl({ action: 'read', version: 'v4', expires }).then(r => r[0]);
+      const files = { cover: await sign(coverPath), content: await sign(insidePath) };
+
+      const payload = buildOrderPayload(order, files, config);
+      const { printsmarterOrderId } = await submitOrder(payload, config);
+
+      // NOTE (S11 invariant): Timestamp.now() inside arrayUnion, not serverTimestamp()
+      await doc.ref.update({
+        status: 'sent_to_print',
+        printsmarterOrderId,
+        sentToPrintAt: admin.firestore.FieldValue.serverTimestamp(),
+        statusHistory: admin.firestore.FieldValue.arrayUnion({
+          status: 'sent_to_print',
+          timestamp: admin.firestore.Timestamp.now()
+        })
+      });
+
+      return res.status(200).json({ success: true, printsmarterOrderId });
+    } catch (err) {
+      console.error('submitPrintOrder error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+// ── Printsmarter shipping postback (S155) ────────────────────────────────────
+// Printsmarter calls this when a book ships, with the tracking number + URL.
+// We register the URL with them BY EMAIL, including the secret path segment:
+//   https://europe-west1-aevia-uploads.cloudfunctions.net/printsmarterPostback/<PRINTSMARTER_POSTBACK_SECRET>
+//
+// Defence against forged postbacks (their auth answer is pending; this works
+// even if they offer none):
+//   1. The secret path — a caller who doesn't know it gets 404, nothing else.
+//   2. Plausibility — the order must exist, must have been submitted via the
+//      API (has printsmarterOrderId), and must not already be shipped.
+//   3. parseShippingPostback rejects any non-https tracking URL, so a forged
+//      payload can't plant an arbitrary link in front of a customer.
+// The dispatch email to the customer hangs off this (designed S105) — NOT yet
+// wired; this receiver only records tracking and moves the status.
+exports.printsmarterPostback = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const secret = process.env.PRINTSMARTER_POSTBACK_SECRET;
+    // Constant 404 (not 403) for a wrong or missing secret: don't confirm to a
+    // prober that this endpoint exists at all.
+    if (!secret || req.path !== `/${secret}`) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    try {
+      const { parseShippingPostback } = require('./printsmarter');
+      const { orderNumber, trackingNumber, trackingUrl } = parseShippingPostback(req.body);
+
+      const db = admin.firestore();
+      const doc = await db.collection('orders').doc(orderNumber).get();
+      if (!doc.exists) {
+        console.warn('printsmarterPostback: unknown order', orderNumber);
+        return res.status(404).json({ error: 'Unknown order' });
+      }
+      const order = doc.data();
+
+      if (!order.printsmarterOrderId) {
+        console.warn('printsmarterPostback: order was never submitted via API', orderNumber);
+        return res.status(409).json({ error: 'Order not submitted via API' });
+      }
+      if (['in_delivery', 'delivered'].includes(order.status)) {
+        // Repeat delivery of the same postback — fine, but change nothing.
+        return res.status(200).json({ received: true, duplicate: true });
+      }
+
+      // NOTE (S11 invariant): Timestamp.now() inside arrayUnion, not serverTimestamp()
+      await doc.ref.update({
+        status: 'in_delivery',
+        trackingNumber,
+        trackingUrl,
+        shippedAt: admin.firestore.FieldValue.serverTimestamp(),
+        statusHistory: admin.firestore.FieldValue.arrayUnion({
+          status: 'in_delivery',
+          timestamp: admin.firestore.Timestamp.now()
+        })
+      });
+
+      // Dispatch email (designed S105, built S155). A failed send must not 500
+      // the postback — Printsmarter would retry and we'd re-process — so email
+      // errors are logged, never thrown.
+      if (order.email) {
+        try {
+          const transporter = createTransporter();
+          const trackingBlock = trackingUrl
+            ? emailButton(trackingUrl, 'Track your delivery')
+            : '';
+          await transporter.sendMail({
+            ...FROM.customer,
+            to: order.email,
+            subject: 'Your Aevia book has shipped',
+            html: renderEmail(`
+              <p style="margin:0 0 18px">Hi ${order.customerName || ''},</p>
+              <p style="margin:0 0 22px">Your book is printed, bound, and on its way to you.</p>
+              ${trackingBlock}
+              <p style="margin:22px 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a8a8a">Delivery</p>
+              <p style="margin:0;font-size:15px;color:#6a6a6a;line-height:1.7">${trackingNumber ? `Tracking number: ${trackingNumber}. ` : ''}Most deliveries arrive within 7 days.</p>
+            `, { support: true }),
+          });
+        } catch (mailErr) {
+          console.error('printsmarterPostback: dispatch email failed for', orderNumber, mailErr);
+        }
+      }
+
+      return res.status(200).json({ received: true });
+    } catch (err) {
+      console.error('printsmarterPostback error:', err);
+      return res.status(400).json({ error: err.message });
+    }
+  });
+
 // ── Mark order as sent to print (staff tool) ────────────────────────────────
 // Accepts { orderNumber } with x-staff-key header
 // Transitions order from 'paid' to 'sent_to_print', guarded against wrong state
+// Pre-dates the Printsmarter API (S155): this only flips the status for the
+// manual-handoff flow. submitPrintOrder above replaces it once the API is live.
 exports.markSentToPrint = functions
   .region('europe-west1')
   .runWith({ timeoutSeconds: 30, memory: '256MB' })

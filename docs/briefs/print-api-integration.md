@@ -1,5 +1,11 @@
 # Print API integration — HP Site Flow
 
+> ⚠️ **SUPERSEDED on the API (S155).** The 2026-08-05 call confirmed we integrate against
+> **Printsmarter's own API**, not HP Site Flow. The auth scheme, endpoints, payload shape and the
+> €900 setup fee below **do not apply**. Read [printsmarter-api.md](printsmarter-api.md) instead.
+> Kept because §2–§3 (one product covers all templates and both page counts) and the unanswered
+> commercial questions in §4 still hold. §1's spine bug was **fixed in S152–S153**.
+
 _Internal brief. Session 123 (2026-07-13). Status: RESEARCH ONLY, nothing built._
 
 Print hub runs **HP Site Flow**. Their API would let us drop a paid order straight into

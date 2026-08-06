@@ -348,6 +348,7 @@
   const GENERATE_PDF_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/generatePdf';
   const GET_PDF_STATUS_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getPdfStatus';
   const MARK_SENT_TO_PRINT_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/markSentToPrint';
+  const SUBMIT_PRINT_ORDER_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/submitPrintOrder';
   const SEND_PREVIEW_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/sendPreviewEmail';
 
   // Headers for staff Cloud Function calls — sends the current user's Firebase
@@ -559,8 +560,11 @@
           </div>
           <div class="print-action-row" id="print-action-${esc(o.orderNumber)}" style="margin-top:8px;">
             ${o.status === 'paid'
-              ? `<button class="pdf-link-btn" onclick="markSentToPrint('${esc(o.orderNumber)}')">Mark approved for print</button>`
-              : (o.status === 'sent_to_print' ? `<span style="font-size:10px;color:var(--muted);">Sent to print</span>` : '')
+              ? `<button class="pdf-link-btn" onclick="markSentToPrint('${esc(o.orderNumber)}')">Mark approved for print</button>
+                 <button class="pdf-link-btn" onclick="sendToPrintsmarter('${esc(o.orderNumber)}')">Send to Printsmarter</button>`
+              : (o.status === 'sent_to_print'
+                  ? `<span style="font-size:10px;color:var(--muted);">Sent to print${o.printsmarterOrderId ? ' · PS #' + esc(String(o.printsmarterOrderId)) : ''}</span>`
+                  : '')
             }
           </div>
         </td>
@@ -912,6 +916,56 @@
       }
     } catch (err) {
       alert('Could not mark order as approved for print: ' + err.message);
+    }
+  };
+
+  // ── Send order to Printsmarter via API (S155) ─────────────────────────────
+  // Unlike markSentToPrint (a status flip for the manual flow), this actually
+  // submits the order to production. The confirm shows exactly what is about to
+  // be printed and shipped — a real book and a real invoice hang on this click.
+  // Server-side guards (once-only, paid-status, kill-switch) back this up.
+  window.sendToPrintsmarter = async function(orderNumber) {
+    const order = allOrders.find(o => o.orderNumber === orderNumber);
+    const addr = order?.shippingAddress;
+    const addrLine = addr
+      ? `${addr.line1 || ''}${addr.line2 ? ', ' + addr.line2 : ''}, ${addr.postal_code || ''} ${addr.city || ''}, ${addr.country || ''}`
+      : '⚠ NO SHIPPING ADDRESS ON ORDER';
+
+    const confirmed = confirm(
+      `Send this order to Printsmarter for REAL printing?\n\n` +
+      `Order: ${orderNumber}\n` +
+      `Pages: ${order?.pageCount ?? '?'}\n` +
+      `Customer: ${order?.customerName || '?'}\n` +
+      `Ships to: ${addrLine}\n\n` +
+      `A physical book will be printed and invoiced. This cannot be undone from here.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(SUBMIT_PRINT_ORDER_ENDPOINT, {
+        method: 'POST',
+        headers: await staffHeaders(),
+        body: JSON.stringify({ orderNumber }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        if (order) {
+          order.status = 'sent_to_print';
+          order.printsmarterOrderId = data.printsmarterOrderId;
+          order.statusHistory = order.statusHistory || [];
+          order.statusHistory.push({
+            status: 'sent_to_print',
+            timestamp: { seconds: Math.floor(Date.now() / 1000) }
+          });
+        }
+        renderTable();
+        alert(`Submitted to Printsmarter. Their order id: ${data.printsmarterOrderId}`);
+      } else {
+        alert(`Not submitted: ${data.error || res.status}`);
+      }
+    } catch (err) {
+      alert('Could not submit to Printsmarter: ' + err.message);
     }
   };
 
