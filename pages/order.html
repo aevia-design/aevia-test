@@ -2433,15 +2433,19 @@ async function submitOrder() {
     }
 
     function updateProgress() {
-      const sizeLabel = totalBytes > 0 ? ` · ${fmtBytes(uploadedBytes)} / ${fmtBytes(totalBytes)}` : '';
+      // Include in-flight bytes from active workers in the total displayed
+      const inFlightTotal = Object.values(workerInFlightBytes || {}).reduce((sum, b) => sum + b, 0);
+      const displayedBytes = uploadedBytes + inFlightTotal;
+      const sizeLabel = totalBytes > 0 ? ` · ${fmtBytes(displayedBytes)} / ${fmtBytes(totalBytes)}` : '';
       overlayCount.textContent = `${uploadedCount} of ${total} photos${sizeLabel}`;
-      overlayFill.style.width = `${Math.round((uploadedCount / total) * 100)}%`;
+      // Drive progress bar from bytes (displayedBytes), not file count — so it moves mid-file
+      overlayFill.style.width = totalBytes > 0 ? `${Math.round((displayedBytes / totalBytes) * 100)}%` : '0%';
 
       // Time estimate: based on bytes/sec so far
-      if (uploadedBytes > 0 && uploadedBytes < totalBytes) {
+      if (uploadedBytes > 0 && displayedBytes < totalBytes) {
         const elapsed = (Date.now() - uploadStartTime) / 1000;
         const rate = uploadedBytes / elapsed;
-        const remaining = (totalBytes - uploadedBytes) / rate;
+        const remaining = (totalBytes - displayedBytes) / rate;
         timeEl.textContent = `About ${fmtTime(remaining)} remaining`;
       } else {
         timeEl.textContent = '';
@@ -2455,15 +2459,16 @@ async function submitOrder() {
 
     // Worker pool: 5 slots in parallel
     const CONCURRENCY = 5;
-    // S147: a stalled PUT never rejects, so the catch below never runs, the
-    // overlay spins forever and the failure leaves no trace at all — which is
-    // exactly what happened to AEV-075. Abort an attempt that goes quiet so a
-    // hang becomes a recorded, retryable failure instead of an invisible one.
-    // 60s is generous here (a whole 115 MB order uploads in ~15s on the studio
-    // connection) but it is a diagnostic threshold, not a tuned one: revisit
-    // before real customers upload over slow mobile links.
-    const ATTEMPT_TIMEOUT_MS = 60000;
+    // S151: progress-based stall detection. Instead of a fixed 60s timeout that
+    // aborts healthy slow uploads, abort only when NO bytes move for STALL_TIMEOUT_MS.
+    // XMLHttpRequest.upload.onprogress fires every few hundred ms on a healthy
+    // connection, so 30s of total silence unambiguously means "stalled".
+    const STALL_TIMEOUT_MS = 30000;
+    const MAX_ATTEMPT_MS = 900000; // 15 min — absolute ceiling, pathological case guard
     let nextIndex = 0;
+    // Track in-flight bytes per worker so progress bar reflects partial file transfers
+    const workerInFlightBytes = {};
+
     async function worker() {
       while (nextIndex < total) {
         const i = nextIndex++;
@@ -2474,51 +2479,124 @@ async function submitOrder() {
         // a hang and a 403 need different fixes.
         const attemptLog = [];
         const fileStartedAt = Date.now();
+        workerInFlightBytes[i] = 0;
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           const attemptStartedAt = Date.now();
-          const ctrl  = new AbortController();
-          const timer = setTimeout(() => ctrl.abort(), ATTEMPT_TIMEOUT_MS);
+          let progressTimer = null;
+          let stallDetected = false;
+          let maxAttemptExceeded = false;
+          let bytesTransferred = 0;
+          workerInFlightBytes[i] = 0;  // Reset in-flight bytes at start of each attempt
+
           try {
-            const putRes = await fetch(uploadUrls[i].url, {
-              method:  'PUT',
-              body:    fileObjects[i],
-              headers: { 'Content-Type': uploadUrls[i].contentType },
-              signal:  ctrl.signal,
+            // XMLHttpRequest to enable upload progress tracking
+            const xhr = new XMLHttpRequest();
+            const xhrPromise = new Promise((resolve, reject) => {
+              // Max attempt time ceiling (pathological case guard)
+              const maxTimer = setTimeout(() => {
+                maxAttemptExceeded = true;
+                xhr.abort();
+                reject(new Error('MAX_ATTEMPT_MS exceeded'));
+              }, MAX_ATTEMPT_MS);
+
+              // Progress event: resets the stall timer and updates in-flight byte count
+              // NOTE: xhr.upload.progress events stop firing once the REQUEST BODY is fully sent.
+              // After that, we wait for GCS acknowledgement (xhr 'load' event), which can exceed 30s.
+              // We do NOT reschedule the stall timer after the body is fully sent (e.loaded >= e.total).
+              xhr.upload.addEventListener('progress', (e) => {
+                if (progressTimer) clearTimeout(progressTimer);
+                bytesTransferred = e.loaded || 0;
+                workerInFlightBytes[i] = bytesTransferred;
+                updateProgress();
+                // Only reschedule stall timer while the body is still being sent.
+                // If body is complete, do not reschedule — we're now awaiting response.
+                if (e.loaded < e.total) {
+                  progressTimer = setTimeout(() => {
+                    stallDetected = true;
+                    xhr.abort();
+                  }, STALL_TIMEOUT_MS);
+                }
+              });
+
+              xhr.addEventListener('load', () => {
+                clearTimeout(maxTimer);
+                if (progressTimer) clearTimeout(progressTimer);
+                resolve();
+              });
+
+              xhr.addEventListener('error', () => {
+                clearTimeout(maxTimer);
+                if (progressTimer) clearTimeout(progressTimer);
+                reject(new Error(xhr.status ? `HTTP ${xhr.status}` : 'Network error'));
+              });
+
+              xhr.addEventListener('abort', () => {
+                clearTimeout(maxTimer);
+                if (progressTimer) clearTimeout(progressTimer);
+                reject(new Error('AbortError'));
+              });
+
+              xhr.open('PUT', uploadUrls[i].url);
+              xhr.setRequestHeader('Content-Type', uploadUrls[i].contentType);
+              xhr.send(fileObjects[i]);
+
+              // Arm initial stall timer (fires if no progress event within STALL_TIMEOUT_MS)
+              progressTimer = setTimeout(() => {
+                stallDetected = true;
+                xhr.abort();
+              }, STALL_TIMEOUT_MS);
             });
 
-            if (!putRes.ok) {
-              // GCS puts the real reason in the body (e.g. SignatureDoesNotMatch).
-              const body = await putRes.text().catch(() => '');
+            await xhrPromise;
+
+            // Check HTTP status
+            if (xhr.status < 200 || xhr.status >= 300) {
+              const body = xhr.responseText || '';
               attemptLog.push({
                 attempt,
-                status: putRes.status,
-                statusText: putRes.statusText || '',
+                status: xhr.status,
+                statusText: xhr.statusText || '',
                 ms: Date.now() - attemptStartedAt,
+                bytesTransferred,
+                totalBytes: fileObjects[i].size || 0,
                 body: body.slice(0, 400),
               });
               if (attempt < maxRetries) {
-                // Retry with short backoff (100ms * attempt)
-                await new Promise(r => setTimeout(r, 100 * attempt));
+                // Retry with proper backoff: 2s then 5s (was 100ms then 200ms)
+                await new Promise(r => setTimeout(r, attempt === 1 ? 2000 : 5000));
                 continue;
               } else {
-                throw new Error(`Upload failed with status ${putRes.status}`);
+                throw new Error(`Upload failed with status ${xhr.status}`);
               }
             }
 
             success = true;
             break;
           } catch (e) {
-            // An AbortError here is our own timeout firing, not a user action —
-            // label it so the log distinguishes "stalled" from "refused".
-            const timedOut = e.name === 'AbortError';
+            // Distinguish three failure types:
+            // - STALL: no progress for 30s (detected by stallDetected flag)
+            // - MAX_ATTEMPT_MS: exceeded 15-min ceiling (maxAttemptExceeded flag)
+            // - Other: HTTP error or network error
+            let errorMsg = '';
+            let timedOut = false;
+            if (stallDetected) {
+              errorMsg = `STALL: no progress for ${STALL_TIMEOUT_MS} ms`;
+              timedOut = true;
+            } else if (maxAttemptExceeded) {
+              errorMsg = `TIMEOUT: attempt exceeded ${MAX_ATTEMPT_MS} ms ceiling`;
+              timedOut = true;
+            } else {
+              errorMsg = `${e.name || 'Error'}: ${e.message}`;
+              timedOut = e.message === 'AbortError';
+            }
             attemptLog.push({
               attempt,
-              error: timedOut
-                ? `TIMEOUT: no response within ${ATTEMPT_TIMEOUT_MS} ms`
-                : `${e.name}: ${e.message}`,
+              error: errorMsg,
               timedOut,
               ms: Date.now() - attemptStartedAt,
+              bytesTransferred,
+              totalBytes: fileObjects[i].size || 0,
             });
             if (attempt === maxRetries) {
               const failure = {
@@ -2529,6 +2607,8 @@ async function submitOrder() {
                 declaredType: filesMeta[i] ? filesMeta[i].type : null,
                 signedType:   uploadUrls[i] ? uploadUrls[i].contentType : null,
                 sizeBytes:    fileObjects[i] ? fileObjects[i].size : null,
+                bytesTransferred,
+                totalBytes: fileObjects[i].size || 0,
                 totalMs:      Date.now() - fileStartedAt,
                 attempts:     attemptLog,
               };
@@ -2536,15 +2616,14 @@ async function submitOrder() {
               console.error('[upload] gave up on slot', i + 1, failure);
               throw e;
             }
-            // Retry with short backoff
-            await new Promise(r => setTimeout(r, 100 * attempt));
-          } finally {
-            clearTimeout(timer);
+            // Retry with proper backoff
+            await new Promise(r => setTimeout(r, attempt === 1 ? 2000 : 5000));
           }
         }
 
         if (success) {
           uploadedBytes += fileObjects[i].size || 0;
+          workerInFlightBytes[i] = 0; // Clear in-flight bytes once committed
           uploadedCount++;
           updateProgress();
         }
