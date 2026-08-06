@@ -66,6 +66,11 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   SVG re-export from Xenia, and do not trust `qa/verify-spine-s152.mjs` alone (it checks element
   positions, not whether the artwork landed).
 - Unit tests: `tests/` (run with `npm test` from project root)
+- **`npm test` does NOT execute `pages/order.html`** — those tests mirror its logic rather than
+  running it, which is how a crash reached the live rig in S154 with 281 tests green. Before
+  pushing any change to the order form run `npm run qa:order` (mocked, no cloud cost, ~1 min).
+  A `.githooks/pre-push` hook does this automatically; it needs `git config core.hooksPath
+  .githooks` once per clone. See LEARNINGS.md (S156).
 - QA browser scripts: `qa/` (Playwright via Node; see `qa/README.md` for the script index, reusable techniques + gotchas; run artefacts in `sessions/qa-runs/`, gitignored).
   Pre-launch QA plan + findings: `work/pre-launch-qa/` (`case-catalogue_v1.md` is the sign-off
   gate; `findings_v1.md` P0, `findings-p1-*.md`, `findings-p2.md`). **P0/P1/P2 all run as of S150.**

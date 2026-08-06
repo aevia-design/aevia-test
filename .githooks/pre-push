@@ -1,0 +1,28 @@
+#!/bin/sh
+# Runs the mocked order-flow harness before pushing a change to the order form.
+#
+# Why this exists: pages/order.html is not executed by `npm test` — the unit tests
+# mirror its logic rather than running it. In S154 that let a crash reach the live
+# rig with 281 tests green; every upload failed until S156. The harness covers the
+# real submit path with all backend calls mocked, so it costs nothing but a minute.
+#
+# Only fires when order.html actually changed. To skip in an emergency:
+#   git push --no-verify
+
+changed=$(git diff --name-only @{push}..HEAD 2>/dev/null || git diff --name-only origin/main..HEAD 2>/dev/null)
+
+case "$changed" in
+  *pages/order.html*)
+    echo "pre-push: pages/order.html changed — running the order-flow harness."
+    if npm run --silent qa:order; then
+      echo "pre-push: order flow OK."
+    else
+      echo ""
+      echo "pre-push: BLOCKED — a customer could not complete an order with this change."
+      echo "          Fix it, or push with --no-verify if you know why it fails."
+      exit 1
+    fi
+    ;;
+esac
+
+exit 0

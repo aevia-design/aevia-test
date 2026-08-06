@@ -1,3 +1,36 @@
+## 2026-08-06 — A test that mirrors code proves nothing about the code (S156)
+
+**Every upload on the live rig was broken for a day, with 281 tests green the whole time.**
+`10536f2` shipped `const workerInFlightBytes` declared 15 lines *after* the line that reads it,
+so `order.html` threw `Cannot access 'workerInFlightBytes' before initialization` before a single
+byte moved. A `|| {}` fallback sat on the read and did nothing: with `const`, touching the name
+before its declaration is itself the error, so `||` never evaluates. **The guard that made the
+code look careful is why nobody looked harder.** It would have worked with `var`.
+
+**Why the suite was silent.** Three test files name `order.html`; none execute it. They
+transcribe its logic — *"House-style: mirrors the predicate from pages/order.html"* — and assert
+the transcription behaves. A mirrored test verifies a copy, and a copy cannot crash on load. So
+the suite's 281 passes carried **zero** information about whether the page ran at all. This is the
+same shape as the S149 environment-matrix blind spot: breadth of assertions masking the absence of
+the one check that mattered.
+
+**Third occurrence in four sessions.** S153, S154 (`export-pdf.js`, "I wrote the call into
+export-pdf BEFORE defining the function and all 252 tests still passed"), now S156. Three
+identical failures is not carelessness — it is a missing capability, and the fix belongs at that
+level, not in another careful code review.
+
+**What was NOT the answer.** Adding ESLint, and adding a new smoke test. A browser harness
+covering exactly this path *already existed* (`qa/order-hardening-mock.mjs`, every backend call
+mocked, no cloud cost) and had rotted unnoticed — it waited on a button label that had since been
+reworded, and could not even reach submit. **A second forgettable check would have rotted the same
+way.** Repaired, and the run now reads `#err-step2` on failure, because `submitOrder()` catches its
+own exceptions: a crash otherwise looks identical to "success never arrived".
+
+**The rule:** `npm test` cannot tell you a customer can place an order. A `.githooks/pre-push`
+hook now runs `npm run qa:order` whenever `pages/order.html` changes. Select page elements by id
+or position, never by copy — the rot here was one reworded button. And when a check exists but
+nobody runs it, automate the running; do not write a better reminder.
+
 ## 2026-08-06 — Bugs that were always there, revealed by a change elsewhere (S154)
 
 **Three separate defects surfaced this session, none of them newly introduced. Each had been
