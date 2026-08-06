@@ -1458,6 +1458,76 @@ exports.submitPrintOrder = functions
     }
   });
 
+// ── Printsmarter shipping postback (S155) ────────────────────────────────────
+// Printsmarter calls this when a book ships, with the tracking number + URL.
+// We register the URL with them BY EMAIL, including the secret path segment:
+//   https://europe-west1-aevia-uploads.cloudfunctions.net/printsmarterPostback/<PRINTSMARTER_POSTBACK_SECRET>
+//
+// Defence against forged postbacks (their auth answer is pending; this works
+// even if they offer none):
+//   1. The secret path — a caller who doesn't know it gets 404, nothing else.
+//   2. Plausibility — the order must exist, must have been submitted via the
+//      API (has printsmarterOrderId), and must not already be shipped.
+//   3. parseShippingPostback rejects any non-https tracking URL, so a forged
+//      payload can't plant an arbitrary link in front of a customer.
+// The dispatch email to the customer hangs off this (designed S105) — NOT yet
+// wired; this receiver only records tracking and moves the status.
+exports.printsmarterPostback = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const secret = process.env.PRINTSMARTER_POSTBACK_SECRET;
+    // Constant 404 (not 403) for a wrong or missing secret: don't confirm to a
+    // prober that this endpoint exists at all.
+    if (!secret || req.path !== `/${secret}`) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    try {
+      const { parseShippingPostback } = require('./printsmarter');
+      const { orderNumber, trackingNumber, trackingUrl } = parseShippingPostback(req.body);
+
+      const db = admin.firestore();
+      const doc = await db.collection('orders').doc(orderNumber).get();
+      if (!doc.exists) {
+        console.warn('printsmarterPostback: unknown order', orderNumber);
+        return res.status(404).json({ error: 'Unknown order' });
+      }
+      const order = doc.data();
+
+      if (!order.printsmarterOrderId) {
+        console.warn('printsmarterPostback: order was never submitted via API', orderNumber);
+        return res.status(409).json({ error: 'Order not submitted via API' });
+      }
+      if (['in_delivery', 'delivered'].includes(order.status)) {
+        // Repeat delivery of the same postback — fine, but change nothing.
+        return res.status(200).json({ received: true, duplicate: true });
+      }
+
+      // NOTE (S11 invariant): Timestamp.now() inside arrayUnion, not serverTimestamp()
+      await doc.ref.update({
+        status: 'in_delivery',
+        trackingNumber,
+        trackingUrl,
+        shippedAt: admin.firestore.FieldValue.serverTimestamp(),
+        statusHistory: admin.firestore.FieldValue.arrayUnion({
+          status: 'in_delivery',
+          timestamp: admin.firestore.Timestamp.now()
+        })
+      });
+
+      // TODO (step 5): send the customer their dispatch email with trackingUrl
+      // (designed S105; copy needs the owner + a /stop-slop pass before shipping).
+
+      return res.status(200).json({ received: true });
+    } catch (err) {
+      console.error('printsmarterPostback error:', err);
+      return res.status(400).json({ error: err.message });
+    }
+  });
+
 // ── Mark order as sent to print (staff tool) ────────────────────────────────
 // Accepts { orderNumber } with x-staff-key header
 // Transitions order from 'paid' to 'sent_to_print', guarded against wrong state

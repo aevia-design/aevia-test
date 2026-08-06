@@ -218,3 +218,42 @@ describe('parseAddOrderResponse — their documented response shapes', () => {
     expect(() => parseAddOrderResponse({})).toThrow();
   });
 });
+
+describe('parseShippingPostback — their documented postback shape', () => {
+  const { parseShippingPostback } = require('../functions/printsmarter');
+
+  test('extracts order number and tracking from the documented payload', () => {
+    const r = parseShippingPostback({
+      shipment: {
+        order_id_client: 'AEV-052',
+        tracking_number: '00111111111111111111',
+        tracking_url: 'https://www.dhl.de/track?piececode=00111111111111111111',
+      },
+    });
+    expect(r).toEqual({
+      orderNumber: 'AEV-052',
+      trackingNumber: '00111111111111111111',
+      trackingUrl: 'https://www.dhl.de/track?piececode=00111111111111111111',
+    });
+  });
+
+  test('rejects a payload without an order number', () => {
+    expect(() => parseShippingPostback({ shipment: { tracking_number: 'x' } })).toThrow(/order_id_client/);
+    expect(() => parseShippingPostback({})).toThrow(/order_id_client/);
+    expect(() => parseShippingPostback(null)).toThrow(/order_id_client/);
+  });
+
+  test('rejects a non-https tracking URL — it goes into a customer email', () => {
+    expect(() => parseShippingPostback({
+      shipment: { order_id_client: 'AEV-052', tracking_number: '1', tracking_url: 'javascript:alert(1)' },
+    })).toThrow(/tracking_url/);
+    expect(() => parseShippingPostback({
+      shipment: { order_id_client: 'AEV-052', tracking_number: '1', tracking_url: 'http://insecure.example' },
+    })).toThrow(/tracking_url/);
+  });
+
+  test('tracking url is optional — number alone is still a valid shipment notice', () => {
+    const r = parseShippingPostback({ shipment: { order_id_client: 'AEV-052', tracking_number: '1' } });
+    expect(r.trackingUrl).toBe('');
+  });
+});

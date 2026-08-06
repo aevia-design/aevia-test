@@ -127,10 +127,29 @@ async function submitOrder(payload, config, fetchImpl = fetch) {
   return parseAddOrderResponse(await res.json());
 }
 
+// Their shipping postback: { shipment: { order_id_client, tracking_number,
+// tracking_url } }. The tracking URL ends up in a customer email, so anything
+// that is not https is rejected outright — a forged or malformed postback must
+// not be able to put an arbitrary link in front of a customer.
+function parseShippingPostback(json) {
+  const s = (json && json.shipment) || {};
+  if (!s.order_id_client) throw new Error('Postback has no shipment.order_id_client');
+  const trackingUrl = s.tracking_url || '';
+  if (trackingUrl && !/^https:\/\//.test(trackingUrl)) {
+    throw new Error('Postback tracking_url is not https — refusing it');
+  }
+  return {
+    orderNumber: s.order_id_client,
+    trackingNumber: s.tracking_number || '',
+    trackingUrl,
+  };
+}
+
 module.exports = {
   printsmarterConfig,
   buildOrderPayload,
   parseAddOrderResponse,
+  parseShippingPostback,
   submitOrder,
   PRICE_BY_PAGE_COUNT,
 };
