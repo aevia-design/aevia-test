@@ -50,7 +50,7 @@ describe('activeMonogramDef (PDF) mirrors the engines', () => {
     expect(intro('roots')[0]).toBe(intro('roots')[1]);
     // Birds/Roses sit apart by the amounts the sizing CSV specifies.
     expect(Math.abs(back('birds')[1] - back('birds')[0])).toBe(5);
-    expect(Math.abs(back('roses')[1] - back('roses')[0])).toBe(29);
+    expect(Math.abs(back('roses')[1] - back('roses')[0])).toBe(30);  // 29 before Xenia's S158 nudge
   });
 
   // All live text is plum. The letter rows were blank in the first CSV and briefly

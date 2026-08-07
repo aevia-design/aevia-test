@@ -167,6 +167,11 @@ colour-blind downstream of the product page._
 - **Intro page side:** CSV says "Left" but its x-coords (105/108) follow the right-page
   convention → modelled as a right page (like Tender). Confirm on first render.
 - **Cover CSV mojibake** in Page-size column (`200Ãƒâ€”200mm`) — cosmetic, ignored.
+- **⚠ The CSV export format CHANGED mid-build (S158).** Xenia's later exports are
+  **comma-delimited with a title row above the header**; the first drop was
+  semicolon-delimited with the header on line 1. Any parser must sniff the delimiter
+  and locate the header by finding the row starting `Type`, not assume line 1. The
+  three new colourways will likely arrive in the new format.
 - **Spine caption box** CSV 6w×70h → data `wMm:70 hMm:6` (same swap as Tender). Verify centring.
 - **Monogram descriptions for the product page** — owner to share later (point 12 of the brief).
 - **3 more colourways pending** from Xenia; each = new folder + data file + registry entries.

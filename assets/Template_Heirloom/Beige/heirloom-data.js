@@ -90,13 +90,15 @@ window.HEIRLOOM_DATA = {
       coverSvg: 'Cover/Cover_40_Roses.svg',
       introSvg: 'FP Spread 0/FP 01 Intro Roses.svg',
       coverClipShape: 'coverFrameShifted',
+      // Roses letters nudged by Xenia (S158): intro 95,166/121,166 → 94,167/121,167;
+      // back 104,121/133,121 → 103,123/133,123. Roots and Birds were not touched.
       introLetters: [
-        { key: 'letter1', xMm: 95,  yMm: 166, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
-        { key: 'letter2', xMm: 121, yMm: 166, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
+        { key: 'letter1', xMm: 94,  yMm: 167, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
+        { key: 'letter2', xMm: 121, yMm: 167, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
       ],
       backLetters: [
-        { key: 'letter1', xMm: 104, yMm: 121, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
-        { key: 'letter2', xMm: 133, yMm: 121, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter1', xMm: 103, yMm: 123, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter2', xMm: 133, yMm: 123, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
       ],
     },
   },
