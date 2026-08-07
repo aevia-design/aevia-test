@@ -119,21 +119,29 @@ window.HEIRLOOM_DATA = {
     // centre is at trim y = 80mm (clip 113.386–340.159px), and the engine subtracts 18
     // from BOTH axes — so yMm here is 98 (98 − 18 = 80). Verified against the render S157.
     slots: [
-      { key: 'cover', xMm: 327, yMm: 98, wMm: 80, hMm: 80, pool: 'cover', orientation: 'square', clipShape: 'coverFrame' }
+      // xMm tracks the Roots opening centre (309.62 trim + 18 bleed). The second cover
+      // drop moved the opening 0.62mm right; without this the photo sits off-centre in
+      // the frame by that much and background shows down one edge.
+      { key: 'cover', xMm: 327.62, yMm: 98, wMm: 80, hMm: 80, pool: 'cover', orientation: 'square', clipShape: 'coverFrame' }
     ],
     // Rounded-corner 80×80mm square opening (r = 2mm), expressed in the cover SVG's space:
     // viewBox 1162.205×566.929 over the 410mm trim ⇒ 2.83465 px/mm, origin at trim
     // top-left (NO bleed offset). Birds/Roses art is shifted +1.418px (0.5mm) right.
     clipShapes: {
+      // RE-EXTRACTED S158 from Xenia's second cover drop. The opening kept its 80mm
+      // size but moved right (Roots +0.62mm, Birds/Roses +1.00mm) and down 0.03mm.
+      // Source of truth is the `fill="none"` rounded-square PATH in each cover SVG —
+      // NOT the solid rect beside it, whose x disagrees with the path by up to 1.8px.
+      // Re-extract on every re-export; a stale path clips the photo off-centre.
       coverFrame: {          // Roots
         pxPerMm: 2.83465,    // 1162.205 / 410
-        bboxPx: { minX: 762.519, minY: 113.386, maxX: 989.292, maxY: 340.159 },
-        d: 'M768.193,113.386h215.425c3.133,0,5.674,2.54,5.674,5.674v215.425c0,3.133-2.54,5.674-5.674,5.674h-215.425c-3.133,0-5.674-2.54-5.674-5.674V119.059c0-3.133,2.54-5.674,5.674-5.674Z'
+        bboxPx: { minX: 764.291, minY: 113.464, maxX: 991.064, maxY: 340.237 },
+        d: 'M769.965,113.464h215.425c3.133,0,5.674,2.54,5.674,5.674v215.425c0,3.133-2.54,5.674-5.674,5.674h-215.425c-3.133,0-5.674-2.54-5.674-5.674V119.137c0-3.133,2.54-5.674,5.674-5.674Z'
       },
-      coverFrameShifted: {   // Birds + Roses (+1.418px)
+      coverFrameShifted: {   // Birds + Roses (+1.063px right of Roots)
         pxPerMm: 2.83465,
-        bboxPx: { minX: 763.937, minY: 113.386, maxX: 990.71, maxY: 340.159 },
-        d: 'M769.611,113.386h215.425c3.133,0,5.674,2.54,5.674,5.674v215.425c0,3.133-2.54,5.674-5.674,5.674h-215.425c-3.133,0-5.674-2.54-5.674-5.674V119.059c0-3.133,2.54-5.674,5.674-5.674Z'
+        bboxPx: { minX: 765.354, minY: 113.464, maxX: 992.127, maxY: 340.237 },
+        d: 'M771.028,113.464h215.425c3.133,0,5.674,2.54,5.674,5.674v215.425c0,3.133-2.54,5.674-5.674,5.674h-215.425c-3.133,0-5.674-2.54-5.674-5.674V119.137c0-3.133,2.54-5.674,5.674-5.674Z'
       }
     },
     // Front: couple's names (IM FELL 50pt, one caption — no subtitle). Spine: label
