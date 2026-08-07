@@ -1,14 +1,16 @@
 # Session Status
-_Last updated: 2026-08-07 (session 157)_
-_Context at save: **Heirloom Phase A is complete, owner-approved, and UNCOMMITTED.** The
-working tree carries the whole template build (new `assets/Template_Heirloom/`, 2 fonts, edits
-to both engines + `scripts/export-pdf.js`). 312 tests green, smoke test passes. The S156
-business-case deletion is still deliberately uncommitted._
+_Last updated: 2026-08-07 (session 158)_
+_Context at save: **Heirloom Phase A + B are built and PUSHED** (`6120b74`, `a310d54`,
+`eae4e2d`, `2846e44`). 320 tests green. Stage 7 (PDF) code is written but **UNVERIFIED** —
+it needs an owner Cloud Run redeploy + a dashboard render. The S156 business-case deletion
+and a `test photos/IMG_5249.HEIC` deletion are still deliberately uncommitted._
 
 ## Status
-**Session 157 (2026-08-07) — building Heirloom, the most complex template so far. Phase A
-(engine renders) is DONE and signed off. Phase B (order form → customer-preview → PDF) is next
-and has not been started.**
+**Session 158 (2026-08-07) — Heirloom Phase B. Stage 5 (order form) and Stage 6
+(customer-preview parity) are DONE and verified. Stage 7 (PDF) is CODE-COMPLETE but has
+never been run: the owner was about to generate the first PDF when the session ended.**
+
+**Immediate next action: generate the first Heirloom PDF** (see Next steps 1).
 
 1. **Heirloom = 4 colourways × 3 monograms.** Colour is modelled as **one registry entry +
    data file per colourway** (`heirloom-beige`); the order form, engines and PDF stay
@@ -32,6 +34,15 @@ and has not been started.**
    template uses → `referenceSpineMm: 10`. Owner confirmed.
 
 ## Recent decisions
+- **Monogram is chosen on the PRODUCT page, not the order form (S158, owner).** Arrives as
+  `&monogram=<key>`; travels in `fpTexts` (no backend change). The order form shows no picker.
+- **Our story = Tender's model (S158, owner):** customer's own words on the page, staff polish
+  by hand. Xenia's `Our Story Page_Text.txt` is a voice REFERENCE, not a template.
+  "Why I love him/her" is free-form customer text. Only the **intro** is fill-in-the-blanks.
+- **All Heirloom inner-page captions are `#312128` (S158, owner set it in the CSV).** The
+  earlier taupe `#7c746e` was an assumption and is gone. Back-cover letters were always plum.
+- **Do NOT nudge letter coordinates to fix the lopsided monogram (S158).** Position is correct;
+  the letter box is too tight for wide capitals. Xenia to widen the artwork.
 - **Colour = registry key, not a runtime variant (S157, owner).** Four designed sub-templates,
   nothing recoloured on the fly.
 - **Monograms are data, not code (S157).** One `monograms` block drives three surfaces.
@@ -48,22 +59,34 @@ and has not been started.**
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **Heirloom Phase B — Stage 5, the order form.** Monogram picker + partners' initials,
-   mandatory intro fields, Our-story add-on, and the "Why I love him/her" add-on that must
-   produce TWO spreads from ONE purchase with separate inputs. `order.monogram` needs writing
-   to the order doc (route it like `zodiacSign`; the `saveStaffState` whitelist does not carry
-   it and does not need to). **⚠ touching `pages/order.html` triggers the pre-push
-   `qa:order` hook — good, let it run.**
-2. **Then Stages 6–7: customer-preview + PDF parity.** Both know NOTHING of monograms —
-   every rule added to the staff engine in S157 must be mirrored twice. PDF needs an owner
-   Cloud Run redeploy + dashboard generation to verify.
-3. **Commit the Heirloom work.** It is entirely uncommitted; nothing is on a branch.
-4. **Re-verify the other four templates' covers at 80pp** (carried from S156) — the S156
+1. **Generate the first Heirloom PDF — Stage 7's gate.** A real Beige order already exists
+   (owner placed it S158). Sequence: open it in the engine → **Save book state** →
+   `gcloud run deploy aevia-pdf-renderer --source . --memory 8Gi` → **Generate PDF** from the
+   dashboard. ⛔ **Never render locally** — that pulls full-res originals from GCS and bills
+   egress. Check: cover shows the ORDERED monogram (not Roots), the four initials sit in the
+   artwork's pockets, the spine label centres on the band, the intro passage doesn't clip.
+   **Two failure signatures:** `Unknown template "heirloom-beige"` = the redeploy didn't take;
+   a **Roots** cover on a Roses order = renderer running old code (`services/pdf-renderer/
+   index.js` carries the monogram and ships in the container, not via Cloudflare).
+2. **Heirloom letter pockets — Xenia is looking into it.** The 8mm letter box is ~40% too
+   tight for wide capitals (`M` at 23pt inks 7.62mm). Owner: not critical, fix later. **Do NOT
+   nudge coordinates** — see the S158 log for why box width has no visual effect.
+3. **Stage 8 — the Heirloom product page.** The monogram is chosen HERE (owner, S158) and
+   appended as `&monogram=<key>`; the order form already preselects from it. Needs the 12
+   mockup sets (4 colours × 3 monograms), which are therefore **launch-blocking**, plus a
+   description per monogram from the owner.
+4. **Wire the three new colourways** — `Brown`, `Green`, `Blue` are on disk (untracked) but
+   NOT built. Each is a full sub-template: data file + registry ×3 surfaces + its own cover
+   clip extraction (openings move per drop). Do this only after Beige is proven end to end.
+5. **Re-verify the other four templates' covers at 80pp** (carried from S156) — the S156
    caption fix moved every template; Scribble and Tender were signed off carrying a 1mm error.
-5. **Verify the stall detection (#94) properly** (carried from S156). The decisive test is a
+6. **Verify the stall detection (#94) properly** (carried from S156). The decisive test is a
    throttled upload exceeding 60s that SUCCEEDS. `qa/quick-stall-test.mjs` is broken.
-6. **Chase Printsmarter on the five open questions (S155)** — the sandbox answer gates any real test.
-7. **Clean up the QA scripts (#60/#95)** — now 14 untracked files in `qa/`.
+7. **Chase Printsmarter on the five open questions (S155)** — the sandbox answer gates any real test.
+8. **Clean up the QA scripts (#60/#95)** — 13 untracked one-offs remain in `qa/`. Also fix the
+   success/error race in `qa/order-hardening-mock.mjs`: if NEITHER screen appears it hangs
+   forever with no output (cost three runs in S158 to spot). `qa/heirloom-order-mock.mjs` has
+   the fixed shape — a wall-clock deadline that screenshots and names the visible panels.
 
 ## Open questions
 - **Heirloom product page needs assets that do not exist yet:** 12 mockup sets (4 colours ×
