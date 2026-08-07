@@ -9,6 +9,7 @@
   <script src="../../assets/Template_Newborn/newborn-data.js"></script>
   <script src="../../assets/Template_Papercut/papercut-data.js"></script>
   <script src="../../assets/Template_Tender/tender-data.js"></script>
+  <script src="../../assets/Template_Heirloom/Beige/heirloom-data.js"></script>
   <script src="../../assets/Template_Joyride/joyride-data.js"></script>
   <script src="../../assets/js/photo-utils.js"></script>
   <script src="../../assets/js/book-completeness.js"></script>
@@ -107,6 +108,16 @@
       font-family: 'Parisienne';
       src: url('../../assets/fonts/Parisienne-Regular.ttf') format('truetype');
       font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'IM FELL English';
+      src: url('../../assets/fonts/IMFellEnglish-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'IM FELL English';
+      src: url('../../assets/fonts/IMFellEnglish-Italic.ttf') format('truetype');
+      font-weight: 400; font-style: italic; font-display: swap;
     }
     @font-face {
       font-family: 'Baskervville';
@@ -890,6 +901,7 @@
       <option value="Papercut">Papercut</option>
       <option value="Tender">Tender</option>
       <option value="Joyride">Joyride</option>
+      <option value="Heirloom-Beige">Heirloom (Beige)</option>
     </select>
     <button class="config-export-btn" id="export-state-btn">Export State</button>
     <button class="config-upload-btn" id="upload-btn">+ Add Photos</button>
@@ -950,6 +962,12 @@
   <div class="special-zone" id="special-zone-zodiac" style="display:none;">
     <span class="special-zone-label">Zodiac</span>
     <select class="spread-type-select" id="zodiac-select" title="Zodiac sign (Labour-right overlay)"></select>
+  </div>
+  <!-- Heirloom family monogram (local tester; order mode reads order.monogram). Shown
+       only when the active template declares data.monograms (populateMonogramSelect). -->
+  <div class="special-zone" id="special-zone-monogram" style="display:none;">
+    <span class="special-zone-label">Monogram</span>
+    <select class="spread-type-select" id="monogram-select" title="Family monogram"></select>
   </div>
 </div>
 
@@ -1235,6 +1253,7 @@
     papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../../assets/Template_Papercut/SVG/' },
     tender:   { data: () => window.TENDER_DATA,   svgBase: '../../assets/Template_Tender/' },
     joyride:  { data: () => window.JOYRIDE_DATA,  svgBase: '../../assets/Template_Joyride/SVG/' },
+    'heirloom-beige': { data: () => window.HEIRLOOM_DATA, svgBase: '../../assets/Template_Heirloom/Beige/SVG/' },
   };
 
   let _activeTemplateData = window.SCRIBBLE_DATA; // default
@@ -1536,6 +1555,10 @@
       // Newborn Labour-right zodiac sign. The PDF resolves the matching
       // constellation overlay SVG from this; null/absent for non-zodiac templates.
       zodiacSign: window._newbornZodiac || null,
+      // Heirloom family monogram (roots/birds/roses). Customer-preview + PDF pick
+      // the cover/intro SVG variant and letter positions from this; null/absent
+      // for non-monogram templates.
+      monogram: window._activeMonogram || null,
     };
 
     // Check if in Order mode (staff tool with loaded order)
@@ -1873,11 +1896,16 @@
     const frontStartSvgPx = (secs.back.wMm + referenceSpineMm) * SCALE; // spine|front boundary in SVG space
     const deltaPx      = delta * SCALE;
 
+    // Monogram-aware cover artwork (Heirloom): each monogram is a separate cover SVG
+    // with its own clip variant. Null for every other template → coverDef defaults.
+    const coverMono = getActiveMonogramDef();
+    const coverSvgFile = (coverMono && coverMono.coverSvg) || coverDef.svg;
+
     const zIdx = coverDef.overlayAbovePhotos === false ? '0' : '';
     const mkSvgCopy = (leftPx, clipLeftPx, clipRightPx) => {
       const img = document.createElement('img');
       img.className = 'svg-overlay';
-      img.src = SVG_BASE + coverDef.svg;
+      img.src = SVG_BASE + coverSvgFile;
       img.alt = '';
       // Natural (reference) width so the artwork is never scaled; position + clip select the panel.
       img.style.cssText = `width:${svgNaturalPx}px;left:${leftPx}px;` +
@@ -1918,11 +1946,14 @@
       // trim origin). Both the slot's canvas-px left/top and a path scaled by
       // SCALE/pxPerMm share the same trim-origin*SCALE frame, so to express the
       // path in the slot's LOCAL px space we scale by f and translate by -slotL/-slotT.
-      const clipDef = slotDef.clipShape && coverDef.clipShapes
-        ? coverDef.clipShapes[slotDef.clipShape] : null;
+      // Monogram override: Heirloom's Birds/Roses cover art sits 0.5mm right of Roots,
+      // so each monogram names its own clip variant (coverClipShape).
+      const clipKey = (coverMono && coverMono.coverClipShape) || slotDef.clipShape;
+      const clipDef = clipKey && coverDef.clipShapes
+        ? coverDef.clipShapes[clipKey] : null;
       if (clipDef) {
         const f = SCALE / clipDef.pxPerMm;
-        const clipId = 'coverClip-' + slotDef.clipShape;
+        const clipId = 'coverClip-' + clipKey;
         const ns = 'http://www.w3.org/2000/svg';
         const svg = document.createElementNS(ns, 'svg');
         svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
@@ -1978,7 +2009,18 @@
     // Captions — coords are with-bleed (18mm); subtract before converting to canvas px.
     // Spine captions are positioned at the spine centre + their offset (normally 0).
     const savedCoverCaps = window.bookCaptions['cover'] || {};
-    coverDef.captions.forEach(capDef => {
+    // Monogram back-cover initials (Heirloom): two 1-character captions whose POSITION
+    // depends on the chosen monogram (monograms[*].backLetters). Rendered through the
+    // same editable-caption path as CSV captions — content persists in bookCaptions by
+    // key, so switching monograms moves the letters without losing what staff typed.
+    const monoLetterDefs = (coverMono && coverMono.backLetters || []).map((L, i) => ({
+      key: 'backLetter' + (i + 1),
+      label: 'Monogram — ' + (i === 0 ? 'first' : 'second') + ' initial',
+      xMm: L.xMm, yMm: L.yMm, wMm: L.wMm, hMm: L.hMm,
+      font: L.font, sizePt: L.sizePt, color: L.color,
+      halign: 'center', valign: 'center', maxLength: 1,
+    }));
+    coverDef.captions.concat(monoLetterDefs).forEach(capDef => {
       const capW  = capDef.wMm * SCALE;
 
       // Determine caption position. Spine captions sit at spine centre + offset (default 0).
@@ -2124,6 +2166,7 @@
     { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }], funnyWordsOnly: true },
     { label: 'Twinkle Star',      value: 'Twinkle Star',      styles: [{ label: 'Regular', weight: 400, italic: false }] },
     { label: 'Parisienne',        value: 'Parisienne',        styles: [{ label: 'Regular', weight: 400, italic: false }] },
+    { label: 'IM FELL English',   value: 'IM FELL English',   styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }] },
     { label: 'Baskervville',      value: 'Baskervville',      styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Medium Italic', weight: 500, italic: true }] },
     { label: 'Source Sans 3',    value: 'Source Sans 3',    styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
     { label: 'Lora',              value: 'Lora',              styles: [{ label: 'Regular', weight: 400, italic: false }] },
@@ -2644,10 +2687,13 @@
       // overlayAbovePhotos:false (Papercut SP4 + cover), drop the overlay BELOW the
       // photos (z-index:0) so the photos cover it. DOM order alone can't do this —
       // the z-index:2 rule would always win.
+      // Monogram-aware page artwork (Heirloom intro): the page's SVG is chosen by the
+      // active monogram (monograms[*].introSvg) when the variant flags monogramSvg.
+      const pageMono = variant.monogramSvg || variant.monogramLetters ? getActiveMonogramDef() : null;
       if (variant.svg) {
         const overlay = document.createElement('img');
         overlay.className = 'svg-overlay';
-        overlay.src = SVG_BASE + variant.svg;
+        overlay.src = SVG_BASE + ((variant.monogramSvg && pageMono && pageMono.introSvg) || variant.svg);
         overlay.alt = '';
         overlay.decoding = 'async';
         // SVGs are currently content-area only (200×200mm). When Kseniia re-exports with 3mm bleed,
@@ -3137,6 +3183,45 @@
         canvas.appendChild(titleEl);
       }
 
+      // ── Monogram initial letters (Heirloom intro) ──
+      // Two 1-character editable captions beside the monogram art; positions come from
+      // the active monogram (monograms[*][variant.monogramLetters]). Same storage as
+      // other page captions (bookCaptions[spread][side][key]) so content survives a
+      // monogram switch — only the position moves.
+      if (variant.monogramLetters && pageMono && pageMono[variant.monogramLetters]) {
+        pageMono[variant.monogramLetters].forEach((L, i) => {
+          const key = 'monoLetter' + (i + 1);
+          const saved = window.bookCaptions?.[spreadIndex]?.[side]?.[key] || '';
+          const el = document.createElement('div');
+          el.className = 'slot-caption';
+          el.contentEditable = 'true';
+          el.spellcheck = false;
+          el.dataset.label = i === 0 ? 'A' : 'B';
+          const w = L.wMm * SCALE, h = L.hMm * SCALE;
+          el.style.cssText =
+            `position:absolute;left:${((L.xMm - BLEED_MM) * SCALE - w / 2)}px;` +
+            `top:${((L.yMm - BLEED_MM) * SCALE - h / 2)}px;width:${w}px;height:${h}px;` +
+            `font-family:'${L.font}',serif;font-size:${(L.sizePt * SCALE * 25.4 / 72).toFixed(1)}px;` +
+            // .slot-caption's default letter-spacing:-0.02em would apply to these too.
+            // The CSV specifies none for the letter rows, and on a single centred glyph
+            // the trailing spacing shifts it off-centre — so what staff nudge on screen
+            // would not be what the PDF prints. Reset it explicitly.
+            `letter-spacing:normal;` +
+            `line-height:${h}px;text-align:center;color:${L.color};z-index:3;overflow:visible;`;
+          if (saved) el.innerHTML = saved;
+          el.addEventListener('input', () => {
+            // Hard cap: a single initial. Trim anything longer (paste, autocorrect).
+            const plain = el.textContent.trim();
+            if (plain.length > 1) el.textContent = plain.slice(0, 1);
+            window.bookCaptions[spreadIndex] = window.bookCaptions[spreadIndex] || {};
+            window.bookCaptions[spreadIndex][side] = window.bookCaptions[spreadIndex][side] || {};
+            window.bookCaptions[spreadIndex][side][key] = el.innerHTML;
+          });
+          el.addEventListener('mousedown', e => e.stopPropagation());
+          canvas.appendChild(el);
+        });
+      }
+
       // ── Text panel (FP1 Birthday wishes / FP2 Funny words left pages) ──
       if (variant.textPanel?.caption?.allowed) {
         // This page shows an editable caption box → its text is required to be filled.
@@ -3338,6 +3423,13 @@
     // book in place of SP0 (e.g. Newborn's Intro) instead of being inserted in the
     // body. Falls back to SP0 when no such page is selected (other templates).
     const _data = getActiveTemplateData();
+    // Mandatory functional pages (Heirloom's intro: always Spread 0, never optional)
+    // are in every book regardless of checkboxes/order add-ons. Prepend any the
+    // caller didn't already select.
+    const mandatoryFPs = Object.values(_data?.spreads || {})
+      .filter(s => s.type === 'functional' && s.mandatory)
+      .map(s => s.id);
+    selectedFPs = [...new Set([...mandatoryFPs, ...selectedFPs])];
     const firstOverride = selectedFPs.find(id => _data?.spreads?.[id]?.replacesFirstSpread);
     const bodyFPs = selectedFPs.filter(id => id !== firstOverride);
 
@@ -4114,6 +4206,80 @@
     if (window.photoPool.length) { renderBook(); applyZodiacDefaultCaptions(); }
   });
 
+  // ── Heirloom family monogram (Roots/Birds/Roses) ──────────────────────────────
+  // The monogram selects ARTWORK: the cover SVG + clip variant and the intro SVG,
+  // plus the positions of the four initial-letter captions (2 intro, 2 back cover).
+  // Source of truth: order.monogram (set by the order form, Phase B) → local picker →
+  // the template's defaultMonogram. Returns null for templates without monograms.
+  function getActiveMonogramDef() {
+    const d = getActiveTemplateData();
+    if (!d || !d.monograms) return null;
+    const key = window._activeMonogram || d.defaultMonogram;
+    return d.monograms[key] || d.monograms[d.defaultMonogram] || null;
+  }
+  // Seed the four monogram letter captions from the initials the customer typed on the
+  // order form (fpTexts.monogramLetters). Written into bookCaptions exactly as staff
+  // typing would write them, so they persist, save and stay editable. The intro is the
+  // template's mandatory replacesFirstSpread page ⇒ spread index 0. Called from
+  // loadOrderIntoEngine right after bookCaptions is reset; no-op without monograms.
+  // Called on FRESH orders only, after the cover-caption prefill (the `restoring`
+  // branch returns earlier, so saved letters always win). Only fills EMPTY letter
+  // slots, so it can never clobber something staff or the customer already typed.
+  // Returns true if it wrote anything (the caller then needs a re-render).
+  function applyMonogramInitials(letters) {
+    if (!Array.isArray(letters) || !letters.length) return false;
+    const d = getActiveTemplateData();
+    if (!d || !d.monograms) return false;
+    window.bookCaptions = window.bookCaptions || {};
+    let wrote = false;
+    const fill = (bag, key, ch) => {
+      if (bag[key]) return;             // never overwrite existing text
+      bag[key] = ch; wrote = true;
+    };
+
+    // Back cover — keys mirror the monoLetterDefs built in rerenderCover().
+    window.bookCaptions['cover'] = window.bookCaptions['cover'] || {};
+    letters.slice(0, 2).forEach((ch, i) =>
+      fill(window.bookCaptions['cover'], 'backLetter' + (i + 1), ch));
+
+    // Intro page — find the side of the mandatory spread that carries monogramLetters.
+    const introKey = Object.keys(d.spreads || {}).find(k => d.spreads[k].replacesFirstSpread);
+    const introDef = introKey && d.spreads[introKey];
+    if (!introDef) return wrote;
+    Object.entries(introDef.pages || {}).forEach(([side, variants]) => {
+      const carries = Object.values(variants || {}).some(v => v && v.monogramLetters);
+      if (!carries) return;
+      window.bookCaptions[0] = window.bookCaptions[0] || {};
+      window.bookCaptions[0][side] = window.bookCaptions[0][side] || {};
+      letters.slice(0, 2).forEach((ch, i) =>
+        fill(window.bookCaptions[0][side], 'monoLetter' + (i + 1), ch));
+    });
+    return wrote;
+  }
+
+  // Local tester: show the picker only for templates that declare monograms
+  // (mirrors populateZodiacSelect).
+  function populateMonogramSelect() {
+    const sel  = document.getElementById('monogram-select');
+    const zone = document.getElementById('special-zone-monogram');
+    const monos = getActiveTemplateData()?.monograms;
+    if (!sel || !zone) return;
+    if (!monos) { zone.style.display = 'none'; return; }
+    zone.style.display = 'flex';
+    sel.innerHTML = '';
+    Object.entries(monos).forEach(([key, m]) => {
+      const o = document.createElement('option');
+      o.value = key; o.textContent = 'Monogram: ' + (m.label || key);
+      sel.appendChild(o);
+    });
+    sel.value = window._activeMonogram || getActiveTemplateData().defaultMonogram;
+  }
+  document.getElementById('monogram-select').addEventListener('change', function () {
+    window._activeMonogram = this.value;
+    rerenderCover();
+    if (window.photoPool.length) renderBook();
+  });
+
   // Fill the AI-side caption of any spread with a zodiac.copy map from the chosen
   // sign (window._newbornZodiac). Used on fresh order load (loadOrderIntoEngine) and
   // by the local-tester zodiac selector. Multi-line copy → <br> (contenteditable HTML).
@@ -4225,6 +4391,10 @@
       label.className = 'fp-checkbox-item';
       const cb = document.createElement('input');
       cb.type = 'checkbox'; cb.name = 'fp'; cb.value = fp.id;
+      // Mandatory pages (Heirloom's intro) are always in the book — show the box
+      // checked and locked so the sequence builder and special panel treat it as
+      // selected, but staff can't turn it off.
+      if (fp.mandatory) { cb.checked = true; cb.disabled = true; label.title = 'Always included'; }
       cb.addEventListener('change', () => {
         if (cb.checked && fp.mapPage && !window._wanderMap) window._wanderMap = LOCAL_MAP_DEMO;
         updateSpecialPanel();
@@ -4237,6 +4407,8 @@
     });
     // Hide the whole group when the template has no functional pages.
     document.getElementById('fp-config-group').style.display = fps.length ? '' : 'none';
+    // Monogram picker rides with the template UI (shown only when data.monograms exists).
+    populateMonogramSelect();
   }
 
   document.getElementById('template-select').addEventListener('change', e => {
@@ -4245,6 +4417,7 @@
     // don't leak into the new render.
     window.specialPhotos = freshSpecialPhotos();
     window._orderOnlyFPs = []; // clear order-only map pages when switching template
+    window._activeMonogram = null; // fall back to the new template's defaultMonogram
     buildLocalTemplateUI();
     updateSpecialPanel();
     updatePhotoHint();
@@ -4562,6 +4735,12 @@
     // Newborn zodiac selection (Labour-right overlay). Set from the order's
     // zodiac field; read by renderSpread when a variant carries zodiacOverlay.
     window._newbornZodiac   = order.zodiacSign || (order.fpTexts && order.fpTexts.zodiac) || 'None';
+    // Heirloom family monogram: the order form sends the customer's choice inside
+    // fpTexts (the same free ride zodiac takes — no backend field). order.monogram
+    // is honoured too, for orders written by any later route. Falls back to the
+    // template's defaultMonogram when absent.
+    window._activeMonogram  = order.monogram || (order.fpTexts && order.fpTexts.monogram) || null;
+    populateMonogramSelect();
 
     // Wander FP1 map selection (region + countries). fpTexts.fp1 is an OBJECT
     // {region, countries, itinerary} — the map render (renderBook) reads region
@@ -4742,15 +4921,18 @@
         '<h3>Order loaded — no photos</h3>' +
         '<p>This order has no photo manifest (submitted before the current system). Upload photos manually using Local mode, or switch to Local and add them via + Add Photos.</p></div>';
     } else {
-      renderBook();  // NOTE: renderBook() resets window.bookCaptions = {}
+      renderBook();  // (renderBook does NOT clear bookCaptions — only moveSpread does)
     }
 
     // On restore, the saved bookCaptions already holds the approved FP/slot/cover
     // caption text — so skip the order-form prefill below (which would clobber a
     // customer's edited captions). Just rebuild the cover from the restored captions.
     if (restoring) {
-      if (!window.bookCaptions['cover'] && order.coverCaptions && Object.keys(order.coverCaptions).length) {
-        window.bookCaptions['cover'] = { ...order.coverCaptions };
+      // Per-key, not all-or-nothing: the saved bag can exist while holding only other
+      // keys (Heirloom keeps the two monogram initials here), which used to drop the
+      // customer's cover text entirely. Saved values still win for keys they cover.
+      if (order.coverCaptions && Object.keys(order.coverCaptions).length) {
+        window.bookCaptions['cover'] = { ...order.coverCaptions, ...(window.bookCaptions['cover'] || {}) };
       }
       rerenderCover();
       updatePhotoHint();
@@ -4857,6 +5039,14 @@
       if (!window.bookCaptions['cover']) window.bookCaptions['cover'] = {};
       Object.assign(window.bookCaptions['cover'], order.coverCaptions);
       rerenderCover(); // rebuilds cover row + input panel with saved values
+    }
+
+    // 9. Heirloom: pre-fill the four monogram initials from the order form. Must run
+    // AFTER renderBook (which resets bookCaptions) and after the cover prefill above.
+    // Fresh orders only — the `restoring` branch returns earlier, so saved letters win.
+    if (applyMonogramInitials((order.fpTexts && order.fpTexts.monogramLetters) || [])) {
+      rerenderCover();
+      if (window.photoPool.length) renderBook();
     }
 
     updatePhotoHint();

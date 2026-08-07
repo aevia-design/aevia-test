@@ -269,6 +269,7 @@
 <script src="../assets/Template_Papercut/papercut-data.js"></script>
 <script src="../assets/Template_Tender/tender-data.js"></script>
 <script src="../assets/Template_Joyride/joyride-data.js"></script>
+<script src="../assets/Template_Heirloom/Beige/heirloom-data.js"></script>
 <script src="../assets/js/map-render.js"></script>
 </head>
 <body>
@@ -528,6 +529,10 @@ const DEFAULT_NOTE_PLACEHOLDER = "e.g. A summer in the south of France, August 2
 // its own example without changing the one its category-mates share.
 const TEMPLATE_NOTE_PLACEHOLDERS = {
   joyride: "e.g. Joyful summer in Italy, July 2026. Gelato in Rome, a week on the Amalfi coast, and long dinners outside.",
+  // Heirloom is a wedding book. Pinned per-template rather than left to the `love`
+  // category, so an order link without a category param still reads like a wedding
+  // album instead of falling through to the generic holiday default.
+  'heirloom-beige': "e.g. Our wedding day — 14 June 2026, Vienna. The vows, the first dance, and everyone we love in one room.",
 };
 
 const ADDON_NOTE_PLACEHOLDERS = {
@@ -578,6 +583,8 @@ const TEMPLATE_REGISTRY = {
   papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../assets/Template_Papercut/SVG/' },
   tender:   { data: () => window.TENDER_DATA,   svgBase: '../assets/Template_Tender/' },
   joyride:  { data: () => window.JOYRIDE_DATA,  svgBase: '../assets/Template_Joyride/SVG/' },
+  // Heirloom ships one registry key per colourway (only Beige exists so far).
+  'heirloom-beige': { data: () => window.HEIRLOOM_DATA, svgBase: '../assets/Template_Heirloom/Beige/SVG/' },
 };
 function templateEntry() {
   const key = (ORDER.template || '').toLowerCase();
@@ -605,6 +612,46 @@ ORDER.addons = addonNames.map((name, i) => ({
   inputType: addonInputs[i] || 'none',
   slug:      addonSlugs[i]  || slugify(name),
 }));
+
+// Grouped add-ons: ONE purchase that adds SEVERAL spreads, each needing its own fields
+// (Heirloom's "Why I love him & her" → FPhim + FPher, tied by addonGroup 'whylove').
+// The product page sells the group under one slug; here it expands into one entry per
+// member spread, so each gets its own photo zone and text field. Removing one removes
+// only that spread — the group is a purchase unit, not an editing unit.
+// A slug that names no group is passed through untouched.
+ORDER.addons = ORDER.addons.flatMap(addon => {
+  const spreads = templateData()?.spreads || {};
+  const slug = String(addon.slug || '').toLowerCase();
+  const members = Object.keys(spreads).filter(k =>
+    String(spreads[k].addonGroup || '').toLowerCase() === slug);
+  if (!members.length) return [addon];
+  return members.map(k => ({
+    ...addon,
+    name: spreads[k].label || k,
+    slug: k.toLowerCase(),
+    group: slug,
+  }));
+});
+
+// Mandatory functional spreads (Heirloom's Intro): part of every book, not sold as an
+// add-on, so they never arrive in the URL. They still need their order-form fields, so
+// they are prepended to ORDER.addons and flagged `mandatory` — which suppresses the
+// "Remove this page" button and blocks cancelAddon. Templates without a `mandatory:true`
+// spread are unaffected.
+(function addMandatorySpreads() {
+  const spreads = templateData()?.spreads || {};
+  const already = new Set(ORDER.addons.map(a => a.slug.toLowerCase()));
+  Object.keys(spreads).forEach(key => {
+    if (!spreads[key].mandatory) return;
+    if (already.has(key.toLowerCase())) return;
+    ORDER.addons.unshift({
+      name:      spreads[key].label || key,
+      inputType: 'text',
+      slug:      key.toLowerCase(),
+      mandatory: true,
+    });
+  });
+})();
 
 // ─────────────────────────────────────────────────────────────────
 // Upload state
@@ -913,6 +960,8 @@ function initSummary() {
 }
 
 function cancelAddon(slug, wrapId) {
+  // Mandatory spreads (Heirloom Intro) are part of the book and cannot be removed.
+  if (ORDER.addons.find(a => a.slug === slug)?.mandatory) return;
   cancelledAddons.add(slug);
   document.getElementById(wrapId).style.display = 'none';
   updateStep2Bar();
@@ -1094,12 +1143,15 @@ function initFPSections() {
     section.className = 'upload-section';
     section.id = wrapId;
 
-    // ── Header
+    // ── Header. Mandatory spreads show no remove link — they are part of the book.
+    const removeLink = addon.mandatory
+      ? `<div style="font-size:13px;color:var(--muted);">Included in every book</div>`
+      : `<button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
+          style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>`;
     let html = `
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-        <div class="upload-label">Special page</div>
-        <button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
-          style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>
+        <div class="upload-label">${addon.mandatory ? 'Your opening page' : 'Special page'}</div>
+        ${removeLink}
       </div>
       <div class="upload-heading">${addon.name}</div>
     `;
@@ -1219,6 +1271,50 @@ function renderIntroFields(slug, meta) {
     <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${escHtml(meta.heading || 'Intro details')}</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.55;">${escHtml(meta.hint || '')}</div>
     ${rows}`;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Family monogram (Heirloom): the customer's choice of Roots / Birds / Roses selects
+// ARTWORK — the cover SVG, the intro SVG and where the two initial letters sit. The
+// choice travels to the engine as fpTexts.monogram (the same free ride zodiac takes:
+// createUploadSession persists fpTexts verbatim, so no backend change is needed).
+// The choice itself is made on the PRODUCT PAGE, which shows the artwork, and arrives
+// as a `monogram` URL param (owner, S158). The order form deliberately offers NO
+// picker: choosing between three names with no images in front of you is a worse
+// experience than not being asked. Without the param the template's defaultMonogram
+// applies.
+// ─────────────────────────────────────────────────────────────────
+function spreadUsesMonogram(fpData) {
+  if (!templateData()?.monograms || !fpData?.pages) return false;
+  return Object.values(fpData.pages).some(side =>
+    Object.values(side || {}).some(v => v && v.monogramSvg));
+}
+
+function monogramKeys() {
+  const d = templateData();
+  return d?.monograms ? Object.keys(d.monograms) : [];
+}
+
+function defaultMonogramKey() {
+  const d = templateData();
+  const fromUrl = (params.get('monogram') || '').toLowerCase();
+  if (d?.monograms?.[fromUrl]) return fromUrl;
+  return d?.defaultMonogram || monogramKeys()[0] || '';
+}
+
+// The two initials printed inside the monogram, taken from the intro's own name
+// fields (bride/groom) so the customer never types them twice. The fields are named
+// by the template in orderFormMeta.initialsFrom; the /name/i label match is only a
+// fallback for a colourway whose data file forgets to declare it.
+// Returns [] if the names are absent.
+function monogramInitials(slug, textMeta) {
+  const nameKeys = (textMeta?.initialsFrom || []).length
+    ? textMeta.initialsFrom
+    : (textMeta?.fields || []).filter(f => /name/i.test(f.label || '')).map(f => f.key);
+  const letters = nameKeys
+    .map(k => ((document.getElementById(`intro-${slug}-${k}`) || {}).value || '').trim().charAt(0).toUpperCase())
+    .filter(Boolean);
+  return letters.slice(0, 2);
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -2295,6 +2391,22 @@ async function submitOrder() {
   // order.fpTexts.zodiac, so this needs no backend change (createUploadSession
   // already persists fpTexts verbatim).
   if (zodiacSign) fpTexts.zodiac = zodiacSign;
+
+  // Heirloom family monogram + the two initials set inside it. Both ride in fpTexts
+  // for the same reason zodiac does — no backend field to add. The engine reads
+  // order.monogram OR order.fpTexts.monogram.
+  const monoKey = monogramKeys().length ? defaultMonogramKey() : '';
+  if (monoKey) {
+    fpTexts.monogram = monoKey;
+    const monoAddon = activeAddons.find(a =>
+      spreadUsesMonogram(templateData()?.spreads?.[fpKeyForSlug(a.slug)]));
+    const initials = monoAddon
+      ? monogramInitials(monoAddon.slug, templateData()?.spreads?.[fpKeyForSlug(monoAddon.slug)]?.orderFormMeta)
+      : [];
+    if (initials.length) fpTexts.monogramLetters = initials;
+    const label = templateData()?.monograms?.[monoKey]?.label || monoKey;
+    addonNoteLines.push(`Monogram: ${label}${initials.length ? ` (${initials.join(' & ')})` : ''}`);
+  }
 
   const fullSpecialReq = [
     activeAddons.length ? `Add-ons selected: ${activeAddons.map(a => a.name).join(', ')}` : null,

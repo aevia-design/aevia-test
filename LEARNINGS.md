@@ -1,3 +1,61 @@
+## 2026-08-07 — Test photos live in `assets/test photos/`, one folder per template (S158)
+
+**`qa/test-photos/` is gitignored and does not exist on this machine** — scripts pointing at it
+die with `ENOENT: scandir 'qa\test-photos\...'` (that is what breaks
+`qa/debug-all-templates-render.mjs` today). The real, populated set is **`assets/test photos/`**,
+and it is subject-matched per template — use the right folder or the render tells you nothing
+about how the template actually looks:
+
+| Folder | Use for | Count |
+|---|---|---|
+| `Wedding` | **Heirloom**, Tender | 56 |
+| `Newborn` | Newborn | 113 |
+| `Toddler` | Papercut, Scribble | 58 |
+| `Drawings` | the art-gallery special pages in Papercut + Scribble | 4 |
+| `Hiking` | Wander | 57 |
+| `City vibes` | Joyride | 55 |
+
+**Why it matters beyond convenience:** a wedding template rendered with newborn photos looks
+fine to an assertion and wrong to a person — the subject, crop and palette are what tell you
+whether a spread's composition works. Subject-matched photos are what make the eyeball step
+worth doing (S158: the Heirloom preview was reviewed with Newborn photos before this folder
+existed, and the cover read as a hospital shot in a wedding frame).
+
+Path note: the space in `test photos` needs quoting in shell and `%20` in a URL served by
+http-server. `Drawings` holds only 4 images — enough for the art-gallery pages it is meant for,
+not enough to fill a book, so don't use it as a general pool.
+
+## 2026-08-07 — A supplier's asset is an input to verify, not a source of truth (Heirloom, S157)
+
+**The cover photo did not render, and nothing was wrong with the code.** Xenia's three Heirloom
+cover SVGs shipped with the photo window painted a solid `#312128` rectangle where every prior
+template has `fill="none"`. The engine dutifully clipped the photo, placed it, and drew the
+artwork on top — including the opaque rectangle. A second, independent bug hid underneath:
+the slot sat 15mm high, because the CSV's photo row expressed y with a +3mm page bleed while
+its own caption rows used the +18mm cover bleed. **Two supplier-data defects, zero code defects,
+and the render looked like one engine bug.**
+
+**The pattern, now three templates deep** (Wander's full-bleed viewBox S154, Tender's spine
+colour S79, Heirloom's filled window + mixed bleed convention S157): a drop from a designer is
+an *input to validate*, not a specification to implement faithfully. The parts most likely to be
+wrong are the ones no human eyeballs in Illustrator — a fill on an invisible layer, a coordinate
+column, a viewBox.
+
+**What to do on every new drop, before writing a data file:**
+- **Diff the new SVGs' structure against the closest built template's**, not just their content.
+  `grep` the layer names (`data-name=`) and the photo-window element. If the equivalent element
+  is `fill="none"` in the old template and a colour in the new one, that is the bug.
+- **Cross-check the CSV against itself.** Heirloom's caption rows and photo row disagreed by
+  15mm on the same page. When two rows in one file imply different origins, trust the artwork:
+  read the real coordinate out of the SVG (here, the clip path's bbox centre) and make the data
+  match *that*.
+- **Assume a re-export re-introduces every in-repo patch.** The fix lives in the repo, not in
+  Xenia's file. Record it in the build brief so the next person re-applies it.
+
+**Corollary on fonts:** never infer ligature risk from a font's genre. IM FELL English is a
+serif and forms ligatures (fontkit: 52 chars → 45 glyphs). The check is three lines and
+authoritative; the guess is neither.
+
 ## 2026-08-06 — A test that mirrors code proves nothing about the code (S156)
 
 **Every upload on the live rig was broken for a day, with 281 tests green the whole time.**

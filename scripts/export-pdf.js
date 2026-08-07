@@ -92,6 +92,7 @@ require(path.resolve(__dirname, '../assets/Template_Wander/wander-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Newborn/newborn-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Papercut/papercut-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Tender/tender-data.js'));
+require(path.resolve(__dirname, '../assets/Template_Heirloom/Beige/heirloom-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Joyride/joyride-data.js'));
 DATA = global.window.SCRIBBLE_DATA; // default; will be updated in main() if needed
 
@@ -143,6 +144,7 @@ const TEMPLATES = {
   wander:   { data: () => global.window.WANDER_DATA,   assetBase: path.resolve(__dirname, '../assets/Template_Wander') },
   newborn:  { data: () => global.window.NEWBORN_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Newborn') },
   tender:   { data: () => global.window.TENDER_DATA,   assetBase: path.resolve(__dirname, '../assets/Template_Tender') },
+  'heirloom-beige': { data: () => global.window.HEIRLOOM_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Heirloom/Beige/SVG') },
   papercut: { data: () => global.window.PAPERCUT_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Papercut/SVG') },
   joyride:  { data: () => global.window.JOYRIDE_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Joyride/SVG') },
 };
@@ -167,6 +169,18 @@ function setActiveTemplate(templateName) {
   }
   DATA = t.data();
   ASSET_BASE = t.assetBase;
+}
+
+// ── Heirloom family monogram ──────────────────────────────────────────────────
+// Mirror of getActiveMonogramDef() in template-engine.html + customer-preview.html.
+// The monogram selects ARTWORK — the cover SVG and its clip variant, the intro SVG,
+// and the positions of the four initial-letter captions. state.monogram is set by
+// services/pdf-renderer from order.fpTexts.monogram; falls back to the template's
+// defaultMonogram. Returns null for every template that declares no monograms.
+function activeMonogramDef(state) {
+  if (!DATA || !DATA.monograms) return null;
+  const key = (state && state.monogram) || DATA.defaultMonogram;
+  return DATA.monograms[key] || DATA.monograms[DATA.defaultMonogram] || null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -408,6 +422,14 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
     }
   }
 
+  // ── Heirloom intro artwork (monogram-aware) ────────────────────────────────
+  // When a page flags monogramSvg, its artwork IS the chosen monogram's intro SVG.
+  // Mirrors template-engine.html + customer-preview.html.
+  if (pageDef.monogramSvg) {
+    const mono = activeMonogramDef(state);
+    if (mono && mono.introSvg) svg = mono.introSvg;
+  }
+
   // Start with a solid-color canvas (this IS the bleed on all sides)
   let canvas = sharp({
     create: { width: FULL_PX, height: FULL_PX, channels: 4,
@@ -633,6 +655,8 @@ const FONT_FILE_MAP = {
   'Cormorant Garamond_bold':     'CormorantGaramond-Bold.ttf',
   'Twinkle Star_regular':        'TwinkleStar-Regular.ttf',
   'Parisienne_regular':          'Parisienne-Regular.ttf',
+  'IM FELL English_regular':     'IMFellEnglish-Regular.ttf',
+  'IM FELL English_italic':      'IMFellEnglish-Italic.ttf',
   'Baskervville_regular':        'Baskervville-Regular.ttf',
   'Baskervville_italic':         'Baskervville-Italic.ttf',
   'Baskervville_mediumitalic':   'Baskervville-MediumItalic.ttf',
@@ -671,7 +695,9 @@ async function embedAllFonts(pdfDoc) {
 // so it hits the same advance-width bug → per-character draw workaround.
 // Lora + Mulish (Joyride, static cuts instanced from the variable TTFs) both form
 // ligatures via fontkit (verified: 30 chars → 26 glyphs each) → same workaround.
-const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star', 'Source Sans 3', 'Parisienne', 'Lora', 'Mulish']);
+// IM FELL English (Heirloom, both cuts) forms ligatures via fontkit (verified S157:
+// 52 chars → 45 glyphs) → same per-character draw workaround.
+const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star', 'Source Sans 3', 'Parisienne', 'Lora', 'Mulish', 'IM FELL English']);
 // EB Garamond additionally suppresses letter-spacing in the char-by-char path; the shaping
 // context loss caused irregular gaps when spacing was also applied. Cormorant Garamond keeps
 // its defined letter-spacing because the -0.02em tightening is aesthetically required.
@@ -791,7 +817,7 @@ function wrapText(font, text, sizePt, maxWidthPt, charSpacing) {
 // pageSizePt = the PDF page size in points (square).
 // spreadId is used to determine caption color (FP spreads use plum).
 // spreadCaptionStyles carries per-slot user overrides from book-state.json.
-function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spreadId, spreadCaptionStyles) {
+function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spreadId, spreadCaptionStyles, monoDef = null) {
   const sideCaps = captions?.[si]?.[side];
   if (!sideCaps) return;
 
@@ -993,6 +1019,38 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
       });
     }
   }
+
+  // ── Heirloom monogram initials (intro page) ────────────────────────────────
+  // Two 1-character captions whose POSITION comes from the chosen monogram. Stored
+  // like any page caption (captions[si][side].monoLetter1/2), so they arrive in
+  // sideCaps. Centred horizontally and vertically in an 8×9mm box, matching the
+  // engines' `text-align:center; line-height:<box height>`. NOTE: the engines
+  // explicitly reset .slot-caption's letter-spacing to normal for these, so there is
+  // deliberately NO character spacing here — all three surfaces must agree (S158).
+  if (pageDef.monogramLetters && monoDef && monoDef[pageDef.monogramLetters]) {
+    monoDef[pageDef.monogramLetters].forEach((L, i) => {
+      const ch = stripHtml(sideCaps['monoLetter' + (i + 1)] || '').trim().slice(0, 1);
+      if (!ch) return;
+      const font = lookupFont(fontMap, L.font, 'regular');
+      if (!font) return;
+      const sizePt      = L.sizePt || 23;
+      const boxWidthPt  = L.wMm * MM_TO_PT;
+      const boxHeightPt = L.hMm * MM_TO_PT;
+      const boxXPt      = (L.xMm - L.wMm / 2) * MM_TO_PT;
+      const boxYPt      = pageSizePt - (L.yMm + L.hMm / 2) * MM_TO_PT;
+      const isLig       = LIGATURE_FONTS.has(L.font);
+      const wPt = isLig ? measureNoLig(font, ch, sizePt, 0)
+                        : font.widthOfTextAtSize(ch, sizePt);
+      const xPt = boxXPt + (boxWidthPt - wPt) / 2;
+      // Same baseline convention as the text panel above: top of the line box, minus
+      // 0.75em to the baseline. One line, so valign:center reduces to this offset.
+      const lineTopPt = boxYPt + boxHeightPt - (boxHeightPt - sizePt) / 2;
+      const drawOpts = { x: xPt, y: lineTopPt - sizePt * 0.75, size: sizePt, font,
+                         color: resolveColor(L.color), characterSpacing: 0 };
+      if (isLig) drawTextNoLig(pg, ch, drawOpts);
+      else       pg.drawText(ch, drawOpts);
+    });
+  }
 }
 
 // ── Cover rendering ───────────────────────────────────────────────────────────
@@ -1054,8 +1112,11 @@ function computeCoverDimensions(pageCount) {
 // Render the full cover spread as a PNG buffer.
 // coverDef = DATA.cover; coverPhoto = filename string; coverCaptions = { year, name, spineName, spineYear }
 // pageCount: order's page count (affects spine width)
-async function renderCoverImage(coverDef, coverPhotoNames, heartCrop = {}, pageCount = undefined) {
-  const { sections, slots, svg } = coverDef;
+async function renderCoverImage(coverDef, coverPhotoNames, heartCrop = {}, pageCount = undefined, monoDef = null) {
+  const { sections, slots } = coverDef;
+  // Heirloom: each monogram is a separate cover SVG with its own clip variant.
+  // Null for every other template → the coverDef defaults. Mirrors both engines.
+  const svg = (monoDef && monoDef.coverSvg) || coverDef.svg;
   // One cover photo for most templates, four for Joyride — normalise to an array.
   const names = Array.isArray(coverPhotoNames) ? coverPhotoNames : [coverPhotoNames];
   // Cover SVG lives in the same Spreads/ folder as content SVGs (ASSET_BASE already points there)
@@ -1114,8 +1175,11 @@ async function renderCoverImage(coverDef, coverPhotoNames, heartCrop = {}, pageC
       // origin is the bleed edge and sx/sy are bleed-origin, so map a path point P to
       // slot-local px = P*g + COVER_BLEED_PX − sx, where g = MM_TO_PX / clipDef.pxPerMm.
       // When the front panel shifts by deltaPx, the path must shift with it (or misregistration appears).
-      const clipDef = slot.clipShape && coverDef.clipShapes
-        ? coverDef.clipShapes[slot.clipShape] : null;
+      // Heirloom's monograms sit at slightly different offsets, so each names its own
+      // clip variant (coverClipShape); other templates use the slot's own clipShape.
+      const clipKey = (monoDef && monoDef.coverClipShape) || slot.clipShape;
+      const clipDef = clipKey && coverDef.clipShapes
+        ? coverDef.clipShapes[clipKey] : null;
       try {
         // Honour the staff-set cover crop (object-position %). coverExtract reproduces
         // CSS object-fit:cover + object-position exactly; default 50/50 = centred, which
@@ -1248,7 +1312,7 @@ function coverCaptionShiftMm(capDef, spineWidthMm, referenceSpineMm = 9) {
   return capDef.xMm >= FRONT_PANEL_BOUNDARY_MM ? spineWidthMm - referenceSpineMm : 0;
 }
 
-function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionStyles, pageSizeWPt, pageSizeHPt, pageCount = undefined) {
+function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionStyles, pageSizeWPt, pageSizeHPt, pageCount = undefined, monoDef = null) {
   if (!coverCaptions) return;
   const COVER_BLEED_PT = COVER_BLEED_MM * MM_TO_PT;
 
@@ -1256,7 +1320,18 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
   const { spineWidthMm } = computeCoverDimensions(pageCount);
   const referenceSpineMm = coverDef.referenceSpineMm !== undefined ? coverDef.referenceSpineMm : 9;
 
-  for (const capDef of coverDef.captions) {
+  // Heirloom back-cover initials: two 1-character captions whose POSITION comes from
+  // the chosen monogram. Built to the same shape as CSV captions so they flow through
+  // the identical drawing path. Keys match the engines' monoLetterDefs. Note these are
+  // BACK-panel captions (xMm < 218), so coverCaptionShiftMm correctly leaves them put.
+  const monoLetterDefs = ((monoDef && monoDef.backLetters) || []).map((L, i) => ({
+    key: 'backLetter' + (i + 1),
+    xMm: L.xMm, yMm: L.yMm, wMm: L.wMm, hMm: L.hMm,
+    font: L.font, sizePt: L.sizePt, color: L.color,
+    align: 'center', halign: 'center', valign: 'center',
+  }));
+
+  for (const capDef of coverDef.captions.concat(monoLetterDefs)) {
     // Route through stripHtml (like spread captions) so NBSP (U+00A0) and any stray
     // markup are normalised — the embedded print font has no NBSP glyph and would
     // otherwise draw a .notdef box (e.g. the box that appeared after "WILD").
@@ -1527,8 +1602,12 @@ async function main() {
     ? specialPhotos.cover.map(_coverName)
     : [_coverName(specialPhotos.cover)];
 
+  // Heirloom: the chosen monogram picks the cover artwork, its clip variant and the
+  // back-cover letter positions. Null for every other template.
+  const coverMonoDef = activeMonogramDef(state);
+
   try {
-    const coverBuf = await renderCoverImage(coverDef, coverPhotoNames, state.heartCrop || {}, parseInt(state.pageCount));
+    const coverBuf = await renderCoverImage(coverDef, coverPhotoNames, state.heartCrop || {}, parseInt(state.pageCount), coverMonoDef);
 
     // Cover dimensions now depend on spine width (derived from page count).
     const { fullWidthMm: COVER_FULL_W_MM_RENDER } = computeCoverDimensions(parseInt(state.pageCount));
@@ -1542,7 +1621,7 @@ async function main() {
       const img = await doc.embedPng(coverBuf);
       const pg  = doc.addPage([COVER_W_PT, COVER_H_PT]);
       pg.drawImage(img, { x: 0, y: 0, width: COVER_W_PT, height: COVER_H_PT });
-      drawCoverCaptions(pg, fm, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT, parseInt(state.pageCount));
+      drawCoverCaptions(pg, fm, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT, parseInt(state.pageCount), coverMonoDef);
       const coverBytes = await doc.save();
       // The cover is a different page size (wide wrap incl. spine) from the square
       // interior pages. Print houses reject mixed-size documents, so it stays its
@@ -1555,7 +1634,7 @@ async function main() {
       const img = await previewDoc.embedPng(coverBuf);
       const pg  = previewDoc.addPage([COVER_W_PT, COVER_H_PT]);
       pg.drawImage(img, { x: 0, y: 0, width: COVER_W_PT, height: COVER_H_PT });
-      drawCoverCaptions(pg, previewFontMap, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT, parseInt(state.pageCount));
+      drawCoverCaptions(pg, previewFontMap, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT, parseInt(state.pageCount), coverMonoDef);
       console.log('  ✓ cover added to preview');
     }
   } catch (e) {
@@ -1612,7 +1691,7 @@ async function main() {
         process.stdout.write(`  [${si+1}/${state.sequence.length}] ${spreadId} left (${leftVariant})… `);
         try {
           const buf = await renderPage(spreadId, 'left', leftDef, leftArr, specialPhotos, leftVariant);
-          const capFn = (pg, fm) => drawCaptions(pg, fm, leftDef, String(si), 'left', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles);
+          const capFn = (pg, fm) => drawCaptions(pg, fm, leftDef, String(si), 'left', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles, coverMonoDef);
           if (isPrint) { await writePrintPage(label, buf, capFn); }
           else         { await addPreviewPage(buf, capFn); }
           console.log(`✓ (page ${pageNum})`);
@@ -1641,7 +1720,7 @@ async function main() {
       process.stdout.write(`  [${si+1}/${state.sequence.length}] ${spreadId} right (${rightVariant})… `);
       try {
         const buf = await renderPage(spreadId, 'right', rightDef, rightArr, specialPhotos, rightVariant);
-        const capFn = (pg, fm) => drawCaptions(pg, fm, rightDef, String(si), 'right', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles);
+        const capFn = (pg, fm) => drawCaptions(pg, fm, rightDef, String(si), 'right', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles, coverMonoDef);
         if (isPrint) { await writePrintPage(label, buf, capFn); }
         else         { await addPreviewPage(buf, capFn); }
         console.log(`✓ (page ${pageNum})`);
@@ -1799,4 +1878,4 @@ async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, p
   return main();  // main() returns previewPdfBytes in server mode
 }
 
-module.exports = { generatePdfFromFirestore, coverCaptionStyle, lookupFont, FONT_FILE_MAP, getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions, checkPageCountAgainstSequence, coverCaptionShiftMm };
+module.exports = { generatePdfFromFirestore, coverCaptionStyle, lookupFont, FONT_FILE_MAP, getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions, checkPageCountAgainstSequence, coverCaptionShiftMm, activeMonogramDef, setActiveTemplate };

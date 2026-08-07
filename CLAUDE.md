@@ -64,7 +64,14 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   (409×200mm) with bleed outside it** — a full-bleed viewBox renders 8% small with a blank band
   down the cover edge. `tests/cover-svg-viewbox.test.js` enforces this; run `npm test` after any
   SVG re-export from Xenia, and do not trust `qa/verify-spine-s152.mjs` alone (it checks element
-  positions, not whether the artwork landed).
+  positions, not whether the artwork landed). **The 409mm trim assumes a 9mm reference spine —
+  Heirloom's covers are authored at 10mm (410mm) and declare `referenceSpineMm: 10`.**
+  ⚠ **A Xenia drop is an input to VALIDATE, not a spec to implement** — filled photo windows,
+  mixed bleed conventions and stray viewBoxes have each cost a session. See LEARNINGS (S157)
+  for the pre-flight checks, and re-apply any in-repo SVG patch after a re-export.
+- In-build template: **Heirloom** (`docs/briefs/heirloom-build.md` is the build-state doc —
+  read it before touching anything Heirloom). Four colourways (only Beige exists) as separate
+  registry keys, three family monograms that select artwork per order.
 - Unit tests: `tests/` (run with `npm test` from project root)
 - **`npm test` does NOT execute `pages/order.html`** — those tests mirror its logic rather than
   running it, which is how a crash reached the live rig in S154 with 281 tests green. Before

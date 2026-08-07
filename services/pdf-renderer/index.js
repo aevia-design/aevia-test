@@ -79,6 +79,11 @@ function buildStateFromOrder(order, storedNames) {
     specialPhotos,
     zodiacSign:         order.zodiacSign || (order.fpTexts && order.fpTexts.zodiac) || 'None',
     mapSelection:       order.fpTexts && order.fpTexts.fp1 ? order.fpTexts.fp1 : null,
+    // Heirloom family monogram — selects the cover + intro artwork and the letter
+    // positions. Same route as zodiacSign: chosen on the product page, carried in
+    // fpTexts (saveStaffState does not persist it). Null for every other template;
+    // export-pdf.js then falls back to the template's defaultMonogram.
+    monogram:           order.monogram || (order.fpTexts && order.fpTexts.monogram) || null,
   };
 }
 

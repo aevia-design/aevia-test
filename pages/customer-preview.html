@@ -9,6 +9,7 @@
   <script src="../assets/Template_Newborn/newborn-data.js"></script>
   <script src="../assets/Template_Papercut/papercut-data.js"></script>
   <script src="../assets/Template_Tender/tender-data.js"></script>
+  <script src="../assets/Template_Heirloom/Beige/heirloom-data.js"></script>
   <script src="../assets/Template_Joyride/joyride-data.js"></script>
   <script src="../assets/js/photo-utils.js"></script>
   <script src="../assets/js/book-completeness.js"></script>
@@ -74,6 +75,16 @@
       font-family: 'Twinkle Star';
       src: url('../assets/fonts/TwinkleStar-Regular.ttf') format('truetype');
       font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'IM FELL English';
+      src: url('../assets/fonts/IMFellEnglish-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'IM FELL English';
+      src: url('../assets/fonts/IMFellEnglish-Italic.ttf') format('truetype');
+      font-weight: 400; font-style: italic; font-display: swap;
     }
     @font-face {
       font-family: 'Parisienne';
@@ -1086,6 +1097,7 @@
     newborn:  { data: () => window.NEWBORN_DATA,  svgBase: '../assets/Template_Newborn/' },
     papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../assets/Template_Papercut/SVG/' },
     tender:   { data: () => window.TENDER_DATA,   svgBase: '../assets/Template_Tender/' },
+    'heirloom-beige': { data: () => window.HEIRLOOM_DATA, svgBase: '../assets/Template_Heirloom/Beige/SVG/' },
     joyride:  { data: () => window.JOYRIDE_DATA,  svgBase: '../assets/Template_Joyride/SVG/' },
   };
 
@@ -1127,6 +1139,7 @@
     { label: 'FirstTimeWriting',  value: 'FirstTimeWriting',  styles: [{ label: 'Regular', weight: 400, italic: false }], funnyWordsOnly: true },
     { label: 'Twinkle Star',      value: 'Twinkle Star',      styles: [{ label: 'Regular', weight: 400, italic: false }] },
     { label: 'Parisienne',        value: 'Parisienne',        styles: [{ label: 'Regular', weight: 400, italic: false }] },
+    { label: 'IM FELL English',   value: 'IM FELL English',   styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }] },
     { label: 'Baskervville',      value: 'Baskervville',      styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Medium Italic', weight: 500, italic: true }] },
     { label: 'Source Sans 3',    value: 'Source Sans 3',    styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
     { label: 'Lora',              value: 'Lora',              styles: [{ label: 'Regular', weight: 400, italic: false }] },
@@ -1242,6 +1255,11 @@
       // Newborn zodiac selection (Labour-right overlay), read by renderSpread.
       window._newbornZodiac = window.orderData.zodiacSign
         || (window.orderData.fpTexts && window.orderData.fpTexts.zodiac) || 'None';
+      // Heirloom family monogram (roots/birds/roses): selects the cover + intro artwork
+      // and where the four initial letters sit. Chosen on the product page and carried
+      // in fpTexts; null for every other template. Mirrors template-engine.html.
+      window._activeMonogram = window.orderData.monogram
+        || (window.orderData.fpTexts && window.orderData.fpTexts.monogram) || null;
 
       // Wander FP1 map selection (region + countries) for the Travel-map page.
       // fpTexts.fp1 is an object {region, countries, itinerary}; the map render
@@ -1278,9 +1296,12 @@
         assignPhotosToSpreads(seq, window.photoPool);
       }
       window.bookCaptions = od.customerCaptions || od.staffBookCaptions || {};
-      // Cover caption text: saved edits win, else order-time cover captions.
-      if (!window.bookCaptions.cover && od.coverCaptions) {
-        window.bookCaptions.cover = od.coverCaptions;
+      // Cover caption text: saved edits win PER KEY, else the order-time captions.
+      // Was all-or-nothing on `!bookCaptions.cover`, which dropped the customer's
+      // cover text whenever the saved bag existed but held only other keys — e.g.
+      // Heirloom, where the two monogram initials live in that same bag.
+      if (od.coverCaptions) {
+        window.bookCaptions.cover = { ...od.coverCaptions, ...(window.bookCaptions.cover || {}) };
       }
       // Caption style maps: customer edits win, then staff, then order-time defaults.
       window.coverCaptionStyles = od.customerCoverCaptionStyles
@@ -1572,6 +1593,13 @@
     // Mirror of template-engine.html: an FP with replacesFirstSpread opens the book
     // in place of SP0 when selected (e.g. Newborn Intro); else SP0 stays.
     const _data = getActiveTemplateData();
+    // Mandatory functional pages (Heirloom's intro: always Spread 0, never optional)
+    // are in every book regardless of what the order selected. Prepend any the caller
+    // didn't already include. Mirrors template-engine.html.
+    const mandatoryFPs = Object.values(_data?.spreads || {})
+      .filter(s => s.type === 'functional' && s.mandatory)
+      .map(s => s.id);
+    selectedFPs = [...new Set([...mandatoryFPs, ...selectedFPs])];
     const firstOverride = selectedFPs.find(id => _data?.spreads?.[id]?.replacesFirstSpread);
     const bodyFPs = selectedFPs.filter(id => id !== firstOverride);
 
@@ -1605,6 +1633,19 @@
 
   // Position + style a cover caption from coverCaptionStyles (merged with CSV defaults).
   // Shared by renderCover and the caption toolbar so edits re-render identically.
+  // ── Heirloom family monogram ──────────────────────────────────────────────────
+  // Mirror of template-engine.html getActiveMonogramDef(). The monogram selects
+  // ARTWORK: the cover SVG + its clip variant and the intro SVG, plus the positions
+  // of the four initial-letter captions (2 intro, 2 back cover). Source of truth is
+  // the order (set on the product page); falls back to the template's defaultMonogram.
+  // Returns null for every template that declares no monograms.
+  function getActiveMonogramDef() {
+    const d = getActiveTemplateData();
+    if (!d || !d.monograms) return null;
+    const key = window._activeMonogram || d.defaultMonogram;
+    return d.monograms[key] || d.monograms[d.defaultMonogram] || null;
+  }
+
   function applyCoverCaptionLayout(cap, capDef) {
     const COVER_BLEED_MM = 18;
     const ov = window.coverCaptionStyles?.[capDef.key] || {};
@@ -1773,11 +1814,16 @@
     const backEndPx       = secs.back.wMm * SCALE;
     const frontStartSvgPx = (secs.back.wMm + referenceSpineMm) * SCALE;
     const deltaPx         = delta * SCALE;
+    // Monogram-aware cover artwork (Heirloom): each monogram is a separate cover SVG
+    // with its own clip variant. Null for every other template → coverDef defaults.
+    // Mirrors template-engine.html.
+    const coverMono    = getActiveMonogramDef();
+    const coverSvgFile = (coverMono && coverMono.coverSvg) || coverDef.svg;
     const zIdx = coverDef.overlayAbovePhotos === false ? '0' : '';
     const mkSvgCopy = (leftPx, clipLeftPx, clipRightPx) => {
       const img = document.createElement('img');
       img.className = 'svg-overlay';
-      img.src = SVG_BASE + coverDef.svg;
+      img.src = SVG_BASE + coverSvgFile;
       img.alt = '';
       img.style.cssText = `width:${svgNaturalPx}px;left:${leftPx}px;` +
         `clip-path:inset(0 ${svgNaturalPx - clipRightPx}px 0 ${clipLeftPx}px);`;
@@ -1813,11 +1859,15 @@
       // SCALE/pxPerMm and translating by -slotL/-slotT expresses it in the slot's
       // LOCAL px space. The SVG's opening is transparent with butterflies drawn after
       // it, so the clipped photo stays below the SVG and shows through (see below).
-      const clipDef = slotDef.clipShape && coverDef.clipShapes
-        ? coverDef.clipShapes[slotDef.clipShape] : null;
+      // Heirloom's monograms sit at slightly different offsets, so each names its own
+      // clip variant (coverClipShape); other templates use the slot's own clipShape.
+      // Mirrors template-engine.html.
+      const clipKey = (coverMono && coverMono.coverClipShape) || slotDef.clipShape;
+      const clipDef = clipKey && coverDef.clipShapes
+        ? coverDef.clipShapes[clipKey] : null;
       if (clipDef) {
         const f = SCALE / clipDef.pxPerMm;
-        const clipId = 'coverClip-' + slotDef.clipShape;
+        const clipId = 'coverClip-' + clipKey;
         const ns = 'http://www.w3.org/2000/svg';
         const svg = document.createElementNS(ns, 'svg');
         svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
@@ -1871,7 +1921,18 @@
     // Captions — editable, styled identically to the staff engine. Coords are
     // with-bleed; applyCoverCaptionLayout converts to canvas px.
     const savedCoverCaps = window.bookCaptions?.cover || {};
-    coverDef.captions.forEach(capDef => {
+    // Monogram back-cover initials (Heirloom): two 1-character captions whose POSITION
+    // depends on the chosen monogram (monograms[*].backLetters). Rendered through the
+    // same editable-caption path as CSV captions — content persists in bookCaptions by
+    // key. Mirrors template-engine.html.
+    const monoLetterDefs = (coverMono && coverMono.backLetters || []).map((L, i) => ({
+      key: 'backLetter' + (i + 1),
+      label: 'Monogram — ' + (i === 0 ? 'first' : 'second') + ' initial',
+      xMm: L.xMm, yMm: L.yMm, wMm: L.wMm, hMm: L.hMm,
+      font: L.font, sizePt: L.sizePt, color: L.color,
+      halign: 'center', valign: 'center', maxLength: 1,
+    }));
+    coverDef.captions.concat(monoLetterDefs).forEach(capDef => {
       const cap = document.createElement('div');
       cap.className = 'slot-caption cover-caption';
       cap.contentEditable = 'true';
@@ -2242,10 +2303,14 @@
       // Wander and Papercut's overlayAbovePhotos:true spreads). When a spread sets
       // overlayAbovePhotos:false (Papercut SP4 + cover), drop the overlay below the
       // photos so they cover it.
+      // Monogram-aware page artwork (Heirloom intro): the page's SVG is chosen by the
+      // active monogram (monograms[*].introSvg) when the variant flags monogramSvg.
+      // Mirrors template-engine.html.
+      const pageMono = (variant.monogramSvg || variant.monogramLetters) ? getActiveMonogramDef() : null;
       if (variant.svg) {
         const overlay = document.createElement('img');
         overlay.className = 'svg-overlay';
-        overlay.src = SVG_BASE + variant.svg;
+        overlay.src = SVG_BASE + ((variant.monogramSvg && pageMono && pageMono.introSvg) || variant.svg);
         overlay.alt = '';
         overlay.decoding = 'async';
         // overlayBelow (per page, CSV overlay_position=below) OR spread-level
@@ -2637,6 +2702,45 @@
         });
 
         canvas.appendChild(titleEl);
+      }
+
+      // ── Monogram initial letters (Heirloom intro) ──
+      // Mirror of template-engine.html: two 1-character editable captions beside the
+      // monogram art, positioned by the active monogram. Same storage as other page
+      // captions (bookCaptions[spread][side][key]) so content survives a monogram
+      // change — only the position moves. lockForApproval() disables every
+      // contenteditable, so these lock with the rest of the page when approved.
+      if (variant.monogramLetters && pageMono && pageMono[variant.monogramLetters]) {
+        pageMono[variant.monogramLetters].forEach((L, i) => {
+          const key = 'monoLetter' + (i + 1);
+          const saved = window.bookCaptions?.[spreadIndex]?.[side]?.[key] || '';
+          const el = document.createElement('div');
+          el.className = 'slot-caption';
+          el.contentEditable = 'true';
+          el.spellcheck = false;
+          el.dataset.label = i === 0 ? 'A' : 'B';
+          const w = L.wMm * SCALE, h = L.hMm * SCALE;
+          el.style.cssText =
+            `position:absolute;left:${((L.xMm - BLEED_MM) * SCALE - w / 2)}px;` +
+            `top:${((L.yMm - BLEED_MM) * SCALE - h / 2)}px;width:${w}px;height:${h}px;` +
+            `font-family:'${L.font}',serif;font-size:${(L.sizePt * SCALE * 25.4 / 72).toFixed(1)}px;` +
+            // Reset .slot-caption's inherited letter-spacing:-0.02em — the CSV specifies
+            // none for letter rows, and on a single centred glyph it shifts it off-centre.
+            // Mirrors template-engine.html.
+            `letter-spacing:normal;` +
+            `line-height:${h}px;text-align:center;color:${L.color};z-index:3;overflow:visible;`;
+          if (saved) el.innerHTML = saved;
+          el.addEventListener('input', () => {
+            // Hard cap: a single initial. Trim anything longer (paste, autocorrect).
+            const plain = el.textContent.trim();
+            if (plain.length > 1) el.textContent = plain.slice(0, 1);
+            window.bookCaptions[spreadIndex] = window.bookCaptions[spreadIndex] || {};
+            window.bookCaptions[spreadIndex][side] = window.bookCaptions[spreadIndex][side] || {};
+            window.bookCaptions[spreadIndex][side][key] = el.innerHTML;
+          });
+          el.addEventListener('mousedown', e => e.stopPropagation());
+          canvas.appendChild(el);
+        });
       }
 
       if (variant.textPanel?.caption?.allowed) {

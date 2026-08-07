@@ -8,6 +8,7 @@ the product page + collections card (see `docs/briefs/artist-collaborations.md`)
 | Template | Category    | Status      | Artist collaboration |
 |----------|-------------|-------------|----------------------|
 | Tender   | Love        | Built       | —                    |
+| Heirloom | Love        | In build (S157: engine done, order form / preview / PDF / product page pending) | — |
 | Devotion | Love        | Placeholder | —                    |
 | Radiance | Love        | Placeholder | —                    |
 | Wander   | Adventures  | Built       | **Kevin Lucbert** — in collaboration (first collaboration; see Our Artists) |
