@@ -38,10 +38,11 @@
  * is authored against the 40pp 10mm spine, hence referenceSpineMm 10 (Tender's is 9).
  *
  * Caption letterSpacing: CSV "10" = InDesign tracking (1/1000 em) → 0.01 em here.
- * Standard-spread captions are dark plum #312128; functional text panels warm taupe
- * #7c746e. Intro/back "letter" captions: the CSV leaves the intro letters' colour blank —
- * #7c746e assumed (matches the intro panel); back-cover letters are #312128 per the cover
- * CSV. Eyeball at Phase A.
+ * ALL live text is dark plum #312128 — standard captions, functional text panels and
+ * the four monogram letters alike. The letter and panel rows were briefly blank in the
+ * CSV and were rendered taupe #7c746e on an assumption; the owner filled every
+ * captions_color cell with #312128 (S158), so nothing is assumed any more. The taupe in
+ * `colors` below is the palette entry, no longer used by any caption.
  */
 window.HEIRLOOM_DATA = {
   template: 'heirloom-beige',
@@ -62,8 +63,8 @@ window.HEIRLOOM_DATA = {
       introSvg: 'FP Spread 0/FP 01 Intro Roots.svg',
       coverClipShape: 'coverFrame',
       introLetters: [
-        { key: 'letter1', xMm: 108, yMm: 152, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#7c746e' },
-        { key: 'letter2', xMm: 108, yMm: 174, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#7c746e' },
+        { key: 'letter1', xMm: 108, yMm: 152, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
+        { key: 'letter2', xMm: 108, yMm: 174, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
       ],
       backLetters: [
         { key: 'letter1', xMm: 118, yMm: 107, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
@@ -76,8 +77,8 @@ window.HEIRLOOM_DATA = {
       introSvg: 'FP Spread 0/FP 01 Intro Birds.svg',
       coverClipShape: 'coverFrameShifted',
       introLetters: [
-        { key: 'letter1', xMm: 106, yMm: 153, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#7c746e' },
-        { key: 'letter2', xMm: 111, yMm: 169, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#7c746e' },
+        { key: 'letter1', xMm: 106, yMm: 153, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
+        { key: 'letter2', xMm: 111, yMm: 169, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
       ],
       backLetters: [
         { key: 'letter1', xMm: 116, yMm: 108, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
@@ -90,8 +91,8 @@ window.HEIRLOOM_DATA = {
       introSvg: 'FP Spread 0/FP 01 Intro Roses.svg',
       coverClipShape: 'coverFrameShifted',
       introLetters: [
-        { key: 'letter1', xMm: 95,  yMm: 166, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#7c746e' },
-        { key: 'letter2', xMm: 121, yMm: 166, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#7c746e' },
+        { key: 'letter1', xMm: 95,  yMm: 166, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
+        { key: 'letter2', xMm: 121, yMm: 166, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
       ],
       backLetters: [
         { key: 'letter1', xMm: 104, yMm: 121, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
@@ -311,7 +312,7 @@ window.HEIRLOOM_DATA = {
             monogramSvg: true,          // engine substitutes monograms[<choice>].introSvg
             monogramLetters: 'introLetters',
             slots: [],
-            textPanel: { introFields: true, caption: { allowed: true, xMm: 108, yMm: 83, wMm: 110, hMm: 100, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#7c746e' } }
+            textPanel: { introFields: true, caption: { allowed: true, xMm: 108, yMm: 83, wMm: 110, hMm: 100, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#312128' } }
           },
         },
       }
@@ -338,7 +339,7 @@ window.HEIRLOOM_DATA = {
         },
         right: {
           default: { bgColor: '#dad0c5', svg: 'FP Spread 1 Our story/FP 02 Our story Right.svg', slots: [],
-            textPanel: { introFields: true, caption: { allowed: true, xMm: 108, yMm: 98, wMm: 110, hMm: 110, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#7c746e' } } },
+            textPanel: { introFields: true, caption: { allowed: true, xMm: 108, yMm: 98, wMm: 110, hMm: 110, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#312128' } } },
         },
       }
     },
@@ -362,7 +363,7 @@ window.HEIRLOOM_DATA = {
       pages: {
         left: {
           default: { bgColor: '#dad0c5', svg: 'FP Spread 2.3 Why I love Her.Him/FP 03 Why Him Left.svg', slots: [],
-            textPanel: { introFields: true, caption: { allowed: true, xMm: 98, yMm: 98, wMm: 110, hMm: 110, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#7c746e' } } },
+            textPanel: { introFields: true, caption: { allowed: true, xMm: 98, yMm: 98, wMm: 110, hMm: 110, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#312128' } } },
         },
         right: {
           default: { bgColor: '#dad0c5', svg: 'FP Spread 2.3 Why I love Her.Him/FP 03 Why Him Right.svg',
@@ -387,7 +388,7 @@ window.HEIRLOOM_DATA = {
       pages: {
         left: {
           default: { bgColor: '#dad0c5', svg: 'FP Spread 2.3 Why I love Her.Him/FP 03 Why Her Left.svg', slots: [],
-            textPanel: { introFields: true, caption: { allowed: true, xMm: 98, yMm: 98, wMm: 110, hMm: 110, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#7c746e' } } },
+            textPanel: { introFields: true, caption: { allowed: true, xMm: 98, yMm: 98, wMm: 110, hMm: 110, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#312128' } } },
         },
         right: {
           default: { bgColor: '#dad0c5', svg: 'FP Spread 2.3 Why I love Her.Him/FP 03 Why Her Right.svg',

@@ -53,12 +53,25 @@ describe('activeMonogramDef (PDF) mirrors the engines', () => {
     expect(Math.abs(back('roses')[1] - back('roses')[0])).toBe(29);
   });
 
-  test('back-cover letters are plum, intro letters taupe (confirmed in the CSV, S158)', () => {
+  // All live text is plum. The letter rows were blank in the first CSV and briefly
+  // rendered taupe on an assumption; the owner set every captions_color to #312128
+  // (S158). Pinned here so a future re-sync from a CSV cannot quietly revert it.
+  test('every monogram letter is #312128 on both surfaces', () => {
     for (const key of Object.keys(global.window.HEIRLOOM_DATA.monograms)) {
       const m = activeMonogramDef({ monogram: key });
       m.backLetters.forEach(L => expect(L.color).toBe('#312128'));
-      m.introLetters.forEach(L => expect(L.color).toBe('#7c746e'));
+      m.introLetters.forEach(L => expect(L.color).toBe('#312128'));
     }
+  });
+
+  test('no caption anywhere in the template is still taupe', () => {
+    // Catches a half-done colour sync: the letters are checked above, but the text
+    // panels (intro, Our story, both whylove spreads) are just as easy to miss.
+    const json = JSON.stringify(global.window.HEIRLOOM_DATA, (k, v) =>
+      typeof v === 'function' ? undefined : v);
+    // `colors.taupe` is the palette entry and is allowed to remain.
+    const captionTaupe = json.replace(/"taupe":"#7c746e"/, '');
+    expect(captionTaupe).not.toContain('#7c746e');
   });
 
   test('returns null for a template with no monograms', () => {
