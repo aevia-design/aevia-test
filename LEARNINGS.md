@@ -1,3 +1,47 @@
+## 2026-08-09 — Two renderers must not both DERIVE the same thing (S159)
+
+The engine wrapped captions with browser layout; `export-pdf.js` independently re-wrapped the
+same text with pdf-lib advances. Two implementations of one job drift, and every fix so far
+had been an attempt to make the second imitate the first. That treadmill produced the
+`autoShrink` flag, the `LIGATURE_FONTS` list, and this session's two bugs.
+
+**Rule: when engine and PDF must agree on a DERIVED value, one side computes it and the
+other consumes it.** The engine now records where each caption actually broke
+(`collectCaptionLines`) and the PDF draws those lines (`captionLinesFor`). The engine is the
+right authority because it is what staff and the customer approve. Applies beyond captions —
+any value both surfaces compute independently is a latent divergence.
+
+Four corollaries, each paid for this session:
+
+1. **Never fix a general divergence as a per-template opt-in.** Cover-caption WRAPPING was
+   bundled inside `autoShrink`, which only `joyride-data.js` declares — so a template needing
+   wrap but not shrink got neither. Heirloom's 50pt `ANNA & MICHAEL` (471pt in a 283pt box)
+   printed as one line for exactly this reason. Same shape as `LIGATURE_FONTS`. **Fix the
+   shared path and let templates opt OUT.**
+2. **A consumed value needs a staleness guard, not just a producer.** `approveOrder` copies
+   `customerCaptions` → `staffBookCaptions` wholesale; the staff-recorded lines then describe
+   superseded text, and drawing them DROPS OR DUPLICATES WORDS in print — worse than the
+   wrong break. `linesMatchText` refuses stored lines that no longer reconstruct the text and
+   falls back to wrapping. Guard at the consumer even after fixing the producer.
+3. **Geometry read from client rects must not assume the block axis.** Spine captions are
+   `rotate(270deg)`; text runs vertically, so "rect.top changed = new line" recorded one line
+   PER CHARACTER. Read the computed transform and pick the axis. Caught only by the QA script.
+4. **Distrust a synthetic harness that disagrees with the real render anywhere.** Mine
+   reproduced the reported line break but wrapped a second line the real engine didn't. That
+   was the harness being wrong, not the arithmetic — and tuning it until it agreed would have
+   manufactured a false root cause.
+
+**Method note (reinforces [[feedback_inspect_render_first]] and the S153 note below):** I
+recommended a fix ("subtract the engine's 8px caption padding from the PDF's wrap width")
+off an ESTIMATE and had to revert it — the target line sat 16pt clear of the boundary, so it
+changed nothing. Two hypotheses died to measurement first: pdf-lib **never shapes text**
+(ligature width delta 0.00pt), and browser vs pdf-lib glyph metrics agree within 0.4%.
+**Measure before recommending, not after.**
+
+Gate: `qa/verify-caption-parity.mjs` — runs in LOCAL mode (no order, no GCS cost), asserts
+recorded lines reconstruct each caption exactly and match the browser's rendered line count.
+Passes on all 7 templates. Run it after any caption, font or engine-layout change.
+
 ## 2026-08-07 — Test photos live in `assets/test photos/`, one folder per template (S158)
 
 **`qa/test-photos/` is gitignored and does not exist on this machine** — scripts pointing at it

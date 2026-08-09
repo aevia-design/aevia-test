@@ -265,6 +265,8 @@ These rules MUST NOT be broken. Violating them requires an explicit architectura
 
 9. **Screen surfaces load the web derivative; print loads the original.** The staff engine and customer preview MUST load the ~1600px web-resolution derivative of each photo, never the full-res original — loading originals on screen is the dominant GCS egress cost (see ADR-0005). The PDF script (`export-pdf.js`) is the ONLY surface that loads full-res originals (300 DPI print needs them). Any new render or photo-load path must honour this split or it reintroduces the egress (screen) or degrades print quality (PDF). _Pending chunk-023 — until built, all surfaces still load originals._
 
+10. **The engine and the PDF must never both DERIVE the same value — one computes, the other consumes.** (S159.) Caption line breaks were computed twice: browser layout in the engine, `wrapText` against the full `wMm` box in `export-pdf.js`. Two implementations of one job drift, and the customer approves the ENGINE's render, so anything the PDF re-derives can silently print something never approved. The engine now records where each caption actually broke (`collectCaptionLines`) and the PDF draws those lines (`captionLinesFor`). A consumed value also needs a **staleness guard at the consumer** — `linesMatchText` refuses stored lines that no longer reconstruct the stored text, because `approveOrder` can replace that text underneath them. Gate: `qa/verify-caption-parity.mjs`. Extends to any value both surfaces compute independently; the earlier per-template patches (`autoShrink`, `LIGATURE_FONTS`) are the anti-pattern this replaces.
+
 ---
 
 ## Dependencies

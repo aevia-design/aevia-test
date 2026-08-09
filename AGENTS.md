@@ -47,6 +47,15 @@ change. The ones most often violated by newcomers to this codebase:
     AND front-panel captions move by `spineWidth − referenceSpineMm`, on all three surfaces
     (both engines and `export-pdf.js`). Change one and you must change all three, or print
     disagrees with screen — see S156.
+12. **The engine and the PDF must never both DERIVE the same value.** One computes, the
+    other consumes. Caption line breaks were wrapped twice — browser layout in the engine,
+    `wrapText` in `export-pdf.js` — and drifted; the customer approves the ENGINE, so
+    anything the PDF re-derives can print something never approved. The engine records
+    breaks (`collectCaptionLines`); the PDF draws them (`captionLinesFor`), and refuses
+    stale ones via `linesMatchText`. **Do not "fix" a divergence like this with a
+    per-template opt-in** — `autoShrink` and `LIGATURE_FONTS` are exactly that mistake, and
+    each hid the general bug for several templates. Gate:
+    `qa/verify-caption-parity.mjs`. See S159 and ARCHITECTURE Invariant 10.
 
 ## Engineering principles
 

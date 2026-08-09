@@ -813,11 +813,69 @@ function wrapText(font, text, sizePt, maxWidthPt, charSpacing) {
   return lines.length ? lines : [text];
 }
 
+// The lines to draw for one caption.
+//
+// PREFERS the line breaks the engine recorded (`captionLines`, written by
+// collectCaptionLines() in template-engine.html at save time) over re-wrapping the text
+// here. The engine and the PDF measure text differently — browser layout inside a padded
+// box vs pdf-lib glyph advances against the full wMm — so two independent wrap passes
+// drift. On AEV-088 an 18pt panel broke after "every" on screen and after "single" in
+// print (S159). Chasing metric parity across every template, font and staff-chosen size
+// is unwinnable; taking the engine's answer makes divergence impossible, and the engine
+// is what staff and the customer approve.
+//
+// Falls back to wrapping for orders saved before S159, and for any caption the engine
+// did not record (e.g. added to book state by a script rather than the UI).
+function captionLinesFor(stored, text, font, sizePt, boxWidthPt, charSpacing) {
+  if (linesMatchText(stored, text)) return stored;
+  return String(text).split('\n').flatMap(l =>
+    l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : ['']);
+}
+
+// Are these recorded lines still the lines for THIS text?
+//
+// Stored lines and stored text can fall out of step. The concrete path: approveOrder
+// copies customerCaptions → staffBookCaptions wholesale, but the customer surface does
+// not record line breaks, so the staff-recorded lines survive against text that changed
+// underneath them. Drawing those would drop or duplicate words in print — strictly worse
+// than a line breaking in the wrong place.
+//
+// So the lines are only trusted when they still reconstruct the text exactly. Whitespace
+// is ignored on both sides: a line that wrapped mid-sentence has no separator of its own,
+// and the space it wrapped on is dropped when recorded. Any real divergence changes a
+// non-space character and is caught. On mismatch the PDF word-wraps as it always did —
+// the pre-S159 behaviour, which is wrong-looking but never wrong-worded.
+function linesMatchText(stored, text) {
+  if (!Array.isArray(stored) || !stored.length) return false;
+  const squash = (s) => String(s == null ? '' : s).replace(/\s+/g, '');
+  return squash(stored.join('')) === squash(text);
+}
+
+// Split a NON-autoShrink cover caption into drawn lines.
+//
+// Word-wraps at the caption's own box width, matching the engine — which renders the
+// caption into a fixed `width: wMm * SCALE` div and lets the browser wrap. Before S159
+// this branch was `text.split('\n').filter(...)` with no wrap at all, so the PDF drew one
+// long line straight over the artwork: Heirloom's 50pt front-cover name measures 471pt in
+// a 283pt box, and the engine's two lines printed as one. Wrapping had been bundled into
+// `autoShrink`, which only Joyride declares, so no other template ever got it.
+//
+// Spine captions are excluded (boxWPt 0 disables wrapping): a rotated label wrapping onto
+// a second line across a 10mm band is worse than overflowing it.
+//
+// Pure — exported for tests.
+function coverCaptionLines(text, font, sizePt, capDef = {}, ov = {}, fontName = '', stored = null) {
+  if (linesMatchText(stored, text)) return stored;
+  const boxWPt = capDef.rotate ? 0 : (capDef.wMm || 0) * MM_TO_PT;
+  const cs = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0 : ((ov.letterSpacing || 0)) * sizePt;
+  return String(text).split('\n').flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWPt, cs) : []);
+}
+
 // Draw captions for one page side onto `pg` (pdf-lib page object).
 // pageSizePt = the PDF page size in points (square).
 // spreadId is used to determine caption color (FP spreads use plum).
 // spreadCaptionStyles carries per-slot user overrides from book-state.json.
-function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spreadId, spreadCaptionStyles, monoDef = null) {
+function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spreadId, spreadCaptionStyles, monoDef = null, captionLines = null) {
   const sideCaps = captions?.[si]?.[side];
   if (!sideCaps) return;
 
@@ -825,6 +883,8 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
 
   // Per-slot style overrides from spreadCaptionStyles[si][side][slotIdx]
   const scsOverrides = spreadCaptionStyles?.[si]?.[side] || {};
+  // Engine-recorded line breaks for this page side, keyed exactly like sideCaps.
+  const sideLines = captionLines?.[si]?.[side] || {};
 
   // ── Slot captions ──────────────────────────────────────────────────────────
   for (let i = 0; i < (slots || []).length; i++) {
@@ -856,12 +916,6 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     const charSpacing   = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0
       : ((ov.letterSpacing !== undefined ? ov.letterSpacing : capDef.letterSpacing) || 0) * sizePt;
 
-    // Preserve empty lines as blank lines ('') — see the textPanel render below for rationale.
-    // The engine renders \n\n as <br><br> (a visible paragraph gap); filtering them out here
-    // collapsed that spacing in the PDF. Blank lines are skipped at draw time but still occupy
-    // one line-height via the forEach index.
-    const lines = String(text).split('\n');
-
     // xMm/yMm are CENTER coords (with-bleed mm). Convert to pdf-lib box origin (bottom-left of box).
     const boxWidthPt  = capDef.wMm * MM_TO_PT;
     const boxHeightPt = capDef.hMm * MM_TO_PT;
@@ -870,8 +924,8 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     // pdf-lib y=0 is bottom. Box bottom = pageSizePt - (center_y + hMm/2) * MM_TO_PT
     const textYPt = pageSizePt - (capDef.yMm + capDef.hMm / 2) * MM_TO_PT;
 
-    // Word-wrap text to fit box width
-    const wrappedLines = lines.flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : ['']);
+    // Engine's line breaks when recorded, else word-wrap to fit the box width.
+    const wrappedLines = captionLinesFor(sideLines[i], text, font, sizePt, boxWidthPt, charSpacing);
 
     // Horizontal alignment
     const halign = capDef.halign || 'left';
@@ -928,8 +982,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
       const boxHeightPt = capDef.hMm * MM_TO_PT;
       const textXPt = (capDef.xMm - capDef.wMm / 2) * MM_TO_PT;
       const textYPt = pageSizePt - (capDef.yMm + capDef.hMm / 2) * MM_TO_PT;
-      const lines = String(titleText).split('\n');
-      const wrappedLines = lines.flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : ['']);
+      const wrappedLines = captionLinesFor(sideLines['textPanelTitle'], titleText, font, sizePt, boxWidthPt, charSpacing);
       const totalTextHeight = wrappedLines.length > 0
         ? (wrappedLines.length * lineSpacingPt - (lineSpacingPt - sizePt))
         : 0;
@@ -984,13 +1037,12 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
       const boxHeightPt = capDef.hMm * MM_TO_PT;
       const textXPt = (capDef.xMm - capDef.wMm / 2) * MM_TO_PT;
       const textYPt = pageSizePt - (capDef.yMm + capDef.hMm / 2) * MM_TO_PT;
-      const lines = String(panelText).split('\n');
-      // Apply word-wrap so long lines flow within the caption box (same as slot captions).
+      // Engine's line breaks when recorded, else word-wrap so long lines flow within the box.
       // FunnyWords panels: each "word" is already one line — wrapText still works correctly.
       // Empty lines are PRESERVED as a single blank line ('') so they reserve one line-height
       // of vertical space — matching the engine, which renders \n\n as <br><br> (a visible gap
       // staff/customers use to space paragraphs). Dropping them collapsed the spacing in the PDF.
-      const wrappedLines = lines.flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : ['']);
+      const wrappedLines = captionLinesFor(sideLines['textPanel'], panelText, font, sizePt, boxWidthPt, charSpacing);
       // Measure total text height for valign
       const totalTextHeight = wrappedLines.length > 0
         ? (wrappedLines.length * lineSpacingPt - (lineSpacingPt - sizePt))
@@ -1312,7 +1364,7 @@ function coverCaptionShiftMm(capDef, spineWidthMm, referenceSpineMm = 9) {
   return capDef.xMm >= FRONT_PANEL_BOUNDARY_MM ? spineWidthMm - referenceSpineMm : 0;
 }
 
-function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionStyles, pageSizeWPt, pageSizeHPt, pageCount = undefined, monoDef = null) {
+function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionStyles, pageSizeWPt, pageSizeHPt, pageCount = undefined, monoDef = null, coverLines = null) {
   if (!coverCaptions) return;
   const COVER_BLEED_PT = COVER_BLEED_MM * MM_TO_PT;
 
@@ -1379,7 +1431,7 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
       while (r.h > capHPt && sizePt > minSize) { sizePt -= 1; r = fitAt(sizePt); }
       lines = r.wl;
     } else {
-      lines = text.split('\n').filter(l => l.trim());
+      lines = coverCaptionLines(text, font, sizePt, capDef, ov, fontName, coverLines?.[capDef.key]);
     }
     const lineSpacing = sizePt * lsFactor;
     const charSpacing = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0 : ((ov.letterSpacing || 0)) * sizePt;
@@ -1588,6 +1640,9 @@ async function main() {
 
   const specialPhotos        = state.specialPhotos        || {};
   const captions             = state.captions             || {};
+  // Line breaks as laid out in the engine; empty for orders saved before S159, which
+  // then fall back to the PDF's own word-wrap. Same key shape as `captions`.
+  const captionLines         = state.captionLines         || {};
   const coverCaptions        = state.coverCaptions        || {};
   const coverCaptionStyles   = state.coverCaptionStyles   || {};
   const spreadCaptionStyles  = state.spreadCaptionStyles  || {};
@@ -1621,7 +1676,7 @@ async function main() {
       const img = await doc.embedPng(coverBuf);
       const pg  = doc.addPage([COVER_W_PT, COVER_H_PT]);
       pg.drawImage(img, { x: 0, y: 0, width: COVER_W_PT, height: COVER_H_PT });
-      drawCoverCaptions(pg, fm, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT, parseInt(state.pageCount), coverMonoDef);
+      drawCoverCaptions(pg, fm, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT, parseInt(state.pageCount), coverMonoDef, captionLines.cover);
       const coverBytes = await doc.save();
       // The cover is a different page size (wide wrap incl. spine) from the square
       // interior pages. Print houses reject mixed-size documents, so it stays its
@@ -1634,7 +1689,7 @@ async function main() {
       const img = await previewDoc.embedPng(coverBuf);
       const pg  = previewDoc.addPage([COVER_W_PT, COVER_H_PT]);
       pg.drawImage(img, { x: 0, y: 0, width: COVER_W_PT, height: COVER_H_PT });
-      drawCoverCaptions(pg, previewFontMap, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT, parseInt(state.pageCount), coverMonoDef);
+      drawCoverCaptions(pg, previewFontMap, coverDef, coverCaptions, coverCaptionStyles, COVER_W_PT, COVER_H_PT, parseInt(state.pageCount), coverMonoDef, captionLines.cover);
       console.log('  ✓ cover added to preview');
     }
   } catch (e) {
@@ -1691,7 +1746,7 @@ async function main() {
         process.stdout.write(`  [${si+1}/${state.sequence.length}] ${spreadId} left (${leftVariant})… `);
         try {
           const buf = await renderPage(spreadId, 'left', leftDef, leftArr, specialPhotos, leftVariant);
-          const capFn = (pg, fm) => drawCaptions(pg, fm, leftDef, String(si), 'left', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles, coverMonoDef);
+          const capFn = (pg, fm) => drawCaptions(pg, fm, leftDef, String(si), 'left', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles, coverMonoDef, captionLines);
           if (isPrint) { await writePrintPage(label, buf, capFn); }
           else         { await addPreviewPage(buf, capFn); }
           console.log(`✓ (page ${pageNum})`);
@@ -1720,7 +1775,7 @@ async function main() {
       process.stdout.write(`  [${si+1}/${state.sequence.length}] ${spreadId} right (${rightVariant})… `);
       try {
         const buf = await renderPage(spreadId, 'right', rightDef, rightArr, specialPhotos, rightVariant);
-        const capFn = (pg, fm) => drawCaptions(pg, fm, rightDef, String(si), 'right', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles, coverMonoDef);
+        const capFn = (pg, fm) => drawCaptions(pg, fm, rightDef, String(si), 'right', captions, PAGE_SIZE_PT, spreadId, spreadCaptionStyles, coverMonoDef, captionLines);
         if (isPrint) { await writePrintPage(label, buf, capFn); }
         else         { await addPreviewPage(buf, capFn); }
         console.log(`✓ (page ${pageNum})`);
@@ -1878,4 +1933,4 @@ async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, p
   return main();  // main() returns previewPdfBytes in server mode
 }
 
-module.exports = { generatePdfFromFirestore, coverCaptionStyle, lookupFont, FONT_FILE_MAP, getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions, checkPageCountAgainstSequence, coverCaptionShiftMm, activeMonogramDef, setActiveTemplate };
+module.exports = { generatePdfFromFirestore, coverCaptionStyle, coverCaptionLines, captionLinesFor, wrapText, lookupFont, FONT_FILE_MAP, getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions, checkPageCountAgainstSequence, coverCaptionShiftMm, activeMonogramDef, setActiveTemplate };

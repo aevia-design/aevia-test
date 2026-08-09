@@ -3102,6 +3102,10 @@
         titleEl.className = 'slot-caption fp-text-panel';
         titleEl.contentEditable = 'true';
         titleEl.spellcheck = false;
+        // Identify the panel for collectCaptionLines() the same way slot captions are.
+        titleEl.dataset.spreadIndex = spreadIndex;
+        titleEl.dataset.side        = side;
+        titleEl.dataset.panelKey    = 'textPanelTitle';
 
         const ttCap = variant.textPanelTitle.caption;
         const titleWidth  = ttCap.wMm * SCALE;
@@ -3233,6 +3237,10 @@
         panelEl.className = 'slot-caption fp-text-panel';
         panelEl.contentEditable = 'true';
         panelEl.spellcheck = false;
+        // Identify the panel for collectCaptionLines() the same way slot captions are.
+        panelEl.dataset.spreadIndex = spreadIndex;
+        panelEl.dataset.side        = side;
+        panelEl.dataset.panelKey    = 'textPanel';
 
         // xMm/yMm are CENTER coords (with-bleed mm). Convert to canvas px top-left.
         const tpCap = variant.textPanel.caption;
@@ -3707,6 +3715,89 @@
   // ("photo_053.jpg") while the customer engine stores full GCS paths
   // ("folder/pool/photo_053.jpg"). Normalising to basename makes them match.
   const _baseName = s => (s || '').split('/').pop();
+
+  /* ── Caption line breaks: the engine decides, the PDF obeys ─────────────────
+     The PDF used to word-wrap captions a SECOND time, with its own measurement
+     (pdf-lib glyph advances) against the full wMm box. The engine wraps with browser
+     layout inside a padded box. Two implementations of one job drift: on AEV-088 an
+     18pt panel broke after "every" on screen and after "single" in print (S159), and
+     a 50pt cover name wrapped on screen but printed as one overflowing line.
+
+     Chasing metric parity across 7 templates × 9 fonts × any staff-chosen size is a
+     treadmill. Instead the engine reads back the line breaks the browser actually
+     produced — the ones staff and the customer approve — and stores them. The PDF
+     draws those lines verbatim. Divergence becomes structurally impossible.
+
+     Reads VISUAL lines (where the text really broke on screen), not the source text:
+     a character's client rect jumping to a new top means the browser wrapped there.
+     <br> is an explicit break; two in a row give the blank line that spaces paragraphs,
+     which the PDF already preserves as one line-height. */
+  function captionVisualLines(el) {
+    if (!el) return null;
+    // Which screen axis a NEW LINE advances along. Normally lines stack downward, so a
+    // jump in rect.top means a wrap. Spine captions are rotate(270deg): their text runs
+    // vertically, so every character has a different `top` and the naive test would put
+    // each letter on its own line ("A","N","N","A",…). After a quarter turn, lines stack
+    // along X instead. Caught by qa/verify-caption-parity.mjs on Tender's spine.
+    const tf = getComputedStyle(el).transform;
+    let axis = 'top';
+    if (tf && tf !== 'none') {
+      const m = new DOMMatrixReadOnly(tf);
+      const deg = Math.atan2(m.b, m.a) * 180 / Math.PI;
+      if (Math.abs(Math.abs(deg) - 90) < 5) axis = 'left';
+    }
+    const lines = [];
+    const range = document.createRange();
+    let cur = '', prevTop = null;
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    let node;
+    while ((node = walk.nextNode())) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        // Chrome wraps pasted/typed paragraphs in <div> as well as using <br>.
+        if (node.tagName === 'BR' || node.tagName === 'DIV') {
+          lines.push(cur); cur = ''; prevTop = null;
+        }
+        continue;
+      }
+      const text = node.data;
+      for (let i = 0; i < text.length; i++) {
+        range.setStart(node, i); range.setEnd(node, i + 1);
+        const rect = range.getClientRects()[0];
+        if (!rect) { cur += text[i]; continue; }   // collapsed wrap space at a line end
+        if (prevTop !== null && Math.abs(rect[axis] - prevTop) > 1) { lines.push(cur); cur = ''; }
+        cur += text[i];
+        prevTop = rect[axis];
+      }
+    }
+    lines.push(cur);
+    // The space a line wrapped ON stays in the text node but renders zero-width; it
+    // would shift a centred line right by half a space in the PDF.
+    return lines.map(l => l.replace(/\s+$/, ''));
+  }
+
+  // Walk every laid-out caption in the book and record where it broke.
+  // Shape mirrors bookCaptions exactly, so the PDF looks lines up with the same keys:
+  //   { "16": { left: { textPanel: ["…"] } }, cover: { name: ["ANNA &", "MICHAEL"] } }
+  function collectCaptionLines() {
+    const out = {};
+    const put = (si, side, key, lines) => {
+      if (!lines || !lines.length) return;
+      if (!out[si]) out[si] = {};
+      if (!out[si][side]) out[si][side] = {};
+      out[si][side][key] = lines;
+    };
+    document.querySelectorAll('.slot-caption[data-spread-index]').forEach(el => {
+      const { spreadIndex, side, slotIdx, panelKey } = el.dataset;
+      if (!el.textContent.trim()) return;
+      put(spreadIndex, side, panelKey || Number(slotIdx), captionVisualLines(el));
+    });
+    document.querySelectorAll('.cover-caption[data-cover-caption-key]').forEach(el => {
+      if (!el.textContent.trim()) return;
+      if (!out.cover) out.cover = {};
+      out.cover[el.dataset.coverCaptionKey] = captionVisualLines(el);
+    });
+    return out;
+  }
 
   // indices → {name, orientation}  (for SAVE)
   function assignmentsToNames(assignments, pool) {
@@ -5086,6 +5177,9 @@
           orderNumber:    window._loadedOrderNumber,
           bookAssignments: assignmentsToNames(window.bookAssignments, window.photoPool),
           bookCaptions:   window.bookCaptions    || {},
+          // Where each caption actually broke on screen — the PDF draws these verbatim
+          // instead of re-wrapping. See captionVisualLines().
+          bookCaptionLines: collectCaptionLines(),
           bookSequence:   window._bookSequence   || [],
           coverCaptionStyles:  window.coverCaptionStyles  || {},
           spreadCaptionStyles: window.spreadCaptionStyles || {},

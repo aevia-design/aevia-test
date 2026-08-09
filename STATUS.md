@@ -1,17 +1,37 @@
 # Session Status
-_Last updated: 2026-08-07 (session 158)_
-_Context at save: **Heirloom Phase A + B are built and PUSHED** (`6120b74`, `a310d54`,
-`eae4e2d`, `2846e44`). 320 tests green. Stage 7 (PDF) code is written but **UNVERIFIED** —
-it needs an owner Cloud Run redeploy + a dashboard render. The S156 business-case deletion
+_Last updated: 2026-08-09 (session 159)_
+_Context at save: **Stage 7 is DONE — the first Heirloom PDF rendered.** It exposed two
+engine↔PDF caption divergences, both fixed. 339 tests green, all 7 templates pass the new
+parity gate. **NOTHING FROM S159 IS COMMITTED OR DEPLOYED.** The S156 business-case deletion
 and a `test photos/IMG_5249.HEIC` deletion are still deliberately uncommitted._
 
 ## Status
-**Session 158 (2026-08-07) — Heirloom Phase B. Stage 5 (order form) and Stage 6
-(customer-preview parity) are DONE and verified. Stage 7 (PDF) is CODE-COMPLETE but has
-never been run: the owner was about to generate the first PDF when the session ended.**
+**Session 159 (2026-08-09) — the first Heirloom PDF was generated and reviewed. Two
+discrepancies found and fixed, both from the same cause: the engine and the PDF each
+word-wrapped captions independently.**
 
-**Immediate next action: generate the first Heirloom PDF** (see Next steps 1).
+**Immediate next action: commit, then deploy in order — Firebase functions → Cloud Run
+renderer → Cloudflare. Then RE-SAVE AEV-088 in the engine before regenerating** (line
+breaks only exist for books saved after the frontend ships). See Next steps 1.
 
+### What S159 changed
+1. **Cover captions never word-wrapped in the PDF** unless the template declared
+   `autoShrink` — which only Joyride does. Heirloom's 50pt `ANNA & MICHAEL` is 471pt in a
+   283pt box: the engine wrapped it, print drew one line over the artwork. Now wraps at
+   `wMm` (`coverCaptionLines`); spine captions deliberately excluded. Sweep confirmed no
+   other template's cover overflows → the five signed-off covers are unchanged.
+2. **The engine now records where each caption actually broke; the PDF draws those lines.**
+   `collectCaptionLines()` → `bookCaptionLines` → `staffBookCaptionLines` →
+   `state.captionLines` → `captionLinesFor()`. Removes the second wrap implementation
+   entirely rather than tuning it to match. Missing lines → old wrap, so pre-S159 orders
+   render exactly as before.
+3. **Stale lines are refused twice:** `approveOrder` nulls `staffBookCaptionLines` when it
+   copies `customerCaptions`, and `export-pdf` only trusts stored lines that still
+   reconstruct the stored text (`linesMatchText`).
+4. **`qa/verify-caption-parity.mjs`** is the new gate — local mode, no order load, no GCS
+   cost. Passes on all 7 templates. It caught a rotated-spine bug review had missed.
+
+### Heirloom facts (carried from S157/S158)
 1. **Heirloom = 4 colourways × 3 monograms.** Colour is modelled as **one registry entry +
    data file per colourway** (`heirloom-beige`); the order form, engines and PDF stay
    colour-blind downstream of the product page. Only Beige exists; three colourways pending
@@ -34,6 +54,14 @@ never been run: the owner was about to generate the first PDF when the session e
    template uses → `referenceSpineMm: 10`. Owner confirmed.
 
 ## Recent decisions
+- **The ENGINE is the source of truth for caption line breaks (S159, owner).** The customer
+  approves the engine's render, so the PDF must not re-derive anything it can be told.
+  Generalises: any value both surfaces compute independently is a latent divergence.
+- **Never fix an engine/PDF divergence as a per-template opt-in (S159).** `autoShrink` and
+  `LIGATURE_FONTS` are the two existing examples; both hid the general bug. Fix the shared
+  path, let templates opt OUT.
+- **`customer-preview` does NOT record line breaks yet (S159, deliberate).** Engine-parity
+  rule outstanding — see Next steps 2.
 - **Monogram is chosen on the PRODUCT page, not the order form (S158, owner).** Arrives as
   `&monogram=<key>`; travels in `fpTexts` (no backend change). The order form shows no picker.
 - **Our story = Tender's model (S158, owner):** customer's own words on the page, staff polish
@@ -59,31 +87,38 @@ never been run: the owner was about to generate the first PDF when the session e
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **Generate the first Heirloom PDF — Stage 7's gate.** A real Beige order already exists
-   (owner placed it S158). Sequence: open it in the engine → **Save book state** →
-   `gcloud run deploy aevia-pdf-renderer --source . --memory 8Gi` → **Generate PDF** from the
-   dashboard. ⛔ **Never render locally** — that pulls full-res originals from GCS and bills
-   egress. Check: cover shows the ORDERED monogram (not Roots), the four initials sit in the
-   artwork's pockets, the spine label centres on the band, the intro passage doesn't clip.
-   **Two failure signatures:** `Unknown template "heirloom-beige"` = the redeploy didn't take;
-   a **Roots** cover on a Roses order = renderer running old code (`services/pdf-renderer/
-   index.js` carries the monogram and ships in the container, not via Cloudflare).
-2. **Heirloom letter pockets — Xenia is looking into it.** The 8mm letter box is ~40% too
+1. **Ship S159: commit, deploy, re-verify on AEV-088.** Nothing is live. Order matters —
+   **backend first** (S40 rule): (a) `firebase deploy --only functions:saveStaffState` and
+   `functions:approveOrder` (deploy one at a time — the PowerShell comma gotcha); (b)
+   `gcloud run deploy aevia-pdf-renderer --source . --memory 8Gi`; (c) push for Cloudflare.
+   **Then RE-SAVE AEV-088 in the engine** — `staffBookCaptionLines` only exists for books
+   saved after the frontend is live — and regenerate the PDF from the dashboard.
+   ⛔ **Never render locally** (GCS egress on the owner's bill).
+   Check: cover reads `ANNA &` / `MICHAEL` on two lines, and the "Why I love her" panel
+   breaks after "every" exactly as the engine shows.
+   **Failure signature:** breaks still differ → the engine save predates the frontend
+   deploy, or `linesMatchText` rejected the lines as stale (text edited after saving).
+2. **Customer-preview must record line breaks too (engine-parity rule).** Mirror
+   `captionVisualLines`/`collectCaptionLines` into `pages/customer-preview.html`, send them
+   with the customer save, copy them in `approveOrder` instead of nulling them. Until this
+   lands, an approved customer edit falls back to PDF word-wrap — correct words, possibly a
+   different break than the customer saw.
+3. **Heirloom letter pockets — Xenia is looking into it.** The 8mm letter box is ~40% too
    tight for wide capitals (`M` at 23pt inks 7.62mm). Owner: not critical, fix later. **Do NOT
    nudge coordinates** — see the S158 log for why box width has no visual effect.
-3. **Stage 8 — the Heirloom product page.** The monogram is chosen HERE (owner, S158) and
+4. **Stage 8 — the Heirloom product page.** The monogram is chosen HERE (owner, S158) and
    appended as `&monogram=<key>`; the order form already preselects from it. Needs the 12
    mockup sets (4 colours × 3 monograms), which are therefore **launch-blocking**, plus a
    description per monogram from the owner.
-4. **Wire the three new colourways** — `Brown`, `Green`, `Blue` are on disk (untracked) but
+5. **Wire the three new colourways** — `Brown`, `Green`, `Blue` are on disk (untracked) but
    NOT built. Each is a full sub-template: data file + registry ×3 surfaces + its own cover
    clip extraction (openings move per drop). Do this only after Beige is proven end to end.
-5. **Re-verify the other four templates' covers at 80pp** (carried from S156) — the S156
+6. **Re-verify the other four templates' covers at 80pp** (carried from S156) — the S156
    caption fix moved every template; Scribble and Tender were signed off carrying a 1mm error.
-6. **Verify the stall detection (#94) properly** (carried from S156). The decisive test is a
+7. **Verify the stall detection (#94) properly** (carried from S156). The decisive test is a
    throttled upload exceeding 60s that SUCCEEDS. `qa/quick-stall-test.mjs` is broken.
-7. **Chase Printsmarter on the five open questions (S155)** — the sandbox answer gates any real test.
-8. **Clean up the QA scripts (#60/#95)** — 13 untracked one-offs remain in `qa/`. Also fix the
+8. **Chase Printsmarter on the five open questions (S155)** — the sandbox answer gates any real test.
+9. **Clean up the QA scripts (#60/#95)** — 13 untracked one-offs remain in `qa/`. Also fix the
    success/error race in `qa/order-hardening-mock.mjs`: if NEITHER screen appears it hangs
    forever with no output (cost three runs in S158 to spot). `qa/heirloom-order-mock.mjs` has
    the fixed shape — a wall-clock deadline that screenshots and names the visible panels.
@@ -101,12 +136,17 @@ never been run: the owner was about to generate the first PDF when the session e
 - **The Printsmarter button is visible on the staff dashboard** but cannot fire.
 - **The pre-push hook needs `git config core.hooksPath .githooks` per clone.**
 - **Pre-13-July Papercut orders have `name`/`year` swapped in Firestore.**
-- **Customer "Save changes" never reaches the PDF, and approval overwrites blindly.**
-  `approveOrder` copies `customer*` → `staff*` with no merge and no staleness check.
+- **Approval overwrites staff edits blindly.** Corrected in S159 — the old wording here
+  ("customer Save changes never reaches the PDF") was misleading. Customer edits DO reach
+  print, but only **on approval**: `approveOrder` copies `customerCaptions` →
+  `staffBookCaptions`, which the PDF reads. A save WITHOUT approval does not. The real
+  defect is that the copy is wholesale — no merge, no staleness check — so staff edits made
+  after the customer saved are silently discarded at approval.
 - **Newborn's cover slot is 0.11mm short** on its left edge. Flagged, deliberately not fixed.
 - **Is Printsmarter idempotent on `order_id_client`?** Unconfirmed.
 - **Prices live in THREE places** — Stripe, `assets/js/prices.js`, `PRICE_BY_PAGE_COUNT`.
 - **Is 10/14mm a formula or two data points?** `spine = 6 + 0.1 × pages` fits exactly.
 - **Android is entirely untested on real hardware.**
-- **`ARCHITECTURE.md` has two invariants numbered 6**; `AGENTS.md` renumbers and they disagree.
+- ~~`ARCHITECTURE.md` has two invariants numbered 6~~ — **checked S159, no longer true.**
+  ARCHITECTURE is 1–10 and AGENTS 1–12, agreeing on 1–9 with AGENTS carrying three extras.
 - **Staff test password is weak** for an account that can read real customer orders.

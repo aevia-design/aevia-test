@@ -369,6 +369,11 @@ exports.approveOrder = functions
       }
       if (orderData.customerCaptions != null) {
         updates.staffBookCaptions = orderData.customerCaptions;
+        // The customer surface does not record line breaks yet (S159), so the staff-
+        // recorded ones now describe superseded text. Drop them rather than let the PDF
+        // draw lines that no longer match — it falls back to word-wrapping, which is the
+        // pre-S159 behaviour. Remove this once customer-preview records lines of its own.
+        updates.staffBookCaptionLines = null;
       }
       if (orderData.customerCaptionStyles != null) {
         updates.staffSpreadCaptionStyles = orderData.customerCaptionStyles;
@@ -486,7 +491,7 @@ exports.saveStaffState = functions
       return res.status(403).json({ error: 'Unauthorised' });
     }
 
-    const { orderNumber, bookAssignments, bookCaptions, bookSequence,
+    const { orderNumber, bookAssignments, bookCaptions, bookCaptionLines, bookSequence,
             coverCaptionStyles, spreadCaptionStyles, heartCrop,
             bookComplete, incompleteReasons } = req.body;
     if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
@@ -499,6 +504,9 @@ exports.saveStaffState = functions
       await doc.ref.update({
         staffBookAssignments: bookAssignments || null,
         staffBookCaptions:    bookCaptions    || null,
+        // Line breaks as laid out in the engine. The PDF draws these rather than
+        // re-wrapping the text with its own measurement (S159).
+        staffBookCaptionLines: bookCaptionLines || null,
         staffBookSequence:    bookSequence    || null,
         staffCoverCaptionStyles:  coverCaptionStyles  || null,
         staffSpreadCaptionStyles: spreadCaptionStyles || null,

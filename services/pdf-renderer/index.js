@@ -72,6 +72,10 @@ function buildStateFromOrder(order, storedNames) {
     sequence:           order.staffBookSequence    || [],
     assignments:        order.staffBookAssignments || [],
     captions:           bookCaptions,
+    // Line breaks the engine actually produced. export-pdf.js draws these verbatim
+    // instead of word-wrapping again, so print matches the approved screen exactly
+    // (S159). Absent on orders saved before S159 → the PDF falls back to wrapping.
+    captionLines:       order.staffBookCaptionLines || {},
     coverCaptions,
     coverCaptionStyles,
     spreadCaptionStyles,
