@@ -3884,7 +3884,12 @@
      FULL BOOK RENDERER
   ═══════════════════════════════════════════ */
 
-  function renderBook() {
+  // opts.preserveCaptions — keep window.bookCaptions across this rebuild. Only
+  // loadOrderIntoEngine's monogram step needs it. renderBook is also used directly as an
+  // event handler in places, so read the flag defensively: an Event argument must not be
+  // mistaken for options.
+  function renderBook(opts) {
+    const preserveCaptions = !!(opts && opts.preserveCaptions === true);
     const canvas = document.getElementById('book-canvas');
     canvas.innerHTML = '';
 
@@ -3927,7 +3932,13 @@
       window.heartCrop           = rs.heartCrop           || {};
       window._restoreState = null;
     } else {
-      window.bookCaptions   = {}; // reset captions on full rebuild
+      // Reset captions on a full rebuild — EXCEPT when the caller has already written
+      // text it needs to survive this render. loadOrderIntoEngine seeds the order's FP
+      // panels and cover captions and THEN re-renders to show Heirloom's monogram
+      // initials; without this the second render threw all of it away, so a fresh
+      // Heirloom order opened with a blank intro page, blank story panels and no album
+      // name, while the order data sat correctly in the info panel.
+      if (!preserveCaptions) window.bookCaptions = {};
       assignPhotosToSpreads(sequence, pool);
     }
 
@@ -5057,7 +5068,7 @@
         '<h3>Order loaded — no photos</h3>' +
         '<p>This order has no photo manifest (submitted before the current system). Upload photos manually using Local mode, or switch to Local and add them via + Add Photos.</p></div>';
     } else {
-      renderBook();  // (renderBook does NOT clear bookCaptions — only moveSpread does)
+      renderBook();  // clears bookCaptions on a full rebuild, so seeding must follow it
     }
 
     // On restore, the saved bookCaptions already holds the approved FP/slot/cover
@@ -5182,7 +5193,10 @@
     // Fresh orders only — the `restoring` branch returns earlier, so saved letters win.
     if (applyMonogramInitials((order.fpTexts && order.fpTexts.monogramLetters) || [])) {
       rerenderCover();
-      if (window.photoPool.length) renderBook();
+      // preserveCaptions: this render exists only to paint the initials. A plain
+      // renderBook() resets bookCaptions, which discarded the FP text and cover captions
+      // seeded in steps 7 and 8 — and the initials this call had just written.
+      if (window.photoPool.length) renderBook({ preserveCaptions: true });
     }
 
     updatePhotoHint();
