@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script defer src="../../assets/js/site-mode.js"></script>
+  <link rel="canonical" href="https://aevia.at/pages/de/heirloom">
+  <link rel="alternate" hreflang="en" href="https://aevia.at/pages/heirloom">
+  <link rel="alternate" hreflang="de" href="https://aevia.at/pages/de/heirloom">
+  <link rel="alternate" hreflang="x-default" href="https://aevia.at/pages/heirloom">
+  <title>Heirloom — Aevia</title>
+  <link rel="stylesheet" href="../../assets/css/product.css">
+  <link rel="stylesheet" href="../../assets/css/type.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+</head>
+<body>
+<nav class="nav">
+  <a href="home.html" class="nav-logo"><img src="../../assets/images/aevia_logo_transparent.png" alt="Aevia" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"/><span class="nav-logo-text" style="display:none;">aevia</span></a>
+  <div class="nav-links"><a href="home.html">Home</a><a href="about.html">Über uns</a><a href="help.html">Hilfe</a></div>
+  <div class="nav-actions"><a href="../heirloom.html" class="nav-lang">EN</a><a href="../account.html" class="nav-account">Konto</a><a href="collections.html" class="nav-cta">Unsere Kollektionen</a></div>
+  <button class="nav-burger" aria-label="Menü öffnen" onclick="this.closest('.nav').classList.toggle('open')">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="crumb"><a href="collections.html">Vorlagen</a> <span>›</span> <a href="collections.html#love">Love</a> <span>›</span> Heirloom</div>
+<div class="zone">
+  <div>
+    <div class="gallery-wrap">
+      <button class="gallery-arrow prev" onclick="navArrow(-1)" aria-label="Vorheriges Bild"><svg viewBox="0 0 16 16"><polyline points="10,3 5,8 10,13"/></svg></button>
+      <div class="gallery-main" onclick="openLightbox(document.getElementById('gallery-img').src)"><img id="gallery-img" src="" alt="Heirloom Hochzeitsfotobuch, Vorderseite"/></div>
+      <button class="gallery-arrow next" onclick="navArrow(1)" aria-label="Nächstes Bild"><svg viewBox="0 0 16 16"><polyline points="6,3 11,8 6,13"/></svg></button>
+    </div>
+
+    <div class="thumbs" id="thumbs">
+      <button class="thumb-ph on" data-src="front.webp" onclick="setHero(this)"><img src="" alt="Vorderseite"/></button>
+      <button class="thumb-ph" data-src="back.webp"    onclick="setHero(this)"><img src="" alt="Rückseite"/></button>
+      <button class="thumb-ph" data-src="sp1.webp"     onclick="setHero(this)"><img src="" alt="Innenseite"/></button>
+      <button class="thumb-ph" data-src="sp2.webp"     onclick="setHero(this)"><img src="" alt="Innenseite"/></button>
+      <button class="thumb-ph" data-src="sp3.webp"     onclick="setHero(this)"><img src="" alt="Innenseite"/></button>
+      <button class="thumb-ph" data-src="sp4.webp"     onclick="setHero(this)"><img src="" alt="Innenseite"/></button>
+      <button class="thumb-ph" data-src="fpintro.webp" onclick="setHero(this)"><img src="" alt="Intro-Doppelseite"/></button>
+      <button class="thumb-ph" data-src="fpstory.webp" onclick="setHero(this)"><img src="" alt="Unsere-Geschichte-Doppelseite"/></button>
+      <button class="thumb-ph" data-src="fphim.webp"   onclick="setHero(this)"><img src="" alt="Warum ich ihn liebe, Doppelseite"/></button>
+      <button class="thumb-ph" data-src="fpher.webp"   onclick="setHero(this)"><img src="" alt="Warum ich sie liebe, Doppelseite"/></button>
+    </div>
+
+  </div>
+
+  <!-- has-selectors: siehe product.css. Heirloom ist die einzige Vorlage mit drei
+       gestapelten Auswahlen (Seiten, Farbwelt, Monogramm). -->
+  <div class="panel has-selectors">
+    <div class="tag">Love</div>
+    <h1 class="product-title">Heirloom</h1>
+    <p class="product-tagline">Der Anfang eurer Familiengeschichte: ein Buch, das bleibt.</p>
+
+    <div class="page-toggle">
+      <div class="chips">
+        <div class="chip on" onclick="pick(this,70)"><span class="chip-label">40 Seiten</span><span class="chip-price">€ 70</span></div>
+        <div class="chip" onclick="pick(this,100)"><span class="chip-label">80 Seiten</span><span class="chip-price">€ 100</span></div>
+      </div>
+    </div>
+
+    <div class="cw-block">
+      <div class="cw-head"><span class="cw-label">Farbwelt</span><span class="cw-name" id="cw-name">Beige</span></div>
+      <div class="cw-swatches" id="cw-swatches">
+        <button class="cw-sw on" data-colour="beige" style="--sw:#dad0c5" aria-label="Beige" title="Beige"><i></i></button>
+        <button class="cw-sw"    data-colour="brown" style="--sw:#312128" aria-label="Braun" title="Braun"><i></i></button>
+        <button class="cw-sw"    data-colour="green" style="--sw:#969e8a" aria-label="Grün"  title="Grün"><i></i></button>
+        <button class="cw-sw"    data-colour="blue"  style="--sw:#afafbe" aria-label="Blau"  title="Blau"><i></i></button>
+      </div>
+    </div>
+
+    <!-- Jede Karte zeigt ihr eigenes Monogramm, vergrößert aus der Rückseite dieser
+         Farbwelt. Eine Auswahl wechselt das Hauptbild auf die Rückseite. -->
+    <div class="mono-block">
+      <div class="section-label">Familienmonogramm</div>
+      <div class="mono-row" id="mono-row">
+        <button class="mono-card on" data-mono="roots"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Roots</span></span></button>
+        <button class="mono-card"    data-mono="birds"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Birds</span></span></button>
+        <button class="mono-card"    data-mono="roses"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Roses</span></span></button>
+      </div>
+      <p class="mono-desc" id="mono-desc"></p>
+    </div>
+
+    <div class="addons">
+      <div class="section-label">Story Pages. Alle kostenlos.</div>
+      <div class="addons-note">Seiten für das, was Fotos nicht festhalten. Füg hinzu, was du magst; tippe auf ein Bild, um es anzusehen.</div>
+      <div class="sp-list">
+        <!-- Keine Intro-Karte: das Intro steckt in jedem Heirloom-Buch (mandatory: true in
+             der Datendatei). Es bleibt in den Vorschaubildern, wo es eine Vorschau ist und
+             kein Angebot. Das Bestellformular fügt es automatisch hinzu. -->
+        <div class="sp-card" onclick="xtra(this)" data-fp="FPstory" data-photos="1">
+          <div class="sp-thumb" onclick="event.stopPropagation();setHeroFile('fpstory.webp')"><img src="" alt="Unsere-Geschichte-Doppelseite"/></div>
+          <div class="sp-body"><div class="sp-name">Unsere Geschichte</div><div class="sp-desc">Ein Foto und ein paar Worte dazu, wie ihr zwei angefangen habt.</div></div>
+          <span class="sp-add">Wählen</span>
+        </div>
+        <div class="sp-card" onclick="xtra(this)" data-fp="FPwhylove" data-photos="2">
+          <div class="sp-thumb" onclick="event.stopPropagation();setHeroFile('fphim.webp')"><img src="" alt="Warum ich ihn liebe, Doppelseite"/></div>
+          <div class="sp-body"><div class="sp-name">Warum ich ihn &amp; sie liebe</div><div class="sp-desc">Zwei Doppelseiten, eine für jeden von euch, in euren eigenen Worten.</div></div>
+          <span class="sp-add">Wählen</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="price-row"><span class="price-sym">€</span><span class="price-val" id="price">70</span><span class="price-note">inkl. USt., exkl. Versand</span></div>
+    <button class="cta" onclick="goToOrder()">Erstelle dein Buch</button>
+    <p class="cta-note">Du gibst frei, bevor wir drucken. Bezahlt wird erst, wenn du zufrieden bist.</p>
+  </div>
+</div>
+<div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lightbox-close" onclick="closeLightbox()" aria-label="Schließen">&times;</button><img id="lightbox-img" src="" alt="Vorschau der Doppelseite"/></div>
+<div class="acc-wrap">
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Über diese Vorlage<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Heirloom ist um einen Gedanken gebaut: ein Hochzeitsbuch, das eure Kinder aufschlagen werden. Vier Farbwelten, drei Familienmonogramme. Das Monogramm zieht sich durch das ganze Buch. Es setzt eure Initialen auf den Einband, eröffnet die erste Doppelseite und schließt die Rückseite. Wähl die Kombination, die euch am ähnlichsten sieht.</p></div></div>
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Druck &amp; Produktion<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Gedruckt auf 170 g/m² FSC-zertifiziertem, mattem Kunstdruckpapier. Hardcover mit Leinenstruktur, fadengeheftet. Entworfen in Wien · Gedruckt in der EU.</p><ul><li>Format: 20 × 20 cm (quadratisch)</li><li>Cover: Mattes Leinen-Hardcover</li><li>Papier: 170 g/m² matt, archivbeständig</li><li>Bindung: Fadenheftung, gebundene Lagen</li></ul></div></div>
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Deine Fotos vorbereiten<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Nach der Bestellung bekommst du einen einfachen Upload-Link. JPEG oder RAW, beides funktioniert. Die ideale Fotoanzahl sagen wir dir bei der Bestellung. Alles, was nicht gut drucken würde, markieren wir, bevor wir anfangen.</p><ul><li>Mindestauflösung: 2000 px an der kurzen Kante</li><li>Farbraum: sRGB bevorzugt</li><li>Wir akzeptieren Google Drive, Dropbox oder direkten Upload</li></ul></div></div>
+  <div class="acc-item"><button class="acc-btn" onclick="acc(this)">Lieferung<svg class="acc-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg></button><div class="acc-body"><p>Preview in 48 Stunden → deine Freigabe → Druck und Versand in 2 Werktagen → Lieferung: Österreich 7 Werktage.</p><p>Die Versandkosten siehst du im Checkout, bevor du bezahlst.</p></div></div>
+</div>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="foot-brand"><div class="foot-logo"><img src="../../assets/images/aevia_logo_transparent.png" alt="Aevia" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=\'font-family:Georgia,serif;font-size:20px;\'>aevia</span>');"/></div><p>Fotobuch-Studio in Wien. Wir gestalten und machen dein Buch. Deins, für immer.</p></div>
+    <div class="foot-col"><h5>Produkte</h5><a href="collections.html">Alle Vorlagen</a><a href="collections.html#love">Love</a><a href="collections.html#kids">Kids</a><a href="collections.html#adventures">Adventures</a></div>
+    <div class="foot-col"><h5>Unternehmen</h5><a href="about.html">Unsere Geschichte</a><a href="our-artists.html">Für Künstler</a><a href="home.html#how">Wie es funktioniert</a><a href="#">Qualitätsversprechen</a></div>
+    <div class="foot-col"><h5>Support</h5><a href="help.html">FAQ</a><a href="../account.html">Konto</a><a href="#">Instagram</a><a href="help.html#contact">Kontakt</a></div>
+  </div>
+  <div class="foot-base"><span>© 2026 Aevia. Alle Rechte vorbehalten.</span><span>AGB</span></div>
+</footer>
+<script>
+  window.PRODUCT = {
+    base:'', /* von applySelection() gesetzt: hängt von Farbwelt + Monogramm ab */
+    template:'heirloom-beige', category:'love', back:'de/heirloom.html',
+    orderUrl:'../order.html',
+    labels:{ add:'Wählen', added:'Gewählt ✓' },
+    fp:{
+      FPstory:   {name:'Our story',            inputType:'special', slug:'fpstory'},
+      /* Ein Kauf, zwei Doppelseiten. order.html löst den Gruppen-Slug in FPhim + FPher auf
+         (siehe addonGroup dort). Die Produktseite verkauft es als eine Karte. Die Namen
+         bleiben englisch: sie sind Schlüssel für das Bestellformular, kein Anzeigetext. */
+      FPwhylove: {name:'Why I love him & her', inputType:'special', slug:'whylove'}
+    },
+    extra:{ monogram:'roots' }   /* von goToOrder gelesen, das Bestellformular wählt es vor */
+  };
+</script>
+<script defer src="../../assets/js/prices.js"></script>
+<script defer src="../../assets/js/product.js"></script>
+<script>
+/* Heirlooms zwei Auswahlen. Alles andere auf dieser Seite ist das gemeinsame product.js.
+   Spiegel von pages/heirloom.html: jede Änderung gehört in beide Dateien. */
+(function () {
+  var MONO_COPY = {
+    roots: '<b>Bond.</b> Steht für die bleibende Verbindung zwischen zwei Leben und zwei Familien.',
+    birds: '<b>Harmony.</b> Symbolisiert eine gleichberechtigte Partnerschaft aus Vertrauen, Balance und einem gemeinsamen Weg.',
+    roses: '<b>Devotion.</b> Feiert Liebe, Leidenschaft und zwei Leben, die sich miteinander verweben.'
+  };
+  var COLOUR_NAME = { beige:'Beige', brown:'Braun', green:'Grün', blue:'Blau' };
+
+  var colour = 'beige', mono = 'roots';
+
+  function folder(c, m) {
+    return '../../assets/images/mockups/exp2/heirloom-' + (c || colour) + '-' + (m || mono) + '/';
+  }
+
+  /* Das Cover-Artwork einer Farbwelt + eines Monogramms: dasselbe SVG, das die Engine
+     rendert und das PDF zeichnet. Ordner- und Dateinamen sind auf der Platte großgeschrieben. */
+  var CAP = function (s) { return s.charAt(0).toUpperCase() + s.slice(1); };
+  function coverArt(c, m) {
+    return '../../assets/Template_Heirloom/' + CAP(c) + '/SVG/Cover/Cover_40_' + CAP(m) + '.svg';
+  }
+
+  function applySelection() {
+    var dir = folder();
+    window.PRODUCT.base     = dir;
+    window.PRODUCT.template = 'heirloom-' + colour;   /* der Registry-Schlüssel */
+    window.PRODUCT.extra    = { monogram: mono };
+
+    document.querySelectorAll('.thumb-ph').forEach(function (t) {
+      t.querySelector('img').src = dir + t.dataset.src;
+    });
+    var cards = { FPstory:'fpstory.webp', FPwhylove:'fphim.webp' };
+    Object.keys(cards).forEach(function (fp) {
+      var img = document.querySelector('.sp-card[data-fp="' + fp + '"] .sp-thumb img');
+      if (img) img.src = dir + cards[fp];
+    });
+    document.querySelectorAll('.mono-card').forEach(function (card) {
+      var art = card.querySelector('.mono-art');
+      if (art) art.style.backgroundImage = 'url("' + coverArt(colour, card.dataset.mono) + '")';
+    });
+
+    /* Behalte die Seite, die gerade angesehen wird: ein Wechsel der Farbwelt ändert die
+       Farbe, nicht die Seite. */
+    var active = document.querySelector('.thumb-ph.on');
+    document.getElementById('gallery-img').src = dir + (active ? active.dataset.src : 'front.webp');
+
+    document.getElementById('cw-name').textContent = COLOUR_NAME[colour];
+    document.getElementById('mono-desc').innerHTML = MONO_COPY[mono];
+  }
+
+  document.getElementById('cw-swatches').addEventListener('click', function (e) {
+    var btn = e.target.closest('.cw-sw'); if (!btn) return;
+    colour = btn.dataset.colour;
+    this.querySelectorAll('.cw-sw').forEach(function (b) { b.classList.toggle('on', b === btn); });
+    applySelection();
+  });
+
+  document.getElementById('mono-row').addEventListener('click', function (e) {
+    var btn = e.target.closest('.mono-card'); if (!btn) return;
+    mono = btn.dataset.mono;
+    this.querySelectorAll('.mono-card').forEach(function (b) { b.classList.toggle('on', b === btn); });
+    /* Zeig die Fläche, die diese Wahl verändert: das Monogramm sitzt auf der Rückseite. */
+    var backThumb = document.querySelector('.thumb-ph[data-src="back.webp"]');
+    if (backThumb) document.querySelectorAll('.thumb-ph').forEach(function (t) { t.classList.toggle('on', t === backThumb); });
+    applySelection();
+  });
+
+  applySelection();
+})();
+</script>
+</body>
+</html>

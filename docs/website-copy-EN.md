@@ -115,11 +115,13 @@ Our collections.
 
 Every template is designed for its occasion, not adapted from a generic grid. Choose your moment, choose your size.
 
-*Активных темплейтов шесть; Devotion, Radiance, Horizon убрать из листинга (книг пока нет). CTA на всех карточках: [Start your book].*
+*Активных темплейтов семь (Heirloom добавлен S162); Devotion, Radiance, Horizon убрать из листинга (книг пока нет). CTA на всех карточках: [Start your book].*
 
 ### Love
 
 **Tender** — Warm and intimate. For weddings, engagements, and the day you want to remember exactly as it felt. — 40 pages / 80 pages — € 70
+
+**Heirloom** — Timeless and personal. For weddings, and the first memories of a family archive. — 40 pages / 80 pages — € 70
 
 ### Adventures
 
@@ -138,11 +140,12 @@ Every template is designed for its occasion, not adapted from a generic grid. Ch
 ---
 
 ## Product pages
-*Структура одинакова для всех шести. Уникальны: тэглайн, About this template, галерея, состав story pages.*
+*Структура одинакова для всех семи (у Heirloom дополнительно два селектора: colourway + monogram). Уникальны: тэглайн, About this template, галерея, состав story pages.*
 
 ### Taglines
 
 Tender: Your wedding day, composed with the stillness it deserves.
+Heirloom: The beginning of your family story, made to last.
 Wander: Open landscapes and the feeling of going somewhere.
 Joyride: For bright city escapes and the easy joy of a summer away.
 Newborn: For the first days, with the little one at the centre of it all.
@@ -173,6 +176,14 @@ S141): плейсхолдеры, оставлены как есть до виз�
 
 **Tender**
 Tender is built around your wedding day. Generous margins and a delicate hand-script accent give every image the space to speak. Its story pages hold the words a photo can't: an opening note, how the two of you began, and your vows beside a full-bleed photo.
+
+**Heirloom** *(four colourways: Beige / Brown / Green / Blue · three family monograms: Roots / Birds / Roses)*
+Heirloom is built around one idea: a wedding book your children will open. It comes in four colourways and three family monograms, and the monogram runs through the whole book. It sets your initials on the cover, opens the first spread, and closes the back. Choose the pairing that reads most like you.
+
+*Monogram copy (Xenia's wording, shipped verbatim — no stop-slop pass, S161 owner):*
+Roots: **Bond.** Represents the lasting bond between two lives and two families.
+Birds: **Harmony.** Symbolises an equal partnership built on trust, balance and a shared path.
+Roses: **Devotion.** Celebrates love, passion and two lives beautifully intertwined.
 
 **Wander** *(artist: Kevin Lucbert → `our-artists.html#kevin-lucbert`)*
 Wander is made for road trips and long journeys: open landscapes and the feeling of going somewhere. Clean, expansive spreads let the places lead, and a story page maps the route you took. Made in collaboration with Kevin Lucbert.

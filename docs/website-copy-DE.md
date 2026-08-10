@@ -113,11 +113,13 @@ Unsere Kollektionen.
 
 Jede Vorlage ist für ihren Anlass entworfen, nicht aus einem Standardraster abgeleitet. Wähl deinen Moment, wähl dein Format.
 
-*Шесть активных, CTA на карточках: [Starte dein Buch].*
+*Семь активных (Heirloom добавлен S162), CTA на карточках: [Starte dein Buch].*
 
 ### Love
 
 **Tender** — Warm und innig. Für Hochzeiten, Verlobungen und den Tag, an den du dich genau so erinnern willst, wie er sich angefühlt hat. — 40 Seiten / 80 Seiten — € 70
+
+**Heirloom** — Zeitlos und persönlich. Für Hochzeiten und die ersten Erinnerungen einer Familiengeschichte. — 40 Seiten / 80 Seiten — € 70 ⚠ *(новый немецкий текст S162, на проверку носителем)*
 
 ### Adventures
 
@@ -136,11 +138,21 @@ Jede Vorlage ist für ihren Anlass entworfen, nicht aus einem Standardraster abg
 ---
 
 ## Product pages
-*Структура одинакова для всех шести. Уникальны: тэглайн, About this template, галерея, состав story pages.*
+*Структура одинакова для всех семи (у Heirloom дополнительно два селектора: colourway + monogram). Уникальны: тэглайн, About this template, галерея, состав story pages.*
 
 ### Taglines
 
+*⚠ Правило обращения (зафиксировано S162 — оно уже действовало, просто не было записано):*
+***du/dein** — обращение к ПОКУПАТЕЛЮ и его действиям («Wähl deine Vorlage», «Dein Hochzeitstag»).*
+***euer/ihr** — когда речь о СОДЕРЖИМОМ книги, которое по смыслу принадлежит нескольким людям:*
+*«die Route eurer Reise» (Wander, Inside every Aevia book), «euer Eheversprechen» (Tender About),*
+*«eurer Familiengeschichte» (Heirloom). Wander показывает, что дело не в паре, а в общем предмете.*
+*Владелец (S162) рассматривал перевод Tender на ihr/euer и решил НЕ переводить: Heirloom и так*
+*укладывается в правило, рядом теглайны не встречаются (на collections-карточках местоимений нет),*
+*а полный переход затронул бы 41 «du» по всему сайту — это решение о голосе бренда, не уборка.*
+
 Tender: Dein Hochzeitstag, gestaltet mit der Ruhe, die er verdient.
+Heirloom: Der Anfang eurer Familiengeschichte: ein Buch, das bleibt. ⚠ *(новый немецкий текст S162, на проверку носителем; владелец одобрил формулировку, но не тире — двоеточие вместо em dash, S162)*
 Wander: Offene Landschaften und das Gefühl, unterwegs zu sein.
 Joyride: Für helle Städtetrips und die leichte Freude eines Sommers unterwegs. ⚠ *(единственное оставшееся место на проверку носителем)*
 Newborn: Für die ersten Tage, mit dem kleinen Menschen im Mittelpunkt.
@@ -151,10 +163,18 @@ Papercut: Für das Alter, in dem jeder Tag ein Bastelprojekt ist.
 *НОВОЕ в DE (S141), переведено с EN-мастера (S140). Правила те же, что в EN: не утверждать
 того, чего нет; спеки на страницах — не источник правды; художника упоминать для книги целиком
 («Entstanden in Zusammenarbeit mit X»), не для одной story page. Где есть художник — ссылка
-на якорь в our-artists.html. ⚠ Все шесть абзацев — новый немецкий текст, на проверку носителем.*
+на якорь в our-artists.html. ⚠ Все семь абзацев — новый немецкий текст, на проверку носителем (Heirloom добавлен S162).*
 
 **Tender**
 Tender ist um deinen Hochzeitstag gebaut. Großzügige Ränder und ein zarter handschriftlicher Akzent geben jedem Bild den Raum, für sich zu sprechen. Die Story Pages halten die Worte fest, die ein Foto nicht halten kann: eine Zeile zum Auftakt, wie ihr zwei angefangen habt, und euer Eheversprechen neben einem seitenfüllenden Foto.
+
+**Heirloom** *(vier Farbwelten: Beige / Brown / Green / Blue · drei Familienmonogramme: Roots / Birds / Roses)* ⚠ *(новый немецкий текст S162, на проверку носителем)*
+Heirloom ist um einen Gedanken gebaut: ein Hochzeitsbuch, das eure Kinder aufschlagen werden. Es gibt es in vier Farbwelten und mit drei Familienmonogrammen, und das Monogramm zieht sich durch das ganze Buch. Es setzt eure Initialen auf den Einband, eröffnet die erste Doppelseite und schließt die Rückseite. Wähl die Kombination, die euch am ähnlichsten sieht.
+
+*Monogramm-Texte (Wortlaut von Xenia, unverändert übernommen — kein stop-slop-Durchgang, S161 Owner):*
+Roots: **Bond.** Steht für die bleibende Verbindung zwischen zwei Leben und zwei Familien.
+Birds: **Harmony.** Symbolisiert eine gleichberechtigte Partnerschaft aus Vertrauen, Balance und einem gemeinsamen Weg.
+Roses: **Devotion.** Feiert Liebe, Leidenschaft und zwei Leben, die sich schön miteinander verweben.
 
 **Wander** *(artist: Kevin Lucbert → `our-artists.html#kevin-lucbert`)*
 Wander ist für Roadtrips und lange Reisen gemacht: offene Landschaften und das Gefühl, unterwegs zu sein. Klare, weite Doppelseiten lassen den Orten den Vortritt, und eine Story Page zeichnet die Route eurer Reise nach. Entstanden in Zusammenarbeit mit Kevin Lucbert.

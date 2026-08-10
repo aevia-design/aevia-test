@@ -44,15 +44,16 @@
       <button class="thumb-ph" data-src="fpher.webp"   onclick="setHero(this)"><img src="" alt="Why I love her spread"/></button>
     </div>
 
-    <!-- PLACEHOLDER BANNER — remove this div (and .ph-note in product.css) once the
-         twelve real mockup sets exist. See HEIRLOOM_ORDERS in scripts/exp2-images.mjs. -->
-    <div class="ph-note" id="ph-note">Placeholder mockups — every colourway and monogram shows the same stand-in book here. The monogram cards on the right are the real artwork, and both selectors drive the order link correctly.</div>
   </div>
 
-  <div class="panel">
+  <!-- has-selectors: Heirloom is the only template with three stacked choices (pages,
+       colourway, monogram). The class aligns all three to one module width so the decision
+       column has a single right edge. Other product pages keep the default content-sized
+       controls — see product.css. -->
+  <div class="panel has-selectors">
     <div class="tag">Love</div>
     <h1 class="product-title">Heirloom</h1>
-    <p class="product-tagline">A wedding book made to be handed down, not filed away.</p>
+    <p class="product-tagline">The beginning of your family story, made to last.</p>
 
     <div class="page-toggle">
       <div class="chips">
@@ -76,9 +77,9 @@
     <div class="mono-block">
       <div class="section-label">Family monogram</div>
       <div class="mono-row" id="mono-row">
-        <button class="mono-card on" data-mono="roots"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Roots</span><span class="mono-essence">Bond</span></span></button>
-        <button class="mono-card"    data-mono="birds"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Birds</span><span class="mono-essence">Harmony</span></span></button>
-        <button class="mono-card"    data-mono="roses"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Roses</span><span class="mono-essence">Devotion</span></span></button>
+        <button class="mono-card on" data-mono="roots"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Roots</span></span></button>
+        <button class="mono-card"    data-mono="birds"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Birds</span></span></button>
+        <button class="mono-card"    data-mono="roses"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Roses</span></span></button>
       </div>
       <p class="mono-desc" id="mono-desc"></p>
     </div>
@@ -87,14 +88,10 @@
       <div class="section-label">Story pages. All free.</div>
       <div class="addons-note">Pages for what photos can't hold. Add any you'd like; tap an image to preview it.</div>
       <div class="sp-list">
-        <!-- The intro is part of every Heirloom book (mandatory: true in the data file),
-             so it is shown, not sold. No onclick, and no .on class means goToOrder never
-             sends it — the order form adds it automatically. -->
-        <div class="sp-card" data-fp="FPintro" data-photos="0" style="cursor:default;">
-          <div class="sp-thumb" onclick="setHeroFile('fpintro.webp')"><img src="" alt="Intro spread"/></div>
-          <div class="sp-body"><div class="sp-name">Intro</div><div class="sp-desc">Your names and your date, set inside the monogram you choose.</div></div>
-          <span class="sp-add" style="background:var(--surface);">Included</span>
-        </div>
+        <!-- No intro card: the intro is mandatory (mandatory: true in the data file), so
+             listing it here offered a choice that does not exist. It remains in the gallery
+             thumbnails, where it reads as a preview rather than an add-on. The order form
+             adds it automatically. -->
         <div class="sp-card" onclick="xtra(this)" data-fp="FPstory" data-photos="1">
           <div class="sp-thumb" onclick="event.stopPropagation();setHeroFile('fpstory.webp')"><img src="" alt="Our story spread"/></div>
           <div class="sp-body"><div class="sp-name">Our story</div><div class="sp-desc">A photo and a few words on how the two of you began.</div></div>
@@ -108,7 +105,7 @@
       </div>
     </div>
 
-    <div class="price-row"><span class="price-sym">€</span><span class="price-val" id="price">70</span><span class="price-note">incl. VAT, plus shipping</span></div>
+    <div class="price-row"><span class="price-sym">€</span><span class="price-val" id="price">70</span><span class="price-note">incl. VAT, excl. shipping</span></div>
     <button class="cta" onclick="goToOrder()">Create your book</button>
     <p class="cta-note">You approve before we print. No charge until you're happy.</p>
   </div>
@@ -147,14 +144,6 @@
 <script>
 /* Heirloom's two selectors. Everything else on this page is the shared product.js. */
 (function () {
-  // ⚠ FLIP TO true once the twelve mockup sets exist in assets/images/mockups/exp2/
-  // heirloom-<colour>-<monogram>/. Until then every combination shows the same stand-in
-  // images so the layout can be reviewed. Nothing else about the page changes.
-  var ASSETS_READY = false;
-  var PLACEHOLDER  = '../assets/images/mockups/exp2/tender/';
-  // Tender has no "why I love him/her" spreads; map them onto a stand-in of the same shape.
-  var PLACEHOLDER_FILE = { 'fphim.webp':'fpwords.webp', 'fpher.webp':'fpwords.webp' };
-
   var MONO_COPY = {
     roots: '<b>Bond.</b> Represents the lasting bond between two lives and two families.',
     birds: '<b>Harmony.</b> Symbolises an equal partnership built on trust, balance and a shared path.',
@@ -164,15 +153,10 @@
 
   var colour = 'beige', mono = 'roots';
 
-  // Folder for a given colour+monogram. Defaults to the current selection; the monogram
-  // cards pass their OWN key so each previews its own artwork in the current colourway.
+  // Folder for a given colour+monogram. Twelve sets exist, one per combination, so every
+  // image on the page follows both selectors.
   function folder(c, m) {
-    return ASSETS_READY
-      ? '../assets/images/mockups/exp2/heirloom-' + (c || colour) + '-' + (m || mono) + '/'
-      : PLACEHOLDER;
-  }
-  function fileFor(name) {
-    return ASSETS_READY ? name : (PLACEHOLDER_FILE[name] || name);
+    return '../assets/images/mockups/exp2/heirloom-' + (c || colour) + '-' + (m || mono) + '/';
   }
 
   // The cover artwork for a colourway + monogram — the same SVG the engine renders and
@@ -192,13 +176,15 @@
     window.PRODUCT.extra    = { monogram: mono };
 
     document.querySelectorAll('.thumb-ph').forEach(function (t) {
-      t.querySelector('img').src = dir + fileFor(t.dataset.src);
+      t.querySelector('img').src = dir + t.dataset.src;
     });
-    // Special-page cards: the thumb each one previews is its own onclick target.
-    var cards = { FPintro:'fpintro.webp', FPstory:'fpstory.webp', FPwhylove:'fphim.webp' };
+    // Special-page cards: the thumb each one previews is its own onclick target. The intro
+    // has no card — it is part of every Heirloom book, so there is nothing to decide. It
+    // stays in the gallery thumbnails, where it is a preview rather than an offer.
+    var cards = { FPstory:'fpstory.webp', FPwhylove:'fphim.webp' };
     Object.keys(cards).forEach(function (fp) {
       var img = document.querySelector('.sp-card[data-fp="' + fp + '"] .sp-thumb img');
-      if (img) img.src = dir + fileFor(cards[fp]);
+      if (img) img.src = dir + cards[fp];
     });
     // Each monogram card previews ITS OWN artwork in the current colourway, cropped from
     // the real cover SVG rather than from a mockup. Independent of ASSETS_READY: these
@@ -211,11 +197,10 @@
     // Keep whichever slot the customer is currently looking at, rather than snapping back
     // to the cover — switching colourway mid-browse should change the colour, not the page.
     var active = document.querySelector('.thumb-ph.on');
-    document.getElementById('gallery-img').src = dir + fileFor(active ? active.dataset.src : 'front.webp');
+    document.getElementById('gallery-img').src = dir + (active ? active.dataset.src : 'front.webp');
 
     document.getElementById('cw-name').textContent = COLOUR_NAME[colour];
     document.getElementById('mono-desc').innerHTML = MONO_COPY[mono];
-    if (ASSETS_READY) { var n = document.getElementById('ph-note'); if (n) n.remove(); }
   }
 
   document.getElementById('cw-swatches').addEventListener('click', function (e) {

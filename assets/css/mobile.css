@@ -218,7 +218,9 @@
 
 
   /* ── Product pages (bloom, devotion, etc.) ── */
-  .crumb     { padding: 13px 20px; }
+  /* The nav is 65px here, not the 76.6px it is on desktop — match it so the strip clears
+     the fixed nav exactly, with no overlap and no gap. */
+  .crumb     { padding: 13px 20px; margin-top: 65px; }
   .acc-wrap  { padding: 0 20px; }
 
   /* Product pages — sticky split (gallery + panel) → single column */

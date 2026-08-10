@@ -10,7 +10,14 @@
 .nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 56px;background:rgba(250,250,248,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
 .nav-logo img{height:28px;width:auto;display:block;}.nav-logo-text{font-family:var(--serif);font-size:18px;}.nav-links{display:flex;gap:32px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}.nav-links a{transition:color 0.15s;}.nav-links a:hover{color:var(--text);}
 .nav-cta{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;border:1px solid var(--text);padding:8px 20px;border-radius:100px;transition:background 0.15s,color 0.15s;}.nav-cta:hover{background:var(--text);color:var(--white);}
-.crumb{margin-top:69px;padding:13px 56px;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}.crumb span{margin:0 8px;opacity:0.35;}
+/* flex + align-items:center centres the LINE BOX in the strip. With plain block layout the
+   symmetric 13px padding still left the text 14px from the top and 16.6px from the bottom,
+   because the inline box and the line box are different heights and the leading is not
+   split evenly around uppercase text. */
+/* margin-top must clear the FIXED nav, which is 76.6px tall on desktop and 65px below the
+   768px breakpoint. It was 69px, so the nav covered the top 7.6px of the strip: the text was
+   centred in the crumb's own box but read high, because 7.6px of that box was never visible. */
+.crumb{margin-top:77px;padding:13px 56px;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);display:flex;align-items:center;}.crumb span{margin:0 8px;opacity:0.35;}
 .tag{display:inline-block;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent-dk);margin-bottom:12px;}
 .product-title{font-family:var(--serif);font-weight:400;letter-spacing:-0.02em;line-height:1.04;margin-bottom:14px;font-size:54px;}
 .product-tagline{font-family:var(--serif);font-style:italic;color:var(--muted);line-height:1.65;margin-bottom:14px;font-size:16px;max-width:340px;}
@@ -103,7 +110,31 @@
 .cw-sw i{display:block;width:100%;height:100%;border-radius:2px;background:var(--sw);}
 
 .mono-block{margin-bottom:30px;}
-.mono-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+/* Capped rather than stretched to a third of the panel each: at full width the three
+   cards read as the page's main event, competing with the book itself. The monogram is a
+   detail of the cover, so the cards sit at the scale of the colourway swatches above them. */
+.mono-row{display:grid;grid-template-columns:repeat(3,minmax(0,84px));gap:8px;justify-content:start;}
+
+/* ── Aligned selector stack (Heirloom only) ──────────────────────────────────────────
+   Heirloom stacks three choices: page count, colourway, monogram. Sized to their own
+   content they measured 224 / 182 / 268px against a 400px panel — three different right
+   edges, which reads as unresolved rather than restrained. One shared module width gives
+   the decision column a single edge.
+   Not full-bleed: at 400px the swatches would be ~91px and the monogram cards ~128px,
+   competing with the book photograph and undoing the deliberate shrink above. 268px is
+   the monogram row's natural width, so that row is unchanged and the other two grow.
+   Scoped to .has-selectors because .chips is shared with the five other product pages,
+   which have a single choice and are correct as they are. */
+.has-selectors{--sel-w:268px;}
+/* The tagline needs 350px on one line and the shared measure caps it at 340 — it broke a
+   ten-word sentence across two lines for want of 10px, inside a 400px panel. Released here
+   only: the other five product pages have longer taglines that genuinely want two lines. */
+.has-selectors .product-tagline{max-width:none;}
+.has-selectors .chips{display:grid;grid-template-columns:repeat(2,1fr);width:var(--sel-w);}
+.has-selectors .chip{min-width:0;padding-left:0;padding-right:0;}
+.has-selectors .cw-swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:var(--sel-w);}
+.has-selectors .cw-sw{width:auto;aspect-ratio:1/1;height:auto;}
+.has-selectors .mono-row{grid-template-columns:repeat(3,1fr);width:var(--sel-w);}
 .mono-card{display:flex;flex-direction:column;align-items:stretch;border:1.5px solid var(--border);border-radius:6px;background:var(--white);text-align:center;overflow:hidden;transition:border-color .15s,box-shadow .15s;}
 .mono-card:hover{border-color:#c4a882;}
 .mono-card.on{border-color:var(--text);box-shadow:0 0 0 1px var(--text);}
@@ -115,13 +146,13 @@
    ~70mm-tall band; 19% x-position centres that band on x = 100mm of 410. Both numbers
    are derived, not eyeballed — see the working in heirloom.html. */
 .mono-art{aspect-ratio:1/1;background-color:var(--mock);background-repeat:no-repeat;background-position:19% 50%;background-size:auto 285%;border-bottom:1px solid var(--border);}
-.mono-meta{padding:8px 4px 10px;}
-.mono-title{display:block;font-family:var(--serif);font-size:16px;line-height:1.15;}
-.mono-essence{display:block;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
-.mono-card.on .mono-essence{color:var(--accent-dk);}
+.mono-meta{padding:6px 4px 8px;}
+.mono-title{display:block;font-family:var(--serif);font-size:14px;line-height:1.15;}
 /* min-height reserves the tallest of the three descriptions, so switching monogram
-   never nudges the price and CTA below it up or down. */
-.mono-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-top:11px;min-height:54px;}
+   never nudges the price and CTA below it up or down.
+   text-wrap:balance evens the line lengths instead of filling each line and dropping a
+   lone word onto the last one — the same treatment home, about and help already use. */
+.mono-desc{font-size:13px;color:var(--muted);line-height:1.55;margin-top:11px;min-height:60px;text-wrap:balance;}
 .mono-desc b{color:var(--text);font-weight:600;}
 
 /* Placeholder banner — delete this rule and its markup once real mockups land. */
