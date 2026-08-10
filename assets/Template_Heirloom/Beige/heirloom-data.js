@@ -63,8 +63,8 @@ window.HEIRLOOM_DATA = {
       introSvg: 'FP Spread 0/FP 01 Intro Roots.svg',
       coverClipShape: 'coverFrame',
       introLetters: [
-        { key: 'letter1', xMm: 107.5, yMm: 152, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
-        { key: 'letter2', xMm: 107.5, yMm: 174, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
+        { key: 'letter1', xMm: 107.2, yMm: 152, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
+        { key: 'letter2', xMm: 107.2, yMm: 174, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
       ],
       backLetters: [
         { key: 'letter1', xMm: 117.5, yMm: 107, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },

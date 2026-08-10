@@ -1,8 +1,8 @@
 Heirloom_sizing_full_Beige;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Type;Syb-type;Spread;Page;Slot;photo_Xmm_without bleed;photo_Ymm_without bleed;photo_Xmm_with bleed;photo_Ymm_with bleed;photo_Width_mm;photo_Height_mm;full_bleed;captions allowed;captions_position;captions_Xmm_without bleed;captions_Ymm_without bleed;captions_Xmm_with bleed;captions_Ymm_with bleed;captions_Width_mm;captions_Height_mm;captions_Halignment;captions_Valignment;caption_font;caption_size_pt;caption_style;caption_letter_spacing;caption_line_spacing;functional_photo;functional_text;captions_color;bgColor;Aspect ratio;Orientation;Photo shape;Bleed, mm;overlay_position;Page size
 Functional_mandatory;Intro;0;Left;-;-;-;-;-;-;-;no;yes;center;105;80;108;83;110;100;center;center;IM FELL English;16pt;Regular;10;1.28;no;yes;#404737;#dad0c5;n.a;square;;3;;200×200mm
-Roots;1st letter;;;;;;;;;;;;;104.5;149;107.5;152;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#404737;;;;;;;
-Roots;2nd letter;;;;;;;;;;;;;104.5;171;107.5;174;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#404737;;;;;;;
+Roots;1st letter;;;;;;;;;;;;;104.2;149;107.2;152;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#404737;;;;;;;
+Roots;2nd letter;;;;;;;;;;;;;104.2;171;107.2;174;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#404737;;;;;;;
 Birds;1st letter;;;;;;;;;;;;;103;150;106;153;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#404737;;;;;;;
 Birds;2nd letter;;;;;;;;;;;;;108;166.5;111;169.5;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#404737;;;;;;;
 Roses;1st letter;;;;;;;;;;;;;90.7;164;93.7;167;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#404737;;;;;;;

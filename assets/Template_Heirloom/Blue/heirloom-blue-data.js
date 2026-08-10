@@ -63,8 +63,8 @@ window.HEIRLOOM_BLUE_DATA = {
       introSvg: 'FP Spread 0 Intro/FP 01 Intro V1.svg',
       coverClipShape: 'coverFrameShifted',
       introLetters: [
-        { key: 'letter1', xMm: 107.5, yMm: 152, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#3d3d4f' },
-        { key: 'letter2', xMm: 107.5, yMm: 174, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#3d3d4f' },
+        { key: 'letter1', xMm: 107.2, yMm: 152, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#3d3d4f' },
+        { key: 'letter2', xMm: 107.2, yMm: 174, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#3d3d4f' },
       ],
       backLetters: [
         { key: 'letter1', xMm: 117.5, yMm: 107, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#3d3d4f' },
