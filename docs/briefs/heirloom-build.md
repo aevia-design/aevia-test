@@ -1,9 +1,39 @@
 # Heirloom build — state doc
 
-_Template drop: `assets/Template_Heirloom/Beige/` (S157, 2026-08-07). Closest relative: Tender.
-Registry key: **`heirloom-beige`** — colour is modelled as one registry entry + data file per
-colourway (owner's call, S157); three more colourways to come. Order form / engines / PDF stay
-colour-blind downstream of the product page._
+_Template drop: `assets/Template_Heirloom/Beige/` (S157, 2026-08-07); Brown, Green and Blue
+followed (built S160, 2026-08-10). Closest relative: Tender. Registry keys:
+**`heirloom-beige` / `-brown` / `-green` / `-blue`** — colour is one registry entry + data
+file per colourway (owner's call, S157). Order form / engines / PDF stay colour-blind
+downstream of the product page; no `heirloom` key is special-cased outside the registry._
+
+## Colourways (all four built, S160)
+The three later drops are the SAME sub-template as Beige. Verified structurally, not by eye:
+strip colours, SVG paths and clip settings from all four data files and the remainder is
+byte-identical. **The only differing number is the cover slot centre, 327.62 → 328mm** —
+all three monograms in the new drops share one photo opening, so they carry a single
+`coverFrameShifted` clip where Beige needs two variants.
+
+Colours split by SURFACE — the cover and the inner pages do not share ink:
+
+| | inner text | page bg | cover text | spine band |
+|---|---|---|---|---|
+| Beige | `#312128` | `#dad0c5` | `#312128` | `#dad0c5` |
+| Brown | `#312128` | `#dad0c5` | `#dad0c5` | `#312128` |
+| Green | `#404737` | `#dad0c5` | `#dad0c5` | `#969e8a` |
+| Blue  | `#3d3d4f` | `#cfc4b8` | `#3d3d4f` | `#afafbe` |
+
+Monogram letters follow their surface: the two intro letters take the inner ink, the two
+back-cover letters take the cover ink (in Green the same monogram is `#404737` on the intro
+and `#dad0c5` on the back cover).
+
+**Green and Blue renamed two folders** (`FP Spread 0 Intro/`, `FP Spread 2 Why I love/`) and
+call the intro artwork `V1/V2/V3` — **V1=Roots, V2=Birds, V3=Roses**, matched by artwork file
+size to within 3 bytes. Brown kept Beige's names.
+
+⚠ **All nine new covers shipped with the photo window painted solid** (the S157 bug again),
+and Green's Roses cover had a 3.1MB placeholder PHOTO embedded inside the window clip. Both
+patched in-repo (owner's call — Xenia not asked to re-export). **Re-apply on any re-export.**
+The opening is the `clipPath`, NOT the rect beside it — see LEARNINGS (S160).
 
 ## What is new vs Tender
 - **Monograms** (Roots / Birds / Roses): product-page choice selects cover SVG + intro SVG and
@@ -112,7 +142,12 @@ colour-blind downstream of the product page._
         the same way the browser does. Both are eyeball checks on a generated PDF.
 
 ### Phase C — live
-- [ ] **8. Product page + Stripe** — colour selector (Beige only for now) + monogram selector
+- [x] **7b. Colourways wired (S160).** Brown/Green/Blue data files + registry on all four
+      surfaces + staff dropdown. Gates: `npm test` 351, `npm run qa:order` 12/12,
+      `qa/debug-heirloom-render.mjs <Colour>` PASS on all four (41 canvases, 0 pageerrors,
+      0 SVG 404s), `qa/verify-caption-parity.mjs Heirloom-<Colour>` PASS on all four.
+      **No PDF has been rendered for Brown, Green or Blue yet.**
+- [ ] **8. Product page + Stripe** — colour selector (all four now exist) + monogram selector
       w/ per-monogram descriptions (owner to supply); swap-on-select thumbnails need 12 mockup
       sets (colours × monograms) — NOT yet produced; Beige-only placeholder acceptable interim.
       **The monogram is chosen HERE, not on the order form (owner, S158)** — it is a headline
@@ -174,7 +209,16 @@ colour-blind downstream of the product page._
   three new colourways will likely arrive in the new format.
 - **Spine caption box** CSV 6w×70h → data `wMm:70 hMm:6` (same swap as Tender). Verify centring.
 - **Monogram descriptions for the product page** — owner to share later (point 12 of the brief).
-- **3 more colourways pending** from Xenia; each = new folder + data file + registry entries.
+- **RESOLVED (S160): all three remaining colourways are built.** See the Colourways section
+  at the top for what actually differed.
+- **The monogram letter boxes now show no placeholder** (S160) — 'Add caption…' and the
+  back-cover `attr(data-label)` both wrapped one character per line in an 8×9mm box. They
+  reveal a dashed outline on hover instead, which also closes the "no empty-state hint"
+  question. The hover outline reaches the CUSTOMER preview via the shared class; restrict it
+  to the staff engine if that reads as fussy.
+- **Caption focus wash flips by ink luminance** (S160) — light ink on Brown/Green covers was
+  invisible while being typed under the old fixed white wash. Any future colourway is handled
+  with no per-template rule.
 
 ## Key numbers (for cold resume)
 200×200mm book, bleed 3mm content / 18mm cover. Cover viewBox `0 0 1162.205 566.929` =

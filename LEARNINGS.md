@@ -1,3 +1,32 @@
+## 2026-08-10 — In an SVG, read the CLIP before measuring anything (S160)
+
+Xenia's covers wrap the photo opening as
+`<g data-name="Image"><g clip-path="url(#n)"><rect .../></g></g>`. **The rect is a swatch
+painted inside the clip; its size and position are arbitrary.** Only the clipPath defines
+the opening. I measured the rects across the three new colourways, found them varying and
+non-square (247×274, 262×234 against Beige's exact 226.772 square), and reported that the
+openings had moved and each colourway would need its own clip extraction. Wrong: the clip
+paths are character-identical in 11 of 12 covers. The colourways needed FEWER clip variants
+than Beige, not more.
+
+Generalises the S158 note about the solid rect disagreeing with the path by up to 1.8px:
+that was framed as a precision warning, but the rect is not an imprecise version of the
+opening — **it is not the opening at all.** Extract `clipPath` by the id the Image group
+names, and ignore every rect beside it.
+
+## 2026-08-10 — A test that discovers its own inputs can silently cover nothing (S160)
+
+`tests/cover-svg-viewbox.test.js` finds templates by looking for a `-data.js` at the top of
+each `assets/Template_*` dir. Heirloom keeps one per COLOURWAY in a subfolder, so **all four
+Heirloom colourways were skipped entirely** — the suite was green and the count of covers
+checked was never asserted. It stayed blind from S157 through nine newly imported covers in
+S160, while CLAUDE.md named it as the guard to run after any SVG re-export.
+
+**Rule: a discovery-based test must assert HOW MUCH it discovered**, not just that what it
+found passes. The same shape bit the S160 contrast gate, which printed an empty table and
+`PASS: true`; a floor on the expected row count turns both silent holes into failures.
+Coverage here went 6 → 18 covers once discovery recursed one level.
+
 ## 2026-08-09 — Two renderers must not both DERIVE the same thing (S159)
 
 The engine wrapped captions with browser layout; `export-pdf.js` independently re-wrapped the

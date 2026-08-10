@@ -1,83 +1,71 @@
 # Session Status
-_Last updated: 2026-08-09 (session 159)_
-_Context at save: **Stage 7 is DONE — the first Heirloom PDF rendered.** It exposed two
-engine↔PDF caption divergences, both fixed. 339 tests green, all 7 templates pass the new
-parity gate. **NOTHING FROM S159 IS COMMITTED OR DEPLOYED.** The S156 business-case deletion
+_Last updated: 2026-08-10 (session 160)_
+_Context at save: **S159 is shipped and S160's colourways are pushed (`e1efd85`).** All four
+Heirloom colourways render in both engines. 351 tests green. The S156 business-case deletion
 and a `test photos/IMG_5249.HEIC` deletion are still deliberately uncommitted._
 
 ## Status
-**Session 159 (2026-08-09) — the first Heirloom PDF was generated and reviewed. Two
-discrepancies found and fixed, both from the same cause: the engine and the PDF each
-word-wrapped captions independently.**
+**Session 160 (2026-08-10) — S159 deployed, and Heirloom's three remaining colourways
+(Brown, Green, Blue) built end to end through the engines, order form and PDF registry.
+Stage 8 (the product page) is the last piece of Heirloom and is blocked on assets.**
 
-**Immediate next action: commit, then deploy in order — Firebase functions → Cloud Run
-renderer → Cloudflare. Then RE-SAVE AEV-088 in the engine before regenerating** (line
-breaks only exist for books saved after the frontend ships). See Next steps 1.
+**Immediate next action: verify AEV-088** — re-save it in the staff engine (hard-refresh
+first), then regenerate the PDF from the dashboard. This is the only unverified part of
+S159. See Next steps 1.
 
-### What S159 changed
-1. **Cover captions never word-wrapped in the PDF** unless the template declared
-   `autoShrink` — which only Joyride does. Heirloom's 50pt `ANNA & MICHAEL` is 471pt in a
-   283pt box: the engine wrapped it, print drew one line over the artwork. Now wraps at
-   `wMm` (`coverCaptionLines`); spine captions deliberately excluded. Sweep confirmed no
-   other template's cover overflows → the five signed-off covers are unchanged.
-2. **The engine now records where each caption actually broke; the PDF draws those lines.**
-   `collectCaptionLines()` → `bookCaptionLines` → `staffBookCaptionLines` →
-   `state.captionLines` → `captionLinesFor()`. Removes the second wrap implementation
-   entirely rather than tuning it to match. Missing lines → old wrap, so pre-S159 orders
-   render exactly as before.
-3. **Stale lines are refused twice:** `approveOrder` nulls `staffBookCaptionLines` when it
-   copies `customerCaptions`, and `export-pdf` only trusts stored lines that still
-   reconstruct the stored text (`linesMatchText`).
-4. **`qa/verify-caption-parity.mjs`** is the new gate — local mode, no order load, no GCS
-   cost. Passes on all 7 templates. It caught a rotated-spine bug review had missed.
+### What S160 changed
+1. **S159 shipped.** `saveStaffState` + `approveOrder` deployed to europe-west1, Cloud Run
+   already redeployed by the owner, frontend pushed. ⚠ The Firebase CLI's discovery step is
+   flaky here — set `$env:FUNCTIONS_DISCOVERY_TIMEOUT = "120"` before deploying or it fails
+   with `Cannot determine backend specification. Timeout after 10000` (not a code fault).
+2. **Brown, Green and Blue built** — data file + registry on all FOUR surfaces (staff engine,
+   customer-preview, order form, `export-pdf.js`) + staff dropdown. Verified structurally:
+   stripping colours, paths and clips leaves them byte-identical to Beige. **The only
+   differing number is the cover slot centre, 327.62 → 328mm.**
+3. **Nine cover SVGs cleaned** — every new cover shipped with the photo window painted solid
+   (repeat of the S157 bug), and Green/Roses had a 3.1MB placeholder PHOTO embedded inside
+   the window clip. All patched; 144 Heirloom SVGs now scan clean.
+4. **`cover-svg-viewbox.test.js` extended** — it had never covered Heirloom at all (looked
+   only one directory deep). Coverage 6 → 18 covers; reads `referenceSpineMm` per template.
+5. **Two caption-editing fixes in BOTH engines** — the focus wash now flips by ink luminance
+   (light ink was invisible while being typed on Brown/Green covers), and the four monogram
+   initials show no placeholder in their 8×9mm boxes, revealing a dashed outline on hover.
 
-### Heirloom facts (carried from S157/S158)
-1. **Heirloom = 4 colourways × 3 monograms.** Colour is modelled as **one registry entry +
-   data file per colourway** (`heirloom-beige`); the order form, engines and PDF stay
-   colour-blind downstream of the product page. Only Beige exists; three colourways pending
-   from Xenia.
-2. **Monograms (Roots/Birds/Roses) select ARTWORK, not just text** — a first for the engine.
-   Each monogram carries its own cover SVG, intro SVG, photo-clip variant and four
-   letter-caption positions (partners' initials: 2 on the intro, 2 on the back cover).
-   All of it is data (`monograms` block); the staff engine reads it via `getActiveMonogramDef()`.
-3. **Phase A verified:** 41 page canvases, 0 pageerrors, 0 SVG 404s, 312 tests green. Owner
-   eyeballed the cover, intro and monogram switching. `qa/debug-heirloom-render.mjs` is the gate.
-4. **The intro is MANDATORY** (always Spread 0, never an add-on) — `mandatory: true` spreads
-   now always enter `buildBookSequence`; its checkbox renders checked-and-locked.
-5. **Two cover bugs found and fixed:** Xenia's cover SVGs shipped with the photo window
-   painted solid `#312128` instead of transparent (patched in-repo, **re-apply on any
-   re-export**), and the cover slot sat 15mm high because the CSV photo row uses a different
-   bleed convention (+3) than its own caption rows (+18).
-6. **IM FELL English forms ligatures** despite being a serif (fontkit: 52 chars → 45 glyphs)
-   → added to `LIGATURE_FONTS`. Endalian Script is outlined into the artwork and is never registered.
-7. **Xenia authored Heirloom's cover at a 10mm spine** (410mm sheet), not the 9mm every other
-   template uses → `referenceSpineMm: 10`. Owner confirmed.
+### Heirloom facts (carried, still current)
+1. **4 colourways × 3 monograms.** All four colourways now EXIST and render
+   (`heirloom-beige|brown|green|blue`). Colour is a registry key, never a runtime variant.
+2. **Colours split by SURFACE.** Brown and Green flip the cover to light-on-dark while
+   keeping Beige's inner pages; monogram letters follow their surface (Green's are `#404737`
+   on the intro, `#dad0c5` on the back cover). Blue is the only one with a different page
+   ground (`#cfc4b8`).
+3. **Green and Blue name their intros `V1/V2/V3`** (V1=Roots, V2=Birds, V3=Roses) and renamed
+   two folders. Brown kept Beige's names.
+4. **Monograms select ARTWORK, not just text** — cover SVG, intro SVG, clip variant and four
+   letter positions, all data (`monograms` block), read via `getActiveMonogramDef()`.
+5. **The intro is MANDATORY** (always Spread 0); `mandatory: true` spreads always enter
+   `buildBookSequence`, and the order form shows the checkbox checked-and-locked.
+6. **`referenceSpineMm: 10`** — Heirloom's covers are authored at a 10mm spine (410mm),
+   unlike every other template's 9mm.
+7. **IM FELL English forms ligatures** despite being a serif → in `LIGATURE_FONTS`. Endalian
+   Script is outlined into the artwork and never registered.
 
 ## Recent decisions
-- **The ENGINE is the source of truth for caption line breaks (S159, owner).** The customer
-  approves the engine's render, so the PDF must not re-derive anything it can be told.
-  Generalises: any value both surfaces compute independently is a latent divergence.
-- **Never fix an engine/PDF divergence as a per-template opt-in (S159).** `autoShrink` and
-  `LIGATURE_FONTS` are the two existing examples; both hid the general bug. Fix the shared
-  path, let templates opt OUT.
-- **`customer-preview` does NOT record line breaks yet (S159, deliberate).** Engine-parity
-  rule outstanding — see Next steps 2.
+- **Xenia is NOT asked to re-export the new covers (S160, owner).** Filled windows and the
+  stray embedded photo were patched in-repo, the S157/S154 precedent. **Re-apply on any
+  re-export.** This is now the second drop to ship filled photo windows.
+- **The focus wash flips, not the ink (S160).** Driven by luminance so any future colourway
+  works with no per-template rule — the same "fix the shared path" principle as S159.
+- **Screenshots were the acceptance evidence for the caption fixes (S160, owner).** A
+  contrast-metric gate was started and deleted as gold-plating; the owner tests visually.
+- **The ENGINE is the source of truth for caption line breaks (S159, owner).**
+- **Never fix an engine/PDF divergence as a per-template opt-in (S159).**
+- **`customer-preview` does NOT record line breaks yet (S159, deliberate)** — Next steps 3.
 - **Monogram is chosen on the PRODUCT page, not the order form (S158, owner).** Arrives as
-  `&monogram=<key>`; travels in `fpTexts` (no backend change). The order form shows no picker.
-- **Our story = Tender's model (S158, owner):** customer's own words on the page, staff polish
-  by hand. Xenia's `Our Story Page_Text.txt` is a voice REFERENCE, not a template.
-  "Why I love him/her" is free-form customer text. Only the **intro** is fill-in-the-blanks.
-- **All Heirloom inner-page captions are `#312128` (S158, owner set it in the CSV).** The
-  earlier taupe `#7c746e` was an assumption and is gone. Back-cover letters were always plum.
-- **Do NOT nudge letter coordinates to fix the lopsided monogram (S158).** Position is correct;
-  the letter box is too tight for wide capitals. Xenia to widen the artwork.
-- **Colour = registry key, not a runtime variant (S157, owner).** Four designed sub-templates,
-  nothing recoloured on the fly.
-- **Monograms are data, not code (S157).** One `monograms` block drives three surfaces.
-- **Cover SVGs patched in-repo, Xenia not asked to re-export (S157)** — same call as Wander's
-  viewBox (S154). The patch must be re-applied if the covers are re-exported.
+  `&monogram=<key>`; travels in `fpTexts` (no backend change).
+- **Our story = Tender's model (S158, owner):** customer's own words, staff polish by hand.
+- **Do NOT nudge letter coordinates to fix the lopsided monogram (S158).** Xenia to widen art.
 - **Repair the existing harness, do not add a new smoke test (S156).**
-- **ESLint declined (S156).** Reconsider only for a use-before-definition bug the hook misses.
+- **ESLint declined (S156).**
 - **Business case untracked (S156, owner).** **No longer backed up by git**; last tracked `0edb8ee`.
 - **Printsmarter token NOT rotated (S155, owner).** **Never put it in any summary, log or memory.**
 - **Button-first, never auto-submit on approval (S155).**
@@ -87,32 +75,28 @@ breaks only exist for books saved after the frontend ships). See Next steps 1.
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **Ship S159: commit, deploy, re-verify on AEV-088.** Nothing is live. Order matters —
-   **backend first** (S40 rule): (a) `firebase deploy --only functions:saveStaffState` and
-   `functions:approveOrder` (deploy one at a time — the PowerShell comma gotcha); (b)
-   `gcloud run deploy aevia-pdf-renderer --source . --memory 8Gi`; (c) push for Cloudflare.
-   **Then RE-SAVE AEV-088 in the engine** — `staffBookCaptionLines` only exists for books
-   saved after the frontend is live — and regenerate the PDF from the dashboard.
-   ⛔ **Never render locally** (GCS egress on the owner's bill).
-   Check: cover reads `ANNA &` / `MICHAEL` on two lines, and the "Why I love her" panel
-   breaks after "every" exactly as the engine shows.
-   **Failure signature:** breaks still differ → the engine save predates the frontend
-   deploy, or `linesMatchText` rejected the lines as stale (text edited after saving).
-2. **Customer-preview must record line breaks too (engine-parity rule).** Mirror
+1. **Verify AEV-088 (carried from S159, still unverified).** Re-save it in the staff engine
+   after a hard refresh, then regenerate the PDF **from the dashboard**. Check: the cover
+   reads `ANNA &` / `MICHAEL` on two lines, and the "Why I love her" panel breaks after
+   "every" exactly as the engine shows. ⛔ **Never render locally** (GCS egress on the
+   owner's bill). **Failure signature:** breaks still differ → the engine save predates the
+   frontend deploy, or `linesMatchText` rejected the lines as stale.
+2. **Stage 8 — the Heirloom product page.** The last piece of Heirloom. The monogram AND the
+   colour are chosen here; the page appends `&monogram=<key>` and links to the colourway's
+   registry key. **Blocked on assets that do not exist:** 12 mockup sets (4 colours × 3
+   monograms) for swap-on-select thumbnails, and a description per monogram from the owner.
+   Both are therefore **launch-blocking for Heirloom**. Can ship Beige-only as an interim
+   with the selectors wired.
+3. **Customer-preview must record caption line breaks too (engine-parity rule).** Mirror
    `captionVisualLines`/`collectCaptionLines` into `pages/customer-preview.html`, send them
    with the customer save, copy them in `approveOrder` instead of nulling them. Until this
    lands, an approved customer edit falls back to PDF word-wrap — correct words, possibly a
    different break than the customer saw.
-3. **Heirloom letter pockets — Xenia is looking into it.** The 8mm letter box is ~40% too
-   tight for wide capitals (`M` at 23pt inks 7.62mm). Owner: not critical, fix later. **Do NOT
-   nudge coordinates** — see the S158 log for why box width has no visual effect.
-4. **Stage 8 — the Heirloom product page.** The monogram is chosen HERE (owner, S158) and
-   appended as `&monogram=<key>`; the order form already preselects from it. Needs the 12
-   mockup sets (4 colours × 3 monograms), which are therefore **launch-blocking**, plus a
-   description per monogram from the owner.
-5. **Wire the three new colourways** — `Brown`, `Green`, `Blue` are on disk (untracked) but
-   NOT built. Each is a full sub-template: data file + registry ×3 surfaces + its own cover
-   clip extraction (openings move per drop). Do this only after Beige is proven end to end.
+4. **One PDF per new colourway** once Beige is proven (step 1). Nothing colour-specific is
+   expected to break — the PDF is colour-blind and reads the same registry — but no Brown,
+   Green or Blue book has ever been rendered.
+5. **Heirloom letter pockets — Xenia is looking into it.** The 8mm letter box is ~40% too
+   tight for wide capitals. Owner: not critical. **Do NOT nudge coordinates.**
 6. **Re-verify the other four templates' covers at 80pp** (carried from S156) — the S156
    caption fix moved every template; Scribble and Tender were signed off carrying a 1mm error.
 7. **Verify the stall detection (#94) properly** (carried from S156). The decisive test is a
@@ -120,33 +104,27 @@ breaks only exist for books saved after the frontend ships). See Next steps 1.
 8. **Chase Printsmarter on the five open questions (S155)** — the sandbox answer gates any real test.
 9. **Clean up the QA scripts (#60/#95)** — 13 untracked one-offs remain in `qa/`. Also fix the
    success/error race in `qa/order-hardening-mock.mjs`: if NEITHER screen appears it hangs
-   forever with no output (cost three runs in S158 to spot). `qa/heirloom-order-mock.mjs` has
-   the fixed shape — a wall-clock deadline that screenshots and names the visible panels.
+   forever with no output. `qa/heirloom-order-mock.mjs` has the fixed shape.
 
 ## Open questions
 - **Heirloom product page needs assets that do not exist yet:** 12 mockup sets (4 colours ×
-  3 monograms) for swap-on-select thumbnails, and a description per monogram (owner to supply).
-  Phase C can ship Beige-only as an interim.
-- **Intro letter colour assumed `#7c746e`** — the CSV leaves it blank (back-cover letters are
-  explicitly `#312128`). Looks right on screen; confirm with Xenia if print disagrees.
-- **The letter boxes (8×9mm) have no empty-state hint** in the engine — staff may not find
-  them. Offered a hover outline; not built.
+  3 monograms) and a description per monogram (owner to supply). Phase C can ship Beige-only.
+- **Does the monogram hover-outline belong in the CUSTOMER preview?** It ships there now via
+  a shared class. Restrict it to the staff engine if it reads as fussy (S160).
+- **Intro letter colour assumed `#7c746e`** — resolved for Beige (`#312128`); the new
+  colourways take their inner ink. Confirm with Xenia if print disagrees.
 - **`assets/Aevia - Business case v10.xlsx` is tracked but missing from disk** (deletion left
   uncommitted deliberately; CLAUDE.md calls v10 corrupted). Stale Excel lock file in `assets/`.
 - **The Printsmarter button is visible on the staff dashboard** but cannot fire.
-- **The pre-push hook needs `git config core.hooksPath .githooks` per clone.**
+- **The pre-push hook needs `git config core.hooksPath .githooks` per clone.** (It IS
+  configured on this machine — it ran on the S160 push.)
 - **Pre-13-July Papercut orders have `name`/`year` swapped in Firestore.**
-- **Approval overwrites staff edits blindly.** Corrected in S159 — the old wording here
-  ("customer Save changes never reaches the PDF") was misleading. Customer edits DO reach
-  print, but only **on approval**: `approveOrder` copies `customerCaptions` →
-  `staffBookCaptions`, which the PDF reads. A save WITHOUT approval does not. The real
-  defect is that the copy is wholesale — no merge, no staleness check — so staff edits made
-  after the customer saved are silently discarded at approval.
+- **Approval overwrites staff edits blindly.** Customer edits reach print only **on
+  approval**, and the copy is wholesale — no merge, no staleness check — so staff edits made
+  after the customer saved are silently discarded.
 - **Newborn's cover slot is 0.11mm short** on its left edge. Flagged, deliberately not fixed.
 - **Is Printsmarter idempotent on `order_id_client`?** Unconfirmed.
 - **Prices live in THREE places** — Stripe, `assets/js/prices.js`, `PRICE_BY_PAGE_COUNT`.
 - **Is 10/14mm a formula or two data points?** `spine = 6 + 0.1 × pages` fits exactly.
 - **Android is entirely untested on real hardware.**
-- ~~`ARCHITECTURE.md` has two invariants numbered 6~~ — **checked S159, no longer true.**
-  ARCHITECTURE is 1–10 and AGENTS 1–12, agreeing on 1–9 with AGENTS carrying three extras.
 - **Staff test password is weak** for an account that can read real customer orders.
