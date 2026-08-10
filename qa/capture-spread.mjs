@@ -17,19 +17,29 @@
 //   $env:QA_ORDER  = "AEV-039"    # the order to capture (optional; defaults below)
 //   node qa/capture-spread.mjs
 //
+// Heirloom: the monogram selects the INTRO artwork and the four letter positions, so one
+// order yields three different interiors. Set QA_MONOGRAM to drive the engine's picker
+// after the order loads — artwork only, photos and captions survive:
+//   $env:QA_MONOGRAM = "birds"
+// Every output filename is then suffixed, so three runs on one order don't overwrite.
+//
 // Output (sessions/qa-runs/, gitignored):
-//   spread-<order>-<NN>.png        one per interior spread (NN = 2-digit index)
-//   spread-<order>-manifest.json   [{ idx, id, label, blankLeft, functional, file }]
-//   spread-newborn.png             stable copy of the first content spread (legacy single-open harness)
+//   spread-<order>[-<mono>]-<NN>.png       one per interior spread (NN = 2-digit index)
+//   spread-<order>[-<mono>]-manifest.json  [{ idx, id, label, blankLeft, functional, file }]
+//   spread-newborn.png                     stable copy of the first content spread
+//                                          (legacy single-open harness; plain runs only)
 
 import { chromium } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import { createRequire } from 'module';
+import { selectMonogram } from './select-monogram.mjs';
 // sharp is installed under scripts/, not the repo root — resolve it from there.
 const sharp = createRequire(path.resolve('scripts/package.json'))('sharp');
 
 const ORDER  = process.env.QA_ORDER  || 'AEV-039';
+const MONO   = (process.env.QA_MONOGRAM || '').trim().toLowerCase(); // '' = whatever the order says
+const SUFFIX = MONO ? `-${MONO}` : '';
 const EMAIL  = process.env.STAFF_EMAIL || 'evg.myasin@gmail.com';
 const PW     = process.env.STAFF_PW;
 const BASE   = 'https://aevia-test.pages.dev/pages';
@@ -122,6 +132,9 @@ try {
   await page.waitForSelector('#order-info-panel', { state: 'visible', timeout: 180000 });
   note(`Loading ${ORDER}…`);
 
+  // ── Heirloom: switch the monogram (artwork only) ─────────────
+  if (MONO) { await selectMonogram(page, MONO, note); }
+
   // ── Wait for interior spreads to render ──────────────────────
   await page.waitForSelector(SEL, { state: 'visible', timeout: 180000 });
   await page.waitForTimeout(2500); // settle photo placement + fonts
@@ -179,7 +192,7 @@ try {
 
     const id = ids[idx] || `IDX${idx}`;
     const nn = String(idx).padStart(2, '0');
-    const file = `spread-${ORDER}-${nn}.png`;
+    const file = `spread-${ORDER}${SUFFIX}-${nn}.png`;
     await spread.screenshot({ path: path.join(OUT_DIR, file) });
 
     manifest.push({
@@ -194,10 +207,12 @@ try {
   }
 
   // Stable copy for the legacy single-open harness = first non-blank content spread.
+  // Plain runs only — otherwise the last of three Heirloom monogram runs would silently
+  // redefine what that harness shows.
   const firstContent = manifest.find(m => !m.blankLeft) || manifest[0];
-  if (firstContent) fs.copyFileSync(path.join(OUT_DIR, firstContent.file), STABLE);
+  if (firstContent && !MONO) fs.copyFileSync(path.join(OUT_DIR, firstContent.file), STABLE);
 
-  const manifestPath = path.join(OUT_DIR, `spread-${ORDER}-manifest.json`);
+  const manifestPath = path.join(OUT_DIR, `spread-${ORDER}${SUFFIX}-manifest.json`);
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
   note(`✅ Captured ${manifest.length} spreads → ${OUT_DIR}`);
   note(`   manifest → ${manifestPath}`);

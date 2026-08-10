@@ -7,8 +7,13 @@
 // spread is framed identically and the book fills the frame) and emit web webp.
 //
 // Usage (from scripts/):  node exp2-images.mjs scribble
+//                         node exp2-images.mjs heirloom-beige-birds
+//
+// Heirloom is the first template whose product page needs TWELVE image sets
+// (4 colourways × 3 monograms). Each colourway is one order; the three monograms come
+// from that order via QA_MONOGRAM, so the source is mockups/<order>-<monogram>/.
 import sharp from 'sharp';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readdirSync } from 'node:fs';
 
 // Fixed crop rects (book + margin), measured from the composites.
 //   cover  source 3000x2000, book centred (936–2062 / 436–1562)
@@ -46,13 +51,53 @@ const TEMPLATES = {
   },
 };
 
+// ── Heirloom: 4 colourways × 3 monograms ──────────────────────────────────────────────
+// One ORDER per colourway (switching template in the engine resets photos); the three
+// monograms come from the same order. Spreads are named by book-sequence ID, not by
+// "open-NN-id" — the index shifts with photo count, and Heirloom's four functional pages
+// sit at different positions in a 40pp and an 80pp book. resolveSpread() below accepts
+// either form, so the five older templates keep their literal names.
+const HEIRLOOM_ORDERS = {
+  beige: null,   // ← fill in as each order is placed, e.g. 'AEV-089'
+  brown: null,
+  green: null,
+  blue:  null,
+};
+for (const [colour, order] of Object.entries(HEIRLOOM_ORDERS)) {
+  for (const mono of ['roots', 'birds', 'roses']) {
+    TEMPLATES[`heirloom-${colour}-${mono}`] = {
+      order, monogram: mono,
+      spreads: { sp1: 'sp1', sp2: 'sp2', sp3: 'sp3', sp4: 'sp4' },
+      specials: { fpintro: 'fpintro', fpstory: 'fpstory', fphim: 'fphim', fpher: 'fpher' },
+    };
+  }
+}
+
 const template = process.argv[2];
 const cfg = TEMPLATES[template];
-if (!cfg) { console.error('Unknown template:', template); process.exit(1); }
+if (!cfg) { console.error('Unknown template:', template, '\nUse one of:', Object.keys(TEMPLATES).join(', ')); process.exit(1); }
+if (!cfg.order) {
+  console.error(`❌ No order number recorded for '${template}'.`);
+  console.error(`   Place the order, capture and compose it, then fill HEIRLOOM_ORDERS in this file.`);
+  process.exit(1);
+}
 
-const src = `../mockups/${cfg.order}/`;
+const src = `../mockups/${cfg.order}${cfg.monogram ? `-${cfg.monogram}` : ''}/`;
 const out = `../assets/images/mockups/exp2/${template}/`;
 mkdirSync(out, { recursive: true });
+
+// Accept either a literal composite name ('open-07-fpstory') or a bare book-sequence id
+// ('fpstory'), resolving the latter against what compose-all actually wrote. A missing
+// spread is a hard error: a silently absent image is exactly the failure that reaches the
+// product page as an empty frame.
+const available = readdirSync(src);
+function resolveSpread(name) {
+  if (available.includes(name + '.png')) return name + '.png';
+  const id = name.replace(/^open-\d+-/, '');
+  const hit = available.find(f => new RegExp(`^open-\\d+-${id}\\.png$`).test(f));
+  if (!hit) { console.error(`❌ no capture for spread '${id}' in ${src}`); process.exit(1); }
+  return hit;
+}
 
 async function crop(file, rect, width) {
   const meta = await sharp(src + file).metadata();
@@ -66,7 +111,7 @@ async function crop(file, rect, width) {
 (async () => {
   await (await crop('front-new.png', COVER_CROP, 1500)).toFile(out + 'front.webp'); console.log('wrote front.webp');
   await (await crop('back-new.png',  COVER_CROP, 1500)).toFile(out + 'back.webp');  console.log('wrote back.webp');
-  for (const [slot, file] of Object.entries(cfg.spreads))  { await (await crop(file+'.png', SPREAD_CROP, 1600)).toFile(out + slot + '.webp'); console.log('wrote', slot+'.webp'); }
-  for (const [slot, file] of Object.entries(cfg.specials)) { await (await crop(file+'.png', SPREAD_CROP, 1400)).toFile(out + slot + '.webp'); console.log('wrote', slot+'.webp'); }
+  for (const [slot, file] of Object.entries(cfg.spreads))  { await (await crop(resolveSpread(file), SPREAD_CROP, 1600)).toFile(out + slot + '.webp'); console.log('wrote', slot+'.webp'); }
+  for (const [slot, file] of Object.entries(cfg.specials)) { await (await crop(resolveSpread(file), SPREAD_CROP, 1400)).toFile(out + slot + '.webp'); console.log('wrote', slot+'.webp'); }
   console.log('done', template, '->', out);
 })();

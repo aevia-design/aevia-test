@@ -42,7 +42,10 @@
   // ── Gallery / hero ──
   window.setHero = function (btn) { setHeroFile(btn.dataset.src); };
   window.setHeroFile = function (file) {
-    document.getElementById('gallery-img').src = BASE + file;
+    // Read cfg.base live rather than the captured BASE: Heirloom repoints its image
+    // folder when the colourway or monogram changes, and a captured copy would keep
+    // serving the previous colourway's spreads from the thumbnails.
+    document.getElementById('gallery-img').src = (cfg.base || BASE) + file;
     document.querySelectorAll('.thumb-ph').forEach(function (t) {
       t.classList.toggle('on', t.dataset.src === file);
     });
@@ -108,6 +111,9 @@
       params.set('addon_inputs', selected.map(function (m) { return m.inputType; }).join(','));
       params.set('addon_slugs', selected.map(function (m) { return m.slug; }).join(','));
     }
+    // Extra params a page chooses at runtime (Heirloom sends the family monogram, which
+    // the order form preselects from). Set last so a page can override nothing by accident.
+    Object.keys(cfg.extra || {}).forEach(function (k) { params.set(k, cfg.extra[k]); });
     // The /de/ pages sit one level deeper and set orderUrl:'../order.html'.
     window.location.href = (cfg.orderUrl || 'order.html') + '?' + params.toString();
   };

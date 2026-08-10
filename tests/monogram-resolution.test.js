@@ -48,9 +48,11 @@ describe('activeMonogramDef (PDF) mirrors the engines', () => {
     // Roots is a stacked monogram — both letters on the same vertical axis.
     expect(back('roots')[0]).toBe(back('roots')[1]);
     expect(intro('roots')[0]).toBe(intro('roots')[1]);
-    // Birds/Roses sit apart by the amounts the sizing CSV specifies.
-    expect(Math.abs(back('birds')[1] - back('birds')[0])).toBe(5);
-    expect(Math.abs(back('roses')[1] - back('roses')[0])).toBe(30);  // 29 before Xenia's S158 nudge
+    // Birds/Roses sit apart by the amounts the sizing CSV specifies. toBeCloseTo, not
+    // toBe: since S161 the CSV carries tenths (102.7/132.7), and the exact subtraction
+    // lands on 30.000000000000014. The gap is what matters, not its binary representation.
+    expect(Math.abs(back('birds')[1] - back('birds')[0])).toBeCloseTo(5, 6);
+    expect(Math.abs(back('roses')[1] - back('roses')[0])).toBeCloseTo(30, 6);  // 29 before Xenia's S158 nudge
   });
 
   // All live text is plum. The letter rows were blank in the first CSV and briefly

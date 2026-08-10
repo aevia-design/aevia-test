@@ -1,12 +1,12 @@
 Heirloom_sizing_full_Beige;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Type;Syb-type;Spread;Page;Slot;photo_Xmm_without bleed;photo_Ymm_without bleed;photo_Xmm_with bleed;photo_Ymm_with bleed;photo_Width_mm;photo_Height_mm;full_bleed;captions allowed;captions_position;captions_Xmm_without bleed;captions_Ymm_without bleed;captions_Xmm_with bleed;captions_Ymm_with bleed;captions_Width_mm;captions_Height_mm;captions_Halignment;captions_Valignment;caption_font;caption_size_pt;caption_style;caption_letter_spacing;caption_line_spacing;functional_photo;functional_text;captions_color;bgColor;Aspect ratio;Orientation;Photo shape;Bleed, mm;overlay_position;Page size
 Functional_mandatory;Intro;0;Left;-;-;-;-;-;-;-;no;yes;center;105;80;108;83;110;100;center;center;IM FELL English;16pt;Regular;10;1.28;no;yes;#312128;#dad0c5;n.a;square;;3;;200×200mm
-Roots;1st letter;0;;;;;;;;;;;;105;149;108;152;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#312128;;;;;;;
-Roots;2nd letter;0;;;;;;;;;;;;105;171;108;174;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#312128;;;;;;;
+Roots;1st letter;0;;;;;;;;;;;;104.5;149;107.5;152;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#312128;;;;;;;
+Roots;2nd letter;0;;;;;;;;;;;;104.5;171;107.5;174;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#312128;;;;;;;
 Birds;1st letter;0;;;;;;;;;;;;103;150;106;153;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#312128;;;;;;;
-Birds;2nd letter;0;;;;;;;;;;;;108;166;111;169;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#312128;;;;;;;
-Roses;1st letter;0;;;;;;;;;;;;91;164;94;167;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#312128;;;;;;;
-Roses;2nd letter;0;;;;;;;;;;;;118;164;121;167;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#312128;;;;;;;
+Birds;2nd letter;0;;;;;;;;;;;;108;166.5;111;169.5;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#312128;;;;;;;
+Roses;1st letter;0;;;;;;;;;;;;90.7;164;93.7;167;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#312128;;;;;;;
+Roses;2nd letter;0;;;;;;;;;;;;117.7;164;120.7;167;8;9;center;center;IM FELL English;23pt;Regular;-;-;;;#312128;;;;;;;
 Standard;n.a;1;Left H;1;95;100;98;103;150;100;no;yes;below (10mm from photo);95;166.5;98;169.5;100;13;center;top;IM FELL English;16pt;Regular;10;1.28;n.a;n.a;#312128;#dad0c5;03:02;horizontal;rectangle;3;;200×200mm
 Standard;n.a;1;Left V;1;95;90;98;93;120;160;no;yes;below (5mm from photo);95;181.5;98;184.5;100;13;center;top;IM FELL English;16pt;Regular;10;1.28;n.a;n.a;#312128;#dad0c5;03:04;vertical;rectangle;3;;200×200mm
 Standard;n.a;1;Right H;1;105;55;108;58;120;80;no;no;;;;;;;;;;;;;;1.28;n.a;n.a;;#dad0c5;03:02;horizontal;rectangle;3;;200×200mm

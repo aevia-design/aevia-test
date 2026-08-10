@@ -63,12 +63,12 @@ window.HEIRLOOM_DATA = {
       introSvg: 'FP Spread 0/FP 01 Intro Roots.svg',
       coverClipShape: 'coverFrame',
       introLetters: [
-        { key: 'letter1', xMm: 108, yMm: 152, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
-        { key: 'letter2', xMm: 108, yMm: 174, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
+        { key: 'letter1', xMm: 107.5, yMm: 152, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
+        { key: 'letter2', xMm: 107.5, yMm: 174, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
       ],
       backLetters: [
-        { key: 'letter1', xMm: 118, yMm: 107, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
-        { key: 'letter2', xMm: 118, yMm: 130, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter1', xMm: 117.5, yMm: 107, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter2', xMm: 117.5, yMm: 130, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
       ],
     },
     birds: {
@@ -78,11 +78,11 @@ window.HEIRLOOM_DATA = {
       coverClipShape: 'coverFrameShifted',
       introLetters: [
         { key: 'letter1', xMm: 106, yMm: 153, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
-        { key: 'letter2', xMm: 111, yMm: 169, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
+        { key: 'letter2', xMm: 111, yMm: 169.5, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
       ],
       backLetters: [
         { key: 'letter1', xMm: 116, yMm: 108, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
-        { key: 'letter2', xMm: 121, yMm: 124, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter2', xMm: 121, yMm: 124.5, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
       ],
     },
     roses: {
@@ -90,15 +90,16 @@ window.HEIRLOOM_DATA = {
       coverSvg: 'Cover/Cover_40_Roses.svg',
       introSvg: 'FP Spread 0/FP 01 Intro Roses.svg',
       coverClipShape: 'coverFrameShifted',
-      // Roses letters nudged by Xenia (S158): intro 95,166/121,166 → 94,167/121,167;
-      // back 104,121/133,121 → 103,123/133,123. Roots and Birds were not touched.
+      // Roses has been nudged twice. S158: intro 95,166/121,166 → 94,167/121,167, back
+      // 104,121/133,121 → 103,123/133,123. S161: a uniform -0.3mm on both surfaces,
+      // which keeps the letter gap at 27mm on the intro and 30mm on the back cover.
       introLetters: [
-        { key: 'letter1', xMm: 94,  yMm: 167, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
-        { key: 'letter2', xMm: 121, yMm: 167, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
+        { key: 'letter1', xMm: 93.7,  yMm: 167, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
+        { key: 'letter2', xMm: 120.7, yMm: 167, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
       ],
       backLetters: [
-        { key: 'letter1', xMm: 103, yMm: 123, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
-        { key: 'letter2', xMm: 133, yMm: 123, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter1', xMm: 102.7, yMm: 123, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter2', xMm: 132.7, yMm: 123, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
       ],
     },
   },

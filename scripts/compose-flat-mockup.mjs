@@ -75,10 +75,15 @@ const NB_SPINE_LUM = 0.299 * 192 + 0.587 * 213 + 0.114 * 238; // ≈ 210 (newbor
 // ── Paths ─────────────────────────────────────────────────────────────────────
 const ROOT = path.resolve(
   path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..');
-const coverWrapPath = path.join(ROOT, 'sessions/qa-runs', `cover-wrap-${order}.png`);
+// Heirloom: one order carries three monograms, each captured to a suffixed cover wrap
+// (see qa/select-monogram.mjs). MONOGRAM selects which one to compose, and keeps the
+// three sets of output PNGs apart. Empty = the plain single-cover order, as before.
+const MONO   = (process.env.MONOGRAM || '').trim().toLowerCase();
+const SUFFIX = MONO ? `-${MONO}` : '';
+const coverWrapPath = path.join(ROOT, 'sessions/qa-runs', `cover-wrap-${order}${SUFFIX}.png`);
 const psdFrontPath  = path.join(ROOT, 'assets/mockup example/new/front.psd');
 const psdBackPath   = path.join(ROOT, 'assets/mockup example/new/back.psd');
-const outDir        = path.join(ROOT, 'mockups', order);
+const outDir        = path.join(ROOT, 'mockups', order + SUFFIX);
 const webpDir       = path.join(ROOT, 'assets/images/mockups', template);
 
 fs.mkdirSync(outDir, { recursive: true });

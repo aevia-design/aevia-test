@@ -13,21 +13,30 @@
 //   $env:QA_ORDER = "AEV-037"            # a Newborn order (optional; defaults below)
 //   node qa/capture-cover-wrap.mjs
 //
-// Output: sessions/qa-runs/cover-wrap-<order>.png  (and a stable copy the harness loads)
+// Heirloom: the monogram (roots/birds/roses) selects the COVER ARTWORK, so one order
+// yields three different covers. Set QA_MONOGRAM to drive the engine's monogram picker
+// after the order loads — it swaps artwork only, leaving photos and captions untouched:
+//   $env:QA_MONOGRAM = "birds"
+// The output filename is then suffixed, so three runs on one order don't overwrite.
+//
+// Output: sessions/qa-runs/cover-wrap-<order>[-<monogram>].png
+//         (plus a stable copy the harness loads — only when no monogram is given)
 
 import { chromium } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import { createRequire } from 'module';
+import { selectMonogram } from './select-monogram.mjs';
 // sharp is installed under scripts/, not the repo root — resolve it from there.
 const sharp = createRequire(path.resolve('scripts/package.json'))('sharp');
 
 const ORDER = process.env.QA_ORDER || 'AEV-037';
+const MONO  = (process.env.QA_MONOGRAM || '').trim().toLowerCase(); // '' = whatever the order says
 const EMAIL = process.env.STAFF_EMAIL || 'evg.myasin@gmail.com';
 const PW    = process.env.STAFF_PW;
 const BASE  = 'https://aevia-test.pages.dev/pages';
 const OUT_DIR = path.resolve('sessions/qa-runs');
-const OUT     = path.join(OUT_DIR, `cover-wrap-${ORDER}.png`);
+const OUT     = path.join(OUT_DIR, `cover-wrap-${ORDER}${MONO ? `-${MONO}` : ''}.png`);
 const STABLE  = path.join(OUT_DIR, 'cover-wrap-newborn.png'); // what the harness loads
 
 if (!PW) { console.error('❌ STAFF_PW not set. In PowerShell:  $env:STAFF_PW = Read-Host "Staff password"'); process.exit(1); }
@@ -101,6 +110,9 @@ try {
   await page.waitForSelector('#order-info-panel', { state: 'visible', timeout: 180000 });
   note(`Loading ${ORDER}…`);
 
+  // ── Heirloom: switch the monogram (artwork only) ─────────────
+  if (MONO) { await selectMonogram(page, MONO, note); }
+
   // ── Wait for the cover-canvas + its photo/SVG to finish painting ──
   const cover = page.locator('.cover-canvas').first();
   await cover.waitFor({ state: 'visible', timeout: 180000 });
@@ -116,11 +128,14 @@ try {
 
   // ── Screenshot ONLY the cover-canvas element → clean trim wrap ──
   await cover.screenshot({ path: OUT });
-  fs.copyFileSync(OUT, STABLE);
+  // The stable copy is the single file the 3D harness loads. Only a plain (non-monogram)
+  // capture may claim it — otherwise the last of three Heirloom runs would silently
+  // redefine what the harness shows.
+  if (!MONO) fs.copyFileSync(OUT, STABLE);
   const dims = await cover.evaluate(el => ({ w: el.clientWidth, h: el.clientHeight }));
   note(`✅ Captured cover wrap (${dims.w}×${dims.h} css px, ×3 → ${dims.w*3}×${dims.h*3})`);
   note(`   → ${OUT}`);
-  note(`   → ${STABLE}  (harness loads this)`);
+  if (!MONO) note(`   → ${STABLE}  (harness loads this)`);
 } catch (err) {
   note(`❌ ERROR: ${err.message}`);
   await page.screenshot({ path: path.join(OUT_DIR, 'capture-cover-ERROR.png'), fullPage: true }).catch(()=>{});
