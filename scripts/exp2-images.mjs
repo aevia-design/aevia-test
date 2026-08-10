@@ -57,11 +57,13 @@ const TEMPLATES = {
 // "open-NN-id" — the index shifts with photo count, and Heirloom's four functional pages
 // sit at different positions in a 40pp and an 80pp book. resolveSpread() below accepts
 // either form, so the five older templates keep their literal names.
+// One order per colourway (S162). Identified from each capture's cover background, which
+// matches the colourway's `bgColor` exactly — the orders were not placed in colour order.
 const HEIRLOOM_ORDERS = {
-  beige: null,   // ← fill in as each order is placed, e.g. 'AEV-089'
-  brown: null,
-  green: null,
-  blue:  null,
+  beige: 'AEV-089',   // #dad0c5
+  brown: 'AEV-092',   // #312128
+  green: 'AEV-090',   // #969e8a
+  blue:  'AEV-091',   // #afafbe
 };
 for (const [colour, order] of Object.entries(HEIRLOOM_ORDERS)) {
   for (const mono of ['roots', 'birds', 'roses']) {
