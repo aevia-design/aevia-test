@@ -55,7 +55,15 @@ fill `HEIRLOOM_ORDERS` in `scripts/exp2-images.mjs` and flip `ASSETS_READY` to `
   exists, sharp at any size, and follows the colourway.
 - **Xenia's monogram descriptions ship verbatim (S161, owner)** — no `/stop-slop` pass.
 - **ONE order per colourway, three monograms from each (S161).** Switching template resets
-  photos; switching monogram does not.
+  photos; switching monogram does not. **The owner considered 12 orders (one per combination)
+  to avoid touching the shared capture scripts and it was ruled unnecessary:** regenerating
+  Tender's whole live image set with the S161 scripts produced 7/9 files byte-identical, and
+  the two that differed came from a pre-S161 commit (`2bb2972`) — running the pre-S161 script
+  gave identical MD5s. The suffix is empty for every non-Heirloom run, so the other five
+  templates take the old path unchanged. 12 orders would also cost ~3x the GCS storage.
+- **Staff do NOT need to change the monogram in the engine (S161, owner).** The customer picks
+  it on the product page and that stands. This closes the gap found when the order-mode picker
+  turned out to be hidden — no engine change, do not re-raise.
 - **Xenia is NOT asked to re-export the new covers (S160, owner).** Re-apply patches on any
   re-export.
 - **The focus wash flips, not the ink (S160).**

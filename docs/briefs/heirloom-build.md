@@ -177,6 +177,13 @@ foreach ($m in "roots","birds","roses") {
   cd scripts; node exp2-images.mjs heirloom-beige-$m; cd ..
 }
 ```
+⚠ **The monogram picker is UNREACHABLE by hand in order mode** — `setMode` sets
+`#special-panel` to `display:none` outright (template-engine.html:4762), hiding the whole
+panel including the monogram zone. The capture script is unaffected: it sets the value in JS
+and confirms `window._activeMonogram` took, which works with the panel hidden (verified S161).
+So **do not try to flip monograms in the engine before capturing** — your preview is the
+captured `sessions/qa-runs/cover-wrap-<order>-<mono>.png`, checked before composing.
+
 Repeat per colourway, changing `QA_ORDER` and the `heirloom-<colour>` key together.
 **Fill `HEIRLOOM_ORDERS` in `scripts/exp2-images.mjs` first** — it errors out rather than
 half-working. `BG_R/G/B` is not optional: without it spreads bake on a near-white backdrop
