@@ -69,6 +69,15 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   ⚠ **A Xenia drop is an input to VALIDATE, not a spec to implement** — filled photo windows,
   mixed bleed conventions and stray viewBoxes have each cost a session. See LEARNINGS (S157)
   for the pre-flight checks, and re-apply any in-repo SVG patch after a re-export.
+- **Heirloom letter geometry is machine-checked**: `node scripts/check-heirloom-letters.mjs`
+  compares all 24 monogram-letter coordinates per colourway against the two sizing CSVs and
+  enforces `with-bleed = without-bleed + 3` (interior) / `+ 18` (cover). Run it after ANY CSV
+  change; `--write` syncs the data files (xMm/yMm only, ink colours untouched). Two separate
+  nudges have already lost the bleed offset — see LEARNINGS (S161).
+- **Mockup capture runbook for Heirloom's 12 image sets**: `docs/briefs/heirloom-build.md`,
+  Stage 8. One order per colourway, three monograms each via `QA_MONOGRAM`. Product pages read
+  `assets/images/mockups/exp2/<template>/` (from `exp2-images.mjs` + `compose-flat-mockup.mjs`)
+  — **NOT** the older `mockups/<template>/` that `web-mockups.mjs` writes.
 - In-build template: **Heirloom** (`docs/briefs/heirloom-build.md` is the build-state doc —
   read it before touching anything Heirloom). Four colourways (only Beige exists) as separate
   registry keys, three family monograms that select artwork per order.

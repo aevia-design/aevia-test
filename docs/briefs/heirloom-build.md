@@ -147,13 +147,42 @@ The opening is the `clipPath`, NOT the rect beside it — see LEARNINGS (S160).
       `qa/debug-heirloom-render.mjs <Colour>` PASS on all four (41 canvases, 0 pageerrors,
       0 SVG 404s), `qa/verify-caption-parity.mjs Heirloom-<Colour>` PASS on all four.
       **No PDF has been rendered for Brown, Green or Blue yet.**
-- [ ] **8. Product page + Stripe** — colour selector (all four now exist) + monogram selector
-      w/ per-monogram descriptions (owner to supply); swap-on-select thumbnails need 12 mockup
-      sets (colours × monograms) — NOT yet produced; Beige-only placeholder acceptable interim.
-      **The monogram is chosen HERE, not on the order form (owner, S158)** — it is a headline
-      feature and needs a real thumbnail preview. The product page appends `&monogram=<key>`
-      to the order link; the order form already preselects from it. Consequence: the 12
-      mockup sets are launch-blocking for Heirloom, not a nice-to-have.
+- [~] **8. Product page BUILT (S161), mockups outstanding.** `pages/heirloom.html` ships the
+      colourway swatches and monogram cards in the panel, in the owner's order: name →
+      description → pages/price → colourway → monogram → story pages. Appends
+      `&monogram=<key>`; the order form preselects from it. Monogram descriptions supplied by
+      Xenia (Bond / Harmony / Devotion) and used verbatim — no stop-slop pass (owner).
+      **Monogram cards crop the REAL cover SVG**, not a mockup, so they are correct today and
+      follow the colourway. **Gallery images are still stand-ins** (Tender's) behind
+      `ASSETS_READY = false` at the top of the page's inline script; flip it once the 12 sets
+      exist. Not linked from `collections.html`, and `pages/de/heirloom.html` does not exist
+      (the nav DE link 404s).
+
+#### Mockup capture runbook (S161) — 4 orders → 12 image sets
+One ORDER per colourway: switching template in the engine resets `specialPhotos`, so a
+colourway cannot be swapped inside an order. The three monograms DO come from one order —
+`qa/select-monogram.mjs` drives the engine's picker, which swaps artwork only and leaves
+photos and captions alone. Capture reads Firestore, so **Save book state once** first.
+
+```powershell
+$env:STAFF_PW = Read-Host "Staff password"     # once per terminal
+$env:BG_R="216"; $env:BG_G="212"; $env:BG_B="207"   # warm-grey bake, matches the other 5 templates
+$env:QA_ORDER = "AEV-089"                      # this colourway's order
+foreach ($m in "roots","birds","roses") {
+  $env:QA_MONOGRAM = $m; $env:MONOGRAM = $m
+  node qa/capture-cover-wrap.mjs               # → cover-wrap-<order>-<m>.png
+  node qa/capture-spread.mjs                   # → spread-<order>-<m>-NN.png + manifest
+  node scripts/compose-all.mjs $env:QA_ORDER heirloom-beige $m
+  node scripts/compose-flat-mockup.mjs $env:QA_ORDER heirloom-beige --scratch
+  cd scripts; node exp2-images.mjs heirloom-beige-$m; cd ..
+}
+```
+Repeat per colourway, changing `QA_ORDER` and the `heirloom-<colour>` key together.
+**Fill `HEIRLOOM_ORDERS` in `scripts/exp2-images.mjs` first** — it errors out rather than
+half-working. `BG_R/G/B` is not optional: without it spreads bake on a near-white backdrop
+and mismatch the covers (S98). Watch each run's `Monogram set to "<m>" (was …)` line; a
+throw means the picker did not take, and capturing the wrong monogram silently would
+poison a whole set.
 - [ ] **9. E2E** — `qa/staff-customer-chain.mjs`; `npm test` green.
 - [ ] **10. Merge** — after owner approval; redeploy Cloud Run renderer.
 

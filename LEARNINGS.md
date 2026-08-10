@@ -981,3 +981,45 @@ Scribble-specific details. FP types, text prompts, photo slot counts, and accept
 FP keys all live in `scribble-data.js` (each template gets its own `<name>-data.js`).
 New templates add a new data file; pipeline code needs no changes. Read from the
 data file, never from `if (template === 'scribble')` branches.
+
+## 2026-08-10 (S161) — A second render can silently undo everything the first one seeded
+
+`renderBook()` resets `window.bookCaptions = {}` on a full rebuild. `loadOrderIntoEngine`
+seeds the customer's FP text panels and cover captions AFTER its first render, then called
+`renderBook()` a second time to paint Heirloom's monogram initials — throwing all of it away,
+including the initials that call had itself just written. The order info panel still showed
+the text, so it looked like a rendering problem rather than a state problem.
+
+**Rules:**
+1. **A function that resets shared state must say so at every call site**, not in one comment.
+   Two comments in this file disagreed about whether `renderBook` clears captions (5060 said
+   no, 5181 said yes). The wrong one sent me looking in the wrong place first.
+2. **When "the data is there but the page is blank", suspect ORDER OF OPERATIONS**, not the
+   lookup. The selector was fine; something later wiped the result.
+3. **A feature that only some templates trigger will only break for those templates.** Step 9
+   re-renders only when `applyMonogramInitials` returns true, so Heirloom was the only victim
+   and four other templates "proved" the path worked. The owner's "for Tender it transferred"
+   was the decisive clue.
+
+## 2026-08-10 (S161) — Derived spreadsheet columns drift; enforce the relationship in code
+
+Twice in one session a letter nudge was typed into the CSV's without-bleed column and copied
+into the with-bleed column, losing the +3mm (interior) / +18mm (cover) offset. A 0.3mm nudge
+therefore read as a 3.3mm move, and the wrong value was a perfectly plausible coordinate — no
+render looks obviously broken at 3mm. `scripts/check-heirloom-letters.mjs` now enforces
+`with = without + bleed` and compares all 24 coordinates per colourway to the data file.
+
+**Rule: when a CSV holds the same value in two units, assert the relationship in code.** Hand
+sync plus hand arithmetic across 4 colourways × 12 coordinates is not reviewable by eye. Ask
+whether the source spreadsheet can carry a formula instead of typed values.
+
+## 2026-08-10 (S161) — Check which asset path the page actually reads before wiring a pipeline
+
+I wired Heirloom's mockups into `scripts/web-mockups.mjs`, which writes
+`assets/images/mockups/<template>/` — the path the exp2 redesign (S98) replaced. The live
+product pages read `assets/images/mockups/exp2/<template>/`, produced by `exp2-images.mjs`
+plus `compose-flat-mockup.mjs`. Correct code, dead target.
+
+**Rule: trace the consuming page back to its source folder before extending a generator.** A
+superseded script can look canonical — it still runs, still has a per-template map, and
+nothing in it says "obsolete".
