@@ -37,12 +37,21 @@ export async function selectMonogram(page, mono, note = console.log) {
   // Confirm the engine actually took it, rather than trusting the dispatch.
   await page.waitForFunction((m) => window._activeMonogram === m, key, { timeout: 30000 });
 
-  // rerenderCover() + renderBook() swap <img> sources; wait for every one to repaint or the
+  // rerenderCover() + renderBook() swap <img> sources; wait for the COVER to repaint or the
   // screenshot catches the PREVIOUS monogram's artwork mid-swap.
+  //
+  // Scoped to .cover-canvas deliberately (S162). `.spread-pages img` looked like "the
+  // interior too", but .cover-canvas is built INSIDE a .spread-pages wrapper and renderBook
+  // makes one wrapper per spread — so it meant EVERY photo in the book, ~50 of them. A single
+  // photo that never decodes (the engine warns "Orientation read timed out for blob") leaves
+  // naturalWidth at 0, which `complete && naturalWidth > 0` can never satisfy, so every run
+  // burned the full timeout. Both callers already wait on their own target immediately before
+  // screenshotting — capture-cover-wrap.mjs on the cover, capture-spread.mjs per spread — so
+  // nothing here needs to vouch for the interior.
   await page.waitForFunction(() => {
-    const imgs = [...document.querySelectorAll('.cover-canvas img, .spread-pages img')];
+    const imgs = [...document.querySelectorAll('.cover-canvas img')];
     return imgs.length > 0 && imgs.every(i => i.complete && i.naturalWidth > 0);
-  }, null, { timeout: 120000 }).catch(() => note('⚠ post-monogram image wait timed out — capturing anyway'));
+  }, null, { timeout: 30000 }).catch(() => note('⚠ post-monogram cover image wait timed out — capturing anyway'));
   await page.waitForTimeout(1200); // settle clip-path + fonts
 
   note(`Monogram set to "${key}" (was ${result.from || 'the order default'})`);

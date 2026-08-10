@@ -4424,7 +4424,11 @@
   document.getElementById('monogram-select').addEventListener('change', function () {
     window._activeMonogram = this.value;
     rerenderCover();
-    if (window.photoPool.length) renderBook();
+    // preserveCaptions: switching monogram swaps ARTWORK and letter geometry only — the
+    // customer's text is not the monogram's to discard. Without this the rebuild reset
+    // window.bookCaptions, so every mockup capture (which drives this very select via
+    // qa/select-monogram.mjs) came out with a blank cover and blank interior pages.
+    if (window.photoPool.length) renderBook({ preserveCaptions: true });
   });
 
   // Fill the AI-side caption of any spread with a zodiac.copy map from the chosen

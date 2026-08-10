@@ -84,6 +84,35 @@ else {
   result.backLetter1 === 'A' ? ok('back-cover initial survives') : bad('back-cover initial survives', `got ${JSON.stringify(result.backLetter1)}`);
   result.monoLetter1 === 'A' ? ok('intro initial survives') : bad('intro initial survives', `got ${JSON.stringify(result.monoLetter1)}`);
 }
+// ── The PICKER path (S162) ────────────────────────────────────────────────────
+// The seeding fix above patched loadOrderIntoEngine's own call site. The monogram
+// SELECT's change handler is a second, independent caller of renderBook — and the one
+// qa/select-monogram.mjs drives on every mockup capture. It wiped every caption, so
+// all 12 captured image sets came out with blank covers and blank interior pages.
+const picked = await p.evaluate(() => {
+  const sel = document.getElementById('monogram-select');
+  if (!sel) return { error: 'no #monogram-select in the DOM' };
+  const to = [...sel.options].map(o => o.value).find(v => v !== sel.value) || sel.value;
+  const panel = document.querySelector('.fp-text-panel');
+  const si = panel.dataset.spreadIndex, side = panel.dataset.side;
+  sel.value = to;
+  sel.dispatchEvent(new Event('change'));   // exactly what selectMonogram does
+  return {
+    to,
+    savedPanel:  window.bookCaptions?.[si]?.[side]?.['textPanel'] || '',
+    coverName:   window.bookCaptions?.cover?.name || '',
+    backLetter1: window.bookCaptions?.cover?.backLetter1 || '',
+  };
+});
+
+console.log('\n— Captions survive a monogram CHANGE from the picker —');
+if (picked.error) { bad(picked.error); }
+else {
+  picked.savedPanel  === INTRO            ? ok('intro text survives the picker') : bad('intro text survives the picker', `got ${JSON.stringify(picked.savedPanel)}`);
+  picked.coverName   === 'Anna & Michael' ? ok('album name survives the picker') : bad('album name survives the picker', `got ${JSON.stringify(picked.coverName)}`);
+  picked.backLetter1 === 'A'              ? ok('back-cover initial survives the picker') : bad('back-cover initial survives the picker', `got ${JSON.stringify(picked.backLetter1)}`);
+}
+
 errs.length ? bad(`${errs.length} page error(s)`, errs[0]) : ok('no uncaught page errors');
 
 console.log(`\n──────── ${pass}/${pass + fail} passed ────────`);
