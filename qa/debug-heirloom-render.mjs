@@ -1,13 +1,17 @@
-// Heirloom (Beige) engine render smoke test — Phase A gate (S157).
-// Pattern: debug-tender-render.mjs. Loads the staff engine locally, selects
-// Heirloom-Beige, enables all functional toggles, feeds local test photos, and
-// asserts: canvases render, cover present, zero pageerrors.
-// Run: npx http-server . -p 8080 -c-1   (project root)   then   node qa/debug-heirloom-render.mjs
+// Heirloom engine render smoke test — Phase A gate (S157), per-colourway since S160.
+// Pattern: debug-tender-render.mjs. Loads the staff engine locally, selects the
+// colourway, enables all functional toggles, feeds local test photos, and asserts:
+// canvases render, cover present, zero pageerrors, zero Heirloom SVG 404s.
+// Run: npx http-server . -p 8080 -c-1   (project root)   then
+//      node qa/debug-heirloom-render.mjs [Beige|Brown|Green|Blue]   (default Beige)
 import { chromium } from 'playwright';
 import { readdirSync, mkdirSync } from 'fs';
 import path from 'path';
 
-const PHOTO_DIR = 'C:/Users/evgmy/aevia-test/assets/test photos/Newborn';
+// Subject-matched photos: Heirloom is a wedding book, so Wedding tells us how it reads
+// (LEARNINGS S158 — the first Newborn pass looked fine and told us nothing).
+const COLOUR    = (process.argv[2] || 'Beige').replace(/^./, c => c.toUpperCase());
+const PHOTO_DIR = 'C:/Users/evgmy/aevia-test/assets/test photos/Wedding';
 const OUT_DIR   = 'C:/Users/evgmy/aevia-test/sessions/qa-runs/heirloom-debug';
 mkdirSync(OUT_DIR, { recursive: true });
 const files = readdirSync(PHOTO_DIR).filter(f => /\.(jpe?g|png)$/i.test(f)).slice(0, 30).map(f => path.join(PHOTO_DIR, f));
@@ -21,7 +25,7 @@ p.on('response', r => { if (r.status() === 404) failed404.push(r.url()); });
 
 await p.goto('http://localhost:8080/pages/staff/template-engine.html', { waitUntil: 'load' });
 await p.waitForTimeout(800);
-await p.selectOption('#template-select', 'Heirloom-Beige');
+await p.selectOption('#template-select', `Heirloom-${COLOUR}`);
 await p.waitForTimeout(400);
 // enable every functional-spread toggle (intro, story, him, her)
 await p.evaluate(() => document.querySelectorAll('#local-mode-controls input[type=checkbox], .fp-toggle input[type=checkbox], #local-fp-list input[type=checkbox]').forEach(c => { if (!c.checked) c.click(); }));
@@ -40,10 +44,10 @@ const state = await p.evaluate(() => {
     functionalZonePools: [...new Set(zones)],
   };
 });
-await p.screenshot({ path: path.join(OUT_DIR, '_render-heirloom-beige.png'), fullPage: true });
+await p.screenshot({ path: path.join(OUT_DIR, `_render-heirloom-${COLOUR.toLowerCase()}.png`), fullPage: true });
 await p.close(); await b.close();
 
 const svg404s = failed404.filter(u => u.includes('Template_Heirloom'));
 const ok = state.pageCanvasCount > 0 && state.coverPresent && errs.length === 0 && svg404s.length === 0;
-console.log(JSON.stringify({ ...state, pageErrors: errs, heirloomSvg404s: svg404s, PASS: ok }, null, 2));
+console.log(JSON.stringify({ colourway: COLOUR, ...state, pageErrors: errs, heirloomSvg404s: svg404s, PASS: ok }, null, 2));
 process.exit(ok ? 0 : 1);

@@ -93,6 +93,9 @@ require(path.resolve(__dirname, '../assets/Template_Newborn/newborn-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Papercut/papercut-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Tender/tender-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Heirloom/Beige/heirloom-data.js'));
+require(path.resolve(__dirname, '../assets/Template_Heirloom/Brown/heirloom-brown-data.js'));
+require(path.resolve(__dirname, '../assets/Template_Heirloom/Green/heirloom-green-data.js'));
+require(path.resolve(__dirname, '../assets/Template_Heirloom/Blue/heirloom-blue-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Joyride/joyride-data.js'));
 DATA = global.window.SCRIBBLE_DATA; // default; will be updated in main() if needed
 
@@ -144,7 +147,10 @@ const TEMPLATES = {
   wander:   { data: () => global.window.WANDER_DATA,   assetBase: path.resolve(__dirname, '../assets/Template_Wander') },
   newborn:  { data: () => global.window.NEWBORN_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Newborn') },
   tender:   { data: () => global.window.TENDER_DATA,   assetBase: path.resolve(__dirname, '../assets/Template_Tender') },
-  'heirloom-beige': { data: () => global.window.HEIRLOOM_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Heirloom/Beige/SVG') },
+  'heirloom-beige': { data: () => global.window.HEIRLOOM_DATA,       assetBase: path.resolve(__dirname, '../assets/Template_Heirloom/Beige/SVG') },
+  'heirloom-brown': { data: () => global.window.HEIRLOOM_BROWN_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Heirloom/Brown/SVG') },
+  'heirloom-green': { data: () => global.window.HEIRLOOM_GREEN_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Heirloom/Green/SVG') },
+  'heirloom-blue':  { data: () => global.window.HEIRLOOM_BLUE_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Heirloom/Blue/SVG') },
   papercut: { data: () => global.window.PAPERCUT_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Papercut/SVG') },
   joyride:  { data: () => global.window.JOYRIDE_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Joyride/SVG') },
 };

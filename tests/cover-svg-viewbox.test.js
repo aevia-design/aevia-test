@@ -19,8 +19,11 @@ const path = require('path');
 
 const ASSETS = path.join(__dirname, '..', 'assets');
 
-// Trim cover: back(200) + spine(9, as authored) + front(200) = 409mm wide, 200mm tall.
-const TRIM_RATIO = 409 / 200;
+// Trim cover: back(200) + spine + front(200), 200mm tall. The spine is 9mm as authored
+// for every template except Heirloom, which Xenia drew at 10mm (410mm) and declares
+// `referenceSpineMm: 10` — so the expected ratio comes from the data file, not a constant.
+const trimRatio = (spineMm = 9) => (200 + spineMm + 200) / 200;
+const TRIM_RATIO = trimRatio();
 // Full-bleed would be 445/236 = 1.886 — far enough away that a loose tolerance is safe.
 // 1% allows for rounding in Illustrator's export without admitting a bleed-framed box.
 const TOLERANCE = 0.01;
@@ -37,21 +40,46 @@ function findUnder(root, rel) {
   return null;
 }
 
-/** Every template's cover SVG, resolved from its data file's `cover.svg` path. */
-function coverSvgs() {
+/** Every data file under a Template_ dir. Heirloom keeps one per COLOURWAY in a
+ *  subfolder (Beige/heirloom-data.js), so a single top-level scan misses it entirely —
+ *  which is how all four Heirloom colourways went unguarded until S160. */
+function dataFiles() {
   const out = [];
   for (const dir of fs.readdirSync(ASSETS).filter(d => d.startsWith('Template_'))) {
-    const dataFile = fs.readdirSync(path.join(ASSETS, dir)).find(f => f.endsWith('-data.js'));
-    if (!dataFile) continue;
-    const src = fs.readFileSync(path.join(ASSETS, dir, dataFile), 'utf8');
+    const root = path.join(ASSETS, dir);
+    const label = dir.replace('Template_', '');
+    for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name.endsWith('-data.js')) {
+        out.push({ template: label, root, src: path.join(root, entry.name) });
+      } else if (entry.isDirectory()) {
+        const nested = fs.readdirSync(path.join(root, entry.name)).find(f => f.endsWith('-data.js'));
+        if (nested) {
+          out.push({ template: `${label}/${entry.name}`, root, src: path.join(root, entry.name, nested) });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** Every cover SVG a template can render — the default plus, where a template selects
+ *  artwork per monogram, each monogram's own cover. Heirloom has 3 per colourway. */
+function coverSvgs() {
+  const out = [];
+  for (const { template, root, src: srcPath } of dataFiles()) {
+    const src = fs.readFileSync(srcPath, 'utf8');
+    const spineMm = Number((/referenceSpineMm:\s*([\d.]+)/.exec(src) || [])[1]) || 9;
     // cover: { svg: 'Cover/Artboard 1.svg', ... } — first `svg:` inside the cover block.
     const coverBlock = src.slice(src.indexOf('cover:'));
-    const rel = (/svg:\s*'([^']+)'/.exec(coverBlock) || [])[1];
-    if (!rel) continue;
-    // Templates disagree on where the SVG folder sits: at the template root, under SVG/,
-    // or under Spreads/. Search rather than enumerate, so a fourth convention still works.
-    const file = findUnder(path.join(ASSETS, dir), rel);
-    out.push({ template: dir.replace('Template_', ''), rel, file });
+    const rels = new Set();
+    const dflt = (/svg:\s*'([^']+)'/.exec(coverBlock) || [])[1];
+    if (dflt) rels.add(dflt);
+    for (const m of src.matchAll(/coverSvg:\s*'([^']+)'/g)) rels.add(m[1]);
+    for (const rel of rels) {
+      // Templates disagree on where the SVG folder sits: at the template root, under SVG/,
+      // or under Spreads/. Search rather than enumerate, so a fourth convention still works.
+      out.push({ template, rel, spineMm, file: findUnder(root, rel) });
+    }
   }
   return out;
 }
@@ -65,9 +93,10 @@ describe('cover SVG viewBox frames the trim, not the bleed', () => {
     expect(missing).toEqual([]);
   });
 
-  test.each(svgs.filter(s => s.file).map(s => [s.template, s.file]))(
-    '%s cover viewBox is 409:200, not 445:236',
-    (template, file) => {
+  test.each(svgs.filter(s => s.file).map(s => [`${s.template} ${s.rel}`, s.file, s.spineMm]))(
+    '%s viewBox frames the trim, not 445:236',
+    (template, file, spineMm) => {
+      const expectedRatio = trimRatio(spineMm);
       // Read only the head — these files run to megabytes and the viewBox is near the top.
       const fd = fs.openSync(file, 'r');
       const buf = Buffer.alloc(4096);
@@ -81,7 +110,7 @@ describe('cover SVG viewBox frames the trim, not the bleed', () => {
       const w = Number(vb[3]);
       const h = Number(vb[4]);
       const ratio = w / h;
-      const drift = Math.abs(ratio - TRIM_RATIO) / TRIM_RATIO;
+      const drift = Math.abs(ratio - expectedRatio) / expectedRatio;
 
       // Name the likely cause in the failure message — the next person to hit this will
       // be looking at a render that "just looks a bit small", not at a ratio.
@@ -94,7 +123,7 @@ describe('cover SVG viewBox frames the trim, not the bleed', () => {
         template,
         viewBox: `${w} x ${h}`,
         ratio: Number(ratio.toFixed(4)),
-        expected: Number(TRIM_RATIO.toFixed(4)),
+        expected: Number(expectedRatio.toFixed(4)),
         note: drift <= TOLERANCE ? 'ok' : `off by ${(drift * 100).toFixed(1)}%${diagnosis}`,
       }).toMatchObject({ note: 'ok' });
     }

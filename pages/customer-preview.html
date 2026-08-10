@@ -10,6 +10,9 @@
   <script src="../assets/Template_Papercut/papercut-data.js"></script>
   <script src="../assets/Template_Tender/tender-data.js"></script>
   <script src="../assets/Template_Heirloom/Beige/heirloom-data.js"></script>
+  <script src="../assets/Template_Heirloom/Brown/heirloom-brown-data.js"></script>
+  <script src="../assets/Template_Heirloom/Green/heirloom-green-data.js"></script>
+  <script src="../assets/Template_Heirloom/Blue/heirloom-blue-data.js"></script>
   <script src="../assets/Template_Joyride/joyride-data.js"></script>
   <script src="../assets/js/photo-utils.js"></script>
   <script src="../assets/js/book-completeness.js"></script>
@@ -514,6 +517,21 @@
       background: rgba(255,255,255,0.75);
       outline: 1px dashed #c0b8ae;
       outline-offset: 2px;
+    }
+    /* Mirrors the staff engine (S160) — see the comments there. Light ink means a dark
+       ground, where a white focus wash hides the text while it is being typed. */
+    .slot-caption.caption-on-dark:focus {
+      background: rgba(0,0,0,0.55);
+      outline-color: rgba(255,255,255,0.45);
+    }
+    .slot-caption.caption-on-dark:empty::before { color: rgba(255,255,255,0.5); }
+    /* Monogram initials sit in 8×9mm boxes; the standard placeholder wraps one letter
+       per line there. Reveal the box on hover instead. */
+    .slot-caption.letter-caption:empty::before { content: ''; }
+    .slot-caption.letter-caption:empty:hover {
+      outline: 1px dashed currentColor;
+      outline-offset: 2px;
+      opacity: 0.45;
     }
 
     /* ── CAPTION TOOLBAR ── */
@@ -1097,9 +1115,25 @@
     newborn:  { data: () => window.NEWBORN_DATA,  svgBase: '../assets/Template_Newborn/' },
     papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../assets/Template_Papercut/SVG/' },
     tender:   { data: () => window.TENDER_DATA,   svgBase: '../assets/Template_Tender/' },
-    'heirloom-beige': { data: () => window.HEIRLOOM_DATA, svgBase: '../assets/Template_Heirloom/Beige/SVG/' },
+    'heirloom-beige': { data: () => window.HEIRLOOM_DATA,       svgBase: '../assets/Template_Heirloom/Beige/SVG/' },
+    'heirloom-brown': { data: () => window.HEIRLOOM_BROWN_DATA, svgBase: '../assets/Template_Heirloom/Brown/SVG/' },
+    'heirloom-green': { data: () => window.HEIRLOOM_GREEN_DATA, svgBase: '../assets/Template_Heirloom/Green/SVG/' },
+    'heirloom-blue':  { data: () => window.HEIRLOOM_BLUE_DATA,  svgBase: '../assets/Template_Heirloom/Blue/SVG/' },
     joyride:  { data: () => window.JOYRIDE_DATA,  svgBase: '../assets/Template_Joyride/SVG/' },
   };
+
+  /** Mirrors the staff engine (S160). Is this caption ink LIGHT — i.e. on a dark ground?
+   *  Drives the focus wash only, never the printed colour. */
+  function isLightInk(color) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(color || '').trim());
+    if (!m) return false;
+    const n = parseInt(m[1], 16);
+    const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => v / 255);
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) > 0.55;
+  }
+  function captionUiClasses(color, isLetterBox) {
+    return (isLightInk(color) ? ' caption-on-dark' : '') + (isLetterBox ? ' letter-caption' : '');
+  }
 
   let _activeTemplateData = window.SCRIBBLE_DATA; // default
   let SVG_BASE = TEMPLATES.scribble.svgBase;      // default
@@ -1934,7 +1968,7 @@
     }));
     coverDef.captions.concat(monoLetterDefs).forEach(capDef => {
       const cap = document.createElement('div');
-      cap.className = 'slot-caption cover-caption';
+      cap.className = 'slot-caption cover-caption' + captionUiClasses(color, capDef.maxLength === 1);
       cap.contentEditable = 'true';
       cap.spellcheck = false;
       cap.dataset.coverCaptionKey = capDef.key;
@@ -2586,6 +2620,7 @@
           // Per-slot caption colour from the CSV — mirrors the staff engine + PDF (was
           // omitted, so captions fell back to the #493955 .slot-caption default).
           captionEl.style.color = (_scsOv.color !== undefined ? _scsOv.color : cap.color) || '#493955';
+          captionEl.className += captionUiClasses(captionEl.style.color, false);
 
           const saved = window.bookCaptions?.[spreadIndex]?.[side]?.[slotIdx];
           if (saved) captionEl.innerHTML = saved;
@@ -2664,7 +2699,7 @@
         if (_ttLetS  !== undefined) titleEl.style.letterSpacing = _ttLetS + 'em';
         titleEl.style.fontWeight = _ttWeight;
         titleEl.style.fontStyle  = _ttItalic ? 'italic' : 'normal';
-        if (ttCap.color) titleEl.style.color = ttCap.color;
+        if (ttCap.color) { titleEl.style.color = ttCap.color; titleEl.className += captionUiClasses(ttCap.color, false); }
 
         const titleToPlain = () => titleEl.innerHTML
           .replace(/<div>/gi, '\n').replace(/<\/div>/gi, '')
@@ -2715,7 +2750,7 @@
           const key = 'monoLetter' + (i + 1);
           const saved = window.bookCaptions?.[spreadIndex]?.[side]?.[key] || '';
           const el = document.createElement('div');
-          el.className = 'slot-caption';
+          el.className = 'slot-caption' + captionUiClasses(L.color, true);
           el.contentEditable = 'true';
           el.spellcheck = false;
           el.dataset.label = i === 0 ? 'A' : 'B';
@@ -2802,7 +2837,7 @@
         // Apply the CSV caption colour (mirrors template-engine.html) — without this the
         // panel inherited the .slot-caption default, so Joyride's red intro/itinerary body
         // and Wander's navy were silently ignored on the customer side only.
-        if (tpCap.color) panelEl.style.color = tpCap.color;
+        if (tpCap.color) { panelEl.style.color = tpCap.color; panelEl.className += captionUiClasses(tpCap.color, false); }
 
         const formatFunnyWords = (text) => {
           if (!isFunnyWords) return text;
