@@ -76,41 +76,48 @@
 @media (max-width:600px){ .sp-thumb{flex-basis:92px;} }
 
 /* ── Colourway + monogram selectors (Heirloom) ─────────────────────────────────────
-   Two choices no earlier template had. They sit in DIFFERENT columns on purpose:
+   Two choices no earlier template had. Both live in the PANEL, in the order the
+   customer actually decides: name → description → size/price → colour → monogram →
+   story pages. An earlier pass put the colourway under the hero, next to the image it
+   changes; that reasoning was sound in the abstract but wrong in practice — the owner
+   could not find it. Decisions belong in the decision column.
 
-   COLOURWAY lives under the hero, beside the thumbnails, because it changes the
-   IMAGE. A control belongs next to what it alters, and putting it in the panel would
-   have the eye jump right to click and back left to see the result. It also keeps the
-   already-tall sticky panel from overflowing the viewport.
-
-   MONOGRAM lives in the panel, because it is a choice about MEANING and carries copy.
-   Selecting one swaps the hero to that monogram's cover, so the large image is the
-   preview — no thumbnail in the card can compete with that, which is why the cards
-   carry words instead of pictures.
+   Each monogram card shows a ZOOMED CROP of that monogram's own back cover, taken from
+   the same back.webp the gallery uses (background-size magnifies the centre, where the
+   monogram sits). No extra assets, and the customer chooses on artwork rather than on
+   three words. Selecting one also swaps the hero to the back cover, since that is the
+   surface the choice affects.
 
    The swatches are the only saturated colour on the site. That is deliberate: they are
    the product's own materials, not UI chrome, and the palette is muted enough
    (#dad0c5–#312128) to sit quietly inside the warm neutral shell. */
-/* Label and swatches read as ONE control, so they group left rather than sitting at
-   opposite ends of the gallery width — spread apart, the swatches looked like they
-   belonged to the thumbnail row beneath them. */
-.cw-bar{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+.cw-block{margin-bottom:30px;}
+.cw-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
 .cw-label{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);}
 /* The chosen colour's NAME is a value, not a label — drop the caps it would inherit. */
-.cw-name{font-family:var(--serif);font-size:15px;letter-spacing:0;text-transform:none;color:var(--text);margin-left:10px;}
+.cw-name{font-family:var(--serif);font-size:15px;letter-spacing:0;text-transform:none;color:var(--text);}
 .cw-swatches{display:flex;gap:10px;}
-.cw-sw{width:34px;height:34px;padding:3px;border:1px solid var(--border);border-radius:3px;background:var(--white);transition:border-color .15s,box-shadow .15s;}
+.cw-sw{width:38px;height:38px;padding:3px;border:1px solid var(--border);border-radius:3px;background:var(--white);transition:border-color .15s,box-shadow .15s;}
 .cw-sw:hover{border-color:#c4a882;}
 .cw-sw.on{border-color:var(--text);box-shadow:0 0 0 1px var(--text);}
 .cw-sw i{display:block;width:100%;height:100%;border-radius:2px;background:var(--sw);}
 
-.mono-block{margin-bottom:32px;}
+.mono-block{margin-bottom:30px;}
 .mono-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.mono-card{display:flex;flex-direction:column;align-items:center;gap:4px;padding:13px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--white);text-align:center;transition:border-color .15s,box-shadow .15s;}
+.mono-card{display:flex;flex-direction:column;align-items:stretch;border:1.5px solid var(--border);border-radius:6px;background:var(--white);text-align:center;overflow:hidden;transition:border-color .15s,box-shadow .15s;}
 .mono-card:hover{border-color:#c4a882;}
 .mono-card.on{border-color:var(--text);box-shadow:0 0 0 1px var(--text);}
-.mono-title{font-family:var(--serif);font-size:17px;line-height:1.15;}
-.mono-essence{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);}
+/* The monogram itself, cropped from the REAL cover artwork — the same SVG the engine
+   and the PDF draw, not a mockup. That means these previews are correct today, before
+   any mockup set exists, and stay sharp at any size.
+   The geometry: the cover SVG frames the whole wrap (410 x 200mm) and the monogram sits
+   at the centre of the BACK panel, around x = 100mm, y = 100mm. `auto 285%` shows a
+   ~70mm-tall band; 19% x-position centres that band on x = 100mm of 410. Both numbers
+   are derived, not eyeballed — see the working in heirloom.html. */
+.mono-art{aspect-ratio:1/1;background-color:var(--mock);background-repeat:no-repeat;background-position:19% 50%;background-size:auto 285%;border-bottom:1px solid var(--border);}
+.mono-meta{padding:8px 4px 10px;}
+.mono-title{display:block;font-family:var(--serif);font-size:16px;line-height:1.15;}
+.mono-essence{display:block;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
 .mono-card.on .mono-essence{color:var(--accent-dk);}
 /* min-height reserves the tallest of the three descriptions, so switching monogram
    never nudges the price and CTA below it up or down. */

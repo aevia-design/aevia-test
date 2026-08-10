@@ -31,17 +31,6 @@
       <button class="gallery-arrow next" onclick="navArrow(1)" aria-label="Next image"><svg viewBox="0 0 16 16"><polyline points="6,3 11,8 6,13"/></svg></button>
     </div>
 
-    <!-- Colourway sits with the image it changes, not in the panel. See product.css. -->
-    <div class="cw-bar">
-      <div class="cw-label">Colourway<span class="cw-name" id="cw-name">Beige</span></div>
-      <div class="cw-swatches" id="cw-swatches">
-        <button class="cw-sw on" data-colour="beige" style="--sw:#dad0c5" aria-label="Beige" title="Beige"><i></i></button>
-        <button class="cw-sw"    data-colour="brown" style="--sw:#312128" aria-label="Brown" title="Brown"><i></i></button>
-        <button class="cw-sw"    data-colour="green" style="--sw:#969e8a" aria-label="Green" title="Green"><i></i></button>
-        <button class="cw-sw"    data-colour="blue"  style="--sw:#afafbe" aria-label="Blue"  title="Blue"><i></i></button>
-      </div>
-    </div>
-
     <div class="thumbs" id="thumbs">
       <button class="thumb-ph on" data-src="front.webp" onclick="setHero(this)"><img src="" alt="Front cover"/></button>
       <button class="thumb-ph" data-src="back.webp"    onclick="setHero(this)"><img src="" alt="Back cover"/></button>
@@ -57,7 +46,7 @@
 
     <!-- PLACEHOLDER BANNER — remove this div (and .ph-note in product.css) once the
          twelve real mockup sets exist. See HEIRLOOM_ORDERS in scripts/exp2-images.mjs. -->
-    <div class="ph-note" id="ph-note">Placeholder images. Every colourway and monogram currently shows the same stand-in mockups. The selectors are live: they drive the order link correctly.</div>
+    <div class="ph-note" id="ph-note">Placeholder mockups — every colourway and monogram shows the same stand-in book here. The monogram cards on the right are the real artwork, and both selectors drive the order link correctly.</div>
   </div>
 
   <div class="panel">
@@ -65,22 +54,33 @@
     <h1 class="product-title">Heirloom</h1>
     <p class="product-tagline">A wedding book made to be handed down, not filed away.</p>
 
-    <!-- Monogram carries copy, so it lives in the panel. Selecting one swaps the hero. -->
-    <div class="mono-block">
-      <div class="section-label">Family monogram</div>
-      <div class="mono-row" id="mono-row">
-        <button class="mono-card on" data-mono="roots"><span class="mono-title">Roots</span><span class="mono-essence">Bond</span></button>
-        <button class="mono-card"    data-mono="birds"><span class="mono-title">Birds</span><span class="mono-essence">Harmony</span></button>
-        <button class="mono-card"    data-mono="roses"><span class="mono-title">Roses</span><span class="mono-essence">Devotion</span></button>
-      </div>
-      <p class="mono-desc" id="mono-desc"></p>
-    </div>
-
     <div class="page-toggle">
       <div class="chips">
         <div class="chip on" onclick="pick(this,70)"><span class="chip-label">40 pages</span><span class="chip-price">€ 70</span></div>
         <div class="chip" onclick="pick(this,100)"><span class="chip-label">80 pages</span><span class="chip-price">€ 100</span></div>
       </div>
+    </div>
+
+    <div class="cw-block">
+      <div class="cw-head"><span class="cw-label">Colourway</span><span class="cw-name" id="cw-name">Beige</span></div>
+      <div class="cw-swatches" id="cw-swatches">
+        <button class="cw-sw on" data-colour="beige" style="--sw:#dad0c5" aria-label="Beige" title="Beige"><i></i></button>
+        <button class="cw-sw"    data-colour="brown" style="--sw:#312128" aria-label="Brown" title="Brown"><i></i></button>
+        <button class="cw-sw"    data-colour="green" style="--sw:#969e8a" aria-label="Green" title="Green"><i></i></button>
+        <button class="cw-sw"    data-colour="blue"  style="--sw:#afafbe" aria-label="Blue"  title="Blue"><i></i></button>
+      </div>
+    </div>
+
+    <!-- Each card previews its own monogram, magnified from that colourway's back
+         cover. Selecting one also swaps the hero to the back cover. -->
+    <div class="mono-block">
+      <div class="section-label">Family monogram</div>
+      <div class="mono-row" id="mono-row">
+        <button class="mono-card on" data-mono="roots"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Roots</span><span class="mono-essence">Bond</span></span></button>
+        <button class="mono-card"    data-mono="birds"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Birds</span><span class="mono-essence">Harmony</span></span></button>
+        <button class="mono-card"    data-mono="roses"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Roses</span><span class="mono-essence">Devotion</span></span></button>
+      </div>
+      <p class="mono-desc" id="mono-desc"></p>
     </div>
 
     <div class="addons">
@@ -164,13 +164,23 @@
 
   var colour = 'beige', mono = 'roots';
 
-  function folder() {
+  // Folder for a given colour+monogram. Defaults to the current selection; the monogram
+  // cards pass their OWN key so each previews its own artwork in the current colourway.
+  function folder(c, m) {
     return ASSETS_READY
-      ? '../assets/images/mockups/exp2/heirloom-' + colour + '-' + mono + '/'
+      ? '../assets/images/mockups/exp2/heirloom-' + (c || colour) + '-' + (m || mono) + '/'
       : PLACEHOLDER;
   }
   function fileFor(name) {
     return ASSETS_READY ? name : (PLACEHOLDER_FILE[name] || name);
+  }
+
+  // The cover artwork for a colourway + monogram — the same SVG the engine renders and
+  // the PDF draws. Folder names are capitalised on disk (Beige/, Brown/…), as are the
+  // monogram file names (Cover_40_Roots.svg).
+  var CAP = function (s) { return s.charAt(0).toUpperCase() + s.slice(1); };
+  function coverArt(c, m) {
+    return '../assets/Template_Heirloom/' + CAP(c) + '/SVG/Cover/Cover_40_' + CAP(m) + '.svg';
   }
 
   // Repoint every image on the page at the current colourway + monogram. Driven off each
@@ -190,6 +200,14 @@
       var img = document.querySelector('.sp-card[data-fp="' + fp + '"] .sp-thumb img');
       if (img) img.src = dir + fileFor(cards[fp]);
     });
+    // Each monogram card previews ITS OWN artwork in the current colourway, cropped from
+    // the real cover SVG rather than from a mockup. Independent of ASSETS_READY: these
+    // are correct now, and they are what actually gets printed.
+    document.querySelectorAll('.mono-card').forEach(function (card) {
+      var art = card.querySelector('.mono-art');
+      if (art) art.style.backgroundImage = 'url("' + coverArt(colour, card.dataset.mono) + '")';
+    });
+
     // Keep whichever slot the customer is currently looking at, rather than snapping back
     // to the cover — switching colourway mid-browse should change the colour, not the page.
     var active = document.querySelector('.thumb-ph.on');
@@ -211,6 +229,10 @@
     var btn = e.target.closest('.mono-card'); if (!btn) return;
     mono = btn.dataset.mono;
     this.querySelectorAll('.mono-card').forEach(function (b) { b.classList.toggle('on', b === btn); });
+    // Show the surface the choice actually changes. The monogram sits on the BACK cover,
+    // so a customer picking one on the front cover would see nothing move.
+    var backThumb = document.querySelector('.thumb-ph[data-src="back.webp"]');
+    if (backThumb) document.querySelectorAll('.thumb-ph').forEach(function (t) { t.classList.toggle('on', t === backThumb); });
     applySelection();
   });
 
