@@ -216,6 +216,18 @@ threw. Two S129 bugs (text panels ignoring their CSV colour; a cover photo clipp
 canvas) passed every automated gate and were caught only by screenshotting and *looking*. When
 geometry or styling is in question, render an image and read it.
 
+### Mockup capture (Heirloom + all templates)
+
+| Script | What it does | Touches staff? | Template-coupled? |
+|---|---|---|---|
+| `capture-cover-wrap.mjs` | Screenshots the engine's `.cover-canvas` as a pixel-exact trim wrap → `sessions/qa-runs/cover-wrap-<order>[-<mono>].png`. `QA_MONOGRAM` drives the picker. Downsamples GCS photos in the Node route (memory, not bandwidth). | yes | template-agnostic |
+| `capture-spread.mjs` | Every interior spread in one login + a manifest mapping index → book-sequence id. **Uses `.spread-row:not([data-spread-id="cover"]) .spread-pages`** — the cover row is also a `.spread-row` holding a `.spread-pages`, so including it shifts every index by one. | yes | template-agnostic |
+| `select-monogram.mjs` | Helper. Sets `#monogram-select` and waits on `window._activeMonogram`. Throws rather than falling back — capturing the default under another monogram's filename would poison a whole set. Works with the panel hidden in order mode. | — | **Heirloom** |
+| `capture-one-spread.mjs` | **(S162)** Re-captures ONE spread (default `FPhim`) across orders and monograms from **4 order loads instead of 24**: one order load serves all three monograms, because switching monogram leaves photos alone. Reports MB transferred per order. Reads the password from `$STAFF_PW` or `qa/.env` (`STAFF_ENGINE_PASSWORD` / `STAFF_TEST_PASSWORD`). Use when a single spread changes; the full runbook is for a fresh set. | yes | template-agnostic |
+
+**Measured cost (S162):** ~10 MB per order load, 31 MB for a 12-capture run. Photos are
+~200 KB each. An earlier "several GB" estimate was two orders of magnitude out.
+
 ### Older scripts
 
 | Script | What it does | Touches staff? | Template-coupled? |

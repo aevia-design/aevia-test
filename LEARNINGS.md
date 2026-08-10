@@ -1023,3 +1023,49 @@ plus `compose-flat-mockup.mjs`. Correct code, dead target.
 **Rule: trace the consuming page back to its source folder before extending a generator.** A
 superseded script can look canonical — it still runs, still has a per-template map, and
 nothing in it says "obsolete".
+
+## 2026-08-10 (S162) — A regression guard only guards the call site it exercises
+
+S161 fixed `renderBook` discarding `bookCaptions` and shipped `qa/verify-order-text-seeding.mjs`
+to prove it. S162 found the identical bug still live in `#monogram-select`'s change handler,
+which also calls `renderBook()` — and which every mockup capture drives. All 12 first-pass
+captures came out with blank covers and blank interior pages. The guard passed throughout,
+because it called `renderBook({preserveCaptions:true})` directly and never touched the picker.
+
+**Rule: when fixing a shared function, grep for every caller and decide about each one.** Then
+write the guard against the path a USER (or a script) actually takes, not against the function.
+A test that reproduces the fix rather than the failure proves nothing about the next caller.
+
+## 2026-08-10 (S162) — An identical failure on re-run rules out a race
+
+A cover captured with no photo. I called it a loading race and had the owner re-capture; the
+result was byte-for-byte the same failure. That is the signal: **random failures do not repeat
+perfectly.** The real cause was in the asset — a stray filled rect painted after the photo
+window in one cover SVG, so no number of re-captures could ever have fixed it.
+
+**Rule: before blaming timing, re-run once. Identical output means deterministic, so go and
+read the input.** And when a screenshot shows content partly visible (here a sliver of photo
+down one edge), something is painted OVER it — that is a z-order clue, not a load failure.
+
+## 2026-08-10 (S162) — Measure the rendered pixels when a layout looks wrong
+
+The owner reported the breadcrumb text sitting off-centre. `getBoundingClientRect` said the
+text was centred in its strip, so I "fixed" the line box and he still saw it. Screenshotting
+the element and finding the first and last rows containing ink showed the truth: the fixed nav
+(76.6px) overlapped the crumb (`margin-top:69px`), hiding the top 7.6px. The box was centred;
+the visible strip was not the box.
+
+**Rule: with `position:fixed` overlays, the element's box is not what the user sees.** When box
+geometry and the eye disagree, trust the eye and measure the painted pixels. Also worth knowing:
+all-caps text has no descenders, so a geometrically centred line box always reads ~1-2px high.
+
+## 2026-08-10 (S162) — Estimate cloud cost from measurement, not from imagination
+
+I warned the owner that re-running the capture loop would move "several GB, a few euros" and
+offered to bound it before committing. Measured: **10 MB per order load, 31 MB for a 12-capture
+run.** The photos are ~200 KB each. My estimate was two orders of magnitude high, and it nearly
+talked him out of a run that cost half a cent.
+
+**Rule: instrument the thing, then quote the number.** `qa/capture-one-spread.mjs` now prints MB
+transferred per order. An over-estimate is not the safe direction — it distorts real decisions
+about whether work is worth doing.

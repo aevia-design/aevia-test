@@ -147,16 +147,24 @@ The opening is the `clipPath`, NOT the rect beside it — see LEARNINGS (S160).
       `qa/debug-heirloom-render.mjs <Colour>` PASS on all four (41 canvases, 0 pageerrors,
       0 SVG 404s), `qa/verify-caption-parity.mjs Heirloom-<Colour>` PASS on all four.
       **No PDF has been rendered for Brown, Green or Blue yet.**
-- [~] **8. Product page BUILT (S161), mockups outstanding.** `pages/heirloom.html` ships the
-      colourway swatches and monogram cards in the panel, in the owner's order: name →
+- [x] **8. Product page DONE (S162).** `pages/heirloom.html` + `pages/de/heirloom.html` ship
+      the colourway swatches and monogram cards in the panel, in the owner's order: name →
       description → pages/price → colourway → monogram → story pages. Appends
       `&monogram=<key>`; the order form preselects from it. Monogram descriptions supplied by
       Xenia (Bond / Harmony / Devotion) and used verbatim — no stop-slop pass (owner).
-      **Monogram cards crop the REAL cover SVG**, not a mockup, so they are correct today and
-      follow the colourway. **Gallery images are still stand-ins** (Tender's) behind
-      `ASSETS_READY = false` at the top of the page's inline script; flip it once the 12 sets
-      exist. Not linked from `collections.html`, and `pages/de/heirloom.html` does not exist
-      (the nav DE link 404s).
+      **Monogram cards crop the REAL cover SVG**, not a mockup, so they stay sharp and follow
+      the colourway.
+      - **All 12 mockup sets exist** in `assets/images/mockups/exp2/heirloom-<colour>-<mono>/`,
+        10 webp each. `ASSETS_READY` and the placeholder plumbing are gone.
+      - **Order → colourway map (NOT the runbook's assumed order):** beige `AEV-089`,
+        green `AEV-090`, blue `AEV-091`, brown `AEV-092`. Recorded in `HEIRLOOM_ORDERS`
+        (`scripts/exp2-images.mjs`) with each cover's background hex.
+      - **No intro card in the story list (S162, owner)** — the intro is mandatory, so a card
+        offered a choice that does not exist. It stays in the gallery thumbnails.
+      - **Selector stack aligned to one 268px module** via `.has-selectors` in `product.css`;
+        full-width was considered and rejected (owner).
+      - Heirloom cards added to `collections.html` and `pages/de/collections.html`.
+      - Capture cost, measured: **~10 MB per order load, 31 MB for a 12-capture run.**
 
 #### Mockup capture runbook (S161) — 4 orders → 12 image sets
 One ORDER per colourway: switching template in the engine resets `specialPhotos`, so a

@@ -1,78 +1,73 @@
 # Session Status
-_Last updated: 2026-08-10 (session 161)_
-_Context at save: **S161's three commits are pushed (`0a1307b`, `c1d0278`, `3a9a1f5`).** All
-four colourways match their CSVs; the engine no longer blanks order text; the Heirloom product
-page is built with placeholder gallery images. 351 tests green. The S156 business-case deletion
-and a `test photos/IMG_5249.HEIC` deletion are still deliberately uncommitted._
+_Last updated: 2026-08-10 (session 162)_
+_Context at save: **S162's five commits are pushed** (`4b410d8`, `7d2889f`, `017cf4d`,
+`5df4849`, `c2dff62`). All 12 Heirloom mockup sets exist and the product page serves them
+in EN and DE. 351 tests green, `qa:order` 12/12, `heirloom-order-mock` 15/15. The S156
+business-case deletion and a `test photos/IMG_5249.HEIC` deletion are still deliberately
+uncommitted._
 
 ## Status
-**Session 161 (2026-08-10) — the mockup pipeline is unblocked, the product page is built, the
-letter geometry is synced across all four colourways, and a real engine bug that blanked every
-Heirloom order's text is fixed. The owner is placing the four capture orders now.**
+**Session 162 (2026-08-10) — Heirloom's product page is live on real mockups in both
+languages, and two bugs that would have reached print were found and fixed. The owner is
+redeploying the Cloud Run PDF renderer.**
 
-**Immediate next action: the owner runs the mockup capture runbook** (4 orders × 3 monograms
-= 12 image sets). The exact commands live in `docs/briefs/heirloom-build.md`, Stage 8. Then
-fill `HEIRLOOM_ORDERS` in `scripts/exp2-images.mjs` and flip `ASSETS_READY` to `true` in
-`pages/heirloom.html`.
+**Immediate next action: the owner's Cloud Run redeploy must land before any Heirloom order
+is placed for print.** Until it does, `services/pdf-renderer/index.js` cannot see the
+monogram and every Heirloom book renders the default **Roots** artwork whatever the customer
+chose. Recipe in the `project_serverside_pdf` memory / `LEARNINGS.md`.
 
-### What S161 changed
-1. **AEV-088 verified (owner)** — PDF caption breaks match the engine exactly. S159 closed.
-2. **Engine bug fixed: order text was being wiped.** `loadOrderIntoEngine` seeds FP text
-   panels (step 7) and cover captions (step 8); step 9 then called `renderBook()` to paint the
-   monogram initials, and **renderBook resets `bookCaptions` on a full rebuild** — discarding
-   all of it, including the initials it had just written. A fresh Heirloom order therefore
-   opened with a blank intro page, blank story panels and no album name while the order info
-   panel showed the text correctly. `renderBook` now takes `{ preserveCaptions: true }`.
-   Heirloom-only, because step 9 fires only when `applyMonogramInitials` returns true.
-3. **Letter geometry synced across all four colourways** from the owner's re-nudged CSVs.
-   New `scripts/check-heirloom-letters.mjs` compares all 24 coordinates per colourway and
-   enforces the bleed rule; `--write` syncs the data files, touching only xMm/yMm.
-4. **Mockup capture wired for Heirloom's 12 sets.** `qa/select-monogram.mjs` drives the
-   engine's monogram picker so ONE order yields all three monograms; the capture/compose chain
-   carries a monogram suffix end to end and feeds `exp2-images.mjs`.
-5. **`pages/heirloom.html` built** — colourway swatches + monogram cards in the panel, Xenia's
-   descriptions, `&monogram=` on the order link. Monogram cards crop the real cover SVG, so
-   they are correct today without any mockups.
+### What S162 changed
+1. **Engine bug: the monogram picker wiped every caption.** `#monogram-select`'s change
+   handler called `renderBook()` plainly, and renderBook resets `bookCaptions` on a full
+   rebuild. **The S161 bug at a second call site** — the one every mockup capture drives.
+   All 12 first-pass captures came out with blank covers and blank interiors.
+   `qa/verify-order-text-seeding.mjs` now covers the picker path (10/10).
+2. **Asset bug: Green/Roses cover hid the customer photo.** A stray filled rect painted
+   after the photo window, `#dad0c5` on a green cover — Xenia's export, same class as S157.
+   Patched to `fill="none"`. **Not mockup-only: the PDF draws this file too.**
+3. **12 mockup sets captured and composed** (120 webp). Orders map **beige AEV-089, green
+   AEV-090, blue AEV-091, brown AEV-092** — *not* the runbook's assumed order.
+4. **Product page shipped on real images**, both selectors driving all ten thumbnails, plus
+   the owner's fixes (smaller monogram cards, no sub-names, 13px description, no intro card,
+   new tagline, aligned 268px selector stack).
+5. **`pages/de/heirloom.html` built** and Heirloom cards added to both collections pages.
+   Card images in both languages are now links.
+6. **Copy:** "plus shipping" → "excl. shipping" / "zzgl." → "exkl." across 29 occurrences.
+   Heirloom added to both copy files; the DE address rule written down for the first time.
+7. **`qa/capture-one-spread.mjs`** — re-captures one spread across orders and monograms from
+   4 order loads instead of 24.
 
 ### Heirloom facts (carried, still current)
 1. **4 colourways × 3 monograms.** Colour is a registry key, never a runtime variant.
 2. **Colours split by SURFACE.** Brown and Green flip the cover to light-on-dark while keeping
    Beige's inner pages; monogram letters follow their surface. Blue is the only one with a
-   different page ground (`#cfc4b8`).
+   different page ground.
 3. **Green and Blue name their intros `V1/V2/V3`** (V1=Roots, V2=Birds, V3=Roses).
 4. **Monograms select ARTWORK, not just text** — read via `getActiveMonogramDef()`.
-5. **The intro is MANDATORY** (always Spread 0); the order form shows it checked-and-locked.
+5. **The intro is MANDATORY** (always Spread 0). It has no product-page card (S162) and the
+   order form shows it checked-and-locked.
 6. **`referenceSpineMm: 10`** — Heirloom's covers are authored at a 10mm spine (410mm).
-7. **IM FELL English forms ligatures** despite being a serif → in `LIGATURE_FONTS`.
-8. **All four colourways now share identical letter geometry.** Only the cover slot centre
-   differs (Beige 327.62, the rest 328mm).
+7. **All four colourways share identical letter geometry.** Only the cover slot centre differs.
+8. **Capture cost is trivial: ~10 MB per order load, 31 MB for a 12-capture run** (S162,
+   measured). An earlier "several GB" estimate was wrong by two orders of magnitude.
 
 ## Recent decisions
-- **Both product-page selectors live in the PANEL (S161, owner).** Order: name → description →
-  pages/price → colourway → monogram → story pages. Putting the colourway under the hero,
-  beside the image it changes, was rejected — the owner could not find it.
-- **Monogram cards crop the real cover SVG, not a mockup (S161).** Correct before any mockup
-  exists, sharp at any size, and follows the colourway.
-- **Xenia's monogram descriptions ship verbatim (S161, owner)** — no `/stop-slop` pass.
-- **ONE order per colourway, three monograms from each (S161).** Switching template resets
-  photos; switching monogram does not. **The owner considered 12 orders (one per combination)
-  to avoid touching the shared capture scripts and it was ruled unnecessary:** regenerating
-  Tender's whole live image set with the S161 scripts produced 7/9 files byte-identical, and
-  the two that differed came from a pre-S161 commit (`2bb2972`) — running the pre-S161 script
-  gave identical MD5s. The suffix is empty for every non-Heirloom run, so the other five
-  templates take the old path unchanged. 12 orders would also cost ~3x the GCS storage.
-- **Staff do NOT need to change the monogram in the engine (S161, owner).** The customer picks
-  it on the product page and that stands. This closes the gap found when the order-mode picker
-  turned out to be hidden — no engine change, do not re-raise.
+- **Selector stack aligned to one 268px module, NOT full width (S162, owner).** They measured
+  224/182/268 against a 400px panel. Full-bleed would make swatches ~91px and monogram cards
+  ~128px, competing with the book photo and undoing the shrink the owner asked for.
+- **No intro card on the product page (S162, owner)** — it is mandatory, so listing it offered
+  a choice that does not exist. It stays in the gallery thumbnails.
+- **DE address rule (S162, owner):** `du` = the buyer and their actions; `euer/ihr` = the
+  people inside the book when the subject is shared. **Tender stays `du`; do not re-raise** —
+  Heirloom already fits the rule, taglines never appear side by side, and a full switch would
+  touch 41 instances. Written into `website-copy-DE.md`.
+- **Owner approves wording, not punctuation (S162).** The approved DE tagline's em dash became
+  a colon under `/stop-slop`.
+- **ONE order per colourway, three monograms from each (S161).**
+- **Staff do NOT need to change the monogram in the engine (S161, owner).**
 - **Xenia is NOT asked to re-export the new covers (S160, owner).** Re-apply patches on any
-  re-export.
-- **The focus wash flips, not the ink (S160).**
+  re-export — there are now TWO in-repo SVG patches (S157 ×3 covers, S162 Green/Roses).
 - **The ENGINE is the source of truth for caption line breaks (S159, owner).**
-- **Never fix an engine/PDF divergence as a per-template opt-in (S159).**
-- **`customer-preview` does NOT record line breaks yet (S159, deliberate)** — Next steps 4.
-- **Monogram is chosen on the PRODUCT page, not the order form (S158, owner).**
-- **Our story = Tender's model (S158, owner):** customer's own words, staff polish by hand.
-- **Do NOT nudge letter coordinates by hand (S158).** Change the CSV, then sync.
 - **Business case untracked (S156, owner).** **No longer backed up by git**; last tracked `0edb8ee`.
 - **Printsmarter token NOT rotated (S155, owner).** **Never put it in any summary, log or memory.**
 - **#88 closed without root cause (S150, owner).** Read `docs/briefs/upload-failures.md` first.
@@ -81,21 +76,18 @@ fill `HEIRLOOM_ORDERS` in `scripts/exp2-images.mjs` and flip `ASSETS_READY` to `
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **Owner: run the mockup capture runbook** — `docs/briefs/heirloom-build.md`, Stage 8. Four
-   orders, three monograms each. `BG_R/G/B=216/212/207` is not optional (S98). Then fill
-   `HEIRLOOM_ORDERS` in `scripts/exp2-images.mjs` and flip `ASSETS_READY` in
-   `pages/heirloom.html`.
-2. **Owner: confirm the engine fix on a NEW order.** Orders SAVED while blank keep their
-   blanks — the `restoring` branch returns before seeding by design, so those need re-placing.
-   Any order not yet saved should now open with the customer's text on the page.
-3. **Heirloom product page loose ends** — `pages/de/heirloom.html` does not exist (the nav DE
-   link 404s), and `collections.html` has no Heirloom card, so the page is reachable only by
-   direct URL. Both are launch-blocking for Heirloom.
-4. **Customer-preview must record caption line breaks too (engine-parity rule).** Mirror
-   `captionVisualLines`/`collectCaptionLines` into `pages/customer-preview.html`.
-5. **One PDF per new colourway** — no Brown, Green or Blue book has ever been rendered.
-6. **Heirloom letter pockets — Xenia is looking into it.** The 8mm box is ~40% too tight for
-   wide capitals. Owner: not critical.
+1. **Owner: redeploy Cloud Run** (in progress at save). Then generate one Heirloom PDF per
+   colourway — no Brown, Green or Blue book has ever been rendered — and check the monogram
+   letters land in the artwork's pockets. This is Stage 7 of `heirloom-build.md`, still `[~]`.
+2. **Heirloom E2E + merge** — Stages 9 and 10 of `heirloom-build.md` are the last unticked
+   items. `qa/staff-customer-chain.mjs`.
+3. **Customer-preview must record caption line breaks** (engine-parity rule, open since S159).
+   Mirror `captionVisualLines`/`collectCaptionLines` into `pages/customer-preview.html`.
+4. **Nav wraps to two rows at ~900px** and buries 17px of the breadcrumb. Affects every page;
+   needs a nav decision, not a crumb tweak. Found S162.
+5. **German order flow — TO-DOS #101.** Every DE product page hands off to the English order
+   form. Decide: mirror `order.html` as DE, or make one file bilingual off `?lang=de`.
+6. **Heirloom letter pockets — Xenia is looking into it.** Owner: not critical.
 7. **Re-verify the other four templates' covers at 80pp** (carried from S156).
 8. **Verify the stall detection (#94) properly** (carried from S156). `qa/quick-stall-test.mjs`
    is broken.
@@ -103,17 +95,19 @@ fill `HEIRLOOM_ORDERS` in `scripts/exp2-images.mjs` and flip `ASSETS_READY` to `
 10. **Clean up the QA scripts (#60/#95)** — 13 untracked one-offs remain in `qa/`.
 
 ## Open questions
-- **Will the monogram cards still want a mockup crop once the 12 sets exist?** The SVG crop is
-  sharper and always correct; a mockup would add the book's physicality. Owner's call.
-- **Does the monogram hover-outline belong in the CUSTOMER preview?** It ships there via a
-  shared class (S160).
-- **Intro letter colour assumed `#7c746e`** — resolved for Beige (`#312128`); confirm with
-  Xenia if print disagrees.
+- **Does the breadcrumb need the last 1.7px?** All-caps text has no descenders, so a
+  geometrically centred line box still reads slightly high. Was 8.6px, now 1.7px. Owner's call.
+- **Is `qa/capture-one-spread.mjs` worth keeping?** Written as a one-off; it is the cheapest
+  way to re-capture a single spread and reports MB transferred. Committed, undocumented in
+  `qa/README.md` beyond its own docstring.
+- **Will the monogram cards still want a mockup crop now the 12 sets exist?** The SVG crop is
+  sharper and always correct; a mockup would add the book's physicality.
+- **The DE copy has never been read by a native speaker.** Everything new carries ⚠ in
+  `website-copy-DE.md`; the Heirloom tagline is the line customers read first.
+- **Intro letter colour assumed `#7c746e`** — resolved for Beige (`#312128`); confirm with Xenia.
 - **`assets/Aevia - Business case v10.xlsx` is tracked but missing from disk** (deletion left
   uncommitted deliberately). Stale Excel lock file in `assets/`.
 - **The Printsmarter button is visible on the staff dashboard** but cannot fire.
-- **The pre-push hook needs `git config core.hooksPath .githooks` per clone.** (Configured on
-  this machine — it ran on all three S161 pushes.)
 - **Pre-13-July Papercut orders have `name`/`year` swapped in Firestore.**
 - **Approval overwrites staff edits blindly.**
 - **Newborn's cover slot is 0.11mm short** on its left edge. Deliberately not fixed.
