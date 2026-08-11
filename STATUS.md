@@ -1,66 +1,57 @@
 # Session Status
-_Last updated: 2026-08-11 (session 165)_
-_Context at save: **everything is pushed** — `main` is clean against `origin/main` at
-`5e62914`. 441 tests green, `qa:order` 12/12. The S163/S164 backlog of seven unpushed commits
-went out this session too. The S156 business-case deletion, a `test photos/IMG_5249.HEIC`
-deletion and ~14 untracked `qa/` one-offs remain deliberately uncommitted._
+_Last updated: 2026-08-11 (session 166)_
+_Context at save: **five commits sit on local `main`, UNPUSHED** (`f65d632`, `b3f85db`,
+`661c2d4`, `e4564a2`, `fa4eb81`). The live rig is still serving S165 code. 441 tests green,
+`qa:order` 12/12. The S156 business-case deletion, a `test photos/IMG_5249.HEIC` deletion and
+~14 untracked `qa/` one-offs remain deliberately uncommitted._
 
 ## Status
-**Session 165 (2026-08-11) — Customer-entered data was disappearing between the order form and
-both places staff read it. Three defects found, all fixed; one of them was not in the code at
-all but outlined into Xenia's cover artwork.**
+**Session 166 (2026-08-11) — Heirloom Stage 10 was already finished and only needed proving.
+Then the real work: an order full of red LOW RES badges on photos that were fine, and a
+warning customers could not act on.**
 
-**Immediate next action: deploy the upload function.** `functions/upload.js` is committed but
-**inert until deployed** — no cover text reaches `order-details.txt` until then.
-```bash
-firebase deploy --only functions:createUploadSession
-```
-Then place **one throwaway order** and check `order-details.txt` in the bucket contains a
-`Cover text:` block. That is the only part of S165 that is unit-tested rather than proven
-end to end.
+**Immediate next action: push, then open the help pages in a browser.** The new formats FAQ
+has never been rendered — `npm test` does not execute HTML, and the accordion is the only
+untested part of this session's work.
 
-### What S165 changed
-1. **The staff panel was template-blind.** `showOrderInfoPanel` labelled everything from
-   `coverLabels = { year, name, spineName, spineYear }` and `fpLabels = { FP1: 'Birthday
-   wishes', … }` — Scribble's and Papercut's key sets applied to all seven templates.
-   **Wander showed nothing; Joyride, Newborn, Tender and Heirloom showed only `name`.** Labels
-   now come from each template's own definitions, and an undeclared key still renders under its
-   raw key. Verified live on AEV-094, AEV-070, AEV-088, AEV-072.
-2. **`order-details.txt` had NEVER recorded cover or spine text** — for any template, in any
-   order. Verified against **38 real orders spanning all seven templates**. Firestore always
-   had it, so nothing was destroyed. Now written as a `Cover text:` block; labels ride in from
-   the client (`coverCaptionLabels`) because `functions/` cannot read the template data files.
-3. **`fp1: [object Object]`** replaced by `formatFpValue()` (was TO-DOS #102, renumbered #104).
-4. **Wander's cover carried "Dolomites, 2026" in the artwork**, outlined as vector paths, on
-   both the front panel and the spine — under the customer's caption, and it reaches print.
-   Owner re-exported without it. **Every other template checked and clean.**
-5. **`tests/order-data-completeness.test.js`** (31 tests) — the part that stops recurrence.
+### What S166 changed
+1. **Heirloom Stage 10 closed** — both halves were already done and the brief was stale.
+   Nothing to merge (Heirloom went to `main` incrementally, never a branch), and Cloud Run is
+   serving revision `00028`, built 100 seconds after the crop fix `a0fb1ff` landed.
+2. **The low-res warning now names the cause and the fix.** It said "may print soft if used
+   large", which the customer cannot act on because staff decide placement. It now names
+   iCloud Shared Albums and messaging apps, and tells them to upload the originals. Red badge
+   → amber. **Threshold left at 1575** — the verified 200 DPI floor was never the problem.
+3. **`JPEG or RAW both work` removed from 18 locations.** The brief said four. It was on every
+   product page in both languages.
+4. **`Minimum resolution: 2000px on the short edge` removed from 14 pages** — it contradicted
+   our own 1575px code and no code enforced it.
+5. **`devotion.html` + `radiance.html` deleted.** S145 flagged them as a launch-day liability:
+   they advertise DE/CH/UK/USA delivery with shipping included.
+6. **RAW / TIFF / the 40 MB cap all declined**, reasoning recorded in `photo-formats.md`.
 
-### Cover-artwork facts (new, carry these)
-1. **Outlined text is invisible to `grep` AND to a DOM query.** It has no characters, and the
-   cover SVG loads as an `<img>` so its contents are not queryable. `qa/probe-cover-svg-text.mjs`
-   renders all ten cover SVGs standalone in ~20s — **run it on any Xenia drop.**
-2. **A template's `placeholder` must never be copied from text baked into the artwork.** That
-   is what made this invisible: the order form suggested the artwork's own wording.
-3. **The viewBox patch is lost on every re-export, by design.** It lives downstream of
-   Illustrator. `tests/cover-svg-viewbox.test.js` catches it — run `npm test` on any SVG drop.
-4. **Illustrator always writes the artboard as the viewBox.** There is no "Use Artboards"
-   option in Save As to hunt for. The fix is document setup: **artboard = trim 409×200mm,
-   bleed = 18mm in Document Setup**, artwork extending past it, no "clip to artboard".
-5. **409mm trim = 200 back + 9 spine + 200 front.** One owner export came back at 408mm; the
-   replacement is correct at 409.
+### Facts worth carrying
+1. **An iCloud Shared Album 4:3 photo is 2048×1536** and misses the 1575px floor by 39 pixels.
+   **WhatsApp is worse** (~1600px long edge). There is **no Google Photos equivalent** of the
+   Shared Album cap — messaging is the Android path. Do not invent one.
+2. **RAW carries no more detail than the JPEG beside it.** Same sensor. Tonal latitude, not
+   resolution. Rendering one ourselves would override the photographer's grade.
+3. **Wander's "high silence / between / us" is intended artwork (owner, S166).** Do not
+   re-flag it. The "Dolomites, 2026" defect is genuinely gone from panel and spine.
+4. **`gcloud` works from PowerShell, fails from the Bash tool** (Windows Python execution
+   alias). The `reference_gcloud_python` note applies to PowerShell only.
+5. **`git commit` commits the whole index**, not the paths you just added — see LEARNINGS.
 
 ## Recent decisions
+- **RAW, TIFF and a bigger 40 MB cap ALL DECLINED (S166, owner).** Full reasoning in
+  `docs/briefs/photo-formats.md` → "Settled S166". **Do not re-raise without new evidence.**
+- **Low-res threshold stays 1575px (S166)** — the fix was tone and copy, not the measurement.
+- **Customer copy states no bare resolution number (S166)** — it depends on placement, which
+  the order form cannot know.
 - **No backfill of existing `order-details.txt` (S165, owner).** Fix forward only.
-- **Scope of "customer's entered data" = captions + add-on selections (S165, owner).**
-- **No brief written for the S165 fixes (S165)** — root cause, scope and blast radius were
-  already established by probing; a brief would have re-derived them.
 - **WebP REFUSED (S164, owner).** Print pipelines reject it. **Do not re-raise.**
-- **40 MB per-file cap (S164, owner)** — matches Artifact Uprising.
-- **RAW stays rejected (S164)** — universal industry practice. Copy fix only, no code.
+- **RAW stays rejected (S164)** — reconfirmed and expanded in S166.
 - **Android extension-less files are accepted via MIME (S164).** Not any `image/*`.
-- **Byte-sniffing, not renaming derivatives (S164).**
-- **Delegation abandoned mid-session (S164)** — supervision cost exceeded the work.
 - **DE address rule (S162, owner):** `du` = the buyer; `euer/ihr` = the people in the book.
 - **Business case untracked (S156, owner).** **No longer backed up by git.**
 - **Printsmarter token NOT rotated (S155, owner).** **Never put it in any summary or memory.**
@@ -70,41 +61,43 @@ end to end.
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **Deploy `createUploadSession`** (command above), then one throwaway order to confirm the
-   `Cover text:` block appears in the bucket.
-2. **Send Xenia the cover-artwork brief** — two rules: (a) no customer-fillable text outlined
-   into the artwork (album name, spine name, year), (b) artboard = trim 409×200mm with 18mm
-   bleed in Document Setup. Both are written out in the S165 log.
-3. **Guard test for baked-in placeholder text.** `npm test` catches a wrong viewBox but nothing
-   catches artwork carrying caption text, and that reaches print. Proposed, not written.
-4. **Verify `.rotate()` on HEIC** (carried from S164, now deployable-testable): order from an
-   iPhone with deliberately rotated HEIC photos and open it in the staff engine. Untestable
-   locally — sharp on Windows has no HEVC plugin.
-5. **Test on a real Android device** — the open question is whether a Google Photos pick can
-   arrive with no extension AND no MIME type. Claude can write the probe page in minutes.
-6. **Tier 4 — customer-facing photo-format copy.** Spec in `docs/briefs/photo-formats.md`.
-   Remove `JPEG or RAW both work`, state the list + 40 MB, warn about iCloud Shared Albums
-   arriving at 2048px.
-7. **Server-side validation in `functions/upload.js`** — it validates nothing. Own change, own
-   deploy. **Do not** couple `confirmUpload` to derivative success (races `onFinalize`).
-8. **Heirloom E2E + merge** — Stages 9 and 10 of `heirloom-build.md`, carried from S162/S163.
-   Stage 10 still needs a second Cloud Run redeploy for the full-bleed reposition fix.
+1. **Push the five commits**, then hard-refresh and check `help.html` + `de/help.html` render
+   the new formats FAQ, desktop and mobile, console clean.
+2. **Eyeball one dashboard PDF** of a Heirloom order with `FPhim` repositioned. Closes the last
+   Heirloom unknown: the full-bleed reposition fix has never been seen in print.
+3. **Send Xenia the cover-artwork brief** — (a) no customer-fillable text outlined into the
+   artwork, (b) artboard = trim 409×200mm with 18mm bleed in Document Setup. Written out in
+   the S165 log. Carried from S165.
+4. **Nothing here — see TO-DOS #106.** S145 listed `sprout`/`horizon`/`terrain` as orphans
+   alongside the two deleted this session. **They do not exist** and have not since `c32990f`.
+   `website-copy-deltas.md:235` and `domain-migration.md:99` still claim otherwise.
+5. **Guard test for baked-in placeholder text** — `npm test` catches a wrong viewBox but
+   nothing catches artwork carrying caption text, and that reaches print. Carried from S165.
+6. **Verify `.rotate()` on HEIC** — order from an iPhone with rotated HEIC photos and open it
+   in the staff engine. Untestable locally. Carried from S164.
+7. **Test on a real Android device** — can a Google Photos pick arrive with no extension AND
+   no MIME type? Owner sourcing a device.
+8. **Server-side validation in `functions/upload.js`** — it validates nothing. Own deploy.
+   **Do not** couple `confirmUpload` to derivative success (races `onFinalize`).
 9. **Customer-preview must record caption line breaks** (engine-parity, open since S159).
 10. **Nav wraps to two rows at ~900px** and buries 17px of the breadcrumb (S162).
 11. **German order flow — TO-DOS #101.**
 12. **Clean up the QA scripts (#60/#95)** — ~14 untracked one-offs remain in `qa/`.
 
 ## Open questions
+- **Does a repositioned full-bleed photo now print off-centre?** Guarded by
+  `tests/photo-crop-paths.test.js`, never eyeballed since the fix.
+- **Would a 60–100MP camera's maximum-quality JPEG exceed 40 MB and be refused?** The one part
+  of Xenia's challenge that stands. Not acted on (owner, S166). TO-DOS #105.
 - **Is Wander's trim 409mm or 408mm?** Owner's second export is 409 and matches every other
-  template, so nothing is blocked — but Xenia has not confirmed it.
-- **Does a Google Photos pick ever arrive with no extension AND no MIME type?** Needs the
-  device test.
+  template. Xenia has not confirmed.
+- **Does a Google Photos pick ever arrive with no extension AND no MIME type?** Needs a device.
 - **Does `.rotate()` double-rotate HEIC?** Expected no, **accepted on trust** — untestable
-  locally.
+  locally (sharp on Windows has no HEVC plugin).
 - **Should existing derivatives be regenerated?** `.rotate()` only affects new uploads.
   Regenerating costs egress; default is to leave them.
-- **TO-DOS had two items numbered 102** — the `[object Object]` one is renumbered 104 and
-  marked DONE. Worth a scan for other collisions.
+- **`wander-data.js` placeholders still quote the artwork's old wording** ("Dolomites, 2026") —
+  the pattern S165 says never to repeat, now harmless but unfixed.
 - **`assets/Aevia - Business case v10.xlsx` is tracked but missing from disk.**
 - **The DE copy has never been read by a native speaker.**
 - **Intro letter colour assumed `#7c746e`** — resolved for Beige (`#312128`); confirm with Xenia.

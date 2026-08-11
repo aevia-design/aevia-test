@@ -1,3 +1,55 @@
+## 2026-08-11 — A warning the customer cannot act on is not a warning (S166)
+
+The low-res badge told customers a photo "may print soft if used large". Accurate, honest,
+placement-aware — and **useless**, because Aevia's staff decide how large a photo runs. The
+customer has exactly one lever: supply a bigger file. Everything else is commentary that
+converts into anxiety.
+
+The test to apply to any customer-facing warning: **name the action the reader can take.** If
+you cannot, either find the action or do not warn. Here the action existed and was invisible —
+the causes are iCloud Shared Albums (2048px long edge) and messaging apps (WhatsApp ~1600px),
+and in both cases the full-size original is still sitting on the phone.
+
+Two corollaries worth keeping:
+- **Styling overrides text.** The summary line had said "especially if used large" since S40.
+  Nobody read it, because the badge above it was error-red. Tone is not cosmetic.
+- **Competitors were no help and that was the answer.** Pic-Time shows this identical warning
+  and never explains the cause. When the baseline doc says an industry pattern exists, check
+  whether it covers your actual question before treating silence as a standard.
+
+## 2026-08-11 — `git commit` commits the index, not the paths you just added (S166)
+
+Staged two deletions with `git rm` early in the session, then built four themed commits with
+`git add <paths>` + `git commit`. **The first commit swallowed the deletions**, because
+`git commit` without a pathspec commits everything staged, and the `git rm` had been sitting
+in the index for an hour.
+
+Caught by running `git show --stat` on each commit afterwards rather than trusting the `git add`
+that preceded it. Nothing had been pushed, so `git reset` to the pre-session SHA and rebuild.
+
+**Habit:** when composing themed commits, either `git reset` first so the index starts empty, or
+pass the pathspec to commit itself (`git commit -- <paths>`). And always `git show --stat` each
+commit before pushing — the add is not the commit.
+
+## 2026-08-11 — An independent critic can be confidently, arithmetically wrong (S166)
+
+`critic-agent` reviewed a threshold decision and recommended **raising** a minimum-resolution
+floor from 1575px to 2000px, asserting three separate times that this would make 1536px photos
+**pass**. It flags photos *below* the threshold; the change would have made the problem worse
+by an order of magnitude. The same document states the correct direction eighty lines earlier,
+so it contradicted itself and did not notice.
+
+It also invented a supporting statistic ("85% of real book layouts…") and attributed a quote
+about unit tests to a claim about staff workflow.
+
+**What it still earned:** one genuinely better idea (state no bare number at all, because the
+answer depends on placement), which shaped the final copy.
+
+**Rule:** an independent review is a source of hypotheses, not conclusions. Re-check every
+number it asserts, especially ones that agree with the direction you already wanted. And when
+rebutting it, verify the rebuttal too — I claimed two of its cited files were hallucinated and
+**both existed**, which is how the real count of stale pages turned out to be 16 rather than 8.
+
 ## 2026-08-10 — In an SVG, read the CLIP before measuring anything (S160)
 
 Xenia's covers wrap the photo opening as

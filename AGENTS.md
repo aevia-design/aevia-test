@@ -102,6 +102,17 @@ These were considered and deliberately closed. Re-proposing them wastes a review
 - **CDN in front of GCS, and an R2 migration.** Both parked — unnecessary once web-res
   derivatives land (ADR-0005).
 - **Inline styles for one-off layout tweaks.** Accepted by convention, not a defect.
+- **Accepting RAW, TIFF, or raising the 40 MB photo cap.** All three examined and declined
+  (S166, owner) after the same challenge you are about to make: we sit above the mass-market
+  services, so why not take professional formats? Reasoning in `docs/briefs/photo-formats.md`
+  → "Settled S166". The short version: **RAW carries no more detail than the JPEG beside it**
+  (same sensor — it carries tonal latitude, not resolution), professionals deliver JPEG and
+  retain the RAWs, and rendering one ourselves would override the photographer's grade. TIFF
+  runs 150–250 MB per file. The cap is cheap to lift in storage terms but
+  `generateDerivative` has 1 GB, and a failed derivative makes the browser fall back to the
+  full-size original. Do not re-raise without new evidence.
+- **The 1575px low-res threshold.** A verified 200 DPI floor (S40). Revisited S166 and kept;
+  the fix was the badge's tone and copy, not the measurement. Do not propose moving it.
 
 ## If you are reviewing code
 

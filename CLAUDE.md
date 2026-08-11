@@ -54,7 +54,11 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     path, `isImageFile`, or anything that decides what counts as a photo.** One list lives in
     `assets/js/photo-utils.js` (`PHOTO_FORMATS`: JPG/PNG/HEIC/HEIF, 40 MB) and every surface
     reads it — six places used to disagree. **Two invariants:** the client's HEIC brand list
-    (`isHeicMagic`) must stay identical to the server's in `heic-decode/lib.js`, and any change
+    (`isHeicMagic`) must stay identical to the server's, which is **third-party code we do not
+    own** — `functions/node_modules/heic-decode/lib.js` (a transitive dependency of
+    `heic-convert`), six brands: `mif1, msf1, heic, heix, hevc, hevx`. Verified identical S166.
+    **It can change on any dependency update, silently** — re-check it after bumping
+    `heic-convert`. And any change
     to the accepted list must change `functions/derivative-utils.js` `isImageFile()` in the same
     commit or accepted photos get no web derivative. Competitor baseline in
     `photo-formats-competitor-baseline.md`; audit trail in `work/photo-formats/`.
