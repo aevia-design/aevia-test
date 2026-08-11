@@ -1778,6 +1778,14 @@ exports.generateDerivative = functions
 
       // Generate web-resolution derivative (~1600px long edge, JPEG quality 80)
       const derivativeBuffer = await sharp(originalBuffer)
+        // Phones record a portrait shot as landscape pixels plus an EXIF tag saying "turn
+        // this 90°". sharp does NOT auto-orient, and .jpeg() strips metadata — so without
+        // .rotate() the derivative comes out permanently sideways with the tag gone.
+        // Proven by execution S164: 800×400 + tag 6 → 800×400 tag stripped; with .rotate()
+        // → 400×800. Not just cosmetic: the engine classifies a photo as portrait or
+        // landscape from its rendered dimensions and picks the slot shape from that.
+        // A no-op for files already correctly oriented.
+        .rotate()
         .resize(1600, 1600, {
           fit: 'inside',
           withoutEnlargement: true,

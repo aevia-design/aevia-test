@@ -263,6 +263,7 @@
   </style>
 <link rel="stylesheet" href="../assets/css/type.css">
 <link rel="stylesheet" href="../assets/css/mobile.css">
+<script src="../assets/js/photo-utils.js"></script>
 <script src="../assets/Template_Scribble/scribble-data.js"></script>
 <script src="../assets/Template_Wander/wander-data.js"></script>
 <script src="../assets/Template_Newborn/newborn-data.js"></script>
@@ -432,7 +433,7 @@
       </div>
 
       <div class="drop-zone" id="dz-main">
-        <input type="file" accept=".jpg,.jpeg,.png,.heic" multiple onchange="handleMainFiles(this.files); this.value=''" />
+        <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" multiple onchange="handleMainFiles(this.files); this.value=''" />
         <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <div class="dz-text"><strong>Choose photos</strong> or drag here</div>
         <div class="dz-formats">JPG · PNG · HEIC. Add several at once.</div>
@@ -445,7 +446,7 @@
       <label class="add-more-btn" id="add-more-btn" style="display:none;">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="1" x2="6" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Add more photos
-        <input type="file" accept=".jpg,.jpeg,.png,.heic" multiple onchange="handleMainFiles(this.files); this.value=''" />
+        <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" multiple onchange="handleMainFiles(this.files); this.value=''" />
       </label>
     </div>
 
@@ -871,7 +872,7 @@ function renderCoverSection() {
   function coverDropZone(sfx, onchange) {
     return `
       <div class="drop-zone" id="dz-cover${sfx}">
-        <input type="file" accept=".jpg,.jpeg,.png,.heic" onchange="${onchange}" />
+        <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" onchange="${onchange}" />
         <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <div class="dz-text"><strong>Choose photo</strong> or drag here</div>
         <div class="dz-formats">JPG · PNG · HEIC</div>
@@ -891,7 +892,7 @@ function renderCoverSection() {
       <div class="upload-heading">Cover photos</div>
       <div class="upload-hint">${n} photos for the cover, one for each frame around the title. They fill the frames in the order you add them.</div>
       <div class="drop-zone" id="dz-cover">
-        <input type="file" accept=".jpg,.jpeg,.png,.heic" multiple onchange="handleCoverFilesMulti(this.files); this.value=''" />
+        <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" multiple onchange="handleCoverFilesMulti(this.files); this.value=''" />
         <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <div class="dz-text" id="dz-cover-text"><strong>Choose ${n} photos</strong> or drag here</div>
         <div class="dz-formats">JPG · PNG · HEIC</div>
@@ -1180,7 +1181,7 @@ function initFPSections() {
         html += `
           ${slotLabel}${slotHint}
           <div class="drop-zone" id="dz-special-${slotKey}" style="${count > 1 && i < count - 1 ? 'margin-bottom:16px;' : ''}">
-            <input type="file" accept=".jpg,.jpeg,.png,.heic" onchange="handleSpecialFile('${slotKey}', this.files[0])" />
+            <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" onchange="handleSpecialFile('${slotKey}', this.files[0])" />
             <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <div class="dz-text"><strong>Choose photo</strong> or drag here</div>
             <div class="dz-formats">JPG · PNG · HEIC</div>
@@ -1794,9 +1795,26 @@ function updateCoverSlotUI() {
 async function renderCoverUpload(file, opts) {
   const sfx = opts.sfx || '';
   const dz = document.getElementById(`dz-cover${sfx}`);
-  if (dz) dz.style.display = 'none';
   const warnEl = document.getElementById(`cover-orientation-warn${sfx}`);
   if (warnEl) { warnEl.style.display = 'none'; warnEl.textContent = ''; }
+
+  // Refuse before anything is shown or kept (S164). A drag-and-drop bypasses the picker's
+  // accept filter, and this path used to render an unusable file as a generic file-icon
+  // tile and upload it anyway — the customer only found out when their cover was blank.
+  const reason = photoRejection(file);
+  if (reason) {
+    opts.onClear();
+    if (dz) dz.style.display = '';
+    const preview = document.getElementById(`cover-preview${sfx}`);
+    if (preview) preview.style.display = 'none';
+    if (warnEl) {
+      warnEl.innerHTML = `<span class="warn-ico">⚠</span><span>${rejectionSentence([file.name], reason)}</span>`;
+      warnEl.style.display = 'flex';
+    }
+    return;
+  }
+
+  if (dz) dz.style.display = 'none';
 
   const preview = document.getElementById(`cover-preview${sfx}`);
   const inner   = document.getElementById(`cover-preview-inner${sfx}`);
@@ -1880,6 +1898,15 @@ async function renderCoverUpload(file, opts) {
 // ─────────────────────────────────────────────────────────────────
 async function handleSpecialFile(slug, file) {
   if (!file) return;
+
+  // Refuse before the file is stored or shown (S164) — same reasoning as renderCoverUpload.
+  const reason = photoRejection(file);
+  if (reason) {
+    delete specialFiles[slug];
+    showStepError('step2', rejectionSentence([file.name], reason));
+    return;
+  }
+
   specialFiles[slug] = file;
   document.getElementById(`dz-special-${slug}`).style.display = 'none';
 
@@ -1959,29 +1986,49 @@ let _fileCounter = 0;
 let _uploadQueue = [];
 let _uploadBusy  = false;
 
-// S150 (QA case P2-3): the `accept=".jpg,.jpeg,.png,.heic"` attribute only filters the
+// S150 (QA case P2-3): the `accept=".jpg,.jpeg,.png,.heic,.heif"` attribute only filters the
 // OS file picker. A drag-and-drop walks straight past it, so a .txt or .pdf used to be
 // accepted, shown as a tile, and COUNTED toward the required photo total — letting a
 // customer reach the exact count with files that can never render. Rejecting silently is
 // almost as bad (they end up short with no idea why), so always say what was refused.
 function rejectMainFiles(names, reason) {
   if (!names.length) return;
+  showStepError('step2', rejectionSentence(names, reason));
+}
+
+function rejectionSentence(names, reason) {
   const list = names.length > 3
     ? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more`
     : names.join(', ');
-  showStepError('step2', `Couldn't use ${list} — ${reason}`);
+  return `Couldn't use ${list} — ${reason}`;
+}
+
+// showStepError REPLACES the message rather than appending, so several refusals have to be
+// combined into one call or only the last would ever be seen (S164).
+function rejectMainFilesGrouped(byReason) {
+  const parts = [];
+  for (const [reason, names] of byReason) parts.push(rejectionSentence(names, reason));
+  if (parts.length) showStepError('step2', parts.join('  '));
 }
 
 function handleMainFiles(fileList) {
   const existingNames = new Set(mainFiles.map(f => f.name));
-  const rejected = [];
+  // Group refusals by WHY (S164). A RAW file, a 60 MB scan and a .txt are three different
+  // problems with three different remedies; one shared "we can only use photos" message
+  // told a photographer nothing about how to fix their upload.
+  const byReason = new Map();
   const newFiles = Array.from(fileList).filter(f => {
     if (existingNames.has(f.name)) return false;
-    if (!isImage(f)) { rejected.push(f.name); return false; }
+    const reason = photoRejection(f);
+    if (reason) {
+      if (!byReason.has(reason)) byReason.set(reason, []);
+      byReason.get(reason).push(f.name);
+      return false;
+    }
     existingNames.add(f.name);
     return true;
   });
-  rejectMainFiles(rejected, 'we can only use photos (JPG, PNG or HEIC).');
+  rejectMainFilesGrouped(byReason);
   _uploadQueue.push(...newFiles);
   drainUploadQueue();
 }
@@ -2928,10 +2975,18 @@ function calcPhotoTarget(pageCount, selectedFPs) {
   return regularSlots;
 }
 
+// isImage / isRaw / photoRejection / photoMimeType come from assets/js/photo-utils.js,
+// which is the one place the accepted-format policy lives (S164). This file used to carry
+// its own wider list — gif, webp, avif and bmp all passed here while the picker offered
+// four extensions and the derivative pipeline handled a third set.
 function isImage(file) {
-  return /\.(jpe?g|png|gif|webp|avif|heic|bmp)$/i.test(file.name) || file.type.startsWith('image/');
+  return isAcceptedPhoto(file);
 }
 
+// Upload-time HEIC detection stays name/MIME based ON PURPOSE. Here the file comes
+// straight off the customer's device, so its name honestly describes its contents. The
+// AEV-094 byte-sniffing fix applies downstream, where OUR pipeline stores JPEG bytes
+// under a .heic name — see isHeicMagic in photo-utils.js.
 function isHeic(file) {
   return /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
 }
@@ -2962,11 +3017,11 @@ function fileExt(file) {
   return (file.name.split('.').pop() || 'file').toUpperCase();
 }
 
+// Derived from the extension, which the policy gate has already vetted. The old version
+// listed six RAW formats as though they were supported and fell back to 'image/jpeg' for
+// everything else, so an unrecognised file was stored under a content type it did not have.
 function mimeType(file) {
-  if (file.type && file.type !== 'application/octet-stream') return file.type;
-  const ext = (file.name.split('.').pop() || '').toLowerCase();
-  const map = { heic: 'image/heic', dng: 'image/x-adobe-dng', raw: 'image/x-raw', nef: 'image/x-nikon-nef', cr2: 'image/x-canon-cr2', arw: 'image/x-sony-arw', orf: 'image/x-olympus-orf', rw2: 'image/x-panasonic-rw2' };
-  return map[ext] || 'image/jpeg';
+  return photoMimeType(file);
 }
 
 function fileIconSvg() {

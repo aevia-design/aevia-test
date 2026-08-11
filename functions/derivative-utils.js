@@ -50,8 +50,12 @@ function isDerivativePath(gcsPath) {
 function isImageFile(gcsPath) {
   if (!gcsPath || typeof gcsPath !== 'string') return false;
   const ext = gcsPath.split('.').pop().toLowerCase();
-  // Support formats that browsers upload: JPEG, HEIC (original), plus PNG/WebP/GIF for flexibility
-  return ['jpg', 'jpeg', 'heic', 'png', 'webp', 'gif'].includes(ext);
+  // MUST match PHOTO_FORMATS.extensions in assets/js/photo-utils.js — the accepted-format
+  // policy (S164). Previously this listed webp and gif, which the order form never accepted,
+  // while omitting heif, which it now does. A format accepted at upload but missing here
+  // gets no derivative and silently falls back to the full-size original, which is exactly
+  // the egress the derivative system exists to avoid.
+  return ['jpg', 'jpeg', 'png', 'heic', 'heif'].includes(ext);
 }
 
 if (typeof module !== 'undefined' && module.exports) {

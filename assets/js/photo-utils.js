@@ -2,9 +2,73 @@
 // Extracted here so they can be unit-tested with Jest independent of the browser.
 // template-engine.html loads this file and uses these globals directly.
 
+// ── The format policy. One list, every surface reads it. ────────────────────
+// Before S164 six places each decided independently what counted as "a photo" and they
+// disagreed: the file picker offered four extensions, drag-and-drop silently accepted
+// eight (incl. WebP/AVIF/BMP, which no competitor takes and our derivative pipeline
+// cannot process), and the server validated nothing.
+//
+// JPG + PNG + HEIC is the industry standard — Artifact Uprising, Journi, Papier, Mixbook
+// and Shutterfly all accept exactly this set (see docs/briefs/photo-formats-competitor-
+// baseline.md). WebP was considered and REFUSED (owner, S164): only one competitor takes
+// it and print pipelines reject it. Do not re-raise without a reason that brief lacks.
+//
+// Changing this list means changing derivative-utils.js isImageFile() in the same commit,
+// or accepted photos will get no web derivative and quietly fall back to full-size
+// originals — the egress the derivative system exists to prevent.
+const PHOTO_FORMATS = {
+  extensions: ['jpg', 'jpeg', 'png', 'heic', 'heif'],
+  accept:     '.jpg,.jpeg,.png,.heic,.heif',
+  label:      'JPG · PNG · HEIC',
+  maxBytes:   40 * 1024 * 1024, // 40 MB, matching Artifact Uprising (the premium comparator)
+};
+
+// RAW is rejected by every competitor, for the same reason we reject it: browsers cannot
+// display it. Listed so we can say "export as JPEG first" instead of "your file looks
+// damaged", which is what the decode gate used to tell photographers.
+const RAW_EXTENSIONS = ['dng', 'raw', 'cr2', 'nef', 'arw', 'orf', 'rw2', 'raf', 'srw'];
+
+function fileExtension(name) {
+  const parts = String(name || '').split('.');
+  return parts.length > 1 ? parts.pop().toLowerCase() : '';
+}
+
 function isRaw(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  return ['dng', 'raw', 'cr2', 'nef', 'arw'].includes(ext);
+  return RAW_EXTENSIONS.includes(fileExtension(file.name));
+}
+
+// The single gate. Returns null when the file is acceptable, otherwise a customer-facing
+// reason. Deciding and explaining are the same operation — that is what stops a file being
+// accepted here and failing silently three steps later.
+function photoRejection(file) {
+  const ext = fileExtension(file.name);
+  if (isRaw(file)) {
+    return `RAW files can't be printed from directly — please export it as a JPEG first.`;
+  }
+  if (!PHOTO_FORMATS.extensions.includes(ext)) {
+    return `we can only use ${PHOTO_FORMATS.label} photos.`;
+  }
+  if (typeof file.size === 'number' && file.size > PHOTO_FORMATS.maxBytes) {
+    const mb = Math.round(file.size / 1024 / 1024);
+    return `it's ${mb} MB — please keep photos under ${PHOTO_FORMATS.maxBytes / 1024 / 1024} MB.`;
+  }
+  return null;
+}
+
+function isAcceptedPhoto(file) {
+  return photoRejection(file) === null;
+}
+
+// Declared content type for the signed upload URL. Derived from the extension, which has
+// already been checked against the policy above. Before S164 this fell back to
+// 'image/jpeg' for anything unrecognised, so a WebP was stored mislabelled as JPEG.
+function photoMimeType(file) {
+  const map = {
+    jpg: 'image/jpeg', jpeg: 'image/jpeg',
+    png: 'image/png',
+    heic: 'image/heic', heif: 'image/heif',
+  };
+  return map[fileExtension(file.name)] || file.type || 'application/octet-stream';
 }
 
 // Is this actually a HEIC file? Decided from the first 12 bytes, never the filename.
@@ -56,5 +120,8 @@ function markDuplicates(existingPool, incoming) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { isRaw, isHeicMagic, filenameNumber, comparePhotos, markDuplicates };
+  module.exports = {
+    PHOTO_FORMATS, RAW_EXTENSIONS, fileExtension, isRaw, photoRejection,
+    isAcceptedPhoto, photoMimeType, isHeicMagic, filenameNumber, comparePhotos, markDuplicates,
+  };
 }
