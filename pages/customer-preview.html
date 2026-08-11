@@ -1968,13 +1968,20 @@
     }));
     coverDef.captions.concat(monoLetterDefs).forEach(capDef => {
       const cap = document.createElement('div');
-      cap.className = 'slot-caption cover-caption' + captionUiClasses(color, capDef.maxLength === 1);
+      cap.className = 'slot-caption cover-caption';
       cap.contentEditable = 'true';
       cap.spellcheck = false;
       cap.dataset.coverCaptionKey = capDef.key;
       cap.dataset.label = capDef.label || '';
       cap.innerHTML = savedCoverCaps[capDef.key] || '';
       applyCoverCaptionLayout(cap, capDef);
+      // Light ink needs the dark-backdrop UI treatment. The effective colour (CSV default
+      // + staff override) is resolved inside applyCoverCaptionLayout, so read it back off
+      // the element rather than re-deriving it — the same idiom used for spread captions
+      // below. Porting this from the engine, which computes `color` inline, left a bare
+      // undefined `color` here and threw "color is not defined" out of renderCover,
+      // killing the whole preview for every template (S163).
+      cap.className += captionUiClasses(cap.style.color, capDef.maxLength === 1);
 
       cap.addEventListener('focus', () => showCoverCaptionToolbar(capDef, cap));
       cap.addEventListener('blur', () => {

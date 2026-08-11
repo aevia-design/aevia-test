@@ -36,6 +36,8 @@ ctx.on('page', pg => {
 
 const page = await ctx.newPage();
 let paid = false;
+let engineMonogram = null;
+let monogramVerdict = null;   // null = not a monogram template, so nothing to check
 
 try {
   // ── 1. Staff login on the engine ──────────────────────────────
@@ -61,11 +63,27 @@ try {
   const oipName = await page.textContent('#oip-name').catch(()=> '');
   note(`Order-info name: "${(oipName||'').trim()}"`);
 
+  // Heirloom only: the monogram selects ARTWORK, not just text, and it travels
+  // order form → fpTexts.monogram → engine → preview → PDF. Each hop has its own
+  // mocked test; this is the only place the whole route runs for real. Null for
+  // every other template, so the check simply doesn't fire.
+  engineMonogram = await page.evaluate(() => window._activeMonogram || null);
+  if (engineMonogram) note(`Engine resolved monogram: ${engineMonogram}`);
+
   // ── 3. Save book state ────────────────────────────────────────
   await page.click('#oip-save-btn');
-  await page.waitForTimeout(8000);
-  const saveStatus = await page.textContent('#oip-preview-status').catch(()=> '');
-  note(`Save status: "${(saveStatus||'').trim()}"`);
+  // saveStaffBookState writes 'Saved ✓' then clears it after 3s (template-engine.html
+  // :5259). The old 8s wait always read an empty string — a save failure looked exactly
+  // like a success. Poll instead and keep the first non-empty, non-'Saving…' value.
+  let saveStatus = '';
+  for (let i = 0; i < 40; i++) {
+    const t = (await page.textContent('#oip-preview-status').catch(()=> '') || '').trim();
+    if (t && t !== 'Saving…') { saveStatus = t; break; }
+    await page.waitForTimeout(250);
+  }
+  note(`Save status: "${saveStatus || '(never appeared)'}"`);
+  if (!saveStatus.startsWith('Saved')) throw new Error(`Book state did not save: ${saveStatus || 'no status shown'}`);
+  await page.waitForTimeout(2000);
   await shot(page, '08-engine-saved.png');
 
   // ── 4. Dashboard → generate preview link ──────────────────────
@@ -90,8 +108,27 @@ try {
   } else {
     note('Preview link already exists (no generate button) — reusing');
   }
+  // Read the link from OUR order's row. The dashboard renders one <tr> per order and
+  // puts the URL in the href of a.preview-link-btn — there is no .preview-url element;
+  // that class is CSS-only and never applied, which silently broke this step (S163).
+  // Scoping by order number also removes the old `.first()` gamble on row order.
   await page.waitForTimeout(2500);
-  const previewUrl = (await page.locator('.preview-url').first().innerText()).trim();
+  const readPreviewUrl = () => page.evaluate((o) => {
+    const row = [...document.querySelectorAll('tr')].find(
+      tr => tr.querySelector('.order-num')?.textContent.trim() === o);
+    if (!row) return { error: 'order row not found' };
+    const a = row.querySelector('a.preview-link-btn');
+    if (!a) return { error: 'no preview link yet (still the Generate button?)' };
+    return { url: a.href };
+  }, ORDER);
+
+  let pv = await readPreviewUrl();
+  if (pv.error) {   // generation is async — give the row a chance to re-render
+    await page.waitForTimeout(5000);
+    pv = await readPreviewUrl();
+  }
+  if (pv.error) { await shot(page, '09-dashboard-NO-preview-link.png'); throw new Error(`Preview link: ${pv.error}`); }
+  const previewUrl = pv.url;
   note(`Preview URL: ${previewUrl}`);
   await shot(page, '09-dashboard-preview-link.png');
 
@@ -105,6 +142,16 @@ try {
   await cust.waitForFunction(() => (window.photoPool || []).length >= 51, null, { timeout: 60000 }).catch(()=>{});
   await cust.waitForTimeout(4000);
   await shot(cust, '10-customer-preview.png');
+
+  // The customer must be shown the SAME artwork staff just saved. A mismatch here
+  // means the two surfaces resolved the monogram differently — the engine-parity
+  // failure mode that has bitten us twice (S158, S162), and one the customer would
+  // approve without noticing.
+  if (engineMonogram) {
+    const custMonogram = await cust.evaluate(() => window._activeMonogram || null);
+    monogramVerdict = (custMonogram === engineMonogram);
+    note(`${monogramVerdict ? '✅' : '❌'} Monogram parity: engine="${engineMonogram}" preview="${custMonogram}"`);
+  }
 
   // Status-aware: the page sets _readOnly + disables #approve-btn when the order is
   // already approved/paid (customer-preview.html:898,935). Re-running on the same order
@@ -197,5 +244,8 @@ try {
   else note('Console: clean');
   fs.writeFileSync(path.join(RUN_DIR, 'chain-log.txt'), log.join('\n'));
   await browser.close();
+  if (monogramVerdict === false) note('❌ MONOGRAM PARITY FAILED — see above; the customer saw different artwork than staff saved.');
+  else if (monogramVerdict === true) note('✅ Monogram parity held across engine → customer preview.');
   note(`Done. Paid: ${paid}. Screenshots + log in ${RUN_DIR}`);
+  process.exitCode = (paid && monogramVerdict !== false) ? 0 : 1;
 }
