@@ -1808,7 +1808,16 @@ async function renderCoverUpload(file, opts) {
     const preview = document.getElementById(`cover-preview${sfx}`);
     if (preview) preview.style.display = 'none';
     if (warnEl) {
-      warnEl.innerHTML = `<span class="warn-ico">⚠</span><span>${rejectionSentence([file.name], reason)}</span>`;
+      // textContent, not innerHTML: the filename comes from the OS / a cloud provider and
+      // is not ours to trust as markup.
+      warnEl.textContent = '';
+      const ico = document.createElement('span');
+      ico.className = 'warn-ico';
+      ico.textContent = '⚠';
+      const msg = document.createElement('span');
+      msg.textContent = rejectionSentence([file.name], reason);
+      warnEl.appendChild(ico);
+      warnEl.appendChild(msg);
       warnEl.style.display = 'flex';
     }
     return;
@@ -1903,7 +1912,14 @@ async function handleSpecialFile(slug, file) {
   const reason = photoRejection(file);
   if (reason) {
     delete specialFiles[slug];
-    showStepError('step2', rejectionSentence([file.name], reason));
+    // 'special', NOT 'step2' — err-step2 belongs to the later main-photo step, so the
+    // message would have been written to an element the customer cannot see, and the drop
+    // would have looked like it simply did nothing.
+    showStepError('special', rejectionSentence([file.name], reason));
+    const preview = document.getElementById(`special-preview-${slug}`);
+    if (preview) preview.style.display = 'none';
+    const dz = document.getElementById(`dz-special-${slug}`);
+    if (dz) dz.style.display = '';
     return;
   }
 
@@ -2481,11 +2497,11 @@ async function submitOrder() {
       const f = coverFiles[slot.key];
       if (!f) return;
       fileObjects.push(f);
-      filesMeta.push({ name: f.name, type: mimeType(f), fileType: 'cover', slotIndex: i, slotKey: slot.key });
+      filesMeta.push({ name: canonicalPhotoName(f), type: mimeType(f), fileType: 'cover', slotIndex: i, slotKey: slot.key });
     });
   } else if (coverFile) {
     fileObjects.push(coverFile);
-    filesMeta.push({ name: coverFile.name, type: mimeType(coverFile), fileType: 'cover' });
+    filesMeta.push({ name: canonicalPhotoName(coverFile), type: mimeType(coverFile), fileType: 'cover' });
   }
 
   // Special page photos (skip cancelled); FP5 has 2 slots (fp5-0, fp5-1)
@@ -2500,14 +2516,14 @@ async function submitOrder() {
       const f = specialFiles[slotKey];
       if (!f) continue;
       fileObjects.push(f);
-      filesMeta.push({ name: f.name, type: mimeType(f), fileType: 'special', addonSlug: a.slug, ...(count > 1 ? { slotIndex: i } : {}) });
+      filesMeta.push({ name: canonicalPhotoName(f), type: mimeType(f), fileType: 'special', addonSlug: a.slug, ...(count > 1 ? { slotIndex: i } : {}) });
     }
   });
 
   // Main photos
   mainFiles.forEach(f => {
     fileObjects.push(f);
-    filesMeta.push({ name: f.name, type: mimeType(f), fileType: 'main' });
+    filesMeta.push({ name: canonicalPhotoName(f), type: mimeType(f), fileType: 'main' });
   });
 
   // Disable submit, show upload overlay

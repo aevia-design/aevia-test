@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { PHOTO_FORMATS, photoRejection, isAcceptedPhoto, photoMimeType, isRaw } =
-  require('../assets/js/photo-utils');
+const { PHOTO_FORMATS, photoRejection, isAcceptedPhoto, photoMimeType, isRaw,
+  effectiveExtension, canonicalPhotoName } = require('../assets/js/photo-utils');
 const { isImageFile } = require('../functions/derivative-utils');
 
 // S164. Six places used to decide independently what counted as "a photo" and they
@@ -76,9 +76,46 @@ describe('photoRejection — refuse at the door, and say why', () => {
     expect(photoRejection(file('big.jpg', PHOTO_FORMATS.maxBytes))).toBeNull();
   });
 
-  test('a file with no extension is refused rather than assumed to be a JPEG', () => {
-    // Android pickers can hand over a name with no extension at all.
+  test('a file with no extension and no usable type is refused', () => {
     expect(photoRejection(file('image'))).toContain(PHOTO_FORMATS.label);
+  });
+});
+
+// Android hands Chrome the content provider's DISPLAY_NAME, which carries no guarantee of
+// an extension — a Drive/cloud pick can arrive as name "image", type "image/jpeg". Judging
+// on the filename alone would refuse a real photo and block the order, which is worse than
+// the bug the policy was written to fix. Found by cross-model review, S164.
+describe('extension-less uploads (the Android path)', () => {
+  const androidFile = (name, type) => ({ name, type, size: 2048 });
+
+  test.each([
+    ['image/jpeg', 'jpg'],
+    ['image/png',  'png'],
+    ['image/heic', 'heic'],
+    ['image/heif', 'heif'],
+  ])('a nameless %s photo is accepted and stored as .%s', (type, ext) => {
+    const f = androidFile('image', type);
+    expect(photoRejection(f)).toBeNull();
+    expect(effectiveExtension(f)).toBe(ext);
+    // It MUST gain an extension, or isImageFile skips it and it gets no web derivative.
+    expect(canonicalPhotoName(f)).toBe(`image.${ext}`);
+    expect(isImageFile(`AEV-999/photos/${canonicalPhotoName(f)}`)).toBe(true);
+  });
+
+  test('a real extension always wins over the reported type', () => {
+    const f = androidFile('holiday.png', 'image/jpeg');
+    expect(canonicalPhotoName(f)).toBe('holiday.png');
+    expect(photoMimeType(f)).toBe('image/png');
+  });
+
+  test.each([['image/webp'], ['image/avif'], ['image/bmp'], ['image/gif'], ['text/plain']])(
+    'we did NOT go back to accepting any image/* — %s is still refused', type => {
+      expect(photoRejection(androidFile('image', type))).toContain(PHOTO_FORMATS.label);
+    });
+
+  test('an unextensioned RAW file is still refused with the export advice', () => {
+    expect(photoRejection(androidFile('DSC_0001.dng', 'image/x-adobe-dng')))
+      .toMatch(/export it as a JPEG/i);
   });
 });
 

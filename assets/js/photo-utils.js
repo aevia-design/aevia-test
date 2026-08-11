@@ -33,6 +33,36 @@ function fileExtension(name) {
   return parts.length > 1 ? parts.pop().toLowerCase() : '';
 }
 
+// Android hands Chrome the provider's DISPLAY_NAME, which carries no guarantee of a file
+// extension — a photo picked from Drive or another cloud provider can legitimately arrive
+// named "image" with type "image/jpeg" (Chromium ContentUriUtils / Android OpenableColumns).
+// Judging on the filename alone would refuse a real customer's real photo, which is worse
+// than the bug this policy was written to fix. So: the extension decides when it is one we
+// know, and otherwise an EXACT accepted MIME type does. We do not go back to accepting any
+// `image/*` — that is what let WebP and BMP in.
+const MIME_TO_EXT = {
+  'image/jpeg': 'jpg',
+  'image/png':  'png',
+  'image/heic': 'heic',
+  'image/heif': 'heif',
+};
+
+function effectiveExtension(file) {
+  const ext = fileExtension(file.name);
+  if (PHOTO_FORMATS.extensions.includes(ext)) return ext;
+  return MIME_TO_EXT[String(file.type || '').toLowerCase()] || '';
+}
+
+// The name the file is STORED under. An extension-less upload must still get one, or
+// isImageFile() in derivative-utils skips it and the photo silently gets no web
+// derivative — accepting the file but leaving it broken downstream.
+function canonicalPhotoName(file) {
+  const ext = fileExtension(file.name);
+  if (PHOTO_FORMATS.extensions.includes(ext)) return file.name;
+  const derived = effectiveExtension(file);
+  return derived ? `${file.name}.${derived}` : file.name;
+}
+
 function isRaw(file) {
   return RAW_EXTENSIONS.includes(fileExtension(file.name));
 }
@@ -41,11 +71,10 @@ function isRaw(file) {
 // reason. Deciding and explaining are the same operation — that is what stops a file being
 // accepted here and failing silently three steps later.
 function photoRejection(file) {
-  const ext = fileExtension(file.name);
   if (isRaw(file)) {
     return `RAW files can't be printed from directly — please export it as a JPEG first.`;
   }
-  if (!PHOTO_FORMATS.extensions.includes(ext)) {
+  if (!effectiveExtension(file)) {
     return `we can only use ${PHOTO_FORMATS.label} photos.`;
   }
   if (typeof file.size === 'number' && file.size > PHOTO_FORMATS.maxBytes) {
@@ -68,7 +97,7 @@ function photoMimeType(file) {
     png: 'image/png',
     heic: 'image/heic', heif: 'image/heif',
   };
-  return map[fileExtension(file.name)] || file.type || 'application/octet-stream';
+  return map[effectiveExtension(file)] || file.type || 'application/octet-stream';
 }
 
 // Is this actually a HEIC file? Decided from the first 12 bytes, never the filename.
@@ -121,7 +150,8 @@ function markDuplicates(existingPool, incoming) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    PHOTO_FORMATS, RAW_EXTENSIONS, fileExtension, isRaw, photoRejection,
-    isAcceptedPhoto, photoMimeType, isHeicMagic, filenameNumber, comparePhotos, markDuplicates,
+    PHOTO_FORMATS, RAW_EXTENSIONS, MIME_TO_EXT, fileExtension, effectiveExtension,
+    canonicalPhotoName, isRaw, photoRejection, isAcceptedPhoto, photoMimeType,
+    isHeicMagic, filenameNumber, comparePhotos, markDuplicates,
   };
 }
