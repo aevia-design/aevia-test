@@ -221,14 +221,48 @@ try {
   const okNum = await fillFirst(['#cardNumber', 'input[name="cardNumber"]'], '4242424242424242');
   await fillFirst(['#cardExpiry', 'input[name="cardExpiry"]'], '12 / 34');
   await fillFirst(['#cardCvc', 'input[name="cardCvc"]'], '123');
-  await fillFirst(['#billingName', 'input[name="billingName"]'], 'QA Tester');
-  await fillFirst(['#billingPostalCode', 'input[name="billingPostalCode"]'], '1010');
-  note(`Card fields filled (cardNumber filled: ${okNum})`);
+
+  // Checkout collects a SHIPPING address (Versandadresse) — we sell a physical book.
+  // These four are required and were never filled: the script only knew #billingName /
+  // #billingPostalCode, which are not on this form, and fillFirst fails silently. The
+  // submit then just raised validation errors and the run sat out its 90s timeout
+  // looking like a payment failure (S163). 'Billing same as shipping' is pre-ticked,
+  // so filling shipping is enough.
+  const addr = {
+    name:   ['#shippingName',          'input[name="shippingName"]'],
+    line1:  ['#shippingAddressLine1',  'input[name="shippingAddressLine1"]'],
+    post:   ['#shippingPostalCode',    'input[name="shippingPostalCode"]'],
+    city:   ['#shippingLocality',      'input[name="shippingLocality"]'],
+  };
+  const okName = await fillFirst(addr.name,  'QA Tester');
+  const okL1   = await fillFirst(addr.line1, 'Teststrasse 1');
+  const okPost = await fillFirst(addr.post,  '1010');
+  const okCity = await fillFirst(addr.city,  'Wien');
+  note(`Fields filled — card:${okNum} name:${okName} line1:${okL1} postcode:${okPost} city:${okCity}`);
+  if (!(okNum && okName && okL1 && okPost && okCity)) {
+    await shot(cust, '13-stripe-MISSING-FIELDS.png');
+    throw new Error('Could not fill every required checkout field — see 13-stripe-MISSING-FIELDS.png. '
+      + 'Stripe may have changed its field names again.');
+  }
   await shot(cust, '13-stripe-filled.png');
 
   await cust.click('.SubmitButton, button[type="submit"]');
   note('Submitted payment, waiting for return…');
-  await cust.waitForURL('**payment=success**', { timeout: 90000 });
+  // Surface a validation refusal instead of sitting out the full timeout. Stripe stays
+  // on the same URL and paints inline field errors, which reads identically to "payment
+  // failed" from the outside.
+  try {
+    await cust.waitForURL('**payment=success**', { timeout: 90000 });
+  } catch (e) {
+    const fieldErrors = await cust.evaluate(() =>
+      [...document.querySelectorAll('[role="alert"], .FieldError, p.Text--error')]
+        .map(n => n.textContent.trim()).filter(Boolean).slice(0, 6));
+    if (fieldErrors.length) {
+      await shot(cust, '13-stripe-REJECTED.png');
+      throw new Error(`Checkout refused the submission: ${fieldErrors.join(' | ')}`);
+    }
+    throw e;
+  }
   paid = true;
   note('✅ Returned with payment=success');
   await cust.waitForTimeout(3000);
