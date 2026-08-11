@@ -492,10 +492,14 @@ async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos
       if (slot.fullBleed) {
         // Full-bleed photo fills the entire 206×206mm canvas including bleed.
         // Sized to FULL_PX × FULL_PX and placed at (0,0) — no crop gap at any edge.
-        const photoBuffer = await sharp(photoData)
-          .resize(FULL_PX, FULL_PX, { fit: 'cover', position: 'centre' })
-          .png()
-          .toBuffer();
+        // Honours the staff-set crop offset like every other slot (S163): the engine
+        // applies object-position to full-bleed slots too, and hardcoding centre here
+        // silently dropped the reposition from the PDF. Both boxes are square, so the
+        // % maps identically despite the engine showing 200mm and the PDF 206mm.
+        const hc = (state.heartCrop && state.heartCrop[photo.name]) || {};
+        const cropX = typeof hc.x === 'number' ? hc.x : 50;
+        const cropY = typeof hc.y === 'number' ? hc.y : 50;
+        const photoBuffer = await coverExtract(photoData, FULL_PX, FULL_PX, cropX, cropY);
         composites.push({ input: photoBuffer, left: 0, top: 0 });
       } else if (slot.heartClip) {
         // Heart slot covers full content area; clip-path is in 600px canvas space → scale to CONTENT_PX
