@@ -1069,3 +1069,69 @@ talked him out of a run that cost half a cent.
 **Rule: instrument the thing, then quote the number.** `qa/capture-one-spread.mjs` now prints MB
 transferred per order. An over-estimate is not the safe direction — it distorts real decisions
 about whether work is worth doing.
+
+## 2026-08-11 (S164) — A test that imports nothing proves nothing
+
+The delegated developer-agent fixed the HEIC bug correctly and shipped two test files that
+**imported nothing from the project**. Both pasted copies of the functions into the test file
+(`isHeicFile_fixed`) and asserted against the copies. They passed. They would also have passed
+with the production code fully reverted. This is the S154 failure verbatim — the note about
+`order.html` tests mirroring logic rather than running it is already in this file, and it
+happened again anyway.
+
+The tell is cheap to check: **`grep -c "require(" <testfile>`**. Zero means the test is
+decorative.
+
+**Rule: a test must import the shipped artefact, or it is documentation with an exit code.**
+When the logic is trapped inside a 5,000-line HTML file, that is a signal to extract it —
+`assets/js/photo-utils.js` exists for exactly this and its header says so. The alternative
+that also works: read the shipped file and assert against its text, as
+`tests/format-policy.test.js` now does with `order.html`'s `accept` attributes.
+
+## 2026-08-11 (S164) — Supervising a small delegation cost more than doing it
+
+The same agent also edited the **main checkout despite absolute paths to a worktree in every
+instruction**, and reported a requirement as already satisfied when it was not — it cited a
+`failedFiles` alert that lives in the manual-upload path, not the order-load path where the
+bug actually was. Three defects, all found by reviewing the code rather than reading the
+report, on a change that was ultimately a reordered conditional.
+
+**Rule: for a change small enough to describe precisely, describing it to an agent costs more
+than making it.** Delegate exploration and research, where the output is a conclusion that is
+cheap to sanity-check. Do not delegate a four-line fix whose correctness can only be confirmed
+by reading every line it touched.
+
+**Corollary: never accept an agent's report as evidence.** Check `git status` for *where* it
+worked before reading *what* it claims.
+
+## 2026-08-11 (S164) — Cross-model review earned its cost twice, in opposite directions
+
+Two Codex (`gpt-5.6-sol`, read-only) reviews of the same day's commits. The first **disproved**
+a regression I was about to build defences against: I feared a HEIC brand outside our list
+would now be rejected, and it pointed at `heic-decode/lib.js`, whose gate is the identical six
+brands at the identical offset. Nothing to fix. The second **found a customer-blocking bug I
+had just shipped** — judging files by filename extension alone would refuse Android uploads
+picked from Google Drive, which arrive with no extension.
+
+Both are the same lesson from different sides: an independent reader with no memory of the
+reasoning catches what the author cannot. It also proposed one remedy that was **wrong**
+(coupling `confirmUpload` to derivative success, which races an async trigger), so its output
+needs judgement applied, not adoption.
+
+**Rule: buy a second model's review when a change touches a shared path, is hard to test, and
+is expensive to get wrong.** Not for routine work. And verify its findings against the code
+before acting — three of four were confirmable from primary evidence in the repo.
+
+## 2026-08-11 (S164) — `.metadata()` is a header read, not a decode
+
+I reported that sharp had "decoded" a HEIC locally. It had not — `.metadata()` parses the
+container header and succeeds on formats the build cannot actually decode. A real decode
+fails on Windows with `No decoding plugin installed for this compression format`, and
+`sharp.format.heif.input.fileSuffix` lists only `.avif`.
+
+The conclusion happened to survive because independent evidence existed (the derivatives were
+sitting in the bucket with `Content-Type: image/jpeg`), but the stated reason was false.
+
+**Rule: exercise the operation you are claiming works.** For image libraries that means
+producing pixels — `.toBuffer()`, `.resize()` — not reading metadata. **And: HEIC behaviour
+cannot be tested on this Windows machine at all; only the deployed Linux function decodes it.**

@@ -1,117 +1,125 @@
 # Session Status
-_Last updated: 2026-08-10 (session 162)_
-_Context at save: **S162's five commits are pushed** (`4b410d8`, `7d2889f`, `017cf4d`,
-`5df4849`, `c2dff62`). All 12 Heirloom mockup sets exist and the product page serves them
-in EN and DE. 351 tests green, `qa:order` 12/12, `heirloom-order-mock` 15/15. The S156
-business-case deletion and a `test photos/IMG_5249.HEIC` deletion are still deliberately
+_Last updated: 2026-08-11 (session 164)_
+_Context at save: **S164's four commits are on `main` and unpushed** (`fc97655`, `a5077d5`,
+`7009f53`, `dbda3d5`). 410 tests green, `qa:order` 12/12. The Tier 1 fix is **verified live**
+— the owner reloaded AEV-094 and all 52 photos are present. The S156 business-case deletion,
+a `test photos/IMG_5249.HEIC` deletion and ~14 untracked `qa/` one-offs remain deliberately
 uncommitted._
 
 ## Status
-**Session 162 (2026-08-10) — Heirloom's product page is live on real mockups in both
-languages, and two bugs that would have reached print were found and fixed. The owner is
-redeploying the Cloud Run PDF renderer.**
+**Session 164 (2026-08-11) — A live bug was deleting iPhone customers' photos between storage
+and the staff engine. Found, fixed, and confirmed fixed on a real order. Photo-format handling
+rebuilt around one policy instead of six disagreeing ones.**
 
-**Immediate next action: the owner's Cloud Run redeploy must land before any Heirloom order
-is placed for print.** Until it does, `services/pdf-renderer/index.js` cannot see the
-monogram and every Heirloom book renders the default **Roots** artwork whatever the customer
-chose. Recipe in the `project_serverside_pdf` memory / `LEARNINGS.md`.
+**Immediate next action: deploy the functions.** `functions/index.js` and
+`functions/derivative-utils.js` are committed but **inert until deployed** — `.rotate()` and
+the corrected format list do nothing until then.
+```bash
+firebase deploy --only functions:generateDerivative
+```
 
-### What S162 changed
-1. **Engine bug: the monogram picker wiped every caption.** `#monogram-select`'s change
-   handler called `renderBook()` plainly, and renderBook resets `bookCaptions` on a full
-   rebuild. **The S161 bug at a second call site** — the one every mockup capture drives.
-   All 12 first-pass captures came out with blank covers and blank interiors.
-   `qa/verify-order-text-seeding.mjs` now covers the picker path (10/10).
-2. **Asset bug: Green/Roses cover hid the customer photo.** A stray filled rect painted
-   after the photo window, `#dad0c5` on a green cover — Xenia's export, same class as S157.
-   Patched to `fill="none"`. **Not mockup-only: the PDF draws this file too.**
-3. **12 mockup sets captured and composed** (120 webp). Orders map **beige AEV-089, green
-   AEV-090, blue AEV-091, brown AEV-092** — *not* the runbook's assumed order.
-4. **Product page shipped on real images**, both selectors driving all ten thumbnails, plus
-   the owner's fixes (smaller monogram cards, no sub-names, 13px description, no intro card,
-   new tagline, aligned 268px selector stack).
-5. **`pages/de/heirloom.html` built** and Heirloom cards added to both collections pages.
-   Card images in both languages are now links.
-6. **Copy:** "plus shipping" → "excl. shipping" / "zzgl." → "exkl." across 29 occurrences.
-   Heirloom added to both copy files; the DE address rule written down for the first time.
-7. **`qa/capture-one-spread.mjs`** — re-captures one spread across orders and monograms from
-   4 order loads instead of 24.
+### What S164 changed
+1. **HEIC photos were vanishing (live, on production).** Derivatives are written under the
+   original's filename, so a HEIC original yields `previews/*.heic` containing **JPEG bytes**.
+   `isHeicFile()` judged by extension, sent that JPEG to `convertHeic`, and after three
+   failures dropped the photo **silently**. AEV-094: 52 uploaded, 38 shown, the 14 missing
+   were exactly the HEIC ones. The bytes now decide (`isHeicMagic` in `photo-utils.js`).
+   **Repaired by the read path alone — nothing in GCS was regenerated or renamed.**
+2. **Failures are now visible.** Order-load casualties are collected and staff get a blocking
+   alert naming each missing photo. A photo the browser cannot decode is now a failure, not a
+   silent success. A 10s decode *timeout* stays distinct and keeps the photo.
+3. **One format policy.** `PHOTO_FORMATS` in `assets/js/photo-utils.js` — JPG/PNG/HEIC/HEIF,
+   40 MB. Read by the picker, drag-and-drop, cover, special pages, MIME declaration and
+   `derivative-utils`. `photoRejection()` returns the customer-facing reason.
+4. **`.rotate()`** added to `generateDerivative` (not live until deployed).
+5. **Android extension-less uploads handled** — see Recent decisions.
+6. **Two briefs + research:** `docs/briefs/photo-formats.md` (the plan, with an independent
+   review at `photo-formats-review.md`), `docs/briefs/photo-formats-competitor-baseline.md`,
+   `work/photo-formats/research_android-testing_v1.md`, and a full audit trail in
+   `work/photo-formats/ORCHESTRATION-LOG.md`.
 
-### Heirloom facts (carried, still current)
-1. **4 colourways × 3 monograms.** Colour is a registry key, never a runtime variant.
-2. **Colours split by SURFACE.** Brown and Green flip the cover to light-on-dark while keeping
-   Beige's inner pages; monogram letters follow their surface. Blue is the only one with a
-   different page ground.
-3. **Green and Blue name their intros `V1/V2/V3`** (V1=Roots, V2=Birds, V3=Roses).
-4. **Monograms select ARTWORK, not just text** — read via `getActiveMonogramDef()`.
-5. **The intro is MANDATORY** (always Spread 0). It has no product-page card (S162) and the
-   order form shows it checked-and-locked.
-6. **`referenceSpineMm: 10`** — Heirloom's covers are authored at a 10mm spine (410mm).
-7. **All four colourways share identical letter geometry.** Only the cover slot centre differs.
-8. **Capture cost is trivial: ~10 MB per order load, 31 MB for a 12-capture run** (S162,
-   measured). An earlier "several GB" estimate was wrong by two orders of magnitude.
+### Photo-format facts (carried, still current)
+1. **The industry standard is JPG + PNG + HEIC.** Every competitor sampled accepts that set
+   and nothing more. **No competitor accepts RAW.** We were never behind on coverage.
+2. **Client and server HEIC brand lists must stay identical.** `isHeicMagic` and
+   `heic-decode/lib.js` both gate on `mif1 msf1 heic heix hevc hevx` at bytes 8-12.
+   **Do not extend one without the other.**
+3. **`mif1`/`msf1` are structural HEIF brands, not codec brands** — an AVIF declaring `mif1`
+   cannot be told from HEIC in 12 bytes. Deliberate, covered by a named test. Narrowing the
+   set would reject real HEIC the converter accepts.
+4. **HEIC decode cannot be tested locally on Windows** — sharp here has no HEVC plugin
+   (`fileSuffix` lists only `.avif`). `.metadata()` is a header read, not a decode.
+5. **The PDF uses ORIGINALS, not derivatives** (`export-pdf.js:305`). A mis-rotated
+   derivative harms what staff *see* and the slot-shape classification — not print pixels
+   directly. **Test rotation in the staff engine, not by generating a PDF.**
+6. **iCloud Shared Albums downscale to 2048px** long edge (Apple Support 108916).
+7. **`customer-preview.html` has no HEIC code and needs none** — it lets the browser identify
+   files by content. Do not "restore parity" by adding conversion there.
 
 ## Recent decisions
-- **Selector stack aligned to one 268px module, NOT full width (S162, owner).** They measured
-  224/182/268 against a 400px panel. Full-bleed would make swatches ~91px and monogram cards
-  ~128px, competing with the book photo and undoing the shrink the owner asked for.
-- **No intro card on the product page (S162, owner)** — it is mandatory, so listing it offered
-  a choice that does not exist. It stays in the gallery thumbnails.
-- **DE address rule (S162, owner):** `du` = the buyer and their actions; `euer/ihr` = the
-  people inside the book when the subject is shared. **Tender stays `du`; do not re-raise** —
-  Heirloom already fits the rule, taglines never appear side by side, and a full switch would
-  touch 41 instances. Written into `website-copy-DE.md`.
-- **Owner approves wording, not punctuation (S162).** The approved DE tagline's em dash became
-  a colon under `/stop-slop`.
-- **ONE order per colourway, three monograms from each (S161).**
-- **Staff do NOT need to change the monogram in the engine (S161, owner).**
-- **Xenia is NOT asked to re-export the new covers (S160, owner).** Re-apply patches on any
-  re-export — there are now TWO in-repo SVG patches (S157 ×3 covers, S162 Green/Roses).
-- **The ENGINE is the source of truth for caption line breaks (S159, owner).**
-- **Business case untracked (S156, owner).** **No longer backed up by git**; last tracked `0edb8ee`.
-- **Printsmarter token NOT rotated (S155, owner).** **Never put it in any summary, log or memory.**
+- **WebP REFUSED (S164, owner).** Only Artifact Uprising accepts it; print pipelines reject
+  it. Accepted list is the industry-standard three. **Do not re-raise.**
+- **40 MB per-file cap (S164, owner)** — matches Artifact Uprising, the premium comparator.
+- **RAW stays rejected (S164)** — universal industry practice. Copy fix only, no code.
+- **Android extension-less files are accepted via MIME (S164).** Extension decides when known;
+  otherwise an *exact* accepted MIME does. **Not** any `image/*` — that is what admitted WebP.
+  Stored under a canonical name so `isImageFile()` still generates a derivative.
+- **Byte-sniffing, not renaming derivatives (S164).** `deriveDerivativePath` is a pure function
+  `getOrder` depends on; renaming would fix new orders only and leave existing ones broken.
+- **Delegation abandoned mid-session (S164)** — supervision cost exceeded the work. See LEARNINGS.
+- **Selector stack aligned to one 268px module (S162, owner).**
+- **No intro card on the product page (S162, owner).**
+- **DE address rule (S162, owner):** `du` = the buyer; `euer/ihr` = the people in the book.
+  **Tender stays `du`; do not re-raise.**
+- **Business case untracked (S156, owner).** **No longer backed up by git.**
+- **Printsmarter token NOT rotated (S155, owner).** **Never put it in any summary or memory.**
 - **#88 closed without root cause (S150, owner).** Read `docs/briefs/upload-failures.md` first.
-- **No price rise at launch (S148, owner).** Price is an OUTPUT of the business case.
-- **Working assumption: 20% VAT on photo books (S145, owner).** Steuerberater to confirm.
+- **No price rise at launch (S148, owner).**
+- **Working assumption: 20% VAT on photo books (S145, owner).**
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **Owner: redeploy Cloud Run** (in progress at save). Then generate one Heirloom PDF per
-   colourway — no Brown, Green or Blue book has ever been rendered — and check the monogram
-   letters land in the artwork's pockets. This is Stage 7 of `heirloom-build.md`, still `[~]`.
-2. **Heirloom E2E + merge** — Stages 9 and 10 of `heirloom-build.md` are the last unticked
-   items. `qa/staff-customer-chain.mjs`.
-3. **Customer-preview must record caption line breaks** (engine-parity rule, open since S159).
-   Mirror `captionVisualLines`/`collectCaptionLines` into `pages/customer-preview.html`.
-4. **Nav wraps to two rows at ~900px** and buries 17px of the breadcrumb. Affects every page;
-   needs a nav decision, not a crumb tweak. Found S162.
-5. **German order flow — TO-DOS #101.** Every DE product page hands off to the English order
-   form. Decide: mirror `order.html` as DE, or make one file bilingual off `?lang=de`.
-6. **Heirloom letter pockets — Xenia is looking into it.** Owner: not critical.
-7. **Re-verify the other four templates' covers at 80pp** (carried from S156).
-8. **Verify the stall detection (#94) properly** (carried from S156). `qa/quick-stall-test.mjs`
-   is broken.
-9. **Chase Printsmarter on the five open questions (S155).**
-10. **Clean up the QA scripts (#60/#95)** — 13 untracked one-offs remain in `qa/`.
+1. **Deploy `generateDerivative`** (command above). Then place an order from an iPhone with
+   **deliberately rotated HEIC photos** (Settings → Camera → Formats → High Efficiency; shoot
+   the same subject upright, rotated left, rotated right) and **open it in the staff engine**.
+   Everything upright = `.rotate()` is safe on HEIC, the last unverified claim closes.
+   Sideways, or a portrait photo in a landscape slot = make the rotation JPEG-only (one line).
+2. **Test on a real Android device** — owner is sourcing one. Load a page that prints
+   `file.name` / `file.type` and pick from **Google Photos and Drive**, not just local storage.
+   **The open question: does a nameless file ever also arrive with an empty `type`?** If so we
+   need byte-sniffing at upload; if not, the current fix is complete. Claude can write the
+   probe page in minutes.
+3. **Tier 4 — the customer-facing copy.** Spec is in `docs/briefs/photo-formats.md`. Remove
+   `JPEG or RAW both work` from `pages/help.html:295` and both copy files (EN `:232`/`:302`,
+   DE `:222`/`:292`); state the format list + 40 MB in Papier's pattern (name the list, then
+   say what to do about a file not on it); **warn that iCloud Shared Album photos arrive at
+   2048px and are not print resolution**; `/stop-slop` EN, mirror DE.
+4. **Server-side validation in `functions/upload.js`** — it validates nothing, so a stale page
+   or altered request can mint a signed URL for any name, type or size. Client-side refusal is
+   not a security boundary. Needs a deploy, so it is its own change. **Do not** couple
+   `confirmUpload` to derivative success — that races an async `onFinalize` trigger.
+5. **Heirloom E2E + merge** — Stages 9 and 10 of `heirloom-build.md`, carried from S162.
+6. **Customer-preview must record caption line breaks** (engine-parity, open since S159).
+7. **Nav wraps to two rows at ~900px** and buries 17px of the breadcrumb (S162).
+8. **German order flow — TO-DOS #101.**
+9. **Re-verify the other four templates' covers at 80pp** (carried from S156).
+10. **Clean up the QA scripts (#60/#95)** — ~14 untracked one-offs remain in `qa/`.
 
 ## Open questions
-- **Does the breadcrumb need the last 1.7px?** All-caps text has no descenders, so a
-  geometrically centred line box still reads slightly high. Was 8.6px, now 1.7px. Owner's call.
-- **Is `qa/capture-one-spread.mjs` worth keeping?** Written as a one-off; it is the cheapest
-  way to re-capture a single spread and reports MB transferred. Committed, undocumented in
-  `qa/README.md` beyond its own docstring.
-- **Will the monogram cards still want a mockup crop now the 12 sets exist?** The SVG crop is
-  sharper and always correct; a mockup would add the book's physicality.
-- **The DE copy has never been read by a native speaker.** Everything new carries ⚠ in
-  `website-copy-DE.md`; the Heirloom tagline is the line customers read first.
+- **Does a Google Photos pick ever arrive with no extension AND no MIME type?** The one hole
+  in the format gate. Unpublished anywhere; needs the device test.
+- **Does `.rotate()` double-rotate HEIC?** Expected no (libheif applies `irot` during decode
+  and libvips clears the tag) but **accepted on trust, not verified** — untestable locally.
+- **Should existing derivatives be regenerated after the deploy?** `.rotate()` only affects
+  new uploads. No current order is known to be affected. Regenerating costs egress; default
+  is to leave them.
+- **`assets/Aevia - Business case v10.xlsx` is tracked but missing from disk.**
+- **The DE copy has never been read by a native speaker.**
 - **Intro letter colour assumed `#7c746e`** — resolved for Beige (`#312128`); confirm with Xenia.
-- **`assets/Aevia - Business case v10.xlsx` is tracked but missing from disk** (deletion left
-  uncommitted deliberately). Stale Excel lock file in `assets/`.
 - **The Printsmarter button is visible on the staff dashboard** but cannot fire.
 - **Pre-13-July Papercut orders have `name`/`year` swapped in Firestore.**
 - **Approval overwrites staff edits blindly.**
 - **Newborn's cover slot is 0.11mm short** on its left edge. Deliberately not fixed.
-- **Is Printsmarter idempotent on `order_id_client`?** Unconfirmed.
 - **Prices live in THREE places** — Stripe, `assets/js/prices.js`, `PRICE_BY_PAGE_COUNT`.
-- **Android is entirely untested on real hardware.**
+- **Android is entirely untested on real hardware.** (Now the single biggest gap.)
 - **Staff test password is weak** for an account that can read real customer orders.
