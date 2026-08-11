@@ -1,8 +1,68 @@
-const { isRaw, filenameNumber, comparePhotos, markDuplicates } = require('../assets/js/photo-utils');
+const { isRaw, isHeicMagic, filenameNumber, comparePhotos, markDuplicates } = require('../assets/js/photo-utils');
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 function file(name) { return { name }; }
 function photo(name, date = null) { return { name, date }; }
+
+// First 12 bytes of a real file of each kind. HEIC/AVIF are ISO base media:
+// [size][ftyp][brand]. JPEG starts SOI + APP0/JFIF. PNG has its own signature.
+const HEAD = {
+  heic: [0x00,0x00,0x00,0x20, 0x66,0x74,0x79,0x70, 0x68,0x65,0x69,0x63], // ftyp heic
+  heix: [0x00,0x00,0x00,0x20, 0x66,0x74,0x79,0x70, 0x68,0x65,0x69,0x78], // ftyp heix
+  hevc: [0x00,0x00,0x00,0x20, 0x66,0x74,0x79,0x70, 0x68,0x65,0x76,0x63], // ftyp hevc
+  hevx: [0x00,0x00,0x00,0x20, 0x66,0x74,0x79,0x70, 0x68,0x65,0x76,0x78], // ftyp hevx
+  mif1: [0x00,0x00,0x00,0x18, 0x66,0x74,0x79,0x70, 0x6d,0x69,0x66,0x31], // ftyp mif1
+  msf1: [0x00,0x00,0x00,0x18, 0x66,0x74,0x79,0x70, 0x6d,0x73,0x66,0x31], // ftyp msf1
+  avif: [0x00,0x00,0x00,0x20, 0x66,0x74,0x79,0x70, 0x61,0x76,0x69,0x66], // ftyp avif
+  jpeg: [0xFF,0xD8,0xFF,0xE0, 0x00,0x10,0x4A,0x46, 0x49,0x46,0x00,0x01],
+  png:  [0x89,0x50,0x4E,0x47, 0x0D,0x0A,0x1A,0x0A, 0x00,0x00,0x00,0x0D],
+};
+const head = kind => new Uint8Array(HEAD[kind]);
+
+// ─── isHeicMagic ────────────────────────────────────────────────────────────
+// S164 / AEV-094: 14 of 52 photos vanished from the staff engine because a JPEG
+// stored as photo_024.heic was judged by its name. These tests exercise the real
+// exported function — the one both engines call — not a copy of it.
+describe('isHeicMagic', () => {
+  test('the regression: JPEG bytes are not HEIC, whatever the file is called', () => {
+    expect(isHeicMagic(head('jpeg'))).toBe(false);
+  });
+
+  // All six brands the SERVER converter accepts (heic-decode/lib.js). Client and server
+  // must agree exactly: a file the client sends must be one the converter will take, and
+  // a file the client refuses must be one the converter would have refused anyway.
+  test.each([['heic'], ['heix'], ['hevc'], ['hevx'], ['mif1'], ['msf1']])(
+    'genuine %s bytes are HEIC — the same brand set heic-decode accepts', kind => {
+      expect(isHeicMagic(head(kind))).toBe(true);
+    });
+
+  test('AVIF declaring its own major brand is not HEIC', () => {
+    expect(isHeicMagic(head('avif'))).toBe(false);
+  });
+
+  // Known limitation, deliberate (S164 Codex review): mif1/msf1 are STRUCTURAL HEIF brands,
+  // not codec brands, so an AVIF whose major brand is mif1 is indistinguishable here and
+  // will be sent to the converter. We match heic-decode rather than out-guess it — it makes
+  // the identical call — and a conversion failure is now reported instead of silent.
+  // Tier 2 closes this properly by refusing AVIF at upload. Do not "fix" by dropping mif1:
+  // that would reject real HEIC files the converter handles fine.
+  test('AVIF hiding behind a generic mif1 major brand is NOT distinguished (documented gap)', () => {
+    expect(isHeicMagic(head('mif1'))).toBe(true);
+  });
+
+  test('PNG is not HEIC', () => {
+    expect(isHeicMagic(head('png'))).toBe(false);
+  });
+
+  test.each([
+    ['empty',     new Uint8Array([])],
+    ['truncated', new Uint8Array(HEAD.heic.slice(0, 8))],
+    ['null',      null],
+    ['undefined', undefined],
+  ])('%s input is not HEIC rather than a crash', (_label, input) => {
+    expect(isHeicMagic(input)).toBe(false);
+  });
+});
 
 // ─── isRaw ──────────────────────────────────────────────────────────────────
 describe('isRaw', () => {

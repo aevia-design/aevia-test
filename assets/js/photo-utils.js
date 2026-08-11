@@ -7,6 +7,20 @@ function isRaw(file) {
   return ['dng', 'raw', 'cr2', 'nef', 'arw'].includes(ext);
 }
 
+// Is this actually a HEIC file? Decided from the first 12 bytes, never the filename.
+// S164 (AEV-094): web derivatives are stored under the original's name, so a JPEG can
+// legitimately be called photo_024.heic. Trusting that name sent JPEGs to the HEIC
+// converter, which rejected them, and 14 of one order's 52 photos vanished from the
+// engine with no error. The bytes cannot lie; the name and the MIME type both can.
+//
+// HEIC is ISO base media format: bytes 4-7 are the literal 'ftyp', bytes 8-11 name
+// the brand. Takes a Uint8Array so it stays pure and testable — callers do the read.
+function isHeicMagic(bytes) {
+  if (!bytes || bytes.length < 12) return false;
+  const str = (from, to) => String.fromCharCode(...Array.from(bytes.slice(from, to)));
+  return str(4, 8) === 'ftyp' && /heic|heix|hevc|hevx|mif1|msf1/i.test(str(8, 12));
+}
+
 function filenameNumber(name) {
   const match = name.replace(/\.[^.]+$/, '').match(/(\d+)\D*$/);
   return match ? parseInt(match[1], 10) : null;
@@ -42,5 +56,5 @@ function markDuplicates(existingPool, incoming) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { isRaw, filenameNumber, comparePhotos, markDuplicates };
+  module.exports = { isRaw, isHeicMagic, filenameNumber, comparePhotos, markDuplicates };
 }

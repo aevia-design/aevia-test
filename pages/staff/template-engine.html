@@ -1405,18 +1405,18 @@
      PHOTO PROCESSING  (EXIF + HEIC + orientation)
   ═══════════════════════════════════════════ */
 
-  // isRaw / filenameNumber / comparePhotos / markDuplicates live in assets/js/photo-utils.js
+  // isRaw / isHeicMagic / filenameNumber / comparePhotos / markDuplicates live in assets/js/photo-utils.js
 
+  // The bytes decide. Name and MIME type are only consulted when the bytes are unreadable
+  // (see isHeicMagic in photo-utils.js for why — S164, AEV-094).
   async function isHeicFile(file) {
-    if (file.type === 'image/heic' || file.type === 'image/heif') return true;
-    if (/\.(heic|heif)$/i.test(file.name)) return true;
     try {
       const buf = await file.slice(0, 12).arrayBuffer();
-      const b = new Uint8Array(buf);
-      const ftyp  = String.fromCharCode(b[4], b[5], b[6], b[7]);
-      const brand = String.fromCharCode(b[8], b[9], b[10], b[11]);
-      return ftyp === 'ftyp' && /heic|heix|hevc|hevx|mif1|msf1/i.test(brand);
-    } catch (e) { return false; }
+      return isHeicMagic(new Uint8Array(buf));
+    } catch (e) {
+      return file.type === 'image/heic' || file.type === 'image/heif'
+        || /\.(heic|heif)$/i.test(file.name);
+    }
   }
 
   function getOrientationFromBlob(blob) {
@@ -1430,16 +1430,19 @@
           URL.revokeObjectURL(url);
           resolve({ orientation, w, h });
         };
+        // decodeFailed is NOT the same as a timeout: the browser has looked at the bytes
+        // and cannot render them. Callers must reject such a photo rather than seat it in
+        // a slot it can never fill (S164).
         img.onerror = () => {
           URL.revokeObjectURL(url);
-          resolve({ orientation: 'horizontal', w: 0, h: 0 });
+          resolve({ orientation: 'horizontal', w: 0, h: 0, decodeFailed: true });
         };
         img.src = url;
       }),
       new Promise(resolve =>
         setTimeout(() => {
           console.warn('Orientation read timed out for blob — dimensions unknown');
-          resolve({ orientation: 'horizontal', w: 0, h: 0 });
+          resolve({ orientation: 'horizontal', w: 0, h: 0, timedOut: true });
         }, 10000)
       ),
     ]);
@@ -1507,7 +1510,21 @@
     //    Modern browsers (Chrome, Firefox, Safari) auto-rotate images based on EXIF Orientation,
     //    so img.naturalWidth/naturalHeight always reflect the correct visual orientation.
     //    We do NOT apply any additional EXIF swap — that would double-rotate and invert the result.
-    const { orientation, w, h } = await getOrientationFromBlob(displayBlob);
+    const { orientation, w, h, decodeFailed, timedOut } = await getOrientationFromBlob(displayBlob);
+
+    // The browser has read the bytes and cannot render them — an unsupported or corrupt
+    // image. Seating it would fill a slot with something that can never appear, which is
+    // the AEV-094 failure mode arriving by a different route. Reject it so the caller
+    // reports it (S164). A TIMEOUT is not the same thing: the photo may be perfectly good
+    // and merely slow, so it is warned about and kept.
+    if (decodeFailed) {
+      dbLog('✗ Browser cannot decode: ' + file.name + ' (unsupported format or corrupt file)', 'error');
+      return null;
+    }
+    if (timedOut) {
+      dbLog('⚠ Dimensions unknown (decode timed out): ' + file.name + ' — kept, check it manually', 'warn');
+    }
+
     const objectURL = URL.createObjectURL(displayBlob);
     const lowRes = w > 0 && Math.min(w, h) < 1500;
 
@@ -4985,11 +5002,15 @@
       });
     }
     dbLog(`Fetching ${specialFetchTasks.length} special photo(s) in parallel…`, 'info');
+    // S164: a photo that fails to process leaves an empty slot that is indistinguishable
+    // from one the customer never sent. On AEV-094 that hid 14 missing photos. Collect the
+    // casualties across BOTH load loops and tell staff at the end.
+    const loadFailures = [];
     const specialFiles = await Promise.all(specialFetchTasks.map(t => urlToFile(t.url, t.filename)));
     for (let i = 0; i < specialFetchTasks.length; i++) {
       const t = specialFetchTasks[i];
       const result = await processOneFile(specialFiles[i]);
-      if (!result) continue;
+      if (!result) { loadFailures.push(t.filename); continue; }
       if (t.type === 'cover') {
         window.specialPhotos.cover.push(result);
         renderSpecialThumbs('cover');
@@ -5041,10 +5062,22 @@
         if (result) {
           result.displayName = poolOriginalNames[i] || result.name;
           newPhotos.push(result);
+        } else {
+          loadFailures.push(poolOriginalNames[i] || poolFilenames[i]);
         }
       }
       newPhotos.sort(comparePhotos);
       window.photoPool = newPhotos;
+    }
+
+    // Never let an order load look complete when it is not (S164).
+    if (loadFailures.length) {
+      dbLog(`✗ ${loadFailures.length} photo(s) failed to load: ${loadFailures.join(', ')}`, 'error');
+      alert(
+        loadFailures.length + ' of this order\'s photos could not be loaded and are MISSING from the book:\n\n' +
+        loadFailures.map(n => '• ' + n).join('\n') +
+        '\n\nDo not send this book for approval until they are resolved.'
+      );
     }
 
     renderPhotoSidebar();
