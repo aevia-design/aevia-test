@@ -240,11 +240,17 @@ poison a whole set.
         so checkout refused the submit and the run sat out a 90s timeout looking like a
         declined payment. It knew only `#billingName`/`#billingPostalCode`, which are not
         fields on that form, and the fill helper fails silently.
-- [ ] **10. Merge** — after owner approval; redeploy Cloud Run renderer.
-      **The redeploy is now REQUIRED, not optional:** S163 fixed `scripts/export-pdf.js`
-      (full-bleed slots ignored the staff reposition offset — see TO-DOS #102), and that
-      file is baked into the Cloud Run image. Until it is redeployed, a repositioned
-      `FPhim`/`FPher` photo still prints centred.
+- [x] **10. Merge DONE (S166).** Both halves were already complete and this entry was stale:
+      - **Nothing to merge.** Heirloom never lived on a branch — S157–S163 committed it
+        straight to `main` (163 tracked files under `assets/Template_Heirloom`).
+      - **Cloud Run redeployed** (owner, S166 confirmed). Serving revision
+        `aevia-pdf-renderer-00028-6c9`, built by Cloud Build `6848b0b2` which started
+        **100 seconds after** the crop fix `a0fb1ff` was committed. `--source .` zips the
+        working tree, so the build carried the fix. The full-bleed reposition offset is live.
+      **Still unproven by anything:** that a repositioned full-bleed photo now PRINTS
+      off-centre. `tests/photo-crop-paths.test.js` guards all three branches, but the bug was
+      found by eyeballing a PDF and no PDF has been eyeballed since the fix. One dashboard
+      render of a Heirloom order with `FPhim` moved would close it.
 
 ## Fixed during Phase A eyeball
 - **Cover photo hidden behind a dark square (S157, owner report).** Two root causes, both fixed:
