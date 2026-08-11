@@ -229,7 +229,7 @@ Designed in Vienna · Printed in the EU
 ### Preparing your photos
 *Числа фотографий убрать. Min resolution, sRGB, источники загрузки остаются.*
 
-JPEG or RAW both work. We'll tell you the ideal photo range when you order.
+JPG, PNG and HEIC all work, up to 40 MB per photo. We'll tell you the ideal photo range when you order.
 
 ### Delivery
 *Убрать: все страны кроме Австрии пока. 
@@ -299,7 +299,13 @@ We accept all major credit and debit cards via Stripe. You're only charged after
 
 **How many photos do I need?**
 
-It depends on the template and page count. We'll tell you the ideal range when you order. JPEG or RAW both work.
+It depends on the template and page count. We'll tell you the ideal range when you order.
+
+**What photo formats can you accept?**
+
+JPG, PNG and HEIC, up to 40 MB per photo. Photos from an iPhone are HEIC, so they upload as they are with nothing to convert.
+
+If you shoot RAW on a dedicated camera (.CR2, .NEF, .ARW, .DNG), export those to JPEG before uploading. Browsers can't display RAW, so we can't show you your book.
 
 **What do printed photos actually look like?**
 

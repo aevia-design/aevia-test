@@ -90,7 +90,7 @@ the 2-business-day dispatch promise. The deck's replacement removes the sentence
 - tender ~80 / joyride ~98: `A 40-page book uses 40–60 photos; 80 pages uses 80–110.`
 - newborn ~74 / scribble ~92 / papercut ~92: `A 40-page book uses 35–50 photos; 80 pages uses 70–90.`
 - wander ~69: no count sentence, already close.
-- deck: `JPEG or RAW both work. We'll tell you the ideal photo range when you order.`
+- deck: `JPG, PNG and HEIC all work, up to 40 MB per photo. We'll tell you the ideal photo range when you order.`
 - Keep the min-resolution / sRGB / upload-source `<ul>` items.
 
 ### 2e. Delivery — Austria only
@@ -154,7 +154,8 @@ stay until the owner shoots Set F.
 | Q | Current | Deck |
 |---|---|---|
 | `Do you deliver outside Austria?` (~L323) | **`Yes — we currently deliver across the EU`** | **`No, currently we deliver only in Austria.`** + `More countries coming soon. After you approve your preview, your book is printed and dispatched in 2 business days. Delivery takes 7 business days in Austria. Shipping costs are shown at checkout before you pay.` |
-| `How many photos do I need?` (~L287) | `between 50 and 80 photos` | `It depends on the template and page count. We'll tell you the ideal range when you order. JPEG or RAW both work.` |
+| `How many photos do I need?` (~L287) | `between 50 and 80 photos` | `It depends on the template and page count. We'll tell you the ideal range when you order.` |
+| `What photo formats can you accept?` (new, S166) | absent | closed list + 40 MB cap + RAW instruction + the iCloud Shared Album 2048px warning. Full text in `website-copy-EN.md`. |
 | `How does ordering work?` (~L299) | mentions **"two layout options"** (doesn't exist) | deck body, ending `You pay only then, and your book goes to print.` |
 
 ### Structure

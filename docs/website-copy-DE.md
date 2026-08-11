@@ -219,7 +219,7 @@ Entworfen in Wien · Gedruckt in der EU
 
 ### Preparing your photos
 
-JPEG oder RAW, beides funktioniert. Die ideale Fotoanzahl sagen wir dir bei der Bestellung.
+JPG, PNG und HEIC funktionieren alle, bis 40 MB pro Foto. Die ideale Fotoanzahl sagen wir dir bei der Bestellung.
 
 ### Delivery
 *Только Австрия (EN, S139): другие страны убрать.*
@@ -289,7 +289,13 @@ Wir akzeptieren alle gängigen Kredit- und Debitkarten über Stripe. Abgebucht w
 
 **Wie viele Fotos brauche ich?**
 
-Das hängt von Vorlage und Seitenzahl ab. Die ideale Anzahl sagen wir dir bei der Bestellung. JPEG oder RAW, beides funktioniert.
+Das hängt von Vorlage und Seitenzahl ab. Die ideale Anzahl sagen wir dir bei der Bestellung.
+
+**Welche Fotoformate könnt ihr verarbeiten?**
+
+JPG, PNG und HEIC, bis 40 MB pro Foto. Fotos vom iPhone sind HEIC und lassen sich direkt hochladen, du musst nichts umwandeln.
+
+Wenn du mit einer richtigen Kamera in RAW fotografierst (.CR2, .NEF, .ARW, .DNG), exportiere die Bilder vorher als JPEG. Browser können RAW nicht anzeigen, deshalb können wir dir dein Buch nicht zeigen.
 
 **Wie sehen gedruckte Fotos wirklich aus?**
 
