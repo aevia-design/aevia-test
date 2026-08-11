@@ -22,8 +22,6 @@ const pages = [
   ['product-wander', `${LOCAL}/wander.html`],
   ['product-horizon', `${LOCAL}/horizon.html`],
   ['product-terrain', `${LOCAL}/terrain.html`],
-  ['product-radiance', `${LOCAL}/radiance.html`],
-  ['product-devotion', `${LOCAL}/devotion.html`],
   ['product-vows', `${LOCAL}/vows.html`],
   // Order flow
   ['order-step1', `${LOCAL}/order?${orderQuery}`],
