@@ -4849,28 +4849,51 @@
       if (!value) return;
       const div = document.createElement('div');
       div.className = 'order-info-row';
-      div.innerHTML = `<span class="order-info-label">${label}</span><span class="order-info-value">${value}</span>`;
+      const l = document.createElement('span');
+      l.className = 'order-info-label';
+      l.textContent = label;
+      const v = document.createElement('span');
+      v.className = 'order-info-value';
+      v.textContent = value;   // customer text — never interpolated as HTML
+      div.append(l, v);
       rows.appendChild(div);
     }
 
     if (order.photoNotes) addRow('About the album', order.photoNotes);
 
-    // Cover captions
+    // Cover captions. Labels come from the ACTIVE TEMPLATE's own caption defs, which
+    // already carry good ones ('Front — album name', 'Spine — album name'). The previous
+    // hardcoded {year,name,spineName,spineYear} map was Scribble's and Papercut's key set
+    // applied to all seven templates: Wander (front/spine) showed NOTHING, and Joyride,
+    // Newborn, Tender and Heirloom showed only 'name'. Confirmed live on AEV-094 — the
+    // customer's album name and spine name were invisible to staff.
     const coverCaptions = order.coverCaptions || {};
-    const coverLabels = { year: 'Cover — year', name: 'Cover — album name', spineName: 'Spine — name', spineYear: 'Spine — year' };
-    Object.entries(coverLabels).forEach(([key, label]) => {
-      if (coverCaptions[key]) addRow(label, coverCaptions[key]);
+    const coverDefs = getActiveTemplateData()?.cover?.captions || [];
+    const shown = new Set();
+    coverDefs.forEach(def => {
+      if (coverCaptions[def.key]) { addRow(def.label || def.key, coverCaptions[def.key]); shown.add(def.key); }
+    });
+    // Anything the template does not declare still gets shown under its raw key. A caption
+    // the customer filled in must never vanish because a data file was renamed.
+    Object.entries(coverCaptions).forEach(([key, val]) => {
+      if (!shown.has(key)) addRow(key, val);
     });
 
-    // FP-specific texts
+    // FP-specific texts, labelled from the template's own spread definitions for the same
+    // reason: the old map called every template's FP1 'Birthday wishes', so a Wander
+    // itinerary was filed under a Scribble birthday page.
     const fpTexts  = order.fpTexts  || {};
-    const fpLabels = { FP1: 'Birthday wishes', FP2: 'Funny words', FP3: 'Favourite toy', FP4: 'First steps', FP5: 'Art gallery captions', FPINTRO: 'Intro details', FPLABOUR: 'Labour caption', ZODIAC: 'Star sign' };
+    const spreads  = getActiveTemplateData()?.spreads || {};
+    // Keys that ride in fpTexts but are not spreads (see order.html — they travel here to
+    // avoid adding backend fields).
+    const extraLabels = { zodiac: 'Star sign', monogram: 'Monogram', monogramLetters: 'Monogram initials' };
     Object.entries(fpTexts).forEach(([key, val]) => {
-      const label = fpLabels[key.toUpperCase()] || key;
+      const spreadId = resolveFpKey(key);
+      const label = extraLabels[key] || spreads[spreadId]?.label || key;
       let display;
       if (Array.isArray(val)) display = val.join(', ');
       else if (val && typeof val === 'object') {
-        // FP1 map: {region, countries, itinerary}
+        // Wander/Joyride travel map: { region, countries, itinerary }
         display = [(val.countries || []).join(', '), val.itinerary].filter(Boolean).join(' — ');
       } else display = val;
       addRow(label, display);

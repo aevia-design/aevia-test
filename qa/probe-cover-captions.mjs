@@ -18,7 +18,10 @@ import { chromium } from '@playwright/test';
 const ORDER = process.env.QA_ORDER || 'AEV-094';
 const EMAIL = process.env.STAFF_EMAIL || 'evg.myasin@gmail.com';
 const PW    = process.env.STAFF_PW;
-const BASE  = 'https://aevia-test.pages.dev/pages';
+// QA_BASE lets this run against a local server before the change is pushed. Locally the
+// .html suffix is required (clean URLs are a Cloudflare feature and 404 on http-server).
+const BASE  = process.env.QA_BASE || 'https://aevia-test.pages.dev/pages';
+const ENGINE = BASE.includes('localhost') ? 'staff/template-engine.html' : 'staff/template-engine';
 
 if (!PW) { console.error('❌ STAFF_PW not set. In PowerShell:  $env:STAFF_PW = Read-Host "Staff password"'); process.exit(1); }
 
@@ -29,7 +32,7 @@ const errs = [];
 page.on('pageerror', e => errs.push(e.message));
 
 try {
-  await page.goto(`${BASE}/staff/template-engine`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/${ENGINE}`, { waitUntil: 'networkidle' });
   await page.waitForSelector('#eng-email', { state: 'visible', timeout: 20000 });
   await page.fill('#eng-email', EMAIL);
   await page.fill('#eng-pwd', PW);

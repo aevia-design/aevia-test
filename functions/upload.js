@@ -25,6 +25,25 @@ const MIN_UPLOAD_SLOTS = 60;
 // Storage client using your service account key
 const storage = new Storage({ keyFilename: './serviceAccountKey.json' });
 
+/** Render one fpTexts value for order-details.txt.
+ *  fpTexts holds three shapes: a string (most spreads), an array (funny words, gallery
+ *  captions, monogram initials) and an object — Wander's and Joyride's travel map,
+ *  { region, countries, itinerary }. The object case used to hit template-literal
+ *  stringification and print the literal text "[object Object]", which is how every
+ *  Wander and Joyride order in the bucket lost its itinerary from this file. */
+function formatFpValue(val) {
+  if (Array.isArray(val)) return val.join(', ');
+  if (val && typeof val === 'object') {
+    const countries = Array.isArray(val.countries) ? val.countries.join(', ') : '';
+    // The itinerary is newline-separated; keep it on one line like the email does.
+    const itinerary = typeof val.itinerary === 'string' ? val.itinerary.replace(/\n/g, '; ') : '';
+    const joined = [countries, itinerary].filter(Boolean).join(' — ');
+    // Never silently drop an unrecognised shape — that is the bug this replaces.
+    return joined || JSON.stringify(val);
+  }
+  return val;
+}
+
 // ─── Order number (AEV-001, AEV-002 …) ───────────────────────────────────────
 async function getNextOrderNumber() {
   const db = admin.firestore();
@@ -72,6 +91,7 @@ async function handler(req, res) {
     const {
       customerName, email, templateName, pageCount, files,
       specialRequests, photoNotes, price, fpTexts, fpSelections, photoCount, coverCaptions,
+      coverCaptionLabels,
     } = req.body;
 
     const missing = ['customerName', 'email', 'templateName', 'pageCount']
@@ -188,6 +208,7 @@ async function handler(req, res) {
       token,
       previewToken: null,
       coverCaptions: coverCaptions || null,
+      coverCaptionLabels: coverCaptionLabels || null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -239,6 +260,17 @@ async function handler(req, res) {
       `Submitted: ${new Date().toISOString()}`,
     ];
     if (photoNotes)      detailLines.push(``, `About this album:`, photoNotes);
+    // Cover + spine text. This was missing entirely until S165: coverCaptions reached
+    // Firestore and the staff email but was never written here, so NO order in the
+    // bucket has ever recorded what the customer wanted printed on their cover.
+    // Labels ride in from the client because functions/ cannot read the template data.
+    if (coverCaptions && Object.keys(coverCaptions).length) {
+      detailLines.push(``, `Cover text:`);
+      Object.entries(coverCaptions).forEach(([key, val]) => {
+        const label = (coverCaptionLabels && coverCaptionLabels[key]) || key;
+        detailLines.push(`  ${label}: ${val}`);
+      });
+    }
     if (specialRequests) detailLines.push(``, `Special requests:`, specialRequests);
     if (fpSelections && fpSelections.length) {
       detailLines.push(``, `Add-ons: ${fpSelections.join(', ')}`);
@@ -246,8 +278,7 @@ async function handler(req, res) {
     if (fpTexts && Object.keys(fpTexts).length) {
       detailLines.push(``, `Add-on notes:`);
       Object.entries(fpTexts).forEach(([key, val]) => {
-        const display = Array.isArray(val) ? val.join(', ') : val;
-        detailLines.push(`  ${key}: ${display}`);
+        detailLines.push(`  ${key}: ${formatFpValue(val)}`);
       });
     }
     await bucket.file(`${folderName}/order-details.txt`)
@@ -274,6 +305,7 @@ async function handler(req, res) {
 }
 
 exports.createUploadSessionHandler = (req, res) => cors(req, res, () => handler(req, res));
+exports.formatFpValue = formatFpValue;   // unit-tested in tests/order-data-completeness.test.js
 
 // ─── CHUNK 4 PART B: confirmUpload Cloud Function ───────────────────────────────
 // Input: { orderNumber, token }

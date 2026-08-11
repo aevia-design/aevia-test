@@ -2397,6 +2397,12 @@ async function submitOrder() {
   });
   const coverCaptions = Object.fromEntries(Object.entries(coverCaptionsRaw).filter(([, v]) => v));
   const hasCoverCaptions = Object.keys(coverCaptions).length > 0;
+  // Ship the human labels with the values. order-details.txt is written by a Cloud
+  // Function, and functions/ has no access to the template data files — without this the
+  // details file could only print raw keys like 'front'. Keys alone were the reason cover
+  // text never appeared in that file at all (S165).
+  const coverCaptionLabels = Object.fromEntries(
+    coverCaptionDefs.filter(c => coverCaptions[c.key]).map(c => [c.key, c.label || c.key]));
 
   // Collect FP texts and assemble specialRequests string
   const activeAddons = ORDER.addons.filter(a => !cancelledAddons.has(a.slug));
@@ -2573,6 +2579,7 @@ async function submitOrder() {
         specialRequests: fullSpecialReq,
         fpTexts:         Object.keys(fpTexts).length ? fpTexts : null,
         coverCaptions:   hasCoverCaptions ? coverCaptions : null,
+        coverCaptionLabels: hasCoverCaptions ? coverCaptionLabels : null,
         fpSelections:    activeAddons.map(a => fpKeyForSlug(a.slug)),
         photoCount:      mainFiles.length,
       }),
