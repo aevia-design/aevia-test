@@ -298,8 +298,14 @@ try {
     await page.setInputFiles('#dz-main input[type=file]', smallImg);
     await page.waitForSelector('#photo-grid .low-res-badge', { timeout: 15000 });
     const countText = await page.textContent('#photo-count');
-    countText.includes('1575') ? pass('Ch6: 800px image flagged LOW RES; summary cites ~1575px')
-                               : fail('Ch6 low-res copy', `summary="${countText.trim()}"`);
+    // S166: the summary no longer quotes the 1575px threshold. It names the cause
+    // (messaging apps, iCloud Shared Albums) and the fix (upload the original), because
+    // the customer cannot act on a placement-dependent print risk. Assert the ACTION is
+    // present rather than a pixel number, so re-wording the explanation cannot silently
+    // drop the one sentence that tells the customer what to do.
+    /originals/i.test(countText) && /camera roll/i.test(countText)
+      ? pass('Ch6: 800px image flagged LOW RES; summary names the cause and the fix')
+      : fail('Ch6 low-res copy', `summary="${countText.trim()}"`);
     await page.close();
   }
 
