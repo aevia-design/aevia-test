@@ -152,6 +152,64 @@ one broken. Byte-sniffing fixes both and is smaller.
 
 ---
 
+## Settled S166 — RAW, TIFF and the 40 MB cap. Do not re-raise without new evidence.
+
+Xenia challenged the S164 decision to reject RAW: we sit above Journi/Cewe and sell wedding
+albums, so why not accept professional formats? Examined and **all three declined by the owner.**
+
+**RAW — no.** Three reasons, in order of force:
+1. **RAW is not higher resolution.** Same sensor, same pixel dimensions as the JPEG beside it.
+   It carries tonal latitude (12–14 bit, unbaked white balance), not detail. For a book we lay
+   out but never re-grade, a full-quality JPEG prints indistinguishably.
+2. **Professionals deliver JPEG.** RAWs are working files, usually contractually retained by the
+   photographer. The customer generally does not possess one.
+3. **Rendering a RAW means overriding the photographer's edit.** Their JPEG *is* the artistic
+   decision. A neutral render by us would most likely be worse — we would degrade professional
+   work while advertising that we handle it properly.
+Blurb's Lightroom plugin, the one place RAW appears to work, converts to JPEG on the desktop
+before upload. **Nobody ingests RAW in a browser.**
+
+**TIFF — no**, though it is the cheap version of the ask and worth knowing why it failed:
+- **Print would need no change.** `scripts/export-pdf.js` runs every photo through `sharp`
+  (`:361-404`) and pdf-lib embeds sharp's *output*, not the original. sharp decodes TIFF natively.
+- **The browser is the gap**, not the printer — no browser renders TIFF, so upload previews would
+  need the `convertHeic` treatment.
+- **Size kills it.** A 16-bit TIFF off a 45MP body is 150–250 MB. A 60-photo wedding becomes
+  5–15 GB against the 1–4 GB handled today, and it grows with every sensor generation.
+
+**40 MB cap — kept.** Sizing done S166, worst case (every photo at the cap), europe-west1
+Standard at $0.020/GB/month, 12-month retention:
+
+| Order | Originals | Storage/yr | Delta at a 100 MB cap |
+|---|---|---|---|
+| 40pp, 55 photos @ 40 MB | 2.2 GB | $0.53 | — |
+| 80pp, 110 photos @ 40 MB | 4.4 GB | $1.06 | — |
+| 40pp, 55 photos @ 100 MB | 5.5 GB | $1.32 | +$0.79/order |
+| 80pp, 110 photos @ 100 MB | 11.0 GB | $2.64 | +$1.58/order |
+
+**Money was never the constraint** — one to two euros per order per year against a ~€95 book.
+Originals never reach a browser, so raising the cap adds no egress; the derivative function and
+the Cloud Run renderer both read in-region, free.
+
+**The constraint is compute, and this is the part to remember:**
+1. `generateDerivative` has **1 GB memory / 120s** (`functions/index.js:1752`). A 100 MB JPEG is
+   ~100MP, decoding to ~300 MB of raw pixels before resize. Plausible OOM. **If the derivative
+   fails the browser falls back to the full-size original** — the exact AVIF/BMP failure S164
+   documented, which converts "no extra egress" into serving 100 MB files to browsers.
+2. The PDF renderer has **900s / 8 GiB** for what would be 110 hundred-megabyte photos.
+3. An 11 GB browser upload sits squarely in the unresolved stall territory of
+   `upload-failures.md`.
+
+**If the cap is ever raised, the order is fixed:** raise `generateDerivative` to 2 GB and prove
+one large file end to end FIRST. Lifting the cap alone turns a clean rejection into a silent
+derivative failure, which is strictly worse.
+
+**The one part of Xenia's concern that stands:** a maximum-quality JPEG from a 60–100MP body can
+exceed 40 MB, so we would refuse a perfect, browser-native, print-ready file. Not acted on
+(owner, S166), but it is the real gap if the professional segment ever matters.
+
+---
+
 ## Success criteria
 
 Complete when:
