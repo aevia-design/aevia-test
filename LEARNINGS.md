@@ -1135,3 +1135,68 @@ sitting in the bucket with `Content-Type: image/jpeg`), but the stated reason wa
 **Rule: exercise the operation you are claiming works.** For image libraries that means
 producing pixels — `.toBuffer()`, `.resize()` — not reading metadata. **And: HEIC behaviour
 cannot be tested on this Windows machine at all; only the deployed Linux function decodes it.**
+
+## 2026-08-11 (S165) — A cover defect can live in the artwork, where code search cannot reach
+
+Wander's cover rendered the album name twice, 3px apart. I spent the investigation inside the
+engine — DOM node counts, a MutationObserver across the whole order load, both render paths,
+`git log` on the SVG — and proved conclusively that the code was clean: one cover row, one
+caption node per key, one position, start to finish. The second copy was **"Dolomites, 2026"
+outlined into `Cover.svg` as vector paths**. The engine was correctly drawing the customer's
+text on top of artwork that already had text there. It reaches print — `export-pdf.js` embeds
+the same SVG.
+
+Three things hid it, and each defeated a different reflex:
+- **`grep` found nothing.** Outlined text has no characters, only curves.
+- **A DOM query found nothing.** The SVG loads as an `<img>`, so its contents are not
+  queryable — and `document.querySelectorAll('.cover-canvas svg text')` returning `[]`
+  reads exactly like "there is no text here".
+- **The string matched the customer's.** `wander-data.js`'s `placeholder` was copied *from*
+  the artwork, so the order form suggested that wording and the customer typed it back. Two
+  identical strings look like a double-render bug; two different strings would have been
+  obvious. **The owner's first guess — "layer 1 is the default text" — was right, and I
+  dismissed it after checking the CSS placeholder and the DOM instead of the artwork.**
+
+**Rule: when a render shows something the data does not contain, render the ASSET on its own
+before theorising about the code.** `qa/probe-cover-svg-text.mjs` does this for all ten cover
+SVGs in about twenty seconds and is the cheapest possible first step, not the last resort.
+Reading the source can only ever find what the source contains.
+
+**Corollary: a template's `placeholder` must never be copied from text baked into its
+artwork.** If it is, the collision is invisible to exactly the person most likely to test it.
+Every other template's cover SVG was checked this way and is clean (zero `<text>` elements
+across all ten files) — Wander was the only one.
+
+## 2026-08-11 (S165) — The viewBox patch is lost on every re-export, by design
+
+Re-exporting Wander's cover reverted the S154 viewBox patch to the full-bleed artboard twice
+in one session. `tests/cover-svg-viewbox.test.js` caught both, naming the cause. This is not
+carelessness upstream: the fix lives **downstream of the export**, so any redraw discards it.
+
+The durable fix is upstream and has nothing to do with an export checkbox — Illustrator always
+writes the artboard as the viewBox, so **the artboard must BE the trim (409×200mm) with the
+18mm bleed set in Document Setup**, artwork extending past it. There is no "Use Artboards"
+option to hunt for in Save As; the geometry of the document is the setting.
+
+**Rule: run `npm test` on any SVG drop before looking at it.** And when a supplier's file needs
+the same manual correction twice, fix the supplier's document setup, not the file.
+
+## 2026-08-11 (S165) — A hardcoded map outlived the assumption that created it
+
+The staff order-info panel labelled customer data from `coverLabels = { year, name, spineName,
+spineYear }` and `fpLabels = { FP1: 'Birthday wishes', … }` — Scribble's and Papercut's key
+sets, written when those were the only templates. Five of seven templates use other keys.
+**Wander showed nothing at all; Joyride, Newborn, Tender and Heirloom showed only `name`** and
+silently dropped the subtitle and spine. `order-details.txt` was worse: it never wrote
+`coverCaptions` in any form, for any template, ever — confirmed against 38 real orders.
+
+It survived seven template integrations because **nothing checked**, and it only surfaced when
+a Wander itinerary appeared under the label "Birthday wishes" — absurd enough to notice. The
+silent losses (Tender's spine, Heirloom's monogram) were found only by looking for them.
+
+**Rule: when a per-template surface reads a literal map of keys, that is a data-loss bug
+waiting for the next template.** Read the template's own definitions — every data file already
+carried good labels. And write the guard test against the *shape* (no hardcoded map; labels
+come from the template; undeclared keys still render), not against today's key names — the
+original map passed every eyeball precisely because it was correct for the templates that
+existed when it was written.

@@ -79,6 +79,13 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   ⚠ **A Xenia drop is an input to VALIDATE, not a spec to implement** — filled photo windows,
   mixed bleed conventions and stray viewBoxes have each cost a session. See LEARNINGS (S157)
   for the pre-flight checks, and re-apply any in-repo SVG patch after a re-export.
+  ⚠ **Artwork can carry text the code knows nothing about.** Wander's cover shipped with the
+  album name outlined into it, under the customer's caption, and it would have printed (S165).
+  **Outlined text is invisible to `grep` and to a DOM query** — the SVG loads as an `<img>`.
+  Run `node qa/probe-cover-svg-text.mjs` (renders all ten cover SVGs standalone, ~20s) on any
+  drop, and never copy a template's `placeholder` from wording baked into its artwork.
+  The durable upstream fix for the viewBox: **Illustrator writes the artboard as the viewBox**,
+  so the artboard must BE the trim (409×200mm) with 18mm bleed in Document Setup.
 - **Heirloom letter geometry is machine-checked**: `node scripts/check-heirloom-letters.mjs`
   compares all 24 monogram-letter coordinates per colourway against the two sizing CSVs and
   enforces `with-bleed = without-bleed + 3` (interior) / `+ 18` (cover). Run it after ANY CSV
