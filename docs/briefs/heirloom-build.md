@@ -122,8 +122,23 @@ The opening is the `clipPath`, NOT the rect beside it — see LEARNINGS (S160).
       re-eyeballed with `assets/test photos/Wedding` (the subject-matched set —
       see LEARNINGS S158); the first pass used Newborn photos and told us little
       about how the book actually reads.
-- [~] **7. PDF parity** — CODE WRITTEN (S158), NOT YET VERIFIED. Needs an owner
-      Cloud Run redeploy + a dashboard generation. NEVER render locally.
+- [x] **7. PDF parity VERIFIED (S163).** Owner redeployed Cloud Run and generated Brown,
+      Green and Blue PDFs from the dashboard — the first renders those three colourways
+      have ever had. **The monogram letters land in the artwork's pockets**, and IM FELL's
+      per-character draw centres a single glyph correctly, which were the two things
+      nothing could prove without a real PDF. Also verified an **80pp Blue** book (112
+      photos, 14mm spine vs the 10mm the covers are authored at).
+      **One bug found by the owner eyeballing those PDFs: full-bleed photos ignored the
+      staff reposition offset** — `FPhim` had been moved in the engine and printed centred.
+      `export-pdf.js` had three photo branches and only the heart and regular ones read
+      `state.heartCrop`; the full-bleed branch hardcoded `position:'centre'` and had done
+      since it was written on 2026-05-26 (#74 added crop handling to the other two in S50
+      and missed it). Both engines apply `object-position` to any slot shape, so it looked
+      right in the engine and in customer-preview and only diverged in print. Fixed to use
+      the shared `coverExtract`; `tests/photo-crop-paths.test.js` guards all three branches.
+      **Not Heirloom-only** — every template has a full-bleed slot; see TO-DOS #102 for the
+      list and the real-print check deferred to the Printsmarter samples run.
+      Original code notes from S158 follow.
       - `services/pdf-renderer/index.js` now passes `monogram` into the render state,
         via `order.monogram || order.fpTexts.monogram` — the same route `zodiacSign`
         takes, because `saveStaffState` persists neither. **This file is part of the
@@ -198,8 +213,38 @@ half-working. `BG_R/G/B` is not optional: without it spreads bake on a near-whit
 and mismatch the covers (S98). Watch each run's `Monogram set to "<m>" (was …)` line; a
 throw means the picker did not take, and capturing the wrong monogram silently would
 poison a whole set.
-- [ ] **9. E2E** — `qa/staff-customer-chain.mjs`; `npm test` green.
+- [x] **9. E2E DONE (S163).** `qa/staff-customer-chain.mjs` green on **AEV-090** (green) —
+      staff login → engine load → save → preview link → customer approve → Stripe test
+      payment → `paid`. `npm test` 355. The chain gained a **monogram parity assertion**
+      (engine `_activeMonogram` vs customer-preview): `roots` → `roots`. That hop had only
+      ever been covered by the two mocks; this is the first real end-to-end proof.
+      **The run earned its keep — it caught a live crash nothing else did.**
+      - **`customer-preview` threw `ReferenceError: color is not defined` out of
+        `renderCover`, killing the book render for ALL SIX templates.** Introduced the day
+        before in `e1efd85` (S160) by the light-ink caption treatment for the dark
+        Brown/Green covers: the line was ported from `template-engine.html`, which computes
+        `color` inline, but customer-preview had already moved that into
+        `applyCoverCaptionLayout`. Fixed by reading `cap.style.color` back after layout —
+        the idiom the file already uses for spread captions. **The failure was partial and
+        therefore nasty: the book failed to render while Approve and Pay stayed live, so a
+        customer could approve a book they never saw.**
+      - **`qa/heirloom-preview-mock.mjs` already covered it** — 0/1 on the buggy file, 8/8
+        on the fixed one. It was simply never re-run after S160 touched customer-preview.
+        Not a coverage gap, a process gap.
+      - **Three stale spots in the chain script itself**, all failing silently or
+        misleadingly: `.preview-url` matches nothing (CSS-only class, dead since the
+        dashboard rework) — now reads the href from the order's own `<tr>`; the save status
+        was read after 8s, by which time `Saved ✓` has self-cleared, so a failed save read
+        identical to a good one — now polled; and **the Stripe step never filled the
+        shipping address** (`shippingName` / `AddressLine1` / `PostalCode` / `Locality`),
+        so checkout refused the submit and the run sat out a 90s timeout looking like a
+        declined payment. It knew only `#billingName`/`#billingPostalCode`, which are not
+        fields on that form, and the fill helper fails silently.
 - [ ] **10. Merge** — after owner approval; redeploy Cloud Run renderer.
+      **The redeploy is now REQUIRED, not optional:** S163 fixed `scripts/export-pdf.js`
+      (full-bleed slots ignored the staff reposition offset — see TO-DOS #102), and that
+      file is baked into the Cloud Run image. Until it is redeployed, a repositioned
+      `FPhim`/`FPher` photo still prints centred.
 
 ## Fixed during Phase A eyeball
 - **Cover photo hidden behind a dark square (S157, owner report).** Two root causes, both fixed:
