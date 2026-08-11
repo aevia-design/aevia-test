@@ -149,6 +149,29 @@ consulted before filename) lives in HTML and cannot be unit-tested. `isHeicMagic
 that the engine calls it first is proven only by reading the code. **Loading AEV-094 in the
 staff engine is the real test** — it must show 52 photos, not 38.
 
+## Step 11-12: Second cross-model review + claim verification (owner's request)
+
+- **Agents:** Codex `gpt-5.6-sol` (review of commit `a5077d5`), then orchestrator
+  (`verifying-claims`) checking Codex's findings rather than adopting them
+- **Findings accepted and fixed in `7009f53`:** the Android extension-less regression
+  (would have blocked real customers), special-page errors written to `err-step2` instead of
+  `err-special` and therefore invisible, and a filename interpolated into `innerHTML`.
+  The latter two were introduced earlier the same session.
+- **Finding accepted, remedy partly rejected:** `functions/upload.js` validates nothing —
+  confirmed at L95-100. But Codex's suggestion that `confirmUpload` should refuse to
+  finalise when a derivative failed is **wrong**: derivative generation is an async
+  `onFinalize` trigger, so `confirmUpload` cannot know whether it has run, and coupling them
+  would create a race that could block legitimate orders. Correct split: validate
+  name/type/size when minting the signed URL; surface derivative-less photos to staff
+  separately. **Still outstanding — needs a deploy, so it is its own change.**
+- **Clean bills verified:** `.rotate()` on JPEG confirmed idempotent by execution
+  (800×400 tag 6 → 400×800 → 400×800), so no double rotation is possible even if a second
+  call crept in. Content-Type mismatch impossible (the PUT header is the server's own
+  returned value). All four remaining `isImage()` callers are display-path only.
+- **Accepted on trust, not verified here:** that libheif applies `irot` during decode so
+  `.rotate()` is a no-op on HEIC. Untestable locally (see CORRECTION above).
+  **Check after the deploy: generate one Heirloom PDF and confirm nothing is sideways.**
+
 ## Step 10: Cross-model review (owner's request)
 
 - **Agent:** OpenAI Codex `gpt-5.6-sol`, medium effort, `--sandbox read-only`
@@ -187,3 +210,18 @@ guarantees an exact slice, so a short read means the file itself is shorter than
 - **Verification after remediation:** `npm test` → **25 suites, 369 tests, 0 failures**;
   `npm run qa:order` → **12/12**; inline `<script>` blocks of both HTML files parse clean.
 - **Test coverage widened** to all six accepted brands (was three).
+
+### CORRECTION (logged S164, found while verifying Step 12)
+
+An earlier claim in this session — *"local sharp decoded IMG_5249.HEIC (4284×5712)"* — **was
+wrong**. That call was `.metadata()`, which only parses the container header. A real decode
+fails on this machine: `heif: No decoding plugin installed for this compression format`, and
+`sharp.format.heif.input.fileSuffix` lists only `.avif`. **Local sharp cannot decode
+HEVC-coded HEIC.**
+
+No conclusion changes, because the proof that the *deployed* function decodes HEIC is direct
+and independent: 14 `previews/*.heic` objects exist in the bucket with
+`Content-Type: image/jpeg`. But the stated evidence was wrong. **Consequence for future
+sessions: HEIC decode behaviour cannot be tested locally on Windows — only the deployed
+Linux function does it.** Do not re-derive this by calling `.metadata()` and mistaking a
+header read for a decode.
