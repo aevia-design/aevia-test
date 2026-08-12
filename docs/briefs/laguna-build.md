@@ -141,6 +141,44 @@ Re-verified after: 446 tests green, smoke test GATE PASS, 0 pageerrors.
 glance"). Phase A is closed. The Fredoka title weight remains open (see below) but does
 not block Phase B.
 
+## ⚠ ACTION ON THE ARTIST: the 6 region maps are missing their bleed (S170)
+
+**The six map SVGs are framed at 200mm — content only. The map code path requires
+206mm (200mm + 3mm bleed all round), which is what Wander's maps are.** This is the one
+place in the pipeline where an SVG must arrive bleed-framed.
+
+Why the map is special: standard content SVGs are authored at 200mm and the code
+**expands the viewBox** to add bleed. Region maps are the documented exception —
+`export-pdf.js` resizes them **straight to `FULL_PX` (206mm) at origin, with no viewBox
+expansion**, and `template-engine.html` does the same (`width = (200 + bleed*2) * SCALE`,
+offset `-bleed`). So a 200mm map gets **stretched ~3% to fill 206mm**.
+
+Evidence, not inference:
+- `width="200mm"` on all six Laguna maps (S.America 199.974mm); Wander's `FP 01 Map Left
+  (EU).png` measures **2434px @ 300dpi = 206.1mm**.
+- Rendering both EU maps to the same canvas and searching for the scale that best aligns
+  them gives a clear minimum at **k ≈ 0.975** — Laguna's geography is ~2.5–3% larger,
+  exactly the direction and size the 200→206 stretch predicts.
+
+**Consequence: the pins drift.** `laguna-data.js` carries Wander's coordinate table
+byte-identical (verified S168, and the artwork is visibly the same map), so the pins are
+calibrated to Wander's 206mm framing. Against a 3%-enlarged map they sit **increasingly
+wrong away from the map centre — roughly 0mm at the middle, up to ~3mm at the edges.**
+A pin 3mm off its city is visible on a printed page.
+
+Not a screen/print split: the engine and the PDF stretch identically, so the preview shows
+the same error the print will. **Do not chase this in the render code.**
+
+**What to ask for:** re-export the six region maps on a **206 × 206mm artboard** — the
+200mm page plus **3mm bleed on all four sides** — with the map artwork extending into the
+bleed. Same geography and framing as Wander's existing maps. Nothing else in the drop
+needs re-exporting: the interior spreads, the intro and the itinerary page are correctly
+200mm, because those DO get viewBox-expanded.
+
+Cheaper alternative if a re-export is slow: Laguna's maps look identical to Wander's, so
+Laguna could point at Wander's existing 206mm assets. That is an owner call, not a
+code one — it couples two templates to one asset set.
+
 ## Open issues / decisions needed from the owner
 
 1. ~~**Cover title font weight is a guess.**~~ **CLOSED S170.** The owner reissued the
