@@ -454,14 +454,21 @@ window.LAGUNA_DATA = {
       orderFormMeta: { countrySelect: true, sameRegionOnly: true, textPrompt: 'Your route', hint: 'List the places on your trip, in order, and we\'ll lay out the itinerary for you.', placeholder: 'e.g. Athens → Naxos → Paros → Milos' },
       type: 'functional', id: 'FP1', label: 'Travel map', mapPage: true,
       pin: { png: 'FP Travel Itinerary/Location pin/Asset 501.png', wMm: 12, hMm: 22.3, anchor: 'center' },
-      // region code (from mapCoordinates) → left-page map SVG
+      // region code (from mapCoordinates) → left-page map PNG.
+      // These are 206mm (200mm trim + 3mm bleed all round), NOT the 200mm used by every
+      // other artwork file here. Region maps are the one asset the code does not
+      // viewBox-expand — it resizes them straight to the full bleed canvas — so a 200mm
+      // map is stretched ~3% and the pin table, which is Wander's, no longer matches the
+      // geography. The first Laguna drop was 200mm SVGs and had exactly that fault;
+      // re-issued as 206mm PNGs (S170), which measure 2434px @300dpi like Wander's and
+      // align with them at scale 1.0000. Re-check the mm size after any re-export.
       maps: {
-        'EU':         'FP Travel Itinerary/EU Map.svg',
-        'Asia':       'FP Travel Itinerary/Asia Map.svg',
-        'Africa':     'FP Travel Itinerary/Africa Map.svg',
-        'N.America':  'FP Travel Itinerary/N.America Map.svg',
-        'S.America':  'FP Travel Itinerary/S.America.svg',
-        'Oceania':    'FP Travel Itinerary/Oceania.svg',
+        'EU':         'FP Travel Itinerary/EU Map.png',
+        'Asia':       'FP Travel Itinerary/Asia Map.png',
+        'Africa':     'FP Travel Itinerary/Africa Map.png',
+        'N.America':  'FP Travel Itinerary/N.America Map.png',
+        'S.America':  'FP Travel Itinerary/S.America.png',
+        'Oceania':    'FP Travel Itinerary/Oceania.png',
       },
       pages: {
         left: {

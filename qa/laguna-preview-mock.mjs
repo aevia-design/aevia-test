@@ -100,6 +100,9 @@ try {
       belowCount,
       caps,
       mapSvg: allSvgs.find(s => /Map|Oceania|America/i.test(s)) || null,
+      // Pin count proves the shared Wander coordinate table actually resolved against
+      // this template's map — the whole reason the 206mm framing matters.
+      mapPins: document.querySelectorAll('.map-pin, img[src*="Location pin"]').length,
       introSvg: allSvgs.find(s => /Intro/i.test(s)) || null,
       pageCanvases: document.querySelectorAll('.page-canvas').length,
       fontsLoaded: [...document.fonts].filter(f => f.family === 'Fredoka' && f.status === 'loaded').map(f => f.weight),
@@ -165,9 +168,15 @@ try {
     ? pass('both functional pages are in the book')
     : fail('both functional pages in the book', JSON.stringify(state.sequence.slice(0, 6)));
 
-  /EU Map\.svg/.test(state.mapSvg || '')
+  // The region maps are PNG, not SVG (S170 re-issue) — match on the region name only, so
+  // the gate does not break again on a format change.
+  /EU Map\.(png|svg)/.test(state.mapSvg || '')
     ? pass('travel map resolves to the selected region (EU)')
     : fail('travel map resolves to the region', `mapSvg = ${state.mapSvg}`);
+
+  state.mapPins === 2
+    ? pass('both selected countries drop a pin on the map')
+    : fail('both countries drop a pin', `pins rendered = ${state.mapPins}, expected 2 (Greece, Italy)`);
 
   const laguna404s = notFound.filter(u => u.includes('Template_Laguna'));
   laguna404s.length === 0

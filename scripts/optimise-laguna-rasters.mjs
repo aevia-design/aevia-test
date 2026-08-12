@@ -61,14 +61,13 @@ const QUALITY = 92;
 // from the sizing CSVs' bgColor column. Getting this wrong shows up as a halo
 // on the soft edges of the painting, so it is stated per file rather than
 // guessed once.
+// The six region maps were here until S170. They were re-issued as flat 206mm PNGs
+// rather than SVGs with an embedded raster, so there is no base64 blob to re-encode and
+// nothing for this script to do — it would only skip them. They are exempt from the 8 MB
+// SVG-drop threshold too, since that applies to SVGs. Leaving the entries in would make
+// the script throw ENOENT on the .svg names that no longer exist.
 const TARGETS = [
   { file: 'Cover/Artboard 1.svg',                   behind: '#fbf8f6' }, // cover front panel
-  { file: 'FP Travel Itinerary/Africa Map.svg',     behind: '#c6ceba' },
-  { file: 'FP Travel Itinerary/Asia Map.svg',       behind: '#c6ceba' },
-  { file: 'FP Travel Itinerary/EU Map.svg',         behind: '#c6ceba' },
-  { file: 'FP Travel Itinerary/N.America Map.svg',  behind: '#c6ceba' },
-  { file: 'FP Travel Itinerary/Oceania.svg',        behind: '#c6ceba' },
-  { file: 'FP Travel Itinerary/S.America.svg',      behind: '#c6ceba' },
 ];
 
 const mib = (b) => (b / 1048576).toFixed(2) + ' MB';

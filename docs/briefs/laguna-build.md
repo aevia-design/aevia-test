@@ -141,7 +141,23 @@ Re-verified after: 446 tests green, smoke test GATE PASS, 0 pageerrors.
 glance"). Phase A is closed. The Fredoka title weight remains open (see below) but does
 not block Phase B.
 
-## ⚠ ACTION ON THE ARTIST: the 6 region maps are missing their bleed (S170)
+## ✅ RESOLVED (S170): the 6 region maps were missing their bleed, and were re-issued
+
+**Fixed.** The artist re-exported all six as **206mm PNGs** (2434px @ 300dpi, identical to
+Wander's). Verified: each measures 206.1mm, and rendering the new EU map against Wander's
+and searching for the best-aligning scale now returns **k = 1.0000** — the framing matches
+exactly, so the shared Wander pin table is valid. `laguna-data.js` `maps` now points at
+`.png`, and the six map entries were removed from `optimise-laguna-rasters.mjs` (flat PNGs
+carry no base64 blob to re-encode, and the script would throw ENOENT on the old names).
+Gates after the swap: render GATE PASS, preview mock **14/14** including a new assertion
+that both selected countries actually drop a pin.
+
+**Keep the rule in mind for the next drop:** region maps are the ONE asset that must arrive
+**bleed-framed at 206mm**. Everything else is 200mm and gets viewBox-expanded by the code.
+
+The original diagnosis, kept because the next drop can repeat it:
+
+### What was wrong
 
 **The six map SVGs are framed at 200mm — content only. The map code path requires
 206mm (200mm + 3mm bleed all round), which is what Wander's maps are.** This is the one
