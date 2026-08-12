@@ -143,11 +143,14 @@ not block Phase B.
 
 ## Open issues / decisions needed from the owner
 
-1. **⚠ Cover title font weight is a guess.** The cover CSV names it **"Fredoka Light
-   Bold"**, which is not a real cut — Fredoka ships Light / Regular / Medium / SemiBold /
-   Bold. Read as **Light** in the data file. **A wrong weight on the cover title is
-   visible and no amount of code can decide it.** Needs the owner's eye or a word from
-   Clémence.
+1. ~~**Cover title font weight is a guess.**~~ **CLOSED S170.** The owner reissued the
+   cover CSV as **"Fredoka Bold"** and confirmed it: the front album name and the spine
+   are both Bold, the sub-label stays Mulish Medium. `Fredoka-Bold.ttf` is the static cut
+   from the drop, so no fonttools instancing was needed. Registered in `FONT_FILE_MAP`,
+   `@font-face` on all three surfaces, and the Bold style added to
+   `COVER_FONTS`/`CAPTION_FONTS`. Verified the browser fetches the real Bold file rather
+   than synthesising a fake bold, and that the Bold cut exposes the same `dlig` feature as
+   Light, so the family-level `LIGATURE_FONTS` entry still holds.
 2. **Artist portrait orientation.** `assets/artists/clemence-trossevin/clemence-trossevin-portrait.jpg`
    is **760×1118 (portrait)**; Kevin's is 1200×800 (landscape). Not yet checked against
    how `our-artists.html` crops. Folder was renamed from `Clémence Trossevin/` to match
@@ -188,8 +191,44 @@ not block Phase B.
   four labelled slot cells (`cover-slot-empty-<key>`), so a parity check must count the
   cells. Generated ids: `cover-cap-<key>`, `intro-<slug>-<key>`, `country-add-<slug>`,
   `itin-list-<slug>`, `region-map-<slug>`, `album-notes`.
-- [ ] **6. Customer-preview parity** — mirror every engine rule; Fredoka/Mulish cuts are
-      already registered there. Re-run the Scribble smoke test for regressions.
+- [x] **6. Customer-preview parity (S170)** — new gate `qa/laguna-preview-mock.mjs`,
+      **13/13**. It mocks `getOrder` and serves photos from `assets/test photos/`, so it
+      costs no Firebase read and no GCS egress (same pattern as the Heirloom mock).
+      Proves on the CUSTOMER side: the registry resolves `laguna`, the cover artwork
+      renders UNDER the photo, 36 of 39 interior overlays sit under their photos, both
+      functional pages are in the book, the map resolves to the selected region, no
+      Laguna 404s, no page errors.
+      Audited rather than assumed: `overlayAbovePhotos`, `overlayBelow`,
+      `referenceSpineMm` and `getSpineWidthMm` are implemented identically on both
+      surfaces, the caption-font rosters are byte-identical apart from the variable name
+      (`CAPTION_FONTS` vs `COVER_FONTS`), and no template name is hardcoded in the
+      customer render path.
+      **Regressions re-run green:** Scribble 7/7, Heirloom 8/8, Laguna engine GATE PASS,
+      `npm run qa:order` 12/12, `npm test` 447.
+      ⚠ `qa/debug-joyride-render.mjs` and `qa/smoke-joyride-order.mjs` could NOT run —
+      they read `qa/test-photos/`, which is gitignored and absent on this machine. That
+      is pre-existing (see CLAUDE.md), not caused by this change. Joyride was verified
+      through the mock route instead.
+
+  **The gate found a real bug, and it was NOT a parity gap** — both screen surfaces had
+  it. A cover caption may declare its cut as a numeric `weight` (Newborn, Papercut) or as
+  a `style` STRING (Joyride, Laguna — the form Xenia's CSVs use). Both
+  `template-engine.html` and `customer-preview.html` read only the number and fell back
+  to **400**, while `export-pdf.js` honours the string through `coverCaptionStyle()`. So
+  **print and screen disagreed, and only the print is real** — the S154 shape again.
+  Laguna's Fredoka Bold title made it visible: bold in print, Light on screen.
+  Fixed at root cause with a shared `COVER_STYLE_WEIGHTS` map on both surfaces, mirroring
+  `FONT_WEIGHT_KEYWORDS` in `export-pdf.js`.
+  **Blast radius is exactly two templates** — audited all eight data files; only Joyride
+  and Laguna declare `style` on cover captions, everything else uses numeric weights or
+  nothing and is untouched.
+  **Joyride's on-screen cover changed as a result, back to what it prints:** its subtitle
+  now resolves to Mulish **300**, not 400. Note *why* it was wrong — before S168 added
+  `Mulish-Regular.ttf` there was no 400 face, so the browser fell back to Light and screen
+  accidentally matched print. **Adding the Regular cut in S168 silently changed Joyride's
+  cover subtitle on screen.** This makes it correct by construction rather than by luck.
+  A new test pins the style vocabulary (`tests/cover-caption-fonts.test.js`) so the next
+  "Fredoka Light Bold"-style CSV typo fails in CI rather than on a printed cover.
 - [ ] **7. PDF parity** — `scripts/export-pdf.js`. Check the **spine caption centres on
       the 10mm band** (pdf-lib's `heightAtSize()` is unreliable for some fonts; spine
       centring reads ascent/descent from fontkit for that reason) and that Fredoka's

@@ -1,3 +1,43 @@
+## 2026-08-12 — A caption cut named as a WORD was only read as a NUMBER (S170)
+
+Laguna's cover title is Fredoka **Bold**. It printed bold and rendered **Light on screen** —
+in both the staff engine and customer-preview.
+
+A cover caption declares its cut in one of two shapes: a numeric `weight: 500` (Newborn,
+Papercut) or a `style: 'bold'` **string** — which is what Xenia's CSVs actually name
+("Fredoka Bold", "Mulish Light"). Both screen surfaces read only the number:
+
+```js
+const weight = ov.weight !== undefined ? ov.weight
+             : (capDef.weight !== undefined ? capDef.weight : 400);   // style ignored
+```
+
+`export-pdf.js` honours the string through `coverCaptionStyle()`. So **screen and print
+disagreed, and only the print is real.** Fixed with a shared `COVER_STYLE_WEIGHTS` map on
+both surfaces, mirroring `FONT_WEIGHT_KEYWORDS` in `export-pdf.js`.
+
+**This is the third appearance of one bug shape** — S136 (Joyride's sub-labels dropped from
+print because `Mulish_regular` did not exist), S154 (Papercut's `weight: 'bold'` string
+compared numerically and printed regular), now S170. All three: **a caption's cut is
+described in one vocabulary and consumed in another, and the mismatch degrades silently** —
+to 400, to `_regular`, or to nothing at all. Nothing throws. A screenshot looks plausible.
+
+Two things worth carrying:
+
+- **The fix only became visible because a new template used a cut it did not already have.**
+  Before S168 added `Mulish-Regular.ttf`, Joyride's `style: 'light'` subtitle resolved to
+  weight 400, found no 400 face, and fell back to Light — so screen matched print **by
+  luck**. Adding the Regular cut in S168 silently changed Joyride's on-screen cover. A new
+  font cut is not an additive change; it can alter what every existing template renders.
+- **Assert on computed style, not on presence.** The engine's own smoke test counted three
+  cover captions and passed throughout. The gate that caught this read
+  `getComputedStyle(el).fontWeight`. When a bug's failure mode is "wrong but present",
+  presence checks cannot see it.
+
+Guard added: `tests/cover-caption-fonts.test.js` now pins the style vocabulary, so the CSV
+typo that started this ("Fredoka Light Bold", not a real cut in any family) fails in CI
+rather than on a printed cover.
+
 ## 2026-08-12 — `referenceSpineMm` is not the printed spine (S168)
 
 **The print spec is fixed for every template: 40pp → 10mm, 80pp → 14mm.** `getSpineWidthMm()`

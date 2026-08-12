@@ -92,6 +92,24 @@ describe('coverCaptionStyle precedence', () => {
     expect(lookupFont(sparseMap, 'Ghost', 'regular')).toBeNull();
   });
 
+  // S170: Laguna's cover CSV named its title cut "Fredoka Light Bold", which is not a
+  // real cut in any family. It was read as Light, shipped, and only the owner's eye
+  // caught it. A style string outside this vocabulary resolves to weight 400 on screen
+  // and to the `_regular` PDF key — both silent. Pin the vocabulary so the next typo
+  // fails here instead of on a printed cover.
+  test('every cover caption declares a style from the known vocabulary', () => {
+    const VOCAB = ['light', 'regular', 'normal', 'medium', 'semibold', 'bold', 'italic', 'mediumitalic'];
+    const bad = [];
+    for (const [name, global_] of Object.entries(TEMPLATES)) {
+      for (const capDef of (global.window[global_]?.cover?.captions || [])) {
+        if (capDef.style !== undefined && !VOCAB.includes(String(capDef.style).toLowerCase())) {
+          bad.push(`${name}.${capDef.key} → "${capDef.style}"`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
   test('Mulish ships the cuts Laguna and Joyride declare (S168)', () => {
     for (const cut of ['Mulish_light', 'Mulish_regular', 'Mulish_medium']) {
       expect(FONT_FILE_MAP[cut]).toBeDefined();

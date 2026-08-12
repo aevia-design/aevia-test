@@ -1188,6 +1188,10 @@
   // Master font list — mirrors the staff engine's COVER_FONTS. The caption toolbars
   // show only the subset allowed by the active template's fontPicker (templateFonts()),
   // but .find() lookups for style pills resolve against this full list.
+  // A caption's cut named as a CSV word → CSS weight. Mirrors FONT_WEIGHT_KEYWORDS in
+  // scripts/export-pdf.js so screen and print resolve the same string the same way.
+  const COVER_STYLE_WEIGHTS = { light: 300, regular: 400, normal: 400, medium: 500, semibold: 600, bold: 700 };
+
   const CAPTION_FONTS = [
     { label: 'NT Somic',          value: 'NT Somic',          styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
     { label: 'EB Garamond',       value: 'EB Garamond',       styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Semi-Bold', weight: 600, italic: false }] },
@@ -1709,7 +1713,12 @@
     const font     = ov.font    || capDef.font;
     // Default weight/italic from the caption's own CSV styling (capDef), not a
     // hardcoded 400/non-italic — mirrors template-engine.html (Newborn subtitle).
-    const weight   = ov.weight !== undefined ? ov.weight : (capDef.weight !== undefined ? capDef.weight : 400);
+    // A caption may declare its cut as a numeric `weight` or as a `style` STRING
+    // (Joyride, Laguna). Reading only the number left style-only captions at 400 while
+    // the PDF honoured the string, so screen and print disagreed. Mirrors the engine. S170.
+    const weight   = ov.weight !== undefined ? ov.weight
+                   : capDef.weight !== undefined ? capDef.weight
+                   : (COVER_STYLE_WEIGHTS[capDef.style] || 400);
     const italic   = ov.italic !== undefined ? ov.italic : (capDef.italic || false);
     // Spine captions get +2pt at 80pp (wider spine). The bump applies to the CSV default
     // ONLY — an explicit staff override wins outright. Mirrors template-engine.html.
