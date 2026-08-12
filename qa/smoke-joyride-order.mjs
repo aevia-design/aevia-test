@@ -1,6 +1,8 @@
 // Smoke test: order.html renders correctly for Joyride (4-slot cover) and that
 // single-cover Scribble is unregressed. Drives step 1 → step 2 (cover section).
 import { chromium } from 'playwright';
+import { readdirSync } from 'fs';
+import path from 'path';
 
 const BASE = 'http://localhost:8080/pages';
 const browser = await chromium.launch();
@@ -8,12 +10,17 @@ const results = [];
 
 // Four real photos for the Joyride cover, in a known order so the smoke test can
 // assert they map to Top/Left/Right/Bottom in the order they were added.
-const PHOTOS = [
-  'qa/test-photos/wander/1-at-the-table-upscaled.png',
-  'qa/test-photos/wander/11-friends-upscaled.png',
-  'qa/test-photos/wander/12-drink-upscaled.png',
-  'qa/test-photos/wander/41- jump_upscaled.jpg',
-];
+//
+// Was pointed at `qa/test-photos/wander/`, which is GITIGNORED and absent on a fresh
+// clone, so the script died with ENOENT before its first assertion (S170).
+// `assets/test photos/` is in the repo; the sort keeps the mapping deterministic.
+const PHOTO_DIR = 'assets/test photos/Sea';
+const PHOTOS = readdirSync(path.resolve(PHOTO_DIR))
+  .filter(f => /\.(jpe?g|png)$/i.test(f))
+  .sort((a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0) || a.localeCompare(b))
+  .slice(0, 4)
+  .map(f => `${PHOTO_DIR}/${f}`);
+if (PHOTOS.length < 4) throw new Error(`need 4 test photos in ${PHOTO_DIR}`);
 
 async function run(label, query, checks) {
   const page = await browser.newPage();

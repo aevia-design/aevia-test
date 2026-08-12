@@ -1,12 +1,20 @@
 // Joyride Phase A stage 4 smoke test — mirrors qa/debug-wander-render.mjs.
-// Reuses Tender's test photos (Joyride's closest precedent, real EXIF/orientation
-// mix) — this is a render smoke test, not an order, so no dedicated photo set needed.
+// This is a render smoke test, not an order, so any real photos will do.
+//
+// Was pointed at `qa/test-photos/tender`, which is GITIGNORED and absent on a fresh
+// clone, so the script died with ENOENT before reaching a single assertion (S170).
+// `assets/test photos/` is in the repo and is what every other QA script relies on.
 import { chromium } from 'playwright';
 import { readdirSync } from 'fs';
 import path from 'path';
 
-const PHOTO_DIR = path.resolve('qa/test-photos/tender');
-const files = readdirSync(PHOTO_DIR).filter(f => f.endsWith('.jpg')).map(f => path.join(PHOTO_DIR, f));
+const PHOTO_DIR = path.resolve(process.env.QA_PHOTO_DIR || 'assets/test photos/Sea');
+const files = readdirSync(PHOTO_DIR)
+  .filter(f => /\.(jpe?g|png)$/i.test(f))
+  .sort((a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0) || a.localeCompare(b))
+  .slice(0, 14)
+  .map(f => path.join(PHOTO_DIR, f));
+if (!files.length) throw new Error(`no test photos found in ${PHOTO_DIR}`);
 
 const b = await chromium.launch();
 const p = await b.newPage();

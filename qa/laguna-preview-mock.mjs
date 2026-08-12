@@ -23,8 +23,11 @@ import { mkdirSync, readdirSync } from 'fs';
 import path from 'path';
 
 const BASE      = 'http://localhost:8080';
-const PHOTO_WEB = '/assets/test%20photos';
-const PHOTO_DIR = path.resolve('assets/test photos');
+// Seaside set — Laguna is the summer/seaside template, so these are representative of
+// what a real order carries (owner's steer, S170). qa/test-photos/ is gitignored and
+// absent on this machine; assets/test photos/ is the one every QA script can rely on.
+const PHOTO_WEB = '/assets/test%20photos/Sea';
+const PHOTO_DIR = path.resolve('assets/test photos/Sea');
 const OUT_DIR   = path.resolve('sessions/qa-runs/laguna-preview-mock');
 mkdirSync(OUT_DIR, { recursive: true });
 
@@ -32,16 +35,13 @@ const results = [];
 const pass = (n) => { results.push({ n, ok: true }); console.log(`  ✅ ${n}`); };
 const fail = (n, d) => { results.push({ n, ok: false, d }); console.log(`  ❌ ${n} — ${d}`); };
 
-// Walk one level of themed subfolders, same as qa/debug-laguna-render.mjs.
-const walk = (dir, web) => readdirSync(dir).flatMap((entry) => {
-  const p = path.join(dir, entry);
-  return statIsDir(p)
-    ? readdirSync(p).filter(f => /\.jpe?g$/i.test(f)).map(f => `${web}/${encodeURIComponent(entry)}/${encodeURIComponent(f)}`)
-    : (/\.jpe?g$/i.test(entry) ? [`${web}/${encodeURIComponent(entry)}`] : []);
-});
-function statIsDir(p) { return readdirSync(path.dirname(p), { withFileTypes: true }).find(d => d.name === path.basename(p))?.isDirectory(); }
-
-const urls = walk(PHOTO_DIR, `${BASE}${PHOTO_WEB}`).slice(0, 16);
+// The Sea folder is flat. Sort by name so the same photos land in the same slots on
+// every run — a shifting photo order makes a screenshot diff meaningless.
+const urls = readdirSync(PHOTO_DIR)
+  .filter(f => /\.(jpe?g|png)$/i.test(f))
+  .sort((a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0) || a.localeCompare(b))
+  .slice(0, 16)
+  .map(f => `${BASE}${PHOTO_WEB}/${encodeURIComponent(f)}`);
 if (urls.length < 6) { console.log('❌ need at least 6 local test photos'); process.exit(1); }
 
 const ORDER = {
@@ -107,6 +107,18 @@ try {
   });
 
   await page.screenshot({ path: path.join(OUT_DIR, 'preview-laguna.png'), fullPage: true });
+
+  // A cover-only shot for the owner's eyeball. The full-page screenshot is useless for
+  // judging the cover TITLE because the sticky approve/review bars are position:fixed and
+  // land on top of it, so hide them and shoot the cover element by itself.
+  await page.evaluate(() => {
+    document.querySelectorAll('body > *').forEach((el) => {
+      const cs = getComputedStyle(el);
+      if (cs.position === 'fixed' || cs.position === 'sticky') el.style.display = 'none';
+    });
+  });
+  const coverEl = await page.$('.cover-canvas');
+  if (coverEl) await coverEl.screenshot({ path: path.join(OUT_DIR, 'cover-laguna.png') });
 
   state.pageCanvases > 0
     ? pass(`book rendered (${state.pageCanvases} page canvases)`)
@@ -174,4 +186,5 @@ try {
 const ok = results.filter(r => r.ok).length;
 console.log(`\n──────── ${ok}/${results.length} passed ────────`);
 console.log(`screenshot: ${path.join(OUT_DIR, 'preview-laguna.png')}`);
+console.log(`cover only: ${path.join(OUT_DIR, 'cover-laguna.png')}`);
 if (ok !== results.length) process.exit(1);
