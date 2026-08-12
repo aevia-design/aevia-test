@@ -684,6 +684,7 @@ const FONT_FILE_MAP = {
   'Mulish_regular':              'Mulish-Regular.ttf',
   'Mulish_medium':               'Mulish-Medium.ttf',
   'Fredoka_light':               'Fredoka-Light.ttf',
+  'Fredoka_bold':                'Fredoka-Bold.ttf',
 };
 
 // Pre-embed all fonts into a PDFDocument; returns a lookup map

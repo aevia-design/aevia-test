@@ -40,10 +40,10 @@
  * Neither is a connected script, so LOW ligature risk — but both still get the
  * fontkit GSUB check on all three surfaces (see project_pdf_font_rules).
  *
- * ⚠ The cover CSV names the title font "Fredoka Light Bold", which is not a real
- *   Fredoka cut (the family ships Light/Regular/Medium/SemiBold/Bold). Read as
- *   Light below. NEEDS THE OWNER'S EYE at the Phase A gate — a wrong weight on the
- *   cover title is visible, and no amount of code can decide it.
+ * The cover CSV first named the title font "Fredoka Light Bold", which is not a real
+ *   Fredoka cut, so S168 read it as Light. The owner reissued the CSV as
+ *   "Fredoka Bold" and confirmed it (S170) — the title and spine are BOLD.
+ *   Fredoka-Bold.ttf is the static cut from the drop, no instancing needed.
  *
  * ── Blank pages ───────────────────────────────────────────────────────────────
  * Eight of the spread SVGs are intentionally empty (139-byte stubs): those pages
@@ -94,9 +94,9 @@ window.LAGUNA_DATA = {
     // and Joyride), so her 100 becomes wMm, and hMm stays under the 10mm spine band.
     // Getting that backwards would put a 100mm-wide box across a 10mm spine.
     captions: [
-      { key: 'front',    xMm: 328,   yMm: 180, wMm: 100, hMm: 12, font: 'Fredoka', sizePt: 30, style: 'light',  align: 'center', color: '#ffffff', label: 'Front — album name', placeholder: 'Greece, 2026',                 maxLength: 60 },
+      { key: 'front',    xMm: 328,   yMm: 180, wMm: 100, hMm: 12, font: 'Fredoka', sizePt: 30, style: 'bold',   align: 'center', color: '#ffffff', label: 'Front — album name', placeholder: 'Greece, 2026',                 maxLength: 60 },
       { key: 'frontSub', xMm: 328,   yMm: 198, wMm: 100, hMm: 8,  font: 'Mulish',  sizePt: 18, style: 'medium', align: 'center', color: '#ffffff', label: 'Front — subtitle',   placeholder: 'Where everything slowed down', maxLength: 100 },
-      { key: 'spine',    xMm: 223,   yMm: 118, wMm: 100, hMm: 8,  font: 'Fredoka', sizePt: 16, style: 'light',  align: 'center', color: '#ffffff', rotate: 270, label: 'Spine — album name', placeholder: 'Greece, 2026',    maxLength: 60 },
+      { key: 'spine',    xMm: 223,   yMm: 118, wMm: 100, hMm: 8,  font: 'Fredoka', sizePt: 16, style: 'bold',   align: 'center', color: '#ffffff', rotate: 270, label: 'Spine — album name', placeholder: 'Greece, 2026',    maxLength: 60 },
     ]
   },
 
