@@ -211,8 +211,10 @@ Re-run `scripts/optimise-laguna-rasters.mjs` on the new files, then re-check
    is **760×1118 (portrait)**; Kevin's is 1200×800 (landscape). Not yet checked against
    how `our-artists.html` crops. Folder was renamed from `Clémence Trossevin/` to match
    the kebab-case ASCII convention (an accented folder with a space breaks on Cloudflare).
-3. **Product page copy** for `laguna.html` is not written. `our-artists.html` (EN + DE)
-   links to `laguna.html`, which **does not exist yet** — a dead link until Stage 8.
+3. ~~**Product page copy** for `laguna.html` is not written.~~ **CLOSED S171.** Both pages
+   exist, so the `our-artists.html` link is live. The copy is a first draft written to the
+   `/stop-slop` rules (no em dashes, active voice) but has **not had an owner review**, and
+   the German has still never been read by a native speaker.
 4. **Intro-page order-form fields are drafts** and have not had a `/stop-slop` pass or
    owner review. Due at Phase B stage 5.
 
@@ -285,21 +287,67 @@ Re-run `scripts/optimise-laguna-rasters.mjs` on the new files, then re-check
   cover subtitle on screen.** This makes it correct by construction rather than by luck.
   A new test pins the style vocabulary (`tests/cover-caption-fonts.test.js`) so the next
   "Fredoka Light Bold"-style CSV typo fails in CI rather than on a printed cover.
-- [ ] **7. PDF parity** — `scripts/export-pdf.js`. Check the **spine caption centres on
-      the 10mm band** (pdf-lib's `heightAtSize()` is unreliable for some fonts; spine
-      centring reads ascent/descent from fontkit for that reason) and that Fredoka's
-      per-character draw path looks right. **⛔ NEVER render the PDF locally** — that
-      downloads full-res originals from GCS and bills the owner egress. Get the code
-      right by reading, then **the owner generates via the dashboard**. The **Cloud Run
-      renderer must be redeployed** or Laguna errors with `Unknown template "laguna"`.
+- [x] **7. PDF parity (S170 read / S171 verified)** — `scripts/export-pdf.js` needed **no
+      change**. Confirmed by reading in S170 (Laguna registered; `overlayAbovePhotos` and
+      per-page `overlayBelow` both honoured; Fredoka Bold's metrics not inverted so the
+      Parisienne spine trap does not apply; spine caption offset from the reference centre
+      is exactly 0, so it centres at both page counts; the `sizePt * 0.75` cap-height
+      approximation measures 0.700 for Fredoka Bold, identical to Lora and NT Somic —
+      pre-existing and uniform, **not a Laguna defect**).
+      **✅ GATE CLOSED S171: the owner generated and printed AEV-095 via the dashboard and
+      signed it off ("99% fine").**
 
-## Phase C — live (NOT STARTED)
+  ### The one thing the print showed: a white hairline along the bottom cover edge
+  **Investigated S171. It is inside the bleed and gets trimmed off. No action taken, and
+  none is needed.** Measured from the cover SVG plus the PDF's bleed expansion
+  (`export-pdf.js` grows the viewBox by 51.024 units = 18mm per side):
 
-- [ ] **8. Product page + Stripe** — `pages/laguna.html` + `pages/de/laguna.html` via the
-      shared `product.css` / `product.js` / `window.PRODUCT` pattern. Needs the
-      `exp2/laguna/` mockup set, and entries in **BOTH** `scripts/compose-all.mjs` and
-      `scripts/exp2-images.mjs` or the mockup pipeline cannot run at all (S167 lesson).
-      Add the "In collaboration with Clémence Trossevin" credit + collections card.
+  | element | falls short at the bottom | where the white starts |
+  |---|---|---|
+  | `Back BG Color` rect (navy) | 0.19 mm | 17.81 mm outside the trim |
+  | Clémence's cover painting | 0.49 mm | 17.51 mm outside the trim |
+
+  The bleed is 18mm, so the gap sits in its outermost half-millimetre. The painting is
+  also 0.28mm short on the right edge, same story.
+  **Cause, both upstream in the Illustrator export:** the artwork is anchored ~0.19mm high
+  (both elements sit at y ≈ −51.56 where the bleed edge is −51.024), and Illustrator wrote
+  the raster's transform as `scale(.177)` rounded to three decimals where 0.177212 is
+  needed to fill the 236mm box — 0.28mm lost across 3775 source pixels.
+  **Not caused by the 300 DPI re-encode** (pixel dimensions unchanged, so the placement
+  maths is identical). **Do not hand-patch the SVG** — a re-export would undo it (S157).
+  The durable fix is one line in the artist export brief: artwork must reach the full
+  bleed rectangle, not stop at a rounded transform.
+  ⚠ `tests/cover-svg-viewbox.test.js` cannot see this class of defect — it checks that the
+  viewBox frames the trim, not that the artwork fills the bleed. Harmless at 0.5mm, would
+  print at 5mm. Extending it is an open, non-urgent item.
+
+## Phase C — live (IN PROGRESS)
+
+- [~] **8. Product page + Stripe (S171)** — **pages built and gated; MOCKUPS OUTSTANDING.**
+      - `pages/laguna.html` + `pages/de/laguna.html`, copied from Joyride (same category,
+        same two story pages, same artist-collaboration shape). Carries Joyride's
+        `phBroken()` placeholder fallback, so the page is presentable *now*, with every
+        missing mockup degrading to a grey "Preview soon" box instead of a broken image.
+      - Laguna cards added to `pages/collections.html` + `pages/de/collections.html`.
+        The card reads `mockups/laguna/closed.webp` (the OLD path), **not** `exp2/` — that
+        exception is real, see CLAUDE.md.
+      - **Both mockup scripts registered** (the S167 lesson: missing either one and the
+        pipeline cannot run at all): `scripts/compose-all.mjs` (`laguna` →
+        `laguna-data.js` / `LAGUNA_DATA`; `cover.mockupEdges` was already in the data
+        file) and `scripts/exp2-images.mjs` (order **AEV-095**, spreads `sp1`–`sp5`,
+        specials `fpintro` + `fp1`, named by book-sequence id like Joyride's).
+      - **No price or Stripe change was needed** — `pickPage`/`prices.js` are
+        template-agnostic and resolve €70/€100 from `BOOK_PRICES`.
+      - **Gate: `qa/smoke-laguna-product.mjs` 42/42** (EN + DE + both collections pages).
+        It asserts the order URL carries `template=Laguna`, the category, the page count
+        and **both add-on slugs** — the params that used to have to be passed by hand.
+      - ⚠ **Open — needs the owner:** capture the mockup set from AEV-095
+        (`qa/capture-cover-wrap.mjs` + `qa/capture-spread.mjs`, both need the staff
+        password), then `node compose-all.mjs AEV-095 laguna` and
+        `node exp2-images.mjs laguna`. Runbook: `docs/briefs/heirloom-build.md` Stage 8.
+      - ⚠ **Open — owner's call:** the page shows **five** spreads (sp1–sp5), matching
+        Joyride's S167 decision. Wander shows four. Change the thumb list + the
+        `exp2-images.mjs` entry together if a different number is wanted.
 - [ ] **9. E2E** — `qa/staff-customer-chain.mjs` on a real order; `npm test` green.
 - [ ] **10. Merge** — after owner approval. Redeploy the Cloud Run renderer; pushing to
       `main` does NOT update it.

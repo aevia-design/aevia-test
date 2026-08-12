@@ -49,6 +49,13 @@ const TEMPLATES = {
     spreads: { 'sp1':'sp1', 'sp2':'sp2', 'sp3':'sp3', 'sp4':'sp4', 'sp5':'sp5' },
     specials:{ 'fpintro':'fpintro', 'fp1':'fp1' },
   },
+  // Laguna captures are named by book-sequence id (the newer capture naming, same as
+  // Joyride) — resolveSpread() below accepts either form.
+  laguna: {
+    order: 'AEV-095',
+    spreads: { 'sp1':'sp1', 'sp2':'sp2', 'sp3':'sp3', 'sp4':'sp4', 'sp5':'sp5' },
+    specials:{ 'fpintro':'fpintro', 'fp1':'fp1' },
+  },
   newborn: {
     order: 'AEV-039',
     spreads: { 'sp1':'open-01-sp1', 'sp2':'open-02-sp2', 'sp3':'open-03-sp3', 'sp4':'open-04-sp4' },
