@@ -127,6 +127,8 @@ Jede Vorlage ist für ihren Anlass entworfen, nicht aus einem Standardraster abg
 
 **Joyride** — In Zusammenarbeit mit Dorottya Juhász — Farbenfroh und sonnig. Für Sommertrips, Städtereisen und die Dolce-Vita-Tage, die du zurückhaben willst. — 40 Seiten / 80 Seiten — € 70
 
+**Laguna** — In Zusammenarbeit mit Clémence Trossevin — In Gouache gemalt, warm wie ein Nachmittag am Mittelmeer. Für Sommer am Meer und die Tage, die ganz langsam wurden. — 40 Seiten / 80 Seiten — € 70
+
 ### Kids
 
 **Newborn** — Sanft und mit Bedacht. Für die ersten Tage: die Geburtsgeschichte, die frühen Details und alles Kleine, das bleiben soll. — 40 Seiten / 80 Seiten — € 70
@@ -155,6 +157,7 @@ Tender: Dein Hochzeitstag, gestaltet mit der Ruhe, die er verdient.
 Heirloom: Der Anfang eurer Familiengeschichte: ein Buch, das bleibt. ⚠ *(новый немецкий текст S162, на проверку носителем; владелец одобрил формулировку, но не тире — двоеточие вместо em dash, S162)*
 Wander: Offene Landschaften und das Gefühl, unterwegs zu sein.
 Joyride: Für helle Städtetrips und die leichte Freude eines Sommers unterwegs. ⚠ *(единственное оставшееся место на проверку носителем)*
+Laguna: Für Sommer am Meer und die Tage, die ganz langsam wurden. ⚠ *(новое, S171 — на проверку носителем)*
 Newborn: Für die ersten Tage, mit dem kleinen Menschen im Mittelpunkt.
 Scribble: Für die Jahre voller Kritzeln, Purzeln und Entdecken. Festgehalten, bevor sie zu schnell vergehen.
 Papercut: Für das Alter, in dem jeder Tag ein Bastelprojekt ist.
@@ -181,6 +184,9 @@ Wander ist für Roadtrips und lange Reisen gemacht: offene Landschaften und das 
 
 **Joyride** *(artist: Dorottya Juhász → `our-artists.html#dorottya-juhasz`)*
 Joyride ist für Städtetrips und Sommerreisen gemacht: die Märkte, die Dachterrassen, die falschen Abzweigungen, die sich als richtig herausgestellt haben. Kräftige Farbwelten und ein verspieltes quadratisches Layout halten die Energie der Tage fest, an die du dich erinnern willst. Die Story Pages ergänzen ein paar Worte zur Stimmung und eine Karte deiner Reise. Entstanden in Zusammenarbeit mit Dorottya Juhász.
+
+**Laguna** *(artist: Clémence Trossevin → `our-artists.html#clemence-trossevin`)* ⚠ *(новое, S171 — на проверку носителем)*
+Laguna ist für das Meer gemacht: lange Schwimmrunden, späte Mittagessen, der Heimweg, wenn das Licht golden wird. Clémence Trossevin malt das in Gouache, in den warmen Farben eines mediterranen Nachmittags, um ein quadratisches Layout, das euren Fotos Raum lässt. Die Story Pages öffnen das Buch mit ein paar Worten und zeichnen eure Route nach. Entstanden in Zusammenarbeit mit Clémence Trossevin.
 
 **Newborn**
 Newborn ist für die ersten Tage gemacht: eine ruhige Struktur um die kleinen Details, die bleiben sollen. Das Layout balanciert ganzseitige Bilder mit gesetzten Bildunterschriften und gibt jeder Doppelseite Raum zum Atmen. Die Story Pages halten die Geburtsgeschichte selbst fest, dazu eine Willkommenszeile und auf Wunsch das Sternzeichen deines Babys.

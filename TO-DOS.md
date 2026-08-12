@@ -37,6 +37,7 @@ _Customer-visible untruths, legal exposure, and anything that makes the site loo
 
 | # | Item | Notes |
 |---|------|-------|
+| 110 | Laguna product-page copy has not been owner-reviewed | EN + DE first draft written S171, mirrored into both copy masters. DE also still unread by a native speaker. |
 | 80 | 🔴 Print specs on product pages are invented | Cover, paper, binding, FSC, "Printed in the EU" — all placeholder, on 6 pages × 2 languages. Real specs come from the Aug print visit. |
 | 78 | 🔴 Copy promises Google Drive / Dropbox upload; neither exists | Either ship Dropbox Chooser (days, no OAuth) or change the copy → [notes](docs/todo-notes.md#78) |
 | 87 | 🔴 `waitlist.html` may have no mobile styling | It does not link `assets/css/mobile.css`. It is the production gate page — the first thing every real visitor sees. Unverified. |
@@ -109,6 +110,7 @@ _Deliberately not now. Several were investigated and declined — read the note 
 | 83 | Drop `captions_position` from the sizing CSVs | Safe in principle, **not a quick win** — the 6 CSVs disagree on delimiter, title row and column count → [notes](docs/todo-notes.md#83) |
 | 105 | 40 MB cap may refuse a professional's max-quality JPEG | Money is not the blocker, compute is. **Raise `generateDerivative` to 2 GB and prove one large file FIRST — never the cap alone** → `docs/briefs/photo-formats.md` |
 | 85 | Update documented `gsutil` commands to `gcloud storage` | No production code affected. Risk is copying a dead command from `LEARNINGS.md` during an emergency → [notes](docs/todo-notes.md#85) |
+| 109 | `cover-svg-viewbox.test.js` cannot see artwork that fails to fill the bleed | It checks the viewBox frames the trim, not that the art reaches the bleed edge. S171's 0.5mm hairline was harmless; the same slip at 5mm would print. Extend it to assert coverage. |
 | 103 | Test suite needs an undeclared local install | A fresh clone or worktree fails 6 suites with `Cannot find module 'sharp'`. Fix = document `npm install --prefix scripts` or make `test` depend on it. |
 | 29 | Referral mechanic | After the first 20 orders. 50% of concept-test participants signed up. |
 | 22 | Instagram content tooling | Later, Buffer, or Notion-based planning. |

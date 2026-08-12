@@ -129,6 +129,8 @@ Every template is designed for its occasion, not adapted from a generic grid. Ch
 
 **Joyride** — In collaboration with Dorottya Juhász — Colourful and sun-soaked. For summer getaways, city tours, and the dolce vita days you'll want back. — 40 pages / 80 pages — € 70
 
+**Laguna** — In collaboration with Clémence Trossevin — Painted in gouache, warm as a Mediterranean afternoon. For summers by the sea and the days that slowed right down. — 40 pages / 80 pages — € 70
+
 ### Kids
 
 **Newborn** — Gentle and considered. For the first days: the birth story, the early details, and everything tiny worth keeping. — 40 pages / 80 pages — € 70
@@ -148,6 +150,7 @@ Tender: Your wedding day, composed with the stillness it deserves.
 Heirloom: The beginning of your family story, made to last.
 Wander: Open landscapes and the feeling of going somewhere.
 Joyride: For bright city escapes and the easy joy of a summer away.
+Laguna: For seaside summers and the days that slowed right down.
 Newborn: For the first days, with the little one at the centre of it all.
 Scribble: For the scribbling, tumbling, discovering years. Captured before they grow too fast.
 Papercut: For the age when every day is an art project.
@@ -190,6 +193,9 @@ Wander is made for road trips and long journeys: open landscapes and the feeling
 
 **Joyride** *(artist: Dorottya Juhász → `our-artists.html#dorottya-juhasz`)*
 Joyride is built for city breaks and summer trips: the markets, the rooftops, the wrong turns that turned out right. Bright colourways and a playful square layout hold the energy of the days you want to remember. Its story pages add a few words to set the mood and a map of where you went. Made in collaboration with Dorottya Juhász.
+
+**Laguna** *(artist: Clémence Trossevin → `our-artists.html#clemence-trossevin`)*
+Laguna is made for the sea: long swims, late lunches, the walk home when the light turns gold. Clémence Trossevin paints it in gouache, in the warm colours of a Mediterranean afternoon, around a square layout that gives your photos room to breathe. Its story pages open the book with a few words and map the route you took. Made in collaboration with Clémence Trossevin.
 
 **Newborn**
 Newborn is made for the first days: a quiet structure built around the tiny details worth keeping. The layout balances full-page imagery with typeset captions, giving each spread room to breathe. Its story pages hold the birth story itself and a welcome line, with your baby's zodiac if you want it.

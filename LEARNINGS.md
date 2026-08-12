@@ -1360,3 +1360,31 @@ carried good labels. And write the guard test against the *shape* (no hardcoded 
 come from the template; undeclared keys still render), not against today's key names — the
 original map passed every eyeball precisely because it was correct for the templates that
 existed when it was written.
+
+## 2026-08-12 (S171) — A "safe" default rendered the wrong book and sent it to a customer
+
+Both engines resolved an unknown `templateName` by falling back to Scribble. That default was
+correct when it was written: pre-seam orders have no `templateName` and must render as
+Scribble. But it conflated **missing** with **unrecognised**, and the second case only ever
+means "this build does not carry that template" — a stale deploy. So a Laguna order, opened
+against a rig still on S167, drew Scribble silently and went out as the customer's preview.
+
+The screen was the mild half. In the staff engine the same fallback would have written
+Scribble-shaped slot assignments into `staffBook*` on Save, and that is what the PDF renderer
+reads: a path to the wrong book in print, with nothing in the logs.
+
+**Rule: a lookup miss on a value the system chose itself is an error, not a default.** A
+default is for input you never controlled. `templateName` was written by our own order form, so
+an unknown one is corruption or a deploy gap — fail loudly. Distinguish absent (legitimately
+defaultable) from present-but-unknown (never defaultable) whenever a fallback exists.
+
+Two corollaries, both already paid for:
+- **Write the guard test against the shipped code, not a copy of its logic.** The new test
+  extracts `setActiveTemplate` out of both HTML files by brace-matching and executes it; it was
+  verified RED against the pre-fix files before being accepted. A test that mirrors the logic
+  would have passed against both versions. Same failure mode as `npm test` not executing
+  `order.html` (S156).
+- **"Parity" bugs are often not parity bugs.** The owner reported this as an engine-parity
+  failure; it was local code compared against three-session-old deployed code. Check what is
+  actually deployed before diffing two surfaces. (S170 hit the mirror image: a real bug present
+  in *both* engines, where mirroring one into the other would have copied it.)

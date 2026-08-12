@@ -197,6 +197,31 @@ do not re-raise reusing Wander's assets.** The fix is a corrected drop, nothing 
 Re-run `scripts/optimise-laguna-rasters.mjs` on the new files, then re-check
 `width="206mm"` before rebuilding.
 
+## ⏳ BLOCKING (S171): Xenia is re-doing the SVGs
+
+The owner reported glitches in the current drop; a corrected set is coming. **Mockup
+capture is deliberately deferred until it lands** — capturing now would bake the glitches
+into the product-page imagery and the whole set would have to be recaptured.
+
+**A new drop is an input to VALIDATE, not a spec to implement.** Re-run all of this on
+arrival, in order — several already-passed checks are invalidated by any re-export:
+
+1. `node scripts/optimise-laguna-rasters.mjs` — **mandatory.** The raw cover is ~36 MB,
+   over the 25 MiB Cloudflare limit, and a deploy fails *silently* with the site left
+   stale. Check the script's file list still matches the drop's filenames first.
+2. **Region maps must measure 206mm**, not 200mm — the one asset the code does not
+   viewBox-expand. Verify by measuring, not by asking (S170).
+3. `node qa/probe-cover-svg-text.mjs` — catches customer-fillable text outlined into the
+   artwork, which `grep` and DOM queries cannot see (S165).
+4. `npm test` — `tests/cover-svg-viewbox.test.js` enforces that the cover viewBox frames
+   the TRIM with bleed outside it. ⚠ It does **not** check that artwork fills the bleed;
+   that gap is what let the S171 hairline through.
+5. Re-run the gates: `qa/debug-laguna-render.mjs`, `qa/laguna-preview-mock.mjs`,
+   `qa/smoke-laguna-order.mjs`, `qa/smoke-laguna-product.mjs`.
+6. Re-check any in-repo SVG patch — a re-export drops it (S157).
+
+Only then capture the mockups (Stage 8's open item) and move to Stage 9.
+
 ## Open issues / decisions needed from the owner
 
 1. ~~**Cover title font weight is a guess.**~~ **CLOSED S170.** The owner reissued the
