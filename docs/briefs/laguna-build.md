@@ -175,9 +175,11 @@ bleed. Same geography and framing as Wander's existing maps. Nothing else in the
 needs re-exporting: the interior spreads, the intro and the itinerary page are correctly
 200mm, because those DO get viewBox-expanded.
 
-Cheaper alternative if a re-export is slow: Laguna's maps look identical to Wander's, so
-Laguna could point at Wander's existing 206mm assets. That is an owner call, not a
-code one — it couples two templates to one asset set.
+**SETTLED (owner, S170): the artist re-uploads the maps at the same size as the other
+templates. Do NOT patch, rescale or compensate for the map artwork in code or data, and
+do not re-raise reusing Wander's assets.** The fix is a corrected drop, nothing else.
+Re-run `scripts/optimise-laguna-rasters.mjs` on the new files, then re-check
+`width="206mm"` before rebuilding.
 
 ## Open issues / decisions needed from the owner
 
