@@ -1,3 +1,45 @@
+## 2026-08-12 — `referenceSpineMm` is not the printed spine (S168)
+
+**The print spec is fixed for every template: 40pp → 10mm, 80pp → 14mm.** `getSpineWidthMm()`
+in all three surfaces already returns exactly that from the order's page count. The physical
+spine is never a per-template value.
+
+`referenceSpineMm` records something completely different: **the spine width the SVG's
+coordinates were drawn against.** The code computes `delta = getSpineWidthMm(pageCount) −
+referenceSpineMm` and shifts front-panel artwork and captions by it. So:
+
+| template | authored at | 40pp | 80pp |
+|---|---|---|---|
+| Wander, Joyride, Tender, Scribble, Papercut, Newborn | 9mm | delta **+1** → prints 10mm ✅ | delta **+5** → prints 14mm ✅ |
+| Heirloom, Laguna | 10mm | delta **0** → prints 10mm ✅ | delta **+4** → prints 14mm ✅ |
+
+**Every template already prints the correct spine.** The older ones are drawn at 9mm and
+corrected programmatically; the newer ones arrive from Xenia at 10mm and need no correction
+at 40pp. A template declaring `referenceSpineMm: 9` is **not** evidence of a print defect.
+
+I claimed in S168 that the six 9mm templates were "slightly wrong in print" and needed their
+own remediation session. That was wrong, and it is the kind of wrong that costs real money —
+it invites re-exporting six correct covers. **The mistake was reading a field name as a
+statement about the output when it is a statement about the input.** Before flagging a
+cross-template defect from a data value, read the function that consumes it.
+
+## 2026-08-12 — "The photo isn't loading" can mean the artwork is on top of it (S168)
+
+Laguna's cover photo was invisible: a solid white square where the picture should be. The
+photo was fine — `blob:` src, `naturalWidth` 2000, correctly positioned. The cover SVG carries
+an **opaque white `Frame` rect at the photo position** (it is the white margin *around* the
+photo, not a window), and the artwork renders at `z-index: 2` against the photo slot's `1`.
+
+A missing image and an occluded one look identical in a screenshot, and the smoke test's
+`coverPhotosPlaced` counted the element as present either way. **Reading the live DOM
+stacking order settled it in one query** — matching the standing rule to inspect the render
+before re-measuring the asset.
+
+The fix was pure data (`cover.overlayAbovePhotos: false`), because the mechanism already
+existed on all three surfaces for Papercut. **Check whether the template seam already has a
+flag for the behaviour before writing render code** — Laguna needed zero engine changes for
+both this and the 26 interior pages (`overlayBelow`, from the CSV's `overlay_position`).
+
 ## 2026-08-12 — Producing a template's mockups needs an entry in TWO tables (S167)
 
 Joyride's product page had shipped in S134 pointing at an image folder that did not exist, and

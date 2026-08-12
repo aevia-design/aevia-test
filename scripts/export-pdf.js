@@ -97,6 +97,7 @@ require(path.resolve(__dirname, '../assets/Template_Heirloom/Brown/heirloom-brow
 require(path.resolve(__dirname, '../assets/Template_Heirloom/Green/heirloom-green-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Heirloom/Blue/heirloom-blue-data.js'));
 require(path.resolve(__dirname, '../assets/Template_Joyride/joyride-data.js'));
+require(path.resolve(__dirname, '../assets/Template_Laguna/laguna-data.js'));
 DATA = global.window.SCRIBBLE_DATA; // default; will be updated in main() if needed
 
 function initializePrintConstants() {
@@ -153,6 +154,7 @@ const TEMPLATES = {
   'heirloom-blue':  { data: () => global.window.HEIRLOOM_BLUE_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Heirloom/Blue/SVG') },
   papercut: { data: () => global.window.PAPERCUT_DATA, assetBase: path.resolve(__dirname, '../assets/Template_Papercut/SVG') },
   joyride:  { data: () => global.window.JOYRIDE_DATA,  assetBase: path.resolve(__dirname, '../assets/Template_Joyride/SVG') },
+  laguna:   { data: () => global.window.LAGUNA_DATA,   assetBase: path.resolve(__dirname, '../assets/Template_Laguna/SVG') },
 };
 
 let ASSET_BASE = TEMPLATES.scribble.assetBase; // default
@@ -674,6 +676,14 @@ const FONT_FILE_MAP = {
   'Source Sans 3_bold':          'SourceSans3/SourceSans3-Bold.ttf',
   'Lora_regular':                'Lora-Regular.ttf',
   'Mulish_light':                'Mulish-Light.ttf',
+  // Laguna (S168). Mulish previously had ONLY a _light cut, which is exactly what
+  // silently dropped Joyride's cover sub-labels from print (S136) — Laguna's interior
+  // captions all declare style 'regular' and its cover sub-label 'medium', so both
+  // cuts must exist here or the same silent drop repeats. Instanced from the owner's
+  // variable TTF via fonttools, same route as the Joyride cuts.
+  'Mulish_regular':              'Mulish-Regular.ttf',
+  'Mulish_medium':               'Mulish-Medium.ttf',
+  'Fredoka_light':               'Fredoka-Light.ttf',
 };
 
 // Pre-embed all fonts into a PDFDocument; returns a lookup map
@@ -707,7 +717,9 @@ async function embedAllFonts(pdfDoc) {
 // ligatures via fontkit (verified: 30 chars → 26 glyphs each) → same workaround.
 // IM FELL English (Heirloom, both cuts) forms ligatures via fontkit (verified S157:
 // 52 chars → 45 glyphs) → same per-character draw workaround.
-const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star', 'Source Sans 3', 'Parisienne', 'Lora', 'Mulish', 'IM FELL English']);
+// Fredoka (Laguna cover display) exposes a `dlig` GSUB feature and collapses glyphs
+// via fontkit (verified S168: 49 chars → 43 glyphs) → same per-character draw workaround.
+const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star', 'Source Sans 3', 'Parisienne', 'Lora', 'Mulish', 'IM FELL English', 'Fredoka']);
 // EB Garamond additionally suppresses letter-spacing in the char-by-char path; the shaping
 // context loss caused irregular gaps when spacing was also applied. Cormorant Garamond keeps
 // its defined letter-spacing because the -0.02em tightening is aesthetically required.

@@ -47,6 +47,13 @@ change. The ones most often violated by newcomers to this codebase:
     AND front-panel captions move by `spineWidth − referenceSpineMm`, on all three surfaces
     (both engines and `export-pdf.js`). Change one and you must change all three, or print
     disagrees with screen — see S156.
+    **`referenceSpineMm` is NOT the printed spine.** The printed spine comes from page count
+    and is identical for every template: **40pp → 10mm, 80pp → 14mm** (`getSpineWidthMm()`).
+    The field records only the spine the ARTWORK was drawn against. Older templates declare
+    `9` and are corrected programmatically; Heirloom and Laguna are authored at `10`. **A
+    template declaring `referenceSpineMm: 9` is not a print defect and must not be raised as
+    one** — that claim was made wrongly in S168 and would have sent six correct covers back
+    for re-export. **Settled; do not re-raise.**
 12. **The engine and the PDF must never both DERIVE the same value.** One computes, the
     other consumes. Caption line breaks were wrapped twice — browser layout in the engine,
     `wrapText` in `export-pdf.js` — and drifted; the customer approves the ENGINE, so

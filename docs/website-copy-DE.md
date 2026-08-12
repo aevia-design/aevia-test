@@ -363,6 +363,14 @@ Ihr Stil ist unverkennbar: Szenen aus dem Alltag, mit Frauen und ihrer Stärke a
 
 Dorottyas Arbeiten ansehen →
 
+**Clémence Trossevin** — Paris — Zusammenarbeit: Laguna
+
+Clémence Trossevin ist in den Cevennen in Südfrankreich aufgewachsen und lebt und arbeitet heute in Paris. Nach dem Studium der Archäologie und Kunstgeschichte an der École du Louvre wandte sie sich der Illustration zu und entwickelte ihre Arbeit in Gouache.
+
+Ihre Arbeiten kreisen um Erinnerung, um das, was bleibt, und das, was langsam verblasst. In vertrauten Orten und alltäglichen Szenen lenkt sie den Blick auf Momente und Umgebungen, an denen wir zu schnell vorbeigehen. Zu ihren Auftraggebern zählen das französische Kulturministerium, ELLE Taiwan, Madame Figaro, Marie Claire und Hachette. Ihre Arbeiten waren in der SLOW Galerie in Paris zu sehen.
+
+Clémences Arbeiten ansehen →
+
 ### Work with us
 
 Arbeite mit uns

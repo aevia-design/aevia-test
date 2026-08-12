@@ -374,6 +374,14 @@ Her illustration style is unmistakably her own: scenes of everyday life, with wo
 
 See Dorottya's work → *(ссылку на портфолио/Instagram вставить; проверить написание «Twentysix»)*
 
+**Clémence Trossevin** — Paris — In collaboration on Laguna
+
+Clémence Trossevin grew up in the Cévennes in the south of France and now lives and works in Paris. After studying archaeology and art history at the École du Louvre, she turned to illustration and developed her practice in gouache.
+
+Her work explores memory, what remains and what slowly fades away. Through familiar places and everyday scenes, she draws attention to moments and surroundings we pass by too quickly. Her clients include the French Ministry of Culture, ELLE Taiwan, Madame Figaro, Marie Claire and Hachette, and her work has been exhibited at SLOW Galerie in Paris.
+
+See Clémence's work →
+
 ### Work with us
 
 Whether you are just beginning or long established, we would like to see what you make. Tell us a little about your work. We read every message.

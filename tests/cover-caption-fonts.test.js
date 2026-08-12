@@ -21,6 +21,7 @@ if (!global.window) global.window = {};
 const TEMPLATES = {
   Scribble: 'SCRIBBLE_DATA', Wander: 'WANDER_DATA', Tender: 'TENDER_DATA',
   Newborn: 'NEWBORN_DATA', Papercut: 'PAPERCUT_DATA', Joyride: 'JOYRIDE_DATA',
+  Laguna: 'LAGUNA_DATA',
 };
 const FILES = {
   Scribble: '../assets/Template_Scribble/scribble-data.js',
@@ -29,6 +30,7 @@ const FILES = {
   Newborn:  '../assets/Template_Newborn/newborn-data.js',
   Papercut: '../assets/Template_Papercut/papercut-data.js',
   Joyride:  '../assets/Template_Joyride/joyride-data.js',
+  Laguna:   '../assets/Template_Laguna/laguna-data.js',
 };
 for (const f of Object.values(FILES)) require(f);
 
@@ -74,12 +76,26 @@ describe('coverCaptionStyle precedence', () => {
     expect(coverCaptionStyle({}, {})).toBe('regular');
   });
 
-  test('Mulish has no regular cut — the fallback cannot rescue a wrong style', () => {
-    // Guards the assumption that made the bug invisible: for every OTHER family a
-    // wrong style silently degrades to _regular, so only Mulish actually vanished.
-    expect(FONT_FILE_MAP['Mulish_regular']).toBeUndefined();
-    expect(FONT_FILE_MAP['Mulish_light']).toBeDefined();
-    expect(lookupFont(fontMapStub, 'Mulish', 'regular')).toBeNull();
+  test('the _regular fallback cannot rescue a family that lacks the cut', () => {
+    // This is the mechanism that made S136 invisible: for most families a wrong style
+    // silently degrades to _regular and something still prints, so the failure only
+    // surfaces for a family with no _regular cut — there, lookupFont returns null and
+    // the caption is dropped without an error.
+    //
+    // Mulish used to BE that family, and this test used to assert so directly. Laguna
+    // needs Mulish Regular and Medium (S168), so those cuts now exist and that
+    // assertion would only have recorded a fact we deliberately changed. The invariant
+    // worth keeping is about lookupFont's behaviour, not about which fonts we ship, so
+    // it is pinned here against a stub instead of against the live font map.
+    const sparseMap = { 'Ghost_light': { _cut: 'Ghost_light' } };
+    expect(lookupFont(sparseMap, 'Ghost', 'light')).toEqual({ _cut: 'Ghost_light' });
+    expect(lookupFont(sparseMap, 'Ghost', 'regular')).toBeNull();
+  });
+
+  test('Mulish ships the cuts Laguna and Joyride declare (S168)', () => {
+    for (const cut of ['Mulish_light', 'Mulish_regular', 'Mulish_medium']) {
+      expect(FONT_FILE_MAP[cut]).toBeDefined();
+    }
   });
 });
 

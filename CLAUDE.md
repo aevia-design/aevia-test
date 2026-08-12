@@ -102,9 +102,21 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   card is the exception: it reads `mockups/<template>/closed.webp`).
   **A new template needs an entry in BOTH `scripts/compose-all.mjs` and
   `scripts/exp2-images.mjs`** or the pipeline cannot run for it at all — see LEARNINGS (S167).
-- In-build template: **Heirloom** (`docs/briefs/heirloom-build.md` is the build-state doc —
-  read it before touching anything Heirloom). Four colourways (only Beige exists) as separate
-  registry keys, three family monograms that select artwork per order.
+- In-build templates:
+  - **Heirloom** (`docs/briefs/heirloom-build.md` is the build-state doc —
+    read it before touching anything Heirloom). Four colourways (only Beige exists) as separate
+    registry keys, three family monograms that select artwork per order.
+  - **Laguna** (`docs/briefs/laguna-build.md` is the build-state doc — **read it before
+    touching anything Laguna**). Third Adventures template, in collaboration with Clémence
+    Trossevin. Phase A + order form done as of S168; preview/PDF/product page pending.
+    ⚠ Its rasters are re-encoded by `scripts/optimise-laguna-rasters.mjs` — **re-run it after
+    any re-export**, or the 36 MB cover silently breaks the Cloudflare deploy.
+- **`referenceSpineMm` is NOT the printed spine.** The print spec is fixed for every template
+  (**40pp → 10mm, 80pp → 14mm**, from `getSpineWidthMm()`); the field records only what the
+  ARTWORK's coordinates were drawn against, and the code shifts by the difference. Older
+  templates declare `9` and are corrected programmatically; Heirloom and Laguna declare `10`.
+  **A template declaring `9` is not a print defect — do not raise it as one** (S168 mistake,
+  see LEARNINGS).
 - Unit tests: `tests/` (run with `npm test` from project root)
 - **`npm test` does NOT execute `pages/order.html`** — those tests mirror its logic rather than
   running it, which is how a crash reached the live rig in S154 with 281 tests green. Before

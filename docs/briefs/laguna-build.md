@@ -1,0 +1,235 @@
+# Laguna — build state
+
+**Read this before touching anything Laguna.** It is the memory of the build; the
+`/add-template` skill resumes from it.
+
+- **Template:** Laguna — third Adventures template, summer/seaside trips.
+- **Artist:** **Clémence Trossevin** (Paris, gouache, [@clemence_trossevin](https://www.instagram.com/clemence_trossevin/?hl=en)).
+  In collaboration; credit line required on the product page + collections card.
+- **Drop:** `assets/Template_Laguna/` (owner, 2026-08-10; CSVs + cover reissued 2026-08-12).
+- **Closest existing template:** **Wander** (owner's call, S168) — same square 200mm travel
+  book, same travel-map mechanic. The Intro page follows **Joyride**.
+- **Started:** S168 (2026-08-12).
+
+---
+
+## Facts that cost time to establish — do not re-derive
+
+1. **Spine is 10mm, not 9mm.** The cover artboard is 410mm and the SVG's spine rect
+   measures exactly 28.346 user units = 10.00mm. The cover CSV agrees independently
+   (spine caption at x=205 = 200 + 10/2). `referenceSpineMm: 10`, like Heirloom.
+   The print house's current 40pp spec is 10mm; the older 409mm/9mm templates predate
+   that instruction. **Do not "fix" Laguna to 9.**
+2. **`referenceSpineMm` is NOT the printed spine — and every template already prints
+   correctly.** The print spec is fixed for all: **40pp → 10mm, 80pp → 14mm**, returned by
+   `getSpineWidthMm(pageCount)` on all three surfaces. `referenceSpineMm` records only what
+   the *artwork* was drawn against; the code shifts by `delta = getSpineWidthMm − reference`.
+   Wander et al. are drawn at 9mm and corrected programmatically (+1 at 40pp, +5 at 80pp);
+   Laguna is drawn at 10mm so delta is **0 at 40pp and +4 at 80pp** — the owner's "+4mm for
+   80p", handled by existing code with nothing to add.
+   ⚠ **I claimed in S168 that the six 9mm templates were wrong in print. That was WRONG**
+   and would have sent six correct covers back for re-export. Do not repeat it.
+   Recorded in LEARNINGS (S168) and in the `add-template` skill.
+3. **SP0–SP6 photo geometry is identical to Wander's, slot for slot** — verified
+   programmatically against the CSV. Caption Y positions DIFFER, so captions came from
+   Laguna's own CSV. All 36 standard slot rows machine-checked as matching.
+4. **The map coordinate table is byte-identical to Wander's** (`diff` clean, 183
+   countries). The artwork differs, the projection does not. `laguna-data.js` carries a
+   copy spliced programmatically from `wander-data.js` rather than retyped.
+5. **SP0 reuses SP3's artwork** (`SP Spread 3/SP 06 * Right.svg`). There is no
+   "SP Spread 0" folder in the drop, SP0's geometry and palette match SP3's right page
+   exactly, and Wander resolves SP0 to its own `SP 06 * Right` the same way.
+6. **Eight spread SVGs are intentionally blank** 139-byte stubs (owner confirmed): SP1
+   right H+V, SP2 `SP 03 V Left` + `SP 04 H Right`, SP3 `SP 05 H Left` + `SP 06 V Right`,
+   SP4 `SP 07 V Left`, SP6 `SP 12 H Right`. Those pages are photos on flat colour.
+   They still load fine — `brokenSvgSrcs` is empty in the smoke test.
+7. **The cover carries NO live `<text>`.** The owner reissued it 2026-08-12; Clémence's
+   back-cover lettering is outlined. Re-check after any re-export (S165 trap).
+
+## Asset optimisation — `scripts/optimise-laguna-rasters.mjs`
+
+The drop's rasters shipped as base64 RGBA PNGs and **could not have shipped**:
+
+| file | as delivered | now | why it mattered |
+|---|---|---|---|
+| `Cover/Artboard 1.svg` | 34.8 MB | **3.5 MB** | >25 MiB = silent Cloudflare deploy failure |
+| 6 × continent map SVGs | 6.8–10.3 MB | 1.1–1.6 MB | >8 MB = silently dropped from the print PDF |
+
+The script downsamples each raster to **300 DPI**, flattens the alpha onto the flat page
+colour behind it, and re-encodes as **JPEG q92, 4:4:4**. Verified by pixel-diffing every
+original against its replacement: **mean difference 0.6–0.7 / 255**, 99.9% of pixels
+within 3%. Clémence's cover was **406 DPI**, so 300 loses nothing the press can print.
+
+**Two things to know:**
+- **The original 85 MB drop is NOT in git and NOT recoverable from this repo.** The owner
+  must archive the master SVGs externally. The script is re-runnable on a fresh drop.
+- The original cover and Africa map **could not be parsed by librsvg at all** — the
+  base64 blob exceeded libxml's 10 MB per-line buffer (`XML_PARSE_HUGE`). They parse now.
+
+---
+
+## Phase A — engine renders ✅ COMPLETE (S168)
+
+- [x] **1. Data file** — `assets/Template_Laguna/laguna-data.js`. Loads clean; all 36
+      standard slot rows machine-verified against `Laguna_sizing_full.csv` (photo x/y/
+      xBleed/yBleed/w/h, bgColor, caption allowed/x/y/w/h/align/colour/size). SP0–SP6 +
+      `FPintro` + `FP1`. `overlay_position` is blank throughout, so **no `overlayBelow`**
+      anywhere — all artwork renders ABOVE the photos.
+- [x] **2. Fonts** — **Fredoka** (new family) + **Mulish Regular/Medium** (new cuts,
+      instanced from the owner's variable TTF via fonttools, same route as Joyride's).
+      Registered as `@font-face` in the engine + customer-preview, in `COVER_FONTS` /
+      `CAPTION_FONTS`, and in `FONT_FILE_MAP` (`Fredoka_light`, `Mulish_regular`,
+      `Mulish_medium`). **Ligature check: both form ligatures** (49 chars → 43 glyphs;
+      Fredoka via `dlig`, Mulish via `liga`) → **`Fredoka` added to `LIGATURE_FONTS`**.
+      - ⚠ **This closed a live landmine.** Mulish previously had ONLY a `_light` cut,
+        which is exactly what silently dropped Joyride's cover sub-labels from print in
+        S136. Laguna's interior captions all declare `style: 'regular'` and its cover
+        sub-label `'medium'` — without the new cuts the same silent drop would have
+        repeated. `tests/cover-caption-fonts.test.js` updated: the old assertion pinned
+        "Mulish has no regular cut", a fact we deliberately changed, so it now pins
+        `lookupFont`'s behaviour against a stub instead. Laguna added to that test's
+        template list.
+- [x] **3. Registry on 3 surfaces** — key `laguna`, `svgBase`/`assetBase` ending
+      `Template_Laguna/SVG` (the `SVG/` level, like Joyride, unlike Wander). Data
+      `<script>`/`require` tags added. Plus a `Laguna` option in `#template-select`.
+- [x] **4. Render smoke test** — `qa/debug-laguna-render.mjs`. **GATE PASS on the first
+      run, no code generalisations needed** (unlike Joyride, which needed six).
+      41 page canvases, 21 spread rows, **0 pageerrors, 0 console errors**, 0 broken SVG
+      srcs. Cover: 1 slot, 1 photo, 3 captions. `FPintro` present with 1 text panel.
+      `FP1` present, resolved `EU Map.svg`, 1 itinerary panel.
+
+### Verified visually (S168)
+The cover renders correctly standalone: navy back with the outlined aevia logo + artist
+credit, blue spine, Clémence's parasol/palm gouache full-bleed on the front. The white
+photo frame lands on **310mm / 93mm without bleed**, exactly where the CSV puts the
+photo, and the raster covers the front panel plus all 18mm of bleed on every edge.
+
+### ⚠ Known non-issue: `photosDecoded` reads 1, not 15
+The engine emits `<img class="slot-photo">` with an **empty `src`** and populates the
+blob URL elsewhere (`window.photoPool` holds valid `blob:` URLs for all of them). Probed
+S168; **Wander scores identically (1 of 14) through the same path**, so it is pre-existing
+engine behaviour, not a Laguna defect. Consequence: the fullPage screenshot in
+`sessions/qa-runs/laguna-render.png` shows broken-image icons in the photo slots. Do not
+chase it from here.
+
+---
+
+## S168 second pass — owner's first eyeball, three fixes
+
+All three were **pure data**; no engine, preview or PDF code changed.
+
+1. **Cover photo invisible** → `cover.overlayAbovePhotos: false`. The photo was never
+   missing: `blob:` src, `naturalWidth` 2000, correct position. Clémence's SVG draws an
+   **opaque white `Frame` rect** at the photo position (the white margin *around* the
+   photo, not a window) and the artwork sits at `z-index: 2` against the slot's `1`, so
+   the photo rendered entirely behind a white square. Diagnosed by reading the live DOM
+   stacking order — a screenshot cannot distinguish a missing photo from an occluded one,
+   and the smoke test's `coverPhotosPlaced` counts the element either way.
+2. **Interior artwork above the photos** → the owner set `overlay_position: below` on all
+   36 standard CSV rows, now carried as `overlayBelow: true` on all **26 page variants**
+   (36 CSV rows = 26 pages; several pages hold two slots). The two functional pages keep a
+   blank `overlay_position`, so their art stays above.
+3. **Cover caption box dimensions** → the owner added `captions1_width/height` +
+   `captions2_width/height` to the cover CSV. Front captions declare width 100; the spine
+   row declares **height 100**, because Xenia measures the rotated box in page space where
+   its long axis is vertical. This file's convention is pre-rotation (`w` = length along
+   the spine), so that 100 is `wMm`. Reversing it would put a 100mm box across a 10mm spine.
+
+Re-verified after: 446 tests green, smoke test GATE PASS, 0 pageerrors.
+
+✅ **Owner signed off the Phase A render on 2026-08-12** ("render looks right at first
+glance"). Phase A is closed. The Fredoka title weight remains open (see below) but does
+not block Phase B.
+
+## Open issues / decisions needed from the owner
+
+1. **⚠ Cover title font weight is a guess.** The cover CSV names it **"Fredoka Light
+   Bold"**, which is not a real cut — Fredoka ships Light / Regular / Medium / SemiBold /
+   Bold. Read as **Light** in the data file. **A wrong weight on the cover title is
+   visible and no amount of code can decide it.** Needs the owner's eye or a word from
+   Clémence.
+2. **Artist portrait orientation.** `assets/artists/clemence-trossevin/clemence-trossevin-portrait.jpg`
+   is **760×1118 (portrait)**; Kevin's is 1200×800 (landscape). Not yet checked against
+   how `our-artists.html` crops. Folder was renamed from `Clémence Trossevin/` to match
+   the kebab-case ASCII convention (an accented folder with a space breaks on Cloudflare).
+3. **Product page copy** for `laguna.html` is not written. `our-artists.html` (EN + DE)
+   links to `laguna.html`, which **does not exist yet** — a dead link until Stage 8.
+4. **Intro-page order-form fields are drafts** and have not had a `/stop-slop` pass or
+   owner review. Due at Phase B stage 5.
+
+---
+
+## Phase B — flow works (IN PROGRESS)
+
+- [x] **5. Order form (S168)** — `pages/order.html`. **Four data edits, no new logic:**
+      the `laguna-data.js` `<script>` tag, the `TEMPLATE_REGISTRY` entry
+      (`laguna` → `../assets/Template_Laguna/SVG/`), a `TEMPLATE_NOTE_PLACEHOLDERS` line,
+      and the `@font-face` block (**Mulish Regular + Medium and Fredoka Light** — the
+      form previously loaded only Mulish Light, and Laguna's itinerary face is Regular).
+      Everything else is already data-driven off the data file: cover caption inputs come
+      from `cover.captions`, intro fields from `orderFormMeta.introFields`, the itinerary
+      from `countrySelect`.
+      **Gate: `qa/smoke-laguna-order.mjs` 13/13, `npm run qa:order` 12/12, `npm test`
+      446/446, 0 JS errors.** Verified: single cover drop zone (not Joyride's 4-slot
+      grid), all 3 cover caption inputs, the Laguna note placeholder, add-ons expanding
+      to `fpintro` + `fp1`, all 3 intro text fields, and the map's country picker +
+      itinerary list + region map. Joyride's 4-slot cover re-checked as unregressed.
+
+  **Add-ons come from URL params, NOT from the data file.** `product.js` writes
+  `addons` / `addon_inputs` / `addon_slugs` from the product page's `window.PRODUCT.fp`
+  map. Laguna's will be identical in shape to Joyride's:
+  `fp:{ FPintro:{name:'Intro',inputType:'intro',slug:'fpintro'}, FP1:{name:'Travel map & itinerary',inputType:'map',slug:'fp1'} }`
+  Until `laguna.html` exists (Stage 8), the only way to exercise the add-on fields is to
+  pass those params by hand — `qa/smoke-laguna-order.mjs` does exactly that.
+
+  **Two gotchas worth keeping** (both cost a debug cycle): `const ORDER` is declared at
+  script top level, so it is reachable as a bare identifier inside `page.evaluate()` but
+  is **not** `window.ORDER`. And **Joyride has ONE cover drop zone, not four** — it feeds
+  four labelled slot cells (`cover-slot-empty-<key>`), so a parity check must count the
+  cells. Generated ids: `cover-cap-<key>`, `intro-<slug>-<key>`, `country-add-<slug>`,
+  `itin-list-<slug>`, `region-map-<slug>`, `album-notes`.
+- [ ] **6. Customer-preview parity** — mirror every engine rule; Fredoka/Mulish cuts are
+      already registered there. Re-run the Scribble smoke test for regressions.
+- [ ] **7. PDF parity** — `scripts/export-pdf.js`. Check the **spine caption centres on
+      the 10mm band** (pdf-lib's `heightAtSize()` is unreliable for some fonts; spine
+      centring reads ascent/descent from fontkit for that reason) and that Fredoka's
+      per-character draw path looks right. **⛔ NEVER render the PDF locally** — that
+      downloads full-res originals from GCS and bills the owner egress. Get the code
+      right by reading, then **the owner generates via the dashboard**. The **Cloud Run
+      renderer must be redeployed** or Laguna errors with `Unknown template "laguna"`.
+
+## Phase C — live (NOT STARTED)
+
+- [ ] **8. Product page + Stripe** — `pages/laguna.html` + `pages/de/laguna.html` via the
+      shared `product.css` / `product.js` / `window.PRODUCT` pattern. Needs the
+      `exp2/laguna/` mockup set, and entries in **BOTH** `scripts/compose-all.mjs` and
+      `scripts/exp2-images.mjs` or the mockup pipeline cannot run at all (S167 lesson).
+      Add the "In collaboration with Clémence Trossevin" credit + collections card.
+- [ ] **9. E2E** — `qa/staff-customer-chain.mjs` on a real order; `npm test` green.
+- [ ] **10. Merge** — after owner approval. Redeploy the Cloud Run renderer; pushing to
+      `main` does NOT update it.
+
+---
+
+## Files touched in S168
+
+| file | change |
+|---|---|
+| `assets/Template_Laguna/laguna-data.js` | **new** — the template definition |
+| `scripts/optimise-laguna-rasters.mjs` | **new** — raster re-encode, re-runnable |
+| `qa/debug-laguna-render.mjs` | **new** — Phase A stage 4 gate |
+| `docs/briefs/laguna-build.md` | **new** — this file |
+| `assets/Template_Laguna/SVG/**` (7 files) | rasters re-encoded, 85 MB → 11.7 MB |
+| `assets/fonts/{Mulish-Regular,Mulish-Medium,Fredoka-Light}.ttf` | **new** cuts |
+| `assets/artists/clemence-trossevin/` | portrait, folder renamed to convention |
+| `pages/staff/template-engine.html` | fonts, `COVER_FONTS`, registry, select option |
+| `pages/customer-preview.html` | fonts, `CAPTION_FONTS`, registry |
+| `scripts/export-pdf.js` | `FONT_FILE_MAP`, `LIGATURE_FONTS`, registry |
+| `tests/cover-caption-fonts.test.js` | obsolete assertion replaced; Laguna added |
+| `pages/order.html` | fonts, data script, registry, note placeholder (Stage 5) |
+| `qa/smoke-laguna-order.mjs` | **new** — Phase B stage 5 gate, 13 checks |
+| `LEARNINGS.md` | two S168 entries (spine model, occluded photo) |
+| `.claude/skills/add-template/SKILL.md` | spine section + two new traps |
+| `pages/our-artists.html`, `pages/de/our-artists.html` | Clémence's profile |
+| `docs/website-copy-EN.md`, `docs/website-copy-DE.md` | Clémence's bio EN + DE |
+| `docs/templates.md` | Laguna row + collaboration entry |

@@ -8,10 +8,14 @@
   <style>
     /* FP1 spread-preview faces — each template's itinerary page renders in its own
        font, so every map template's face has to be registered here to match the engine.
-       Cormorant Garamond = Wander; Mulish = Joyride. */
+       Cormorant Garamond = Wander; Mulish = Joyride and Laguna (Laguna's itinerary
+       is Mulish REGULAR, so the 300 cut alone is not enough). Fredoka = Laguna cover. */
     @font-face { font-family: 'Cormorant Garamond'; src: url('../assets/fonts/CormorantGaramond-Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
     @font-face { font-family: 'Cormorant Garamond'; src: url('../assets/fonts/CormorantGaramond-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
     @font-face { font-family: 'Mulish'; src: url('../assets/fonts/Mulish-Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
+    @font-face { font-family: 'Mulish'; src: url('../assets/fonts/Mulish-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+    @font-face { font-family: 'Mulish'; src: url('../assets/fonts/Mulish-Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
+    @font-face { font-family: 'Fredoka'; src: url('../assets/fonts/Fredoka-Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
     :root {
       --bg: #fafaf8; --surface: #f3efe9; --border: #e4dfd8;
       --text: #1a1a1a; --muted: #7d7570; --accent-dk: #a8895f;
@@ -270,6 +274,7 @@
 <script src="../assets/Template_Papercut/papercut-data.js"></script>
 <script src="../assets/Template_Tender/tender-data.js"></script>
 <script src="../assets/Template_Joyride/joyride-data.js"></script>
+<script src="../assets/Template_Laguna/laguna-data.js"></script>
 <script src="../assets/Template_Heirloom/Beige/heirloom-data.js"></script>
 <script src="../assets/Template_Heirloom/Brown/heirloom-brown-data.js"></script>
 <script src="../assets/Template_Heirloom/Green/heirloom-green-data.js"></script>
@@ -533,6 +538,7 @@ const DEFAULT_NOTE_PLACEHOLDER = "e.g. A summer in the south of France, August 2
 // its own example without changing the one its category-mates share.
 const TEMPLATE_NOTE_PLACEHOLDERS = {
   joyride: "e.g. Joyful summer in Italy, July 2026. Gelato in Rome, a week on the Amalfi coast, and long dinners outside.",
+  laguna: "e.g. Two weeks in Greece, August 2026. Island ferries, long swims, and dinner after dark.",
   // Heirloom is a wedding book. Pinned per-template rather than left to the `love`
   // category, so an order link without a category param still reads like a wedding
   // album instead of falling through to the generic holiday default.
@@ -590,6 +596,7 @@ const TEMPLATE_REGISTRY = {
   papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../assets/Template_Papercut/SVG/' },
   tender:   { data: () => window.TENDER_DATA,   svgBase: '../assets/Template_Tender/' },
   joyride:  { data: () => window.JOYRIDE_DATA,  svgBase: '../assets/Template_Joyride/SVG/' },
+  laguna:   { data: () => window.LAGUNA_DATA,   svgBase: '../assets/Template_Laguna/SVG/' },
   // Heirloom ships one registry key per colourway — the product page picks the colour.
   'heirloom-beige': { data: () => window.HEIRLOOM_DATA,       svgBase: '../assets/Template_Heirloom/Beige/SVG/' },
   'heirloom-brown': { data: () => window.HEIRLOOM_BROWN_DATA, svgBase: '../assets/Template_Heirloom/Brown/SVG/' },

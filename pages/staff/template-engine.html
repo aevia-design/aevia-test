@@ -14,6 +14,7 @@
   <script src="../../assets/Template_Heirloom/Green/heirloom-green-data.js"></script>
   <script src="../../assets/Template_Heirloom/Blue/heirloom-blue-data.js"></script>
   <script src="../../assets/Template_Joyride/joyride-data.js"></script>
+  <script src="../../assets/Template_Laguna/laguna-data.js"></script>
   <script src="../../assets/js/photo-utils.js"></script>
   <script src="../../assets/js/book-completeness.js"></script>
   <script src="../../assets/js/map-render.js"></script>
@@ -155,6 +156,21 @@
     @font-face {
       font-family: 'Mulish';
       src: url('../../assets/fonts/Mulish-Light.ttf') format('truetype');
+      font-weight: 300; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Mulish';
+      src: url('../../assets/fonts/Mulish-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Mulish';
+      src: url('../../assets/fonts/Mulish-Medium.ttf') format('truetype');
+      font-weight: 500; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Fredoka';
+      src: url('../../assets/fonts/Fredoka-Light.ttf') format('truetype');
       font-weight: 300; font-style: normal; font-display: swap;
     }
     :root {
@@ -924,6 +940,7 @@
       <option value="Papercut">Papercut</option>
       <option value="Tender">Tender</option>
       <option value="Joyride">Joyride</option>
+      <option value="Laguna">Laguna</option>
       <option value="Heirloom-Beige">Heirloom (Beige)</option>
       <option value="Heirloom-Brown">Heirloom (Brown)</option>
       <option value="Heirloom-Green">Heirloom (Green)</option>
@@ -1279,6 +1296,7 @@
     papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../../assets/Template_Papercut/SVG/' },
     tender:   { data: () => window.TENDER_DATA,   svgBase: '../../assets/Template_Tender/' },
     joyride:  { data: () => window.JOYRIDE_DATA,  svgBase: '../../assets/Template_Joyride/SVG/' },
+    laguna:   { data: () => window.LAGUNA_DATA,   svgBase: '../../assets/Template_Laguna/SVG/' },
     'heirloom-beige': { data: () => window.HEIRLOOM_DATA,       svgBase: '../../assets/Template_Heirloom/Beige/SVG/' },
     'heirloom-brown': { data: () => window.HEIRLOOM_BROWN_DATA, svgBase: '../../assets/Template_Heirloom/Brown/SVG/' },
     'heirloom-green': { data: () => window.HEIRLOOM_GREEN_DATA, svgBase: '../../assets/Template_Heirloom/Green/SVG/' },
@@ -2231,7 +2249,8 @@
     { label: 'Baskervville',      value: 'Baskervville',      styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Italic', weight: 400, italic: true }, { label: 'Medium Italic', weight: 500, italic: true }] },
     { label: 'Source Sans 3',    value: 'Source Sans 3',    styles: [{ label: 'Regular', weight: 400, italic: false }, { label: 'Bold', weight: 700, italic: false }] },
     { label: 'Lora',              value: 'Lora',              styles: [{ label: 'Regular', weight: 400, italic: false }] },
-    { label: 'Mulish',            value: 'Mulish',            styles: [{ label: 'Light', weight: 300, italic: false }] },
+    { label: 'Mulish',            value: 'Mulish',            styles: [{ label: 'Light', weight: 300, italic: false }, { label: 'Regular', weight: 400, italic: false }, { label: 'Medium', weight: 500, italic: false }] },
+    { label: 'Fredoka',           value: 'Fredoka',           styles: [{ label: 'Light', weight: 300, italic: false }] },
   ];
 
   // Caption-toolbar fonts scoped to the active template's fontPicker allow-list
