@@ -1331,9 +1331,15 @@
     return _activeTemplateData;
   }
 
+  // Missing templateName = pre-seam order, legitimately Scribble. A name we do not
+  // carry = stale deploy; loading it into another template's slots would silently
+  // produce the wrong book — and a Save here writes those wrong slots into
+  // staffBook*, which is what the PDF renderer reads. Throw; the loader shows it.
   function setActiveTemplate(templateName) {
     const key = String(templateName || '').toLowerCase();
-    const useKey = (TEMPLATES[key] && TEMPLATES[key].data()) ? key : 'scribble';
+    const known = TEMPLATES[key] && TEMPLATES[key].data();
+    if (!known && key) throw new Error(`Unknown template "${key}" — this build does not carry it. Deploy the latest engine before editing this order.`);
+    const useKey = known ? key : 'scribble';
     const t = TEMPLATES[useKey];
     _activeTemplateData = t.data();
     _activeTemplateKey  = useKey;

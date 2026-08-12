@@ -1164,9 +1164,20 @@
     return _activeTemplateData;
   }
 
+  // An order whose templateName is MISSING is a pre-seam order and legitimately
+  // defaults to Scribble. An order naming a template this page does not carry is a
+  // different thing entirely — almost always a stale deploy — and must NOT be drawn
+  // in some other template's slots. Rendering the wrong book silently is how a
+  // Laguna order reached a customer as Scribble in S171. Fail loudly instead.
   function setActiveTemplate(templateName) {
     const key = String(templateName || '').toLowerCase();
-    const t = (TEMPLATES[key] && TEMPLATES[key].data()) ? TEMPLATES[key] : TEMPLATES.scribble;
+    const t = TEMPLATES[key] && TEMPLATES[key].data() ? TEMPLATES[key] : null;
+    if (!t) {
+      if (key) throw new Error('UNKNOWN_TEMPLATE:' + key);
+      _activeTemplateData = TEMPLATES.scribble.data();
+      SVG_BASE = TEMPLATES.scribble.svgBase;
+      return;
+    }
     _activeTemplateData = t.data();
     SVG_BASE = t.svgBase;
   }
@@ -1378,8 +1389,13 @@
     } catch (err) {
       stopLoadHumour();
       console.error('Failed to load order:', err);
+      // A template this page does not carry is our problem, not the customer's, and
+      // the raw key means nothing to them. Point them at a human.
+      const msg = String(err.message || '').startsWith('UNKNOWN_TEMPLATE:')
+        ? 'Your preview is not ready yet. Write to support@aevia.at and we will send it to you.'
+        : err.message;
       document.getElementById('book-canvas').innerHTML =
-        '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">⚠</div><h3>Could not load preview</h3><p>' + err.message + '</p></div>';
+        '<div class="canvas-placeholder"><div class="canvas-placeholder-icon">⚠</div><h3>Could not load preview</h3><p>' + msg + '</p></div>';
     }
   }
 
