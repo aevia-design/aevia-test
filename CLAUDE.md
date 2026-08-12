@@ -30,7 +30,10 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 - Architecture + codemap: `ARCHITECTURE.md`
 - Implementation roadmap: `ROADMAP.md`
 - Build status + next steps: `STATUS.md`
-- Numbered backlog (referenced as "TO-DOS #NN" throughout): `TO-DOS.md`
+- Numbered backlog (referenced as "TO-DOS #NN" throughout): `TO-DOS.md` — sorted by **when** work
+  must happen (F&F trial → launch → launch day → after → someday), one to three lines per item.
+  Long-form detail lives in `docs/todo-notes.md` or a dedicated brief, **never in the table**.
+  Keep it that way: numbers are stable and referenced across the repo, so never renumber.
 - Codified insights from past sessions (read before repeating an old mistake): `LEARNINGS.md`
 - Captured ideas / future directions: `ideas.md`
 - Design principles: `context/design-principles.md` (website + staff engine)
