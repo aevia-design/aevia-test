@@ -54,6 +54,7 @@ const SUFFIX = MONO ? `-${MONO}` : '';
 const TEMPLATES = {
   scribble: { file: '../assets/Template_Scribble/scribble-data.js', global: 'SCRIBBLE_DATA' },
   wander:   { file: '../assets/Template_Wander/wander-data.js',     global: 'WANDER_DATA' },
+  joyride:  { file: '../assets/Template_Joyride/joyride-data.js',   global: 'JOYRIDE_DATA' },
   newborn:  { file: '../assets/Template_Newborn/newborn-data.js',   global: 'NEWBORN_DATA' },
   papercut: { file: '../assets/Template_Papercut/papercut-data.js', global: 'PAPERCUT_DATA' },
   tender:   { file: '../assets/Template_Tender/tender-data.js',     global: 'TENDER_DATA' },
