@@ -1,3 +1,29 @@
+## 2026-08-12 — Producing a template's mockups needs an entry in TWO tables (S167)
+
+Joyride's product page had shipped in S134 pointing at an image folder that did not exist, and
+the pipeline to fill it **could not run at all**: the template was missing from
+`scripts/compose-all.mjs` (which resolves each template's data file and the `window.X_DATA`
+global it assigns to, to read `cover.mockupEdges`) *and* from `scripts/exp2-images.mjs` (the
+order number and the spread/special map). Neither failure is discoverable from the product
+page, the brief, or `npm test` — you find them by running the pipeline and reading the error.
+
+**When a new template's mockups are due, add both entries first.** In `exp2-images.mjs` use
+**bare book-sequence ids** (`sp1`, `fpintro`) rather than literal composite names
+(`open-01-sp1`): `resolveSpread()` accepts either, and the `NN` index shifts with the order's
+photo count, so the literal form silently encodes one order's page layout.
+
+Related: the `mockupEdges` the composer needs was already sitting in `joyride-data.js` since
+S128. The data was ready two sessions before anything could consume it.
+
+## 2026-08-12 — Read which line of the pre-push hook failed (S167)
+
+`git push` was blocked by `❌ could not start http-server on :8080`. That is the harness
+failing to spawn a server within its 15-second window (npx cold start), **not** the order flow
+regressing — the two are one line apart in the output and look equally like a red gate. The
+harness reuses an already-running server, so starting one by hand and re-pushing is the fix.
+`--no-verify` would also have "worked" and would have skipped the check that exists to stop a
+broken order form reaching customers.
+
 ## 2026-08-11 — A warning the customer cannot act on is not a warning (S166)
 
 The low-res badge told customers a photo "may print soft if used large". Accurate, honest,

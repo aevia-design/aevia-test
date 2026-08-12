@@ -98,7 +98,10 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 - **Mockup capture runbook for Heirloom's 12 image sets**: `docs/briefs/heirloom-build.md`,
   Stage 8. One order per colourway, three monograms each via `QA_MONOGRAM`. Product pages read
   `assets/images/mockups/exp2/<template>/` (from `exp2-images.mjs` + `compose-flat-mockup.mjs`)
-  — **NOT** the older `mockups/<template>/` that `web-mockups.mjs` writes.
+  — **NOT** the older `mockups/<template>/` that `web-mockups.mjs` writes (the collections
+  card is the exception: it reads `mockups/<template>/closed.webp`).
+  **A new template needs an entry in BOTH `scripts/compose-all.mjs` and
+  `scripts/exp2-images.mjs`** or the pipeline cannot run for it at all — see LEARNINGS (S167).
 - In-build template: **Heirloom** (`docs/briefs/heirloom-build.md` is the build-state doc —
   read it before touching anything Heirloom). Four colourways (only Beige exists) as separate
   registry keys, three family monograms that select artwork per order.

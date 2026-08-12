@@ -204,15 +204,24 @@ a variable font's default instance, so Mulish Light would print as Regular).
   `/stop-slop` pass done on new copy (em-dash removed from the About paragraph; page title,
   alt text, and the shared "Optional spreads —" label left as-is to match every sibling page).
   `npm test` 202/202.
-  **⚠ PLACEHOLDER IMAGES:** the page points at `assets/images/mockups/exp2/joyride/` which does
-  **not exist yet** — all 11 mockups 404 and degrade to grey "Preview soon" boxes via an onerror
-  fallback (the ONLY console errors; no JS errors). Owner deferred mockups: "need a good order
-  first." They auto-appear the moment the webp set is dropped in that folder (front, back,
-  sp1–sp4, fpintro, fp1). **← End of Stage 8. Hand back: eyeball the page on the dev server.**
+  **✅ MOCKUPS DONE (S167)** from order **AEV-069** — nine webp in
+  `assets/images/mockups/exp2/joyride/` (front, back, **sp1–sp5**, fpintro, fp1) plus
+  `assets/images/mockups/joyride/closed.webp` for the collections card, which until then
+  rendered a grey placeholder SVG icon in both languages. **Five spreads, not the four every
+  sibling ships** (owner, S167) — the thumb strip wraps to 5 + 4 with no overflow.
+  Joyride was absent from **both** compositor tables and the pipeline could not run for it;
+  entries added to `scripts/compose-all.mjs` and `scripts/exp2-images.mjs`, so a re-capture
+  from another order is now a one-liner. Verified headless on all four pages: every image
+  loads, no fallback fires, console clean.
+  **The onerror placeholder plumbing is now dead code** — `.ph-fallback` CSS, `phBroken()`,
+  `data-ph="Preview soon"` — left in place to keep the change surgical. Heirloom's equivalent
+  was deleted at this same point; do the same before merge.
+  **← End of Stage 8. Hand back: eyeball the page on the dev server.**
 - [ ] 9. E2E via qa/staff-customer-chain.mjs; npm test green.
 - [ ] 10. Merge (backend-first; owner redeploys renderer; docs/templates.md roster update — DONE).
-  **Before merge:** produce the Joyride mockup set (exp2/joyride/), and swap letdorabe's real
-  bio + portrait into `our-artists.html` (currently lorem ipsum + placeholder image).
+  **Before merge:** ~~produce the Joyride mockup set (exp2/joyride/)~~ **DONE S167**; swap
+  letdorabe's real bio + portrait into `our-artists.html` (currently lorem ipsum + placeholder
+  image); and delete the now-dead placeholder plumbing from both `joyride.html` pages.
 
 ## S134 owner test round (local testing) — 8 items
 **ALL 8 DONE** — Pass A (S134), Passes B + C (S135).
