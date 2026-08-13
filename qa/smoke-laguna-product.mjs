@@ -5,9 +5,9 @@
 // "Create your book" builds an order URL carrying template=Laguna plus the add-on
 // params (add-ons come from PRODUCT.fp, NOT from the data file — see laguna-build.md).
 //
-// Mockups do not exist yet, so every <img> is EXPECTED to 404 and fall back to the
-// grey "Preview soon" box. This gate asserts the fallback fires rather than treating
-// the 404s as failures; re-run it after the exp2/laguna/ set is captured.
+// The exp2/laguna/ mockup set was captured in S172, so the gate now asserts every
+// gallery image LOADS (naturalWidth, not presence) and that no "Preview soon"
+// placeholder remains. Before that it asserted the reverse.
 //
 // Usage:  npx http-server . -p 8080 -c-1     (project root, if not already running)
 //         node qa/smoke-laguna-product.mjs
@@ -43,9 +43,17 @@ async function run(url, label, expect) {
   check(await page.locator('.collab a[href*="clemence-trossevin"]').count() === 1, 'artist credit links to Clémence');
   check((await page.locator('.acc-body a[href*="clemence-trossevin"]').count()) >= 1, 'about-this-template credits the artist');
 
-  // Missing mockups must degrade, not break the layout.
+  // The mockups exist as of S172, so assert they actually LOAD — a naturalWidth read,
+  // not a presence check, because a broken <img> is still in the DOM (S170's lesson).
+  // Until then this asserted the OPPOSITE: that every 404 fell back to a grey
+  // "Preview soon" box. Both states are worth catching, so the fallback is checked too.
+  const imgs = await page.locator('#gallery-img, #thumbs .thumb-ph img, .sp-thumb img')
+    .evaluateAll(els => els.map(e => ({ src: e.getAttribute('src'), ok: e.complete && e.naturalWidth > 0 })));
+  const broken = imgs.filter(i => !i.ok).map(i => i.src);
+  check(imgs.length > 0 && broken.length === 0,
+    `all ${imgs.length} gallery images load${broken.length ? ' — BROKEN: ' + broken.join(', ') : ''}`);
   const fellBack = await page.locator('.ph-fallback').count();
-  check(fellBack > 0, `missing mockups degrade to "Preview soon" (${fellBack} placeholders)`);
+  check(fellBack === 0, `no "Preview soon" placeholders left (${fellBack})`);
 
   // Select both story pages, then read the order URL the CTA would navigate to.
   await page.locator('.sp-card[data-fp="FPintro"]').click();
