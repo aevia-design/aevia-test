@@ -2820,7 +2820,18 @@ async function submitOrder() {
               };
               uploadFailures.push(failure);
               console.error('[upload] gave up on slot', i + 1, failure);
-              throw e;
+              // Surface something the customer can act on. `e` here is the raw
+              // internal reason ("AbortError", "HTTP 403"), which told S173's test
+              // run nothing while the record underneath correctly said STALL.
+              // The diagnostic detail stays in `failure` for the dashboard.
+              const photoName = (filesMeta[i] && filesMeta[i].name) || `photo ${i + 1}`;
+              const customerError = new Error(
+                timedOut
+                  ? `Your connection stopped while we were uploading "${photoName}". Check your connection and submit again, or email support@aevia.at and we will finish it for you.`
+                  : `We could not upload "${photoName}". Please submit again, or email support@aevia.at and we will finish it for you.`
+              );
+              customerError.cause = e;
+              throw customerError;
             }
             // Retry with proper backoff
             await new Promise(r => setTimeout(r, attempt === 1 ? 2000 : 5000));

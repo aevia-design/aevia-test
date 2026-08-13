@@ -5,8 +5,8 @@
 > **Long detail lives in `docs/todo-notes.md`** or in a dedicated brief — never in this table.
 > Numbers are stable and referenced across the repo as "TO-DOS #NN". Do not renumber.
 >
-> _Last pruned: 2026-08-12 (S169) — removed 25 done/closed items, split the long notes out,
-> renumbered two duplicate IDs (see foot of file)._
+> _Last pruned: 2026-08-13 (S173) — removed 9 obsolete/resolved items (see foot of file).
+> Previous prune: 2026-08-12 (S169) — 25 items, notes split out, two duplicate IDs renumbered._
 
 ---
 
@@ -15,20 +15,16 @@ _Real people place real orders. Anything that strands or silently corrupts an or
 
 | # | Item | Notes |
 |---|------|-------|
-| 94 | 🔴 Verify + commit the upload stall detection | **Built S151, UNVERIFIED, still uncommitted.** Replaces a 60s timeout that would abort healthy uploads on mobile. Four tests must run before it can be called shipped → `work/stall-detection/brief.md` |
-| 86 | 🔴 Google sign-in on iPhone | Owner could not reproduce (S149) but the structural diagnosis stands. Re-verify on a clean iPhone that isn't his → `docs/briefs/google-signin-ios.md` |
+| 94 | 🔴 Verify the upload stall detection | **Built + COMMITTED S151 (`10536f2`), still UNVERIFIED.** Replaces a 60s timeout that would abort healthy uploads on mobile. Four tests must run before it can be called shipped → `work/stall-detection/brief.md` |
 | 111 | Slow photo decode silently guesses orientation | `template-engine.html:1473` races a 10s timeout; on timeout it assumes **horizontal**, w=0/h=0. A vertical photo guessed horizontal seats into the wrong slot. Fired once on 51 photos in the S172 E2E run. |
-| 57 | Customer save can override a good staff book | Load precedence is customer > staff > defaults (`customer-preview.html:916-923`). Bricked AEV-023. Approve-gate mitigates; precedence still needs a real fix. |
+| 112 | 🔴 One dead photo abandons every photo behind it | `Promise.all` at `order.html:2838` — when a file gives up, its worker throws and the other four are abandoned mid-queue. **Reproduced live S173 (AEV-096): slot 29 failed, slots 30–56 were never attempted.** The AEV-067 signature. Flagged out-of-scope by the S151 stall-detection brief and never picked up. Fix = settle all workers, then fail once with the full list. |
 | 89 | `uploading` means both "working" and "dead" | Staff need opposite reactions to the same pixel. Plan: real `upload_failed` status + a derived "Upload incomplete" label → [notes](docs/todo-notes.md#89) |
 | 90 | Stranded orders have no resume path | AEV-067/073/074/079. Reproducible in 30s now. Open design question: can a customer resume at all? → [notes](docs/todo-notes.md#90) |
 | 92 | Verify the `confirmUpload` retry fix live | Fixed S150 (`769b47e`), never tested on the rig. Place a test order; the happy path is what the retry could break → [notes](docs/todo-notes.md#92) |
 | 99 | Approval overwrites staff edits blindly | No staleness check between `customerUpdatedAt` and the last staff save. Either side can silently discard the other → [notes](docs/todo-notes.md#99) |
-| 58 | Configurator promises the wrong photo count | scribble.html says "36–45 photos", order form requires 51. At 80pp it's 75–91 vs 106. Customer is blocked mid-upload. |
 | 95 | Spine geometry for Papercut, Newborn, Wander | Small per template — **but audit `sections.spine.bgColor` first**, it is now the only source of the spine colour and Tender's was wrong → `work/spine-geometry/brief.md` |
 | 102 | Verify the full-bleed reposition fix in print | Do at the Printsmarter samples run: reposition on the *overflowing* axis, one order per template → [notes](docs/todo-notes.md#102) |
-| 97 | Re-check the other four covers after the caption shift | Confirmation, not repair. Regenerate an 80pp cover for Scribble, Tender, Papercut, Wander → [notes](docs/todo-notes.md#97) |
-| 56 | Post-payment confirmation email to the customer | Only staff get notified on payment today. Add to `stripeWebhook` in `functions/index.js`. |
-| 60 | Clean up QA test orders | AEV-023, 024, 025, 078, 079. ⚠ Never demo AEV-078 — it carries deliberate injection payloads. |
+| 60 | Clean up QA test orders | AEV-023, 024, 025, 078, 079, **096** (S173 stall test, stranded at `uploading`). ⚠ Never demo AEV-078 — it carries deliberate injection payloads. |
 | 98 | Papercut orders before 13 July have `name`/`year` swapped | Likely zero real orders affected. Check, then swap the two Firestore fields → [notes](docs/todo-notes.md#98) |
 
 ---
@@ -41,18 +37,13 @@ _Customer-visible untruths, legal exposure, and anything that makes the site loo
 | 110 | Laguna product-page copy has not been owner-reviewed | EN + DE first draft written S171, mirrored into both copy masters. DE also still unread by a native speaker. |
 | 80 | 🔴 Print specs on product pages are invented | Cover, paper, binding, FSC, "Printed in the EU" — all placeholder, on 6 pages × 2 languages. Real specs come from the Aug print visit. |
 | 78 | 🔴 Copy promises Google Drive / Dropbox upload; neither exists | Either ship Dropbox Chooser (days, no OAuth) or change the copy → [notes](docs/todo-notes.md#78) |
-| 87 | 🔴 `waitlist.html` may have no mobile styling | It does not link `assets/css/mobile.css`. It is the production gate page — the first thing every real visitor sees. Unverified. |
 | 25 | Terms & Conditions page | Minimum: refund/returns. Something must exist before taking payments. |
 | 91 | CDN libraries are unpinned with no SRI | 6 tags, zero `integrity=`. Not card skimming (Stripe hosts checkout) but auth tokens and link rewriting are exposed. Fix = vendor into `assets/js/` → [notes](docs/todo-notes.md#91) |
-| 14 | Placeholder copy on product pages | Needs Xenia's real copy per template. |
-| 15 | Copy audit — run `/stop-slop` | Across all customer-facing pages, EN + DE. |
 | 11 | OG image tags | Zero pages have them today. Shared links look blank on WhatsApp/iMessage. |
 | 12 | SEO: meta descriptions, schema, sitemap.xml | Canonicals, hreflang and robots.txt shipped S144. The rest describes content, so it waits on copy + photography. |
 | 9 | Google Analytics | Nothing tracked today. Needed before spending on ads. |
 | 10 | Meta Pixel | Required for Instagram ads + conversion measurement. |
 | 21 | Instagram page creation | Core channel per the concept test. |
-| 27 | Copyright lines review | Footer is placeholder; depends on final artist credits. |
-| 16 | Confirm the VAT rate: 10% or 20% on books | Order form already shows "incl. VAT". Only the rate is unresolved. |
 
 ---
 
@@ -120,6 +111,26 @@ _Deliberately not now. Several were investigated and declined — read the note 
 | 31 | Turkish / Russian site | After German, based on order patterns. |
 | 32 | B2B order flow | After the B2C MVP is validated. |
 | 40 | iOS + Android app | **Deferred, not rejected.** Native shell + WKWebView engine. Revisit after the F&F trial → `docs/briefs/ios-app.md` |
+
+---
+
+## Housekeeping notes (S173)
+
+**Removed by the owner's audit (2026-08-13):**
+- **#86** Google sign-in on iPhone — checked from another device, works.
+- **#57** Customer save overrides staff book — stale; the live hazard is covered by **#99**.
+- **#58** Configurator photo count — the "36–45 photos" string no longer exists anywhere.
+- **#97** Re-check the four covers — old, superseded by the per-template cover work.
+- **#87** `waitlist.html` mobile styling — owner's call: doesn't matter.
+- **#14** Placeholder product-page copy — real copy is in place.
+- **#15** `/stop-slop` copy audit — applied across the customer-facing pages.
+- **#27** Copyright lines review — done.
+- **#16** VAT rate — **resolved: 20%**.
+- **#56** Post-payment customer email — **already implemented** in `stripeWebhook`
+  (`functions/index.js`, the block marked "TO-DO #56 — previously missing"). Never ticked off.
+
+**Corrected, not removed:** **#94** was recorded as "still uncommitted" — the code has been
+on `main` since `10536f2` (S151). What is actually outstanding is the four verification tests.
 
 ---
 
