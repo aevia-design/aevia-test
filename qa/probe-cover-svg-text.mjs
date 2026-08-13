@@ -24,6 +24,7 @@ const TEMPLATES = [
   ['Newborn',         'assets/Template_Newborn/',                'Cover/Artboard 1.svg'],
   ['Tender',          'assets/Template_Tender/',                 'Cover/Artboard 1.svg'],
   ['Joyride',         'assets/Template_Joyride/SVG/',            'Cover/Artboard 1.svg'],
+  ['Laguna',          'assets/Template_Laguna/SVG/',             'Cover/Artboard 1.svg'],
   ['Heirloom-Beige',  'assets/Template_Heirloom/Beige/SVG/',     'Cover/Cover_40_Roots.svg'],
   ['Heirloom-Blue',   'assets/Template_Heirloom/Blue/SVG/',      'Cover/Cover_40_Roots.svg'],
   ['Heirloom-Brown',  'assets/Template_Heirloom/Brown/SVG/',     'Cover/Cover_40_Roots.svg'],

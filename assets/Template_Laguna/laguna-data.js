@@ -86,16 +86,17 @@ window.LAGUNA_DATA = {
     // read from each caption's OWN CSV columns — they are not uniform.
     //
     // Box dims come from the cover CSV's captions1_width/height + captions2_width/height
-    // columns (added by the owner S168). Both front captions declare width 100 and leave
-    // height blank, so hMm is set just above the type size to bound the box without
-    // clipping. The SPINE row is the mirror image — width blank, height 100 — because
+    // columns (added by the owner S168). Both front captions declare width 100. The title
+    // leaves height blank, so its hMm is set just above the type size to bound the box
+    // without clipping; the subtitle declares height 6 (owner, S172, alongside moving its
+    // Y from 198 to 193). The SPINE row is the mirror image — width blank, height 100 — because
     // Xenia measures the rotated box in PAGE space, where its long axis runs vertically.
     // This file's convention is pre-rotation (w = length ALONG the spine, same as Tender
     // and Joyride), so her 100 becomes wMm, and hMm stays under the 10mm spine band.
     // Getting that backwards would put a 100mm-wide box across a 10mm spine.
     captions: [
       { key: 'front',    xMm: 328,   yMm: 180, wMm: 100, hMm: 12, font: 'Fredoka', sizePt: 30, style: 'bold',   align: 'center', color: '#ffffff', label: 'Front — album name', placeholder: 'Greece, 2026',                 maxLength: 60 },
-      { key: 'frontSub', xMm: 328,   yMm: 198, wMm: 100, hMm: 8,  font: 'Mulish',  sizePt: 18, style: 'medium', align: 'center', color: '#ffffff', label: 'Front — subtitle',   placeholder: 'Where everything slowed down', maxLength: 100 },
+      { key: 'frontSub', xMm: 328,   yMm: 193, wMm: 100, hMm: 6,  font: 'Mulish',  sizePt: 18, style: 'medium', align: 'center', color: '#ffffff', label: 'Front — subtitle',   placeholder: 'Where everything slowed down', maxLength: 100 },
       { key: 'spine',    xMm: 223,   yMm: 118, wMm: 100, hMm: 8,  font: 'Fredoka', sizePt: 16, style: 'bold',   align: 'center', color: '#ffffff', rotate: 270, label: 'Spine — album name', placeholder: 'Greece, 2026',    maxLength: 60 },
     ]
   },

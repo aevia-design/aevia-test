@@ -49,12 +49,14 @@ const TEMPLATES = {
     spreads: { 'sp1':'sp1', 'sp2':'sp2', 'sp3':'sp3', 'sp4':'sp4', 'sp5':'sp5' },
     specials:{ 'fpintro':'fpintro', 'fp1':'fp1' },
   },
-  // Laguna captures are named by book-sequence id (the newer capture naming, same as
-  // Joyride) — resolveSpread() below accepts either form.
+  // Laguna names its five spreads EXPLICITLY (owner's picks, S172) rather than by bare
+  // spread id. Two of the five are the same layout (SP1) shot with different photos at
+  // different points in the book, so an id-keyed lookup would collapse them onto the same
+  // capture. The keys are output slot names; the values are source files.
   laguna: {
     order: 'AEV-095',
-    spreads: { 'sp1':'sp1', 'sp2':'sp2', 'sp3':'sp3', 'sp4':'sp4', 'sp5':'sp5' },
-    specials:{ 'fpintro':'fpintro', 'fp1':'fp1' },
+    spreads: { 'sp1':'open-01-sp1', 'sp2':'open-04-sp4', 'sp3':'open-07-sp1', 'sp4':'open-09-sp3', 'sp5':'open-12-sp5' },
+    specials:{ 'fpintro':'open-00-fpintro', 'fp1':'open-11-fp1' },
   },
   newborn: {
     order: 'AEV-039',

@@ -29,6 +29,12 @@ const TEMPLATES = {
   wander: { order: 'AEV-040', map: { ...COMMON,
     'open-11-fp1.png': 'fp1.webp',
   } },
+  // Laguna's product page reads exp2/, but the COLLECTIONS card still reads
+  // mockups/laguna/closed.webp from here — the one real exception (S171).
+  laguna: { order: 'AEV-095', map: { ...COMMON,
+    'open-00-fpintro.png': 'fpintro.webp',
+    'open-11-fp1.png':     'fp1.webp',
+  } },
   newborn: { order: 'AEV-039', map: { ...COMMON,
     'open-00-fpintro.png':  'fpintro.webp',
     'open-11-fplabour.png': 'fplabour.webp',

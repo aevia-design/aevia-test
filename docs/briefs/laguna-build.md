@@ -39,12 +39,29 @@
 5. **SP0 reuses SP3's artwork** (`SP Spread 3/SP 06 * Right.svg`). There is no
    "SP Spread 0" folder in the drop, SP0's geometry and palette match SP3's right page
    exactly, and Wander resolves SP0 to its own `SP 06 * Right` the same way.
-6. **Eight spread SVGs are intentionally blank** 139-byte stubs (owner confirmed): SP1
-   right H+V, SP2 `SP 03 V Left` + `SP 04 H Right`, SP3 `SP 05 H Left` + `SP 06 V Right`,
-   SP4 `SP 07 V Left`, SP6 `SP 12 H Right`. Those pages are photos on flat colour.
+6. **Some spread SVGs are intentionally blank** 139-byte stubs (owner confirmed): SP1
+   right H+V, SP2 `SP 04 H Right`, SP3 `SP 05 H Left` + `SP 06 V Right`,
+   SP6 `SP 12 H Right`. Those pages are photos on flat colour.
    They still load fine — `brokenSvgSrcs` is empty in the smoke test.
-7. **The cover carries NO live `<text>`.** The owner reissued it 2026-08-12; Clémence's
-   back-cover lettering is outlined. Re-check after any re-export (S165 trap).
+   ⚠ **S172 re-export moved artwork BETWEEN pages.** On the vertical variants of SP2 and
+   SP6 the art moved from the right page to the left, and the vacated right pages
+   (`SP 04 V Right`, `SP 12 V Right`) became new stubs; `SP 03 V Left` and `SP 07 V Left`
+   stopped being stubs. Each page keeps its own `bgColor` and the art is patterned rather
+   than a full-page rect, so the cream-on-sky (SP2) and blue-on-cream (SP6) pairings are
+   deliberate, not a bgColor mismatch — checked by rendering, screenshots in
+   `sessions/qa-runs/laguna-spreads-*.png`. **A stub list goes stale on every re-export;
+   re-derive it rather than trusting this one.**
+7. **The cover carries NO live `<text>`** — Clémence's back-cover credit and statement are
+   outlined. Verified S168, re-verified S172 after re-export. **Re-check on every drop.**
+   ⚠ **S172 caught this regressing and it is the sharpest example of the trap yet.** The
+   first S172 re-export brought that lettering back as live `<text>` in **Baskerville**, a
+   macOS-only font absent from both Windows and the Linux Cloud Run renderer. Each
+   `<tspan>` carries an absolute `x` authored for Baskerville's metrics, so a fallback face
+   does not reflow — it mis-spaces mid-word: "memo ry", "spent by", "bene ath", "ete rnal".
+   **It renders perfectly on the designer's Mac and wrongly everywhere that matters.** The
+   owner had it re-outlined the same session and the second drop is clean.
+   `qa/probe-cover-svg-text.mjs` had no Laguna entry until S172, so this cover had never
+   once been probed. **Add every new template to that list.**
 
 ## Asset optimisation — `scripts/optimise-laguna-rasters.mjs`
 
@@ -59,6 +76,11 @@ The script downsamples each raster to **300 DPI**, flattens the alpha onto the f
 colour behind it, and re-encodes as **JPEG q92, 4:4:4**. Verified by pixel-diffing every
 original against its replacement: **mean difference 0.6–0.7 / 255**, 99.9% of pixels
 within 3%. Clémence's cover was **406 DPI**, so 300 loses nothing the press can print.
+
+**Re-run after every re-export.** Done again in S172 on the new cover: same raster
+(3491×3773, 406 DPI), 34.72 MB → **3.46 MB**. The re-export arrives as the raw PNG every
+time, so this is not a one-off fix — an unoptimised cover kills the Cloudflare deploy
+silently.
 
 **Two things to know:**
 - **The original 85 MB drop is NOT in git and NOT recoverable from this repo.** The owner
