@@ -60,7 +60,9 @@ const pageErrors = [];
 
 // Install network mocks on a page. Returns a mutable `state` for assertions.
 function installMocks(page, opts = {}) {
-  const state = { createCalled: false, confirmCalled: false, createBody: null, confirmBody: null, puts: 0 };
+  // `uploaded` records which slots actually got a 200 — the only way to prove #112,
+  // where a failed photo used to kill its worker and leave the queue behind it untouched.
+  const state = { createCalled: false, confirmCalled: false, createBody: null, confirmBody: null, puts: 0, uploaded: new Set() };
 
   page.on('pageerror', (err) => pageErrors.push(err.message));
 
@@ -91,9 +93,12 @@ function installMocks(page, opts = {}) {
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS, body: '' });
     if (opts.putDelayMs) await new Promise((r) => setTimeout(r, opts.putDelayMs));
     state.puts++;
-    if (opts.failPutSlot !== undefined && req.url().endsWith(`/slot/${opts.failPutSlot}`)) {
+    const slot = Number((req.url().match(/\/slot\/(\d+)/) || [])[1]);
+    const doomed = opts.failPutSlots || (opts.failPutSlot !== undefined ? [opts.failPutSlot] : []);
+    if (doomed.includes(slot)) {
       return route.fulfill({ status: 403, headers: CORS, body: 'denied' });
     }
+    if (Number.isFinite(slot)) state.uploaded.add(slot);
     return route.fulfill({ status: 200, headers: CORS, body: '' });
   });
 
@@ -259,6 +264,39 @@ try {
                   : fail('Ch2 failure gate', 'success screen visible despite failed upload');
     !st.confirmCalled ? pass('Ch5: confirmUpload NOT called on a failed/partial order (headline)')
                       : fail('Ch5 headline', 'confirmUpload was called despite upload failure');
+
+    const msg = await page.textContent('#err-step2').catch(() => '');
+    /support@aevia\.at/.test(msg) && !/AbortError|HTTP \d|Error:/.test(msg)
+      ? pass('#112: the error names the photo and points at support, not an internal reason')
+      : fail('#112 error copy', `customer saw: ${msg}`);
+    await page.close();
+  }
+
+  // ── #112 — a failed photo must not kill its worker and strand the queue ────────
+  // Five SCATTERED failures, spaced so a success always lands between them. On the
+  // pre-S173 code each failure threw out of its worker's `while` loop, so the pool bled
+  // 5 → 0 and everything past ~slot 25 was never attempted (AEV-096: 28 of 56 untried).
+  // With the fix the workers survive, and the consecutive-failure breaker never trips
+  // because each success resets it — so all 51 healthy photos must upload.
+  head('#112 — one bad photo does not strand the queue');
+  {
+    const page = await ctx.newPage();
+    const doomed = [0, 5, 10, 15, 20];
+    const st = installMocks(page, { failPutSlots: doomed });
+    const t = await openPhotos(page, { cover });
+    await fillPhotos(page, t, mainPool);
+    await page.click('#submit-btn');
+    await page.waitForSelector('#err-step2', { state: 'visible', timeout: 60000 });
+
+    const expected = mainPool.length + 1;              // main photos + cover
+    const missing  = [...Array(expected).keys()]
+      .filter((s) => !doomed.includes(s) && !st.uploaded.has(s));
+    missing.length === 0
+      ? pass(`#112: workers survived — all ${expected - doomed.length} healthy photos uploaded despite ${doomed.length} failures`)
+      : fail('#112 queue drain', `${missing.length} slots never attempted behind the failures: ${missing.slice(0, 10).join(', ')}…`);
+
+    !st.confirmCalled ? pass('#112: a partial upload still does not confirm the order')
+                      : fail('#112 confirm gate', 'confirmUpload fired on a partial order');
     await page.close();
   }
 

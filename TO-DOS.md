@@ -16,7 +16,6 @@ _Real people place real orders. Anything that strands or silently corrupts an or
 | # | Item | Notes |
 |---|------|-------|
 | 111 | Slow photo decode silently guesses orientation | `template-engine.html:1473` races a 10s timeout; on timeout it assumes **horizontal**, w=0/h=0. A vertical photo guessed horizontal seats into the wrong slot. Fired once on 51 photos in the S172 E2E run. |
-| 112 | 🔴 A failed photo kills its upload worker for good | The 5 workers share one cursor; a file that exhausts its retries **throws out of its worker's `while` loop** (`order.html:2823`), so that worker never pulls another photo. The pool bleeds 5→4→…→0 and the rest of the queue is never attempted. **Reproduced S173 (AEV-096): slot 29 failed, slots 30–56 never tried.** Worse, `Promise.all` (`:2838`) rejects on the first failure while survivors keep uploading — the catch sets `uploadInFlight = false`, disarming the close-tab guard mid-upload, and `confirmUpload` never fires, so the order sits at `uploading` forever. Fix = catch per file, keep the worker alive, settle all five, then fail once with the full list → the AEV-067 signature, flagged out-of-scope by the S151 brief. |
 | 89 | `uploading` means both "working" and "dead" | Staff need opposite reactions to the same pixel. Plan: real `upload_failed` status + a derived "Upload incomplete" label → [notes](docs/todo-notes.md#89) |
 | 90 | Stranded orders have no resume path | AEV-067/073/074/079. Reproducible in 30s now. Open design question: can a customer resume at all? → [notes](docs/todo-notes.md#90) |
 | 92 | Verify the `confirmUpload` retry fix live | Fixed S150 (`769b47e`), never tested on the rig. Place a test order; the happy path is what the retry could break → [notes](docs/todo-notes.md#92) |
@@ -130,7 +129,13 @@ _Deliberately not now. Several were investigated and declined — read the note 
 
 **#94 VERIFIED AND CLOSED (S173).** The code had been on `main` since `10536f2` (S151); the
 note claiming it was uncommitted was wrong. All four success criteria are now met with
-evidence — see `work/stall-detection/VERIFICATION.md`. The run also produced **#112**.
+evidence — see `work/stall-detection/VERIFICATION.md`.
+
+**#112 FIXED AND CLOSED (S173), same day it was opened.** A failed photo no longer kills
+its upload worker, so one bad photo costs one photo instead of stranding the order. A
+consecutive-failure breaker (5, reset on any success) keeps a dead connection reporting in
+~90s. Rationale in `work/upload-worker-resilience/decision.md`; guarded by a `qa:order`
+case proven to fail on the pre-fix code.
 
 ---
 

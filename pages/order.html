@@ -2675,8 +2675,22 @@ async function submitOrder() {
     const MAX_ATTEMPT_MS = 900000; // 15 min — absolute ceiling, pathological case guard
     let nextIndex = 0;
 
+    // #112 (S173): a photo that gives up used to throw out of its worker's loop, so
+    // that worker stopped pulling work for good. The pool bled 5 → 0 and the rest of
+    // the queue was never attempted (AEV-096: slot 29 failed, slots 30–56 never tried).
+    // Now a failure is recorded and the worker takes the next photo.
+    //
+    // That alone would make a dead connection take ~9 minutes to report instead of ~90s,
+    // so one counter guards it: +1 on any failure, RESET TO ZERO on any success. Five
+    // equals CONCURRENCY, so tripping it means "every worker in flight failed without a
+    // single success in between" — the connection is gone, not one awkward photo.
+    // Self-correcting: a working link continuously proves itself and never trips.
+    const CONSECUTIVE_FAILURE_LIMIT = 5;
+    let consecutiveFailures = 0;
+    let circuitTripped = false;
+
     async function worker() {
-      while (nextIndex < total) {
+      while (nextIndex < total && !circuitTripped) {
         const i = nextIndex++;
         let success = false;
         const maxRetries = 3;
@@ -2816,22 +2830,14 @@ async function submitOrder() {
                 bytesTransferred,
                 totalBytes: fileObjects[i].size || 0,
                 totalMs:      Date.now() - fileStartedAt,
+                timedOut,
                 attempts:     attemptLog,
               };
               uploadFailures.push(failure);
               console.error('[upload] gave up on slot', i + 1, failure);
-              // Surface something the customer can act on. `e` here is the raw
-              // internal reason ("AbortError", "HTTP 403"), which told S173's test
-              // run nothing while the record underneath correctly said STALL.
-              // The diagnostic detail stays in `failure` for the dashboard.
-              const photoName = (filesMeta[i] && filesMeta[i].name) || `photo ${i + 1}`;
-              const customerError = new Error(
-                timedOut
-                  ? `Your connection stopped while we were uploading "${photoName}". Check your connection and submit again, or email support@aevia.at and we will finish it for you.`
-                  : `We could not upload "${photoName}". Please submit again, or email support@aevia.at and we will finish it for you.`
-              );
-              customerError.cause = e;
-              throw customerError;
+              // #112: record and move on. Do NOT throw — that would end this worker.
+              // The customer-facing error is raised once, after every worker settles.
+              break;
             }
             // Retry with proper backoff
             await new Promise(r => setTimeout(r, attempt === 1 ? 2000 : 5000));
@@ -2842,11 +2848,33 @@ async function submitOrder() {
           uploadedBytes += fileObjects[i].size || 0;
           workerInFlightBytes[i] = 0; // Clear in-flight bytes once committed
           uploadedCount++;
+          consecutiveFailures = 0;   // #112: a success proves the link is alive
           updateProgress();
+        } else {
+          workerInFlightBytes[i] = 0;
+          if (++consecutiveFailures >= CONSECUTIVE_FAILURE_LIMIT) {
+            circuitTripped = true;
+            console.error(`[upload] stopping: ${consecutiveFailures} photos failed with no success in between`);
+          }
         }
       }
     }
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, total) }, worker));
+
+    // #112 (S173): every worker has now settled, so nothing is still uploading in the
+    // background when we report. Fail ONCE, naming the whole list — not whichever photo
+    // happened to fail first. The per-attempt detail is already in `uploadFailures`,
+    // which the catch below posts to the order for the dashboard.
+    if (uploadFailures.length) {
+      const names = uploadFailures.map(f => `"${f.originalName || `photo ${f.slot}`}"`);
+      const shown = names.slice(0, 3).join(', ');
+      const more  = names.length > 3 ? ` and ${names.length - 3} more` : '';
+      throw new Error(
+        uploadFailures.every(f => f.timedOut)
+          ? `Your connection stopped while we were uploading ${shown}${more}. Check your connection and submit again, or email support@aevia.at and we will finish it for you.`
+          : `We could not upload ${shown}${more}. Please submit again, or email support@aevia.at and we will finish it for you.`
+      );
+    }
 
     // Disarm upload in-flight flag on success (Chunk 3: beforeunload guard)
     uploadInFlight = false;
