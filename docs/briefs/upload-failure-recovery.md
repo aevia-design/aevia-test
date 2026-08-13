@@ -51,9 +51,15 @@ The pieces form one story: **retry catches it while the customer is present; the
 
 After #112 the retry is typically **one photo, not 106** — seconds, not minutes.
 
+**Immediate-session only. This is a decision, not an omission.** The button lives on the error screen of the *same page session* that failed. If the customer reloads or closes the tab, the button is gone and the scheduled job (pieces 1–4) takes over. Do **not** add `sessionStorage`, state recovery, or a way back after a reload — that is the deferred self-service resume, and building a half-version of it here is exactly the speculative complexity `CLAUDE.md` rule 0 forbids.
+
+⚠ **Where the button must be wired.** `fileObjects` ([`order.html:2507`](../../pages/order.html#L2507)), `uploadUrls` ([`:2606`](../../pages/order.html#L2606)) and `uploadFailures` ([`:2574`](../../pages/order.html#L2574)) are all `const`, declared **inside `submitOrder()`** ([`:2364`](../../pages/order.html#L2364)). They do not exist once it returns. So the retry handler has to be attached **from inside the catch block**, as a closure that still sees them. A handler wired at page load will find nothing. Do not hoist those to module scope to work around this — the closure is smaller and does not widen their lifetime.
+
 ⚠ This is the one piece that touches `pages/order.html`. `npm test` does **not** execute that file, which is how a crash reached the live rig in S154 with 281 tests green. **`npm run qa:order` is mandatory before pushing it** (the `.githooks/pre-push` hook does this automatically).
 
 **1 · A real `upload_failed` status.** A scheduled job flips `uploading` → `upload_failed` once the order is **older than 1 hour** (owner's decision, S173). One hour clears the longest legitimate upload by a wide margin: 1.12 GB took 5+ minutes (#53), 110 files ~3 minutes (#62). Signed upload URLs stay valid 24 hours ([`upload.js:109`](../../functions/upload.js#L109)), so a flipped order is still recoverable for another 23.
+
+**Where the job lives.** A `pubsub.schedule` function in `functions/index.js`, alongside the existing handlers and written in the same style they use — `firebase-functions` **v4 (v1 API)**, `.region('europe-west1')`, e.g. `functions.region('europe-west1').pubsub.schedule('every 60 minutes').onRun(...)`. This provisions Cloud Scheduler automatically; there is **no new infrastructure to create, no new region, and no separate deploy path**. Ships with the existing `firebase deploy --only functions`.
 
 **2 · Move the staff "New Order" email to `confirmUpload`.** Staff should learn about an order when it exists, not when someone starts one. In-progress orders remain visible on the dashboard for anyone who looks.
 
@@ -67,7 +73,7 @@ Message shape (owner's draft, needs the copy pass): *we noticed your upload did 
 
 The ratio between these two buckets is the number that decides whether self-service resume is ever worth building.
 
-**5 · A sent-flag on the order** so a stranded order is not chased on every run.
+**5 · A sent-flag on the order** so a stranded order is not chased on every run. **Write the flag in the same Firestore update that sets `upload_failed`, before the email is sent**, so a job that crashes mid-run cannot email the same customer twice. An email that fails to send and is never retried is a far better failure than one sent three times.
 
 ## Constraints
 
@@ -75,7 +81,7 @@ The ratio between these two buckets is the number that decides whether self-serv
 - **Do not touch:** the upload worker pool or the stall detection itself in `order.html` — S173 closed #94 and #112 there and both are verified. The retry button **reuses** that worker pool; it must not modify it
 - **Do not build:** the self-service resume page or a re-issue-signed-URLs endpoint. Explicitly deferred
 - **Ship order:** piece 0 (retry) is independent of the backend work and can ship first. Pieces 1–5 depend on each other
-- **Backwards compatibility:** existing orders stuck at `uploading` (AEV-067/073/074/079/096) must not be emailed about — they are QA orders. Bound the job by creation date or exclude them explicitly
+- **Backwards compatibility:** existing orders stuck at `uploading` (AEV-067/073/074/079/096) must not be emailed about — they are QA orders. **Use a creation-date cutoff, not a hardcoded ID list**: the job ignores anything created before the deploy date. A date is self-maintaining and cannot go stale; a list of order numbers is one forgotten entry away from emailing a test address, and grows forever
 - **Region:** same region as existing functions and storage (ADR-0005, ADR-0006)
 
 ## Success Criteria
@@ -108,4 +114,4 @@ The deliverable is complete when:
 **Known risks:**
 - **A status added in one place and not the others silently disappears from the dashboard.** There are at least seven enumerations to update in `dashboard.html` alone, plus two in `account-utils.js`.
 - **The 1-hour threshold assumes uploads never legitimately exceed it.** No measurement above ~6 minutes exists. An 80pp order on a weak mobile link is untested; if the job starts flipping live uploads, raise the threshold rather than removing the job.
-- **Cost:** expected negligible — one Cloud Scheduler job (free tier covers three), an hourly Firestore query filtered on status, a handful of function invocations a day. **No GCS reads, no egress, nothing per-photo.** State the figure before deploying.
+- **Cost: effectively €0.00/month, and here is the arithmetic** rather than a reassuring adjective. Cloud Scheduler bills per job per month with **3 jobs free**; this is the first, so €0. Hourly firing is **720 invocations/month** against a 2,000,000 free tier, so €0. The Firestore query is filtered on `status == 'uploading'` and returns a handful of documents, against a 50,000 reads/day free tier, so €0. **No GCS object reads, no egress, no cross-region traffic, and nothing that scales with photo count or book size** — the only per-order cost is one document read and one write. The single cost driver worth watching is firing frequency; if the schedule were ever tightened to every minute it becomes 43,200 invocations/month, still free but no longer trivially so.
