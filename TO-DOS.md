@@ -17,6 +17,7 @@ _Real people place real orders. Anything that strands or silently corrupts an or
 |---|------|-------|
 | 94 | 🔴 Verify + commit the upload stall detection | **Built S151, UNVERIFIED, still uncommitted.** Replaces a 60s timeout that would abort healthy uploads on mobile. Four tests must run before it can be called shipped → `work/stall-detection/brief.md` |
 | 86 | 🔴 Google sign-in on iPhone | Owner could not reproduce (S149) but the structural diagnosis stands. Re-verify on a clean iPhone that isn't his → `docs/briefs/google-signin-ios.md` |
+| 111 | Slow photo decode silently guesses orientation | `template-engine.html:1473` races a 10s timeout; on timeout it assumes **horizontal**, w=0/h=0. A vertical photo guessed horizontal seats into the wrong slot. Fired once on 51 photos in the S172 E2E run. |
 | 57 | Customer save can override a good staff book | Load precedence is customer > staff > defaults (`customer-preview.html:916-923`). Bricked AEV-023. Approve-gate mitigates; precedence still needs a real fix. |
 | 89 | `uploading` means both "working" and "dead" | Staff need opposite reactions to the same pixel. Plan: real `upload_failed` status + a derived "Upload incomplete" label → [notes](docs/todo-notes.md#89) |
 | 90 | Stranded orders have no resume path | AEV-067/073/074/079. Reproducible in 30s now. Open design question: can a customer resume at all? → [notes](docs/todo-notes.md#90) |

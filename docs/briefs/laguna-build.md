@@ -409,9 +409,17 @@ Only then capture the mockups (Stage 8's open item) and move to Stage 9.
       Laguna-specific and nothing looks wrong in this book, but a vertical photo guessed
       horizontal would seat into the wrong slot. Every other console error came from
       Amazon Pay/Stripe inside the checkout iframe — third-party, not ours.
-- [ ] **10. Merge** — after owner approval. Redeploy the Cloud Run renderer; pushing to
-      `main` does NOT update it. ⚠ **Renderer redeployed by the owner in S172**, so a
-      Laguna PDF is now testable — but no Laguna PDF has been generated or eyeballed yet.
+- [x] **10. Merge ✅ COMPLETE (S172)** — the owner redeployed the Cloud Run renderer
+      (`gcloud run deploy aevia-pdf-renderer --source . --memory 8Gi`; pushing to `main`
+      does NOT update it) and generated a Laguna PDF from the dashboard, which came out
+      clean. Laguna was built on `main` throughout, so there was no branch to merge.
+      ⚠ The PDF was judged as a whole, not against the three things stage 7 could only
+      verify by READING code: spine-label centring, the Fredoka Bold cover title, and
+      whether the map pins land on the chosen countries. Worth a second look on the next
+      proof rather than a re-render.
+
+**Laguna is BUILT.** All ten stages closed. Remaining work is copy review (TO-DOS #110)
+and the artwork questions below, none of which block an order.
 
 ---
 

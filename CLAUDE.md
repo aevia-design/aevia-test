@@ -103,15 +103,20 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   `assets/images/mockups/exp2/<template>/` (from `exp2-images.mjs` + `compose-flat-mockup.mjs`)
   — **NOT** the older `mockups/<template>/` that `web-mockups.mjs` writes (the collections
   card is the exception: it reads `mockups/<template>/closed.webp`).
-  **A new template needs an entry in BOTH `scripts/compose-all.mjs` and
-  `scripts/exp2-images.mjs`** or the pipeline cannot run for it at all — see LEARNINGS (S167).
+  **A new template needs an entry in THREE places — `scripts/compose-all.mjs`,
+  `scripts/exp2-images.mjs` and `scripts/web-mockups.mjs`** (the last feeds the collections
+  card) or the pipeline cannot run for it — see LEARNINGS (S167, S172).
+  ⚠ **The capture scripts read from the DEPLOYED rig, not your machine** — push and wait for
+  the deploy BEFORE capturing, or you bake stale artwork (S172). And **the warm-grey backdrop
+  is opt-in**: `BG_R=216 BG_G=212 BG_B=207 node scripts/compose-all.mjs <order> <template>`.
+  The default is near-white and looks perfectly fine until compared with another page.
 - In-build templates:
   - **Heirloom** (`docs/briefs/heirloom-build.md` is the build-state doc —
     read it before touching anything Heirloom). Four colourways (only Beige exists) as separate
     registry keys, three family monograms that select artwork per order.
   - **Laguna** (`docs/briefs/laguna-build.md` is the build-state doc — **read it before
     touching anything Laguna**). Third Adventures template, in collaboration with Clémence
-    Trossevin. Phase A + order form done as of S168; preview/PDF/product page pending.
+    Trossevin. **BUILT as of S172** — all ten stages closed, E2E green, PDF clean.
     ⚠ Its rasters are re-encoded by `scripts/optimise-laguna-rasters.mjs` — **re-run it after
     any re-export**, or the 36 MB cover silently breaks the Cloudflare deploy.
 - **`referenceSpineMm` is NOT the printed spine.** The print spec is fixed for every template

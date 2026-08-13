@@ -1388,3 +1388,60 @@ Two corollaries, both already paid for:
   failure; it was local code compared against three-session-old deployed code. Check what is
   actually deployed before diffing two surfaces. (S170 hit the mirror image: a real bug present
   in *both* engines, where mirroring one into the other would have copied it.)
+
+## 2026-08-13 (S172) — The QA captures read from the deployed rig, not your machine
+
+The owner re-exported Laguna's cover and six spreads, confirmed the new artwork in his own
+staff engine, captured the mockups, and got back **the old artwork**. Nothing was cached, no
+save had failed, and the order was fine.
+
+`qa/capture-cover-wrap.mjs` and `qa/capture-spread.mjs` both open a headless browser at:
+
+```js
+const BASE = 'https://aevia-test.pages.dev/pages';
+```
+
+They drive a **different copy of the engine** from the one on screen. It serves whatever was
+last **pushed**, so local, uncommitted assets are invisible to it no matter what the local
+engine shows. A full capture-and-compose cycle was thrown away.
+
+This is the same root cause as S171's wrong-template render, where the preview link is built
+from `siteOrigin(req)` and always points at the deployed site. **Twice now, "what I see" and
+"what the tool sees" were different deployments of the same page.**
+
+- **The order is: push → wait for the deploy → capture.** Never capture straight after an
+  asset change.
+- **Verify the deploy by bytes, not by faith.** `curl -o /dev/null -w "%{size_download}"`
+  against the rig, compared to the local file. A failed Pages deploy leaves the old file in
+  place and returns 200.
+- **A 404 immediately after a deploy is not proof of a missing file.** Three of nine mockups
+  404'd while the rest served; the same URLs returned 200 a minute later. The edge rollout is
+  not atomic across files. Re-check before diagnosing.
+- Cheapest durable fix: have the capture scripts **print the URL they are about to open**.
+  The information was always there, in a `const` on line 37.
+
+## 2026-08-13 (S172) — The grey backdrop is opt-in, and the default looks fine until compared
+
+Laguna's spreads shipped on a near-white backdrop while every other product page uses warm
+grey. `compose-mockup.mjs` defaults to 240 near-white and takes the grey only from env:
+
+```bash
+BG_R=216 BG_G=212 BG_B=207 node scripts/compose-all.mjs <order> <template>
+```
+
+The default was set that way deliberately in S98 so regenerating one template could not
+disturb the four already live. Reasonable then; a trap now that every template wants grey.
+
+**The failure mode is the dangerous kind: the output is plausible.** A near-white mockup looks
+like a clean product shot. It only reads as wrong beside another page — which is exactly how
+the owner caught it, and not something a gate would have flagged.
+
+- The runbook already said "`BG_R/G/B` is not optional". It was read earlier in the same
+  session and still missed. **A warning in prose does not survive a long task**; a default
+  that produces plausible output will win.
+- **Verify colour by sampling pixels, not by eye.** `sharp(f).extract({left:2,top:2,…}).raw()`
+  on the corner of each webp, compared across templates: 226,222,218 for spreads and
+  219,215,211 for flats, identical to Scribble and Wander. A few RGB units are invisible in a
+  thumbnail and unarguable in a number.
+- `compose-closed.mjs` ignores the env and stays at 240 — matching the other templates, so the
+  collections card was never affected. Worth knowing before "fixing" it.
