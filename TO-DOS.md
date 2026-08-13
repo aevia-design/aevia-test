@@ -15,7 +15,6 @@ _Real people place real orders. Anything that strands or silently corrupts an or
 
 | # | Item | Notes |
 |---|------|-------|
-| 94 | 🔴 Verify the upload stall detection | **Built + COMMITTED S151 (`10536f2`), still UNVERIFIED.** Replaces a 60s timeout that would abort healthy uploads on mobile. Four tests must run before it can be called shipped → `work/stall-detection/brief.md` |
 | 111 | Slow photo decode silently guesses orientation | `template-engine.html:1473` races a 10s timeout; on timeout it assumes **horizontal**, w=0/h=0. A vertical photo guessed horizontal seats into the wrong slot. Fired once on 51 photos in the S172 E2E run. |
 | 112 | 🔴 One dead photo abandons every photo behind it | `Promise.all` at `order.html:2838` — when a file gives up, its worker throws and the other four are abandoned mid-queue. **Reproduced live S173 (AEV-096): slot 29 failed, slots 30–56 were never attempted.** The AEV-067 signature. Flagged out-of-scope by the S151 stall-detection brief and never picked up. Fix = settle all workers, then fail once with the full list. |
 | 89 | `uploading` means both "working" and "dead" | Staff need opposite reactions to the same pixel. Plan: real `upload_failed` status + a derived "Upload incomplete" label → [notes](docs/todo-notes.md#89) |
@@ -129,8 +128,9 @@ _Deliberately not now. Several were investigated and declined — read the note 
 - **#56** Post-payment customer email — **already implemented** in `stripeWebhook`
   (`functions/index.js`, the block marked "TO-DO #56 — previously missing"). Never ticked off.
 
-**Corrected, not removed:** **#94** was recorded as "still uncommitted" — the code has been
-on `main` since `10536f2` (S151). What is actually outstanding is the four verification tests.
+**#94 VERIFIED AND CLOSED (S173).** The code had been on `main` since `10536f2` (S151); the
+note claiming it was uncommitted was wrong. All four success criteria are now met with
+evidence — see `work/stall-detection/VERIFICATION.md`. The run also produced **#112**.
 
 ---
 
