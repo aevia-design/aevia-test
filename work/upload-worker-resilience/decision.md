@@ -53,6 +53,17 @@ survivors keep uploading (so `uploadInFlight = false` no longer disarms the clos
 guard mid-upload), and the customer sees one message naming every failed photo rather than
 whichever failed first.
 
+**What this does NOT fix (owner's question, S173).** An order with 105 of 106 photos is
+still stranded. `confirmUpload` is deliberately not called when anything failed — an
+incomplete book must never reach staff looking ready — so the order sits at `uploading`,
+indistinguishable on the dashboard from an upload still running (**#89**), and the
+customer cannot resume: resubmitting calls `createUploadSession` again, minting a NEW
+order number and re-uploading all 106 (**#90**). This change shrinks the damage and makes
+the failure legible; it does not make a partial order completable.
+
+That raises the value of **#90**: the expensive half of a resume — getting the bytes into
+GCS — is now already done in the common case.
+
 **What we will watch:** whether the breaker ever fires on a link that turns out to have
 been healthy. `uploadErrors` captures enough per attempt to tell.
 
