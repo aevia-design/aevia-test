@@ -5,6 +5,27 @@
 **Audience:** developer-agent (implements), then the owner (Evgeny) who verifies on the live rig.
 **Applicable Standards:** `CLAUDE.md` (global + project), `AGENTS.md`, `rageatc-code-oss:verifying-work`, the customer-facing copy rule (`/stop-slop` pass before shipping)
 
+> ## ⛔ DO NOT IMPLEMENT YET (S173)
+>
+> A `critic-agent` review closed three gaps (retry timing, job technology, QA-order
+> exclusion) and those fixes are in. A **Codex second opinion then returned a harder no-go**
+> — see `work/upload-worker-resilience/codex-second-opinion.md`. **Its findings are unverified
+> claims**, but one looks correct by inspection and is serious:
+>
+> **Piece 0 as written can confirm a book with missing photos.** The #112 breaker stops after
+> five consecutive failures, leaving later slots **unattempted** — so they never appear in
+> `uploadFailures`. A Retry that uploads only `uploadFailures` and then calls `confirmUpload`
+> marks an incomplete order complete. AEV-096 is the exact shape. The fix is to track
+> *successful* slots and confirm only when that set equals `fileObjects.length`, which
+> **conflicts with this brief's own "do not modify the worker pool" constraint**.
+>
+> Four further claims to check: `uploadErrors` is also written on a `confirmUpload` failure
+> (wrong bucket); the "later successful order" rule is a heuristic, not certainty; the
+> scheduler can race a same-session retry into contradictory emails; and piece 5 may be
+> redundant if the status transition is atomic.
+>
+> **Verify these against the code, then revise, before writing any implementation.**
+
 ## Why
 
 Aevia creates the order **before** any photo moves. `createUploadSession` mints the order number, writes it to Firestore with `status: 'uploading'`, and **emails staff "New Order"** — all before the first byte reaches GCS ([`functions/upload.js:103-221`](../../functions/upload.js#L103-L221)). `confirmUpload` later flips it to `new`.
