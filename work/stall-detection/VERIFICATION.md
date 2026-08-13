@@ -43,9 +43,15 @@ match the book's slot count exactly. Delete them or rebuild them on
 
 ## Defects found, not fixed here
 
-- **TO-DOS #112 — `Promise.all` abandons the queue.** AEV-096 proved it live: slot 29
-  gave up and slots 30–56 were never attempted. The AEV-067 signature. Flagged
-  out-of-scope by this brief in S151 and still open.
+- **TO-DOS #112 — a failed photo kills its worker permanently.** The five workers share
+  one `nextIndex` cursor; a file that exhausts its retries throws out of its worker's
+  `while` loop, so that worker never pulls another photo. The pool bleeds to zero and the
+  rest of the queue is never attempted. AEV-096 proved it: slot 29 gave up, slots 30–56
+  were never tried. Two further consequences — `Promise.all` rejects on the first failure
+  while the surviving workers keep uploading, and the catch sets `uploadInFlight = false`,
+  disarming the close-tab guard while photos are genuinely still in flight; and
+  `confirmUpload` never fires, which is why the order sits at `uploading` forever.
+  The AEV-067 signature, flagged out-of-scope by this brief in S151 and still open.
 - **AEV-096 is stranded at `uploading`** with no resume path (TO-DOS #90), reproduced in
   about three minutes. Added to the #60 cleanup list.
 
