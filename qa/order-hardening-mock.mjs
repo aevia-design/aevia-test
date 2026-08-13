@@ -62,9 +62,18 @@ const pageErrors = [];
 function installMocks(page, opts = {}) {
   // `uploaded` records which slots actually got a 200 — the only way to prove #112,
   // where a failed photo used to kill its worker and leave the queue behind it untouched.
-  const state = { createCalled: false, confirmCalled: false, createBody: null, confirmBody: null, puts: 0, uploaded: new Set() };
+  // `reported` captures what the page posts to reportUploadFailure — the only place the
+  // never-attempted slots become observable, and what the dashboard would actually show.
+  const state = { createCalled: false, confirmCalled: false, createBody: null, confirmBody: null, puts: 0, uploaded: new Set(), reported: null };
 
   page.on('pageerror', (err) => pageErrors.push(err.message));
+
+  page.route('**/reportUploadFailure**', async (route) => {
+    const req = route.request();
+    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS, body: '' });
+    try { state.reported = JSON.parse(req.postData() || '{}'); } catch { /* ignore */ }
+    return route.fulfill({ status: 200, headers: { ...CORS, 'Content-Type': 'application/json' }, body: '{"success":true}' });
+  });
 
   page.route('**/createUploadSession**', async (route) => {
     const req = route.request();
@@ -297,6 +306,49 @@ try {
 
     !st.confirmCalled ? pass('#112: a partial upload still does not confirm the order')
                       : fail('#112 confirm gate', 'confirmUpload fired on a partial order');
+    await page.close();
+  }
+
+  // ── S174 — when the breaker trips, the untouched slots must still be reported ──
+  // The case above deliberately never trips the breaker. This one does: slots 0–4 are
+  // the first five the pool claims, so five failures land with no success between them
+  // and the queue stops. Everything after is NEVER ATTEMPTED — it fails nothing, so
+  // before S174 nothing recorded it. The customer was told five photos were missing
+  // when the true number was every photo in the book.
+  head('S174 — a tripped breaker still reports the slots it never tried');
+  {
+    const page = await ctx.newPage();
+    const doomed = [0, 1, 2, 3, 4];          // exactly CONCURRENCY, all consecutive
+    const st = installMocks(page, { failPutSlots: doomed });
+    const t = await openPhotos(page, { cover });
+    await fillPhotos(page, t, mainPool);
+    await page.click('#submit-btn');
+    await page.waitForSelector('#err-step2', { state: 'visible', timeout: 60000 });
+
+    const expected = mainPool.length + 1;
+    // Sanity: the breaker must actually have tripped, or this case proves nothing.
+    st.uploaded.size < expected - doomed.length
+      ? pass(`S174: breaker tripped — ${st.uploaded.size} of ${expected} slots uploaded before the queue stopped`)
+      : fail('S174 breaker', 'the whole queue drained; the breaker never tripped, so this case is vacuous');
+
+    const failures = (st.reported && st.reported.failures) || [];
+    const never    = failures.filter((f) => f.neverAttempted);
+    const slots    = new Set(failures.map((f) => f.slot));
+    // The invariant a future Retry has to trust: reported failures == everything absent
+    // from storage. Uploaded slots must not appear; unuploaded slots must all appear.
+    const unaccounted = [...Array(expected).keys()].filter((s) => !st.uploaded.has(s) && !slots.has(s + 1));
+    const overclaimed = [...st.uploaded].filter((s) => slots.has(s + 1));
+
+    never.length > 0
+      ? pass(`S174: ${never.length} never-attempted slots recorded, not silently dropped`)
+      : fail('S174 never-attempted', 'the breaker stopped the queue but no unattempted slot was reported');
+
+    unaccounted.length === 0 && overclaimed.length === 0
+      ? pass(`S174: reported failures == exactly the ${failures.length} slots absent from storage`)
+      : fail('S174 failure set', `${unaccounted.length} missing slots unreported, ${overclaimed.length} uploaded slots wrongly reported`);
+
+    !st.confirmCalled ? pass('S174: a breaker-stopped order still does not confirm')
+                      : fail('S174 confirm gate', 'confirmUpload fired after the breaker tripped');
     await page.close();
   }
 

@@ -2861,6 +2861,37 @@ async function submitOrder() {
     }
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, total) }, worker));
 
+    // S174: the circuit breaker stops the queue, so the slots after it are NEVER
+    // ATTEMPTED — they fail nothing, so nothing records them. `uploadFailures` then
+    // under-reports the damage: AEV-096 named slot 29 and stayed silent about slots
+    // 30–56, which were equally absent from GCS. The customer was told one photo was
+    // missing when 28 were.
+    //
+    // Every worker has settled by now, and each claimed its slot with `nextIndex++`,
+    // so any index at or above the final `nextIndex` was never claimed by anybody.
+    // Recording them here makes `uploadFailures` mean exactly "not in GCS" — the
+    // invariant any future Retry has to be able to trust.
+    if (circuitTripped) {
+      for (let i = nextIndex; i < total; i++) {
+        uploadFailures.push({
+          slot:           i + 1,
+          storedName:     uploadUrls[i] ? uploadUrls[i].storedName : null,
+          originalName:   filesMeta[i] ? filesMeta[i].name : null,
+          fileType:       filesMeta[i] ? filesMeta[i].fileType : null,
+          declaredType:   filesMeta[i] ? filesMeta[i].type : null,
+          signedType:     uploadUrls[i] ? uploadUrls[i].contentType : null,
+          sizeBytes:      fileObjects[i] ? fileObjects[i].size : null,
+          bytesTransferred: 0,
+          totalBytes:     fileObjects[i] ? fileObjects[i].size || 0 : 0,
+          totalMs:        0,
+          timedOut:       false,
+          neverAttempted: true,
+          attempts:       [],
+        });
+      }
+      console.error(`[upload] ${total - nextIndex} slots never attempted after the breaker tripped`);
+    }
+
     // #112 (S173): every worker has now settled, so nothing is still uploading in the
     // background when we report. Fail ONCE, naming the whole list — not whichever photo
     // happened to fail first. The per-attempt detail is already in `uploadFailures`,
@@ -2869,8 +2900,11 @@ async function submitOrder() {
       const names = uploadFailures.map(f => `"${f.originalName || `photo ${f.slot}`}"`);
       const shown = names.slice(0, 3).join(', ');
       const more  = names.length > 3 ? ` and ${names.length - 3} more` : '';
+      // The "connection stopped" wording is a claim about what went wrong, so judge it
+      // only on slots we actually tried. A never-attempted slot is evidence of nothing.
+      const attempted = uploadFailures.filter(f => !f.neverAttempted);
       throw new Error(
-        uploadFailures.every(f => f.timedOut)
+        attempted.length && attempted.every(f => f.timedOut)
           ? `Your connection stopped while we were uploading ${shown}${more}. Check your connection and submit again, or email support@aevia.at and we will finish it for you.`
           : `We could not upload ${shown}${more}. Please submit again, or email support@aevia.at and we will finish it for you.`
       );
