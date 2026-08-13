@@ -395,9 +395,23 @@ Only then capture the mockups (Stage 8's open item) and move to Stage 9.
       - ⚠ **Open — owner's call:** the page shows **five** spreads (sp1–sp5), matching
         Joyride's S167 decision. Wander shows four. Change the thumb list + the
         `exp2-images.mjs` entry together if a different number is wanted.
-- [ ] **9. E2E** — `qa/staff-customer-chain.mjs` on a real order; `npm test` green.
+- [x] **9. E2E ✅ PASSED (S172)** — `qa/staff-customer-chain.mjs` on **AEV-095**, run by the
+      owner (needs `STAFF_PW`). Full chain green: engine login → order loaded → **Saved ✓**
+      → preview link → customer preview → Stripe test payment → **Paid: true**.
+      `npm test` 453 green. Artefacts in `sessions/qa-runs/2026-06-03-run01/`.
+      Verified from the screenshots, not just the log: the preview renders **Laguna**
+      (not a fallback), 51 photos placed / 0 unplaced, and Spread 2 shows the S172
+      re-exported artwork, so the rig really is serving the new SVGs.
+      **Two gaps worth knowing.** (a) AEV-095 was ALREADY approved, so the chain skipped
+      the approve click — that hop is still unexercised for Laguna; a fresh order would
+      cover it. (b) One photo tripped the engine's 10s orientation timeout
+      (`template-engine.html:1473`), which falls back to **horizontal** with w=0/h=0. Not
+      Laguna-specific and nothing looks wrong in this book, but a vertical photo guessed
+      horizontal would seat into the wrong slot. Every other console error came from
+      Amazon Pay/Stripe inside the checkout iframe — third-party, not ours.
 - [ ] **10. Merge** — after owner approval. Redeploy the Cloud Run renderer; pushing to
-      `main` does NOT update it.
+      `main` does NOT update it. ⚠ **Renderer redeployed by the owner in S172**, so a
+      Laguna PDF is now testable — but no Laguna PDF has been generated or eyeballed yet.
 
 ---
 
