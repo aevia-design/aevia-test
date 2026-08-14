@@ -67,6 +67,15 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     `photo-formats-competitor-baseline.md`; audit trail in `work/photo-formats/`.
     ⚠ **HEIC decode cannot be tested locally on Windows** — sharp here has no HEVC plugin, and
     `.metadata()` is a header read, not a decode.
+  - **`caption-ai-modes.md` — where the AI caption button belongs and what it does (S175).
+    Read before touching the ✦ Generate / ✦ Compose buttons, `generateCaption`, or
+    `caption-voice.md`.** Holds the per-template inventory of which special pages collect which
+    text from the customer — **do not re-derive it.** Three invariants: the button is for
+    **standard spreads only** (functional-page text is the customer's own); `textPanel` is a
+    functional-page-only construct, so **no standard spread has one**; and the compose prompt
+    must carry **a length ceiling and NEVER a floor** — "45–65 words" is what made it invent
+    "under the stars" about a couple who never mentioned stars. Adding a template means adding
+    its `collection` to the engine registry (kids / travel / love) or it silently reads as kids.
   - `upload-failures.md` — **CLOSED S150** (owner's call; root cause never proven). Instrumentation
     is deployed and untriggered. Read it before touching the upload path or re-diagnosing a stall:
     it records what was ruled out, and the one variable never tested.

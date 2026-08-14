@@ -1,104 +1,108 @@
 # Session Status
-_Last updated: 2026-08-14 (session 174)_
-_Context at save: **S174's five commits are on `main` but NOT pushed** — the owner is holding
-the push to show the about page to Xenia first. `origin/main` is four commits behind local.
-Still uncommitted: `.claude/settings.local.json` (S170 deny rules), the owner's four originals
-in `assets/about us photos/`, `work/about-photos/` (the layout preview rounds), the pre-existing
-`work/low-res-badge/`, and ~14 untracked `qa/` one-offs pending a delete decision._
+_Last updated: 2026-08-14 (session 175)_
+_Context at save: **everything is pushed.** `main` == `origin/main`, and the S174 backlog that
+was being held for Xenia went out with it. The about page is live on `aevia.at` and the test
+rig. `generateCaption` is deployed with compose mode. Still uncommitted and awaiting owner
+decisions: `.claude/settings.local.json`, `assets/about us photos/` (the four originals),
+`work/about-photos/`, `work/low-res-badge/`, and ~14 untracked `qa/` one-offs from S174._
 
 ## Status
-**Session 174 (2026-08-13/14) — backlog debt cleared, the upload brief unblocked, and the
-about-page photos shipped.** Three separate threads, all closed or handed on cleanly.
+**Session 175 (2026-08-14) — the caption AI now only fires where AI has a job, and it stopped
+inventing facts about customers' weddings.**
 
-### What S174 changed
-1. **Housekeeping done** (`f977d76`). The six `Template_Wander` map PNGs, unexplained since
-   S170, are committed: they are a **500→300dpi downscale holding 206.1mm**, not re-encodes.
-   Business case v10 and a stray test HEIC deleted.
-2. **Every Codex claim verified** against the code. Six true; **two of the brief's own
-   assertions false** (both inherited unchecked from the critic review).
-3. **A tripped breaker no longer hides untried photos** (`7864391`). `uploadFailures` now
-   means exactly "not in GCS". `qa:order` 19/19 with a new case, confirmed red first.
-4. **The stranded-upload brief is unblocked** (`c866987`) — do-not-implement lifted, the
-   worker-pool constraint dropped, a disposition field added.
-5. **The about page carries the four studio photos** (`17135f0`, `756d771`) as a rolling row,
-   EN + DE, with a contrast fix on the contractually required venue credit.
+### What S175 changed
+1. **`collection` per template** (`ab1feac`). Was hardcoded `'kids'` at every call site, so
+   wedding and travel books got kids tone-of-voice on standard spreads — in orders that already
+   ship. Now from the registry: kids Scribble/Papercut/Newborn, travel Wander/Joyride/Laguna,
+   love Tender/Heirloom ×4.
+2. **The button removed from 19 functional page definitions** (28 instances). Slot captions gate
+   on `spreadDef.type !== 'standard'`; the text-panel button was deleted outright. Standard
+   spreads are untouched.
+3. **Compose mode on Our story only** — Tender + Heirloom ×4, opted in via
+   `textPanel.aiCompose`. Text-only, no image. Welds the couple's two order-form answers into
+   one passage.
+4. **Compose was inventing facts; fixed** (`c44d0f9`). See "Facts worth carrying" below.
+5. **About page live** — the two S174 commits plus a new photo of Eugene, then `main` rebased
+   and all six commits pushed.
 
 ### Facts worth carrying
-1. **`uploadFailures` = "not in GCS".** Any Retry may trust it. **Do not "optimise" a retry to
-   skip `neverAttempted` entries** — they are most of the missing photos after a breaker trip.
-2. **`var(--muted)` fails AA on `--surface`** (3.94:1 at full opacity). `design-principles.md`
-   only warns about `--bg`. Check muted text against the surface it sits on.
-3. **`design-review` ran with NO browser access** and reported code analysis as a review.
-   Confirm it can see before trusting it; treat its numbers as claims.
-4. **An unrubriced reviewer beat the rubriced one on facts.** "No rubric" predicts the output's
-   form, not its accuracy. Verify either way.
-5. **Trim dead space freely, never cut a person.** The photo rule the owner set after an early
-   crop cut his legs. It is not "no crops".
-6. **`assets/test photos/` is gitignored** but held tracked files from before the ignore.
-7. **No page on the site declares a favicon** — all 31. `/favicon.ico` 404s.
+1. **A word floor is an instruction to invent.** "45–65 words" on an editing task made the model
+   fabricate ("under the stars" from a text with no stars). **Ceiling only. Never reintroduce a
+   minimum or a target** — the brief says so explicitly and it is the change most likely to be
+   "tidied" back in.
+2. **Set `temperature` when the job is editing.** The API default is tuned for creative writing.
+3. **A rule in the system prompt loses to the weight of the rest of it.** Repeat the critical
+   one in the user message.
+4. **Grep finds the line; the enclosing `if` is the point.** "Text panels clip silently" was
+   wrong — that `overflow:hidden` is inside `if (isFunnyWords)`. Story panels overflow visibly.
+5. **Behaviour testing cannot catch a wrong explanation.** The feature worked and was tested;
+   the error was in prose about a case nobody hit.
+6. **`aevia.at` and `aevia-test.pages.dev` are ONE Cloudflare Pages project.** There is no
+   "dev only" push — anything on `main` appears on both.
+7. **No standard spread in any template has a `textPanel`** — it is functional-page-only.
+8. **Line numbers in briefs go stale within the hour.** Cite function names.
 
 ## Recent decisions
-- **Push held until Xenia sees the about page (S174, owner).**
-- **`MengTo/Skills` NOT installed (S174).** `marquee-loop/SKILL.md` is 22 lines with no code;
-  the substance is a neuform.ai demo plus view-count marketing. The S120 trap — momentum, not
-  merit. `vercel-labs/agent-skills` also rejected: it is a code auditor, not a design skill.
-- **"Eugene" is the public spelling (S174, owner)** — for the Austrian audience, who misspell
-  Evgenii. First time either founder is named on the site; it sets the convention.
-- **Joyride Stages 9–10 need nothing (S174)** — all on `main`, no branch, nothing in TO-DOS.
-  STATUS carried this wrongly for several sessions.
-- **The "do not modify the worker pool" constraint is LIFTED (S174)** — it could not coexist
-  with a correct Retry. Extraction is allowed; first-pass behaviour must not change.
+- **No AI on the travel-map itinerary (S175, owner).** It is a formatting job — split on the
+  arrows. **Do not re-raise.**
+- **Tender FPwords and Heirloom FPhim/FPher get no button (S175, owner).** Vows and
+  why-you-love-your-spouse are the customer's own words.
+- **`spread-preview.html` keeps `'kids'` (S175).** Unlinked prototype, Scribble-only, no template
+  data at all. Deleting it is the real fix for drift risk — owner's call.
+- **`customer-preview.html` does NOT get the `collection` field (S175).** It has no AI.
+- **Golden set deferred (S175, owner)** → TO-DOS #112. Only test orders exist so far.
+- **Push held for Xenia is OVER (S175)** — she approved the rolling row.
+- **"Eugene" is the public spelling (S174, owner).**
+- **The "do not modify the worker pool" constraint is LIFTED (S174).**
 - **VAT is RESOLVED at 20% (S173, owner). Do not re-raise.**
-- **#89 detection automated, recovery human (S173, owner).** Self-service resume deferred.
-- **Laguna is BUILT (S172).** Needs nothing before it can take an order.
+- **#89 detection automated, recovery human (S173, owner).**
+- **Laguna is BUILT (S172).**
 - **RAW, TIFF and a 40 MB cap ALL DECLINED (S166, owner).** **Do not re-raise.**
 - **WebP REFUSED (S164, owner).** **Do not re-raise.**
-- **No backfill of existing `order-details.txt` (S165, owner).** Fix forward only.
-- **Business case untracked (S156, owner).** **No longer backed up by git.**
+- **No backfill of existing `order-details.txt` (S165, owner).**
+- **Business case untracked (S156, owner).**
 - **Printsmarter token NOT rotated (S155, owner).** **Never put it in any summary or memory.**
 - **#88 closed without root cause (S150, owner).** Read `docs/briefs/upload-failures.md` first.
 - **No price rise at launch (S148, owner).**
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **Push, once Xenia has seen the about page.** Four commits waiting.
-2. **Xenia's verdict on the rolling row** — and two photo questions still open: the
-   sticker laptop (`DIZENGOF99 BBDO` legible) and the yellow book. The design-review agent
-   judged them fine as documentary colour; this session's assessment was the opposite. Owner
-   to decide.
-3. **Confirm the venue credit wording against the agreement.** Shipped as "Spaces Business
-   Centre, Vienna"; the clause says "Regus/Spaces Business Centre Austria". "Regus" was
-   dropped and Austria became Vienna, on editorial grounds. **Owner to check the clause.**
-4. **Implement `docs/briefs/upload-failure-recovery.md`** — ready, verified, unblocked. Start
-   with piece 0 (Retry) or pieces 1–7 (the scheduled job); piece 0 is independent.
-5. **Decide the ~14 untracked `qa/` one-offs.** Proposal made, not actioned: keep
+1. **Confirm the venue credit wording against the agreement.** It is **live on aevia.at now**,
+   shipped as "Spaces Business Centre, Vienna"; the clause says "Regus/Spaces Business Centre
+   Austria". Owner to check the clause.
+2. **Implement `docs/briefs/upload-failure-recovery.md`** — ready, verified, unblocked. Piece 0
+   (Retry) is independent of pieces 1–7 (the scheduled job).
+3. **Decide the ~14 untracked `qa/` one-offs.** Proposal made, not actioned: keep
    `verify-spine-geometry`, `debug-letter-ink`, `test-upload-with-throttle`; delete the rest.
    **`quick-stall-test.mjs` and `verify-stall-detection.mjs` cannot run at all** — they drive
    `input[name="mainphoto"]`, which has zero occurrences in `order.html`.
-6. **Write the pattern menu** (S174 idea) — a short `docs/` page naming the motion/layout
-   patterns that suit Aevia, so the owner can point at one. His "one row, rolling a bit"
-   unblocked six failed rounds; the bottleneck is vocabulary, not judgement.
-7. **Owner review of the Laguna page copy** (EN + DE) — TO-DOS #110.
-8. **Downscale Clémence's portrait** — 3.48 MB against 86 KB for Kevin's.
-9. **Decide the two Laguna artwork questions for Xenia/Clémence** (back-cover wording, and the
+4. **Decide whether to delete `pages/spread-preview.html`** — dead prototype, but it carries
+   HEIC conversion code that `photo-formats.md` warns must not drift from the engine.
+5. **Write the pattern menu** (S174 idea) — a short `docs/` page naming the motion/layout
+   patterns that suit Aevia, so the owner can point at one.
+6. **Owner review of the Laguna page copy** (EN + DE) — TO-DOS #110.
+7. **Downscale Clémence's portrait** — 3.48 MB against 86 KB for Kevin's.
+8. **Decide the two Laguna artwork questions for Xenia/Clémence** (back-cover wording, and the
    Instagram handle now that her page links to a portfolio). Both need a re-export.
-10. **Send Xenia the cover-artwork brief** — no customer-fillable text outlined in; **no live
-    `<text>` at all**; artboard = trim with correct bleed; artwork must reach the bleed rect.
-11. **Eyeball the next Laguna proof** — spine-label centring, Fredoka Bold cover title, map pins.
-12. **Open `help.html` + `de/help.html` in a browser** — the S166 formats FAQ has never been
+9. **Send Xenia the cover-artwork brief** — no customer-fillable text outlined in; **no live
+   `<text>` at all**; artboard = trim with correct bleed; artwork must reach the bleed rect.
+10. **Eyeball the next Laguna proof** — spine-label centring, Fredoka Bold cover title, map pins.
+11. **Open `help.html` + `de/help.html` in a browser** — the S166 formats FAQ has never been
     rendered. Carried since S166.
-13. **Delete Joyride's dead placeholder plumbing** — ⚠ check Laguna does not depend on the same
+12. **Delete Joyride's dead placeholder plumbing** — ⚠ check Laguna does not depend on the same
     `phBroken()` fallback first.
-14. **Extend `cover-svg-viewbox.test.js` to assert bleed coverage** — TO-DOS #109.
-15. **TO-DOS #111** — slow photo decode silently guesses orientation.
-16. **Server-side validation in `functions/upload.js`.**
-17. **Customer-preview must record caption line breaks** (open since S159).
-18. **German order flow — TO-DOS #101.**
+13. **Extend `cover-svg-viewbox.test.js` to assert bleed coverage** — TO-DOS #109.
+14. **TO-DOS #111** — slow photo decode silently guesses orientation.
+15. **Server-side validation in `functions/upload.js`.**
+16. **Customer-preview must record caption line breaks** (open since S159).
+17. **German order flow — TO-DOS #101.**
 
 ## Open questions
-- **Does Xenia like the rolling row?** The whole about-page section is provisional until she does.
-- **Do the sticker laptop and yellow book belong on a premium page?** Two reviews disagreed.
-- **Does the venue credit wording satisfy the agreement?**
+- **Does the venue credit wording satisfy the agreement?** It is live.
+- **Does the PDF renderer spill over-long story-panel text the way the engine does?** A comment
+  in `renderSpread` implies yes; never rendered. Bounded — staff see the engine first.
+- **Do the sticker laptop and yellow book belong on a premium page?** Two reviews disagreed;
+  now live either way.
 - **Does the Laguna approve click work?** The E2E chain skipped it — AEV-095 was pre-approved.
 - **Does Clémence's portrait crop correctly?** Hers is portrait; Kevin's is landscape.
 - **Does a repositioned full-bleed photo now print off-centre?** Never eyeballed.

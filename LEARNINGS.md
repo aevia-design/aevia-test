@@ -1522,3 +1522,48 @@ MCP tools and the dev server was running.
   **Treat its numbers as claims**, exactly like any other reviewer's.
 - The checks it could not run were ~60 lines of Playwright and took one pass. When an agent
   cannot see, write the probe.
+
+## 2026-08-14 (S175) — A word floor is an instruction to invent
+
+Compose mode for the Our-story panel was told to write "45–65 words". Given a 21-word input it
+returned "under the stars" and "a relationship that would soon blossom" — neither in the
+customer's text. The hard rule forbidding invention sat right there in the prompt and lost.
+
+- **On an editing task, never set a minimum length.** The missing words can only come from the
+  model. A ceiling is safe; a floor is a licence to fabricate. The hedge underneath it ("if
+  their text is short, leave it short") lost to the number every time — **a specific figure
+  beats a qualifier.**
+- **Set `temperature` when the job is editing, not writing.** The API default is tuned for
+  creative generation. 0.2 fixed most of what the floor didn't.
+- **A rule in the system prompt loses to the weight of the rest of it.** `caption-voice.md` is
+  60 lines coaching evocative caption writing; one section saying "you are editing, not
+  writing" could not outvote it. Repeat the critical rule in the user message.
+- **Give worked negative examples.** The real failures now sit in the voice file by name.
+- Fix verified by re-running the exact failing inputs. 21w → 21w, 18w → 17w.
+
+## 2026-08-14 (S175) — Grep found the line; the branch it sat in was the point
+
+Claimed text panels "clip silently" on the strength of finding `panelEl.style.overflow =
+'hidden'`. It is inside `if (isFunnyWords)`. Story panels take the `else` branch and overflow
+**visibly**. The wrong claim reached a brief, a code comment, and the AI's own rules before a
+review caught it.
+
+- **Read the enclosing block, not just the matching line.** A conditional turns a global claim
+  into a local one, and grep does not show you the `if`.
+- **Behaviour testing cannot catch a wrong explanation.** The owner had tested the feature and
+  it worked; the error was in prose describing a case he never hit. Only re-deriving the claim
+  from source finds these — which is what the reviewer did.
+- Also: **line-number citations in briefs go stale within the hour.** Eight of eight pointed at
+  unrelated code by end of session. Cite function names.
+
+## 2026-08-14 (S175) — Check whether the flag can be inferred before adding one
+
+The plan was to add an `aiButton: false` flag to 19 functional-page definitions. A check first
+showed the rule was already expressible: **no functional page keeps the button, and no standard
+spread has a `textPanel`.** So the slot button gates on `spreadDef.type !== 'standard'` (one
+line) and the panel button was deleted outright — 19 flags avoided, and a new template's
+special pages now default to safe.
+
+- **Before adding a flag to N places, test whether existing structure already says it.** Verify
+  across every data file, including all four Heirloom colourways — one exception would have
+  made the deletion a removed feature.
