@@ -35,6 +35,10 @@
     .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 20px 56px; background: rgba(250,250,248,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
     .nav-logo img { height: 28px; width: auto; display: block; }
     .nav-logo-text { font-family: var(--serif); font-size: 18px; letter-spacing: -0.01em; }
+    /* German runs longer than English ("Unsere Kollektionen"), so the row needs
+       a real gap and a CTA that will not be squeezed into the links. */
+    .nav { gap: 24px; }
+    .nav-cta { flex-shrink: 0; white-space: nowrap; }
     .nav-links { display: flex; gap: 32px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
     .nav-links a { transition: color 0.15s; } .nav-links a:hover { color: var(--text); }
     .nav-cta { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid var(--text); padding: 8px 20px; border-radius: 100px; transition: background 0.15s, color 0.15s; }
@@ -269,6 +273,7 @@
 <link rel="stylesheet" href="../assets/css/type.css">
 <link rel="stylesheet" href="../assets/css/mobile.css">
 <script src="../assets/js/photo-utils.js"></script>
+<script src="../assets/js/order-strings.js"></script>
 <script src="../assets/Template_Scribble/scribble-data.js"></script>
 <script src="../assets/Template_Wander/wander-data.js"></script>
 <script src="../assets/Template_Newborn/newborn-data.js"></script>
@@ -292,11 +297,11 @@
     <span class="nav-logo-text" style="display:none;">aevia</span>
   </a>
   <div class="nav-links">
-    <a href="home.html">Home</a>
-    <a href="about.html">About us</a>
-    <a href="help.html">Help</a>
+    <a href="home.html" data-i18n="nav.home">Home</a>
+    <a href="about.html" data-i18n="nav.about">About us</a>
+    <a href="help.html" data-i18n="nav.help">Help</a>
   </div>
-  <a href="collections.html" class="nav-cta">Our Collections</a>
+  <a href="collections.html" class="nav-cta" data-i18n="nav.cta">Our Collections</a>
 </nav>
 
 <!-- Stepper -->
@@ -309,9 +314,9 @@
 
   <!-- No-template fallback -->
   <div class="no-template" id="no-template">
-    <h2>Choose a template first</h2>
-    <p>You'll need to pick a template and page count before placing an order.</p>
-    <a href="collections.html">Browse collections</a>
+    <h2 data-i18n="noTemplate.title">Choose a template first</h2>
+    <p data-i18n="noTemplate.body">You'll need to pick a template and page count before placing an order.</p>
+    <a href="collections.html" data-i18n="noTemplate.link">Browse collections</a>
   </div>
 
   <!-- ═══════════════════════════════════
@@ -322,38 +327,38 @@
 
       <!-- Form (left) -->
       <div>
-        <h1 class="form-heading">Your details</h1>
-        <p class="form-sub">We use these to send your confirmation and contact you when your preview is ready.</p>
+        <h1 class="form-heading" data-i18n="details.heading">Your details</h1>
+        <p class="form-sub" data-i18n="details.sub">We use these to send your confirmation and contact you when your preview is ready.</p>
 
         <div class="signin-bar" id="signin-prompt" style="display:none;">
-          <span>Have an Aevia account?</span>
-          <button type="button" class="signin-link" id="signin-open">Sign in to autofill</button>
-          <span class="signin-or">— or just continue below as a guest.</span>
+          <span data-i18n="signin.prompt">Have an Aevia account?</span>
+          <button type="button" class="signin-link" id="signin-open" data-i18n="signin.open">Sign in to autofill</button>
+          <span class="signin-or" data-i18n="signin.or">— or just continue below as a guest.</span>
         </div>
         <div class="signin-bar signed" id="signin-confirm" style="display:none;">
-          <span>Signed in as <strong id="signin-email"></strong>.</span>
-          <button type="button" class="signin-link" id="signin-out">Not you? Sign out</button>
+          <span><span data-i18n="signin.signedAs">Signed in as</span> <strong id="signin-email"></strong>.</span>
+          <button type="button" class="signin-link" id="signin-out" data-i18n="signin.out">Not you? Sign out</button>
         </div>
 
         <div class="field-row">
           <div class="field">
-            <label for="inp-name">Full name <span style="color:#c5bdb5">*</span></label>
-            <input type="text" id="inp-name" placeholder="Anna Müller" autocomplete="name" />
+            <label for="inp-name"><span data-i18n="field.name.label">Full name</span> <span style="color:#c5bdb5">*</span></label>
+            <input type="text" id="inp-name" data-i18n-ph="field.name.ph" placeholder="Anna Müller" autocomplete="name" />
           </div>
           <div class="field">
-            <label for="inp-email">Email address <span style="color:#c5bdb5">*</span></label>
-            <input type="email" id="inp-email" placeholder="anna@example.com" autocomplete="email" />
+            <label for="inp-email"><span data-i18n="field.email.label">Email address</span> <span style="color:#c5bdb5">*</span></label>
+            <input type="email" id="inp-email" data-i18n-ph="field.email.ph" placeholder="anna@example.com" autocomplete="email" />
           </div>
         </div>
 
         <div class="field">
-          <label for="album-notes">Tell us about this album <span style="color:#c5bdb5;font-style:italic;letter-spacing:0;text-transform:none;font-size:10px;">optional</span></label>
-          <textarea id="album-notes" rows="4" placeholder="Your child's name, their personality, a favourite toy or game. Anything you'd love us to weave through the design."></textarea>
+          <label for="album-notes"><span data-i18n="field.notes.label">Tell us about this album</span> <span style="color:#c5bdb5;font-style:italic;letter-spacing:0;text-transform:none;font-size:10px;" data-i18n="field.optional">optional</span></label>
+          <textarea id="album-notes" rows="4" data-i18n-ph="notes.ph.default" placeholder="Your child's name, their personality, a favourite toy or game. Anything you'd love us to weave through the design."></textarea>
         </div>
 
         <div class="error-msg" id="err-step1"></div>
 
-        <button class="btn-primary" onclick="advance()">Continue &rarr;</button>
+        <button class="btn-primary" onclick="advance()"><span data-i18n="btn.continue">Continue</span> &rarr;</button>
       </div>
 
       <!-- Summary card (right) -->
@@ -362,12 +367,12 @@
         <div class="summary-title" id="sum-title"></div>
 
         <div class="summary-row">
-          <span class="summary-row-label">Pages</span>
+          <span class="summary-row-label" data-i18n="summary.pages">Pages</span>
           <span class="summary-row-val" id="sum-pages"></span>
         </div>
 
         <div class="summary-row" id="sum-addons-row">
-          <span class="summary-row-label">Add-ons</span>
+          <span class="summary-row-label" data-i18n="summary.addons">Add-ons</span>
           <div class="summary-row-val">
             <div class="summary-addons-list" id="sum-addons-list"></div>
           </div>
@@ -378,10 +383,10 @@
             <span style="font-family:var(--serif);font-size:18px;color:var(--muted);">€</span>
             <span class="summary-price" id="sum-price"></span>
           </div>
-          <div class="summary-price-note">incl. VAT, excl. shipping</div>
+          <div class="summary-price-note" data-i18n="summary.priceNote">incl. VAT, excl. shipping</div>
         </div>
 
-        <a class="summary-back" id="back-link" href="collections.html">← Change template</a>
+        <a class="summary-back" id="back-link" href="collections.html">← <span data-i18n="summary.back">Change template</span></a>
       </div>
 
     </div>
@@ -404,8 +409,8 @@
       <div class="upload-section" id="cover-section"><!-- filled by renderCoverSection() --></div>
       <div class="error-msg" id="err-cover"></div>
       <div class="step-nav">
-        <button type="button" class="step-back" onclick="goToStep(currentStepIdx - 1)">&larr; Back</button>
-        <button type="button" class="btn-primary" onclick="advance()">Continue &rarr;</button>
+        <button type="button" class="step-back" onclick="goToStep(currentStepIdx - 1)">&larr; <span data-i18n="btn.back">Back</span></button>
+        <button type="button" class="btn-primary" onclick="advance()"><span data-i18n="btn.continue">Continue</span> &rarr;</button>
       </div>
     </section>
 
@@ -415,8 +420,8 @@
       <div id="fp-sections"></div>
       <div class="error-msg" id="err-special"></div>
       <div class="step-nav">
-        <button type="button" class="step-back" onclick="goToStep(currentStepIdx - 1)">&larr; Back</button>
-        <button type="button" class="btn-primary" onclick="advance()">Continue &rarr;</button>
+        <button type="button" class="step-back" onclick="goToStep(currentStepIdx - 1)">&larr; <span data-i18n="btn.back">Back</span></button>
+        <button type="button" class="btn-primary" onclick="advance()"><span data-i18n="btn.continue">Continue</span> &rarr;</button>
       </div>
     </section>
 
@@ -424,25 +429,25 @@
     <section class="form-step" id="step-photos" style="display:none;">
     <!-- Main photos -->
     <div class="upload-section">
-      <div class="upload-label">Your photos</div>
-      <div class="upload-heading">Upload your photos</div>
+      <div class="upload-label" data-i18n="photos.label">Your photos</div>
+      <div class="upload-heading" data-i18n="photos.heading">Upload your photos</div>
 
       <!-- Photo count callout -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 18px;margin-bottom:18px;font-size:13px;line-height:1.6;">
-        Upload <strong id="photo-count-min">—</strong> photos. <span id="photo-count-nice" style="display:none;"></span>One per slot in your book.
+        <span data-i18n="photos.countPre">Upload </span><strong id="photo-count-min">—</strong><span data-i18n="photos.countPost"> photos. </span><span id="photo-count-nice" style="display:none;"></span><span data-i18n="photos.countTail">One per slot in your book.</span>
       </div>
 
       <!-- Smartphone tip -->
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;font-size:12px;color:var(--muted);line-height:1.6;">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;margin-top:2px;"><rect x="4" y="1" width="8" height="14" rx="1.5" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="12.5" r="0.8" fill="currentColor"/></svg>
-        <span>Upload from your phone for best quality. Smartphone photos include date metadata we use to sort your book.</span>
+        <span data-i18n="photos.tip">Upload from your phone for best quality. Smartphone photos include date metadata we use to sort your book.</span>
       </div>
 
       <div class="drop-zone" id="dz-main">
         <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" multiple onchange="handleMainFiles(this.files); this.value=''" />
         <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <div class="dz-text"><strong>Choose photos</strong> or drag here</div>
-        <div class="dz-formats">JPG · PNG · HEIC, up to 40 MB each. Add several at once.</div>
+        <div class="dz-text"><strong data-i18n="dz.choose">Choose photos</strong><span data-i18n="dz.orDrag"> or drag here</span></div>
+        <div class="dz-formats" data-i18n="dz.formats">JPG · PNG · HEIC, up to 40 MB each. Add several at once.</div>
       </div>
 
       <div class="photo-grid" id="photo-grid"></div>
@@ -451,7 +456,7 @@
 
       <label class="add-more-btn" id="add-more-btn" style="display:none;">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="1" x2="6" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Add more photos
+        <span data-i18n="photos.addMore">Add more photos</span>
         <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" multiple onchange="handleMainFiles(this.files); this.value=''" />
       </label>
     </div>
@@ -459,10 +464,10 @@
     <!-- Submit -->
     <div class="submit-section">
       <div class="error-msg" id="err-step2"></div>
-      <button class="btn-primary" id="submit-btn" onclick="submitOrder()">Submit your order</button>
-      <p class="submit-note">No payment until you approve the design.<br>Preview within 48 hours.</p>
+      <button class="btn-primary" id="submit-btn" onclick="submitOrder()" data-i18n="submit.btn">Submit your order</button>
+      <p class="submit-note"><span data-i18n="submit.note1">No payment until you approve the design.</span><br><span data-i18n="submit.note2">Preview within 48 hours.</span></p>
       <div class="step-nav" style="justify-content:center;margin-top:18px;">
-        <button type="button" class="step-back" onclick="goToStep(currentStepIdx - 1)">&larr; Back</button>
+        <button type="button" class="step-back" onclick="goToStep(currentStepIdx - 1)">&larr; <span data-i18n="btn.back">Back</span></button>
       </div>
     </div>
 
@@ -479,40 +484,40 @@
       <svg width="20" height="16" viewBox="0 0 20 16" fill="none"><path d="M2 8L7.5 13.5L18 2" stroke="#2e6b4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
     <div class="success-order" id="success-order-num"></div>
-    <h2 class="success-heading">Your photos are in.</h2>
-    <p class="success-sub" id="success-sub">We've sent a confirmation to your email address. Our team will start designing and send you a preview within 48 hours.</p>
+    <h2 class="success-heading" data-i18n="success.heading">Your photos are in.</h2>
+    <p class="success-sub" id="success-sub" data-i18n="success.sub">We've sent a confirmation to your email address. Our team will start designing and send you a preview within 48 hours.</p>
 
     <div class="success-steps">
       <div class="success-step">
         <div class="success-step-num">1</div>
         <div class="success-step-body">
-          <strong>Design</strong>
-          <span>We arrange your photos into the <span id="success-template-name"></span> layout. You'll receive a preview link within 48 hours.</span>
+          <strong data-i18n="success.s1.title">Design</strong>
+          <span><span data-i18n="success.s1.pre">We arrange your photos into the </span><span id="success-template-name"></span><span data-i18n="success.s1.post"> layout. You'll receive a preview link within 48 hours.</span></span>
         </div>
       </div>
       <div class="success-step">
         <div class="success-step-num">2</div>
         <div class="success-step-body">
-          <strong>Approval</strong>
-          <span>Fine-tune your book. Swap photos, adjust captions, and confirm everything looks right. Nothing is charged until you approve.</span>
+          <strong data-i18n="success.s2.title">Approval</strong>
+          <span data-i18n="success.s2.body">Fine-tune your book. Swap photos, adjust captions, and confirm everything looks right. Nothing is charged until you approve.</span>
         </div>
       </div>
       <div class="success-step">
         <div class="success-step-num">3</div>
         <div class="success-step-body">
-          <strong>Print &amp; dispatch</strong>
-          <span>Once approved, we print and ship your book within 5–7 business days.</span>
+          <strong data-i18n="success.s3.title">Print &amp; dispatch</strong>
+          <span data-i18n="success.s3.body">Once approved, we print and ship your book within 5–7 business days.</span>
         </div>
       </div>
     </div>
 
-    <a href="home.html" class="success-home">Return to Aevia &rarr;</a>
+    <a href="home.html" class="success-home"><span data-i18n="success.home">Return to Aevia</span> &rarr;</a>
   </div>
 
 </div><!-- /content -->
 
 <footer class="footer-min">
-  © 2026 Aevia. All rights reserved. &nbsp;·&nbsp; <a href="help.html" style="text-decoration:underline;text-underline-offset:3px;">Help &amp; FAQ</a>
+  <span data-i18n="footer.rights">© 2026 Aevia. All rights reserved.</span> &nbsp;·&nbsp; <a href="help.html" style="text-decoration:underline;text-underline-offset:3px;" data-i18n="footer.help">Help &amp; FAQ</a>
 </footer>
 
 
@@ -524,42 +529,44 @@ const FUNCTION_URL = 'https://europe-west1-aevia-uploads.cloudfunctions.net/crea
 const CONFIRM_URL = 'https://europe-west1-aevia-uploads.cloudfunctions.net/confirmUpload';
 const REPORT_UPLOAD_URL = 'https://europe-west1-aevia-uploads.cloudfunctions.net/reportUploadFailure';
 
+// These maps hold string-table KEYS, not literals — the English wording lives
+// in `assets/js/order-strings.js` beside its German counterpart.
 const ALBUM_NOTE_PLACEHOLDERS = {
-  kids:        "e.g. Ann's first year — born 14 March 2023. We'd love to see the early mornings, first smiles, and bath time chaos.",
-  love:        "e.g. Our wedding day — 14 June 2026, Vienna. The vows, the first dance, and everyone we love in one room.",
-  wedding:     "e.g. Our wedding day, 12 June 2025, Vienna. Ceremony at 4pm, dancing until 2am.",
-  travel:      "e.g. Six weeks in Patagonia, autumn 2023. Torres del Paine circuit, dawn to dusk.",
-  adventures:  "e.g. Six weeks in Patagonia, autumn 2023. Torres del Paine circuit, dawn to dusk.",
-  milestone:   "e.g. Dad's 70th — four decades of adventures, from Vienna to New Zealand.",
+  kids:        'notes.ph.kids',
+  love:        'notes.ph.love',
+  wedding:     'notes.ph.wedding',
+  travel:      'notes.ph.travel',
+  adventures:  'notes.ph.adventures',
+  milestone:   'notes.ph.milestone',
 };
-const DEFAULT_NOTE_PLACEHOLDER = "e.g. A summer in the south of France, August 2024. Three families, one house, too many rosés.";
+const DEFAULT_NOTE_PLACEHOLDER = 'notes.ph.fallback';
 
 // Per-template overrides, keyed like the template registry (name lowercased).
 // Checked before the category map, so a template with a distinct voice can have
 // its own example without changing the one its category-mates share.
 const TEMPLATE_NOTE_PLACEHOLDERS = {
-  joyride: "e.g. Joyful summer in Italy, July 2026. Gelato in Rome, a week on the Amalfi coast, and long dinners outside.",
-  laguna: "e.g. Two weeks in Greece, August 2026. Island ferries, long swims, and dinner after dark.",
+  joyride: 'notes.ph.joyride',
+  laguna: 'notes.ph.laguna',
   // Heirloom is a wedding book. Pinned per-template rather than left to the `love`
   // category, so an order link without a category param still reads like a wedding
   // album instead of falling through to the generic holiday default.
-  'heirloom-beige': "e.g. Our wedding day — 14 June 2026, Vienna. The vows, the first dance, and everyone we love in one room.",
-  'heirloom-brown': "e.g. Our wedding day — 14 June 2026, Vienna. The vows, the first dance, and everyone we love in one room.",
-  'heirloom-green': "e.g. Our wedding day — 14 June 2026, Vienna. The vows, the first dance, and everyone we love in one room.",
-  'heirloom-blue':  "e.g. Our wedding day — 14 June 2026, Vienna. The vows, the first dance, and everyone we love in one room.",
+  'heirloom-beige': 'notes.ph.heirloom',
+  'heirloom-brown': 'notes.ph.heirloom',
+  'heirloom-green': 'notes.ph.heirloom',
+  'heirloom-blue':  'notes.ph.heirloom',
 };
 
 const ADDON_NOTE_PLACEHOLDERS = {
-  'first-words':         "e.g. Mama, Dada, water, dog — in the order they arrived",
-  'anniversary-caption': "e.g. First date: Rome, 2018 · Engaged: Lisbon, 2021 · Married: Vienna, 2023",
-  'first-year-timeline': "e.g. Any key dates you'd like on the timeline — first crawl, first step, first tooth",
-  'fp2':                 "e.g. Noooo, More!, Biiiig, Why?, Pease (please), Up-up",
+  'first-words':         'addon.ph.firstWords',
+  'anniversary-caption': 'addon.ph.anniversary',
+  'first-year-timeline': 'addon.ph.timeline',
+  'fp2':                 'addon.ph.funnyWords',
 };
 
 const ADDON_HINTS = {
-  'fp2': 'Enter 3 to 10 of your child\'s funniest words or phrases, one per line.',
+  'fp2': 'addon.funnyHint',
 };
-const DEFAULT_ADDON_HINT = 'Notes for this special page — text, dates, names, anything relevant.';
+const DEFAULT_ADDON_HINT = 'addon.defaultHint';
 
 const cancelledAddons = new Set();
 
@@ -588,6 +595,50 @@ const ORDER = {
   // absent/anything-else means 'en' so old links and orders behave as before.
   language:   params.get('lang') === 'de' ? 'de' : 'en',
 };
+
+// ─────────────────────────────────────────────────────────────────
+// Strings (germanization Stage 4)
+// `t(key)` returns the German string for a DE order and the English one
+// otherwise. A missing key or a missing `de` falls back to English rather
+// than rendering blank — the same rule Stage 2 uses for `svgDe` artwork.
+// ─────────────────────────────────────────────────────────────────
+function t(key, vars) {
+  const row = (window.ORDER_STRINGS || {})[key];
+  if (!row) { console.warn('[strings] missing key:', key); return ''; }
+  let out = (ORDER.language === 'de' && row.de) ? row.de : row.en;
+  if (vars) for (const k in vars) out = out.split('{' + k + '}').join(vars[k]);
+  return out;
+}
+
+// Swaps the static markup's text in one pass on load. Elements opt in with
+// `data-i18n` (text), `data-i18n-ph` (placeholder) or `data-i18n-html` (markup).
+function applyStrings() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    el.innerHTML = t(el.getAttribute('data-i18n-html'));
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    el.placeholder = t(el.getAttribute('data-i18n-ph'));
+  });
+  if (ORDER.language === 'de') document.documentElement.lang = 'de';
+}
+
+// Per-template customer-facing text lives in the template data files, not in
+// the string table — `label` / `labelDe`, `placeholder` / `placeholderDe`,
+// `hint` / `hintDe`, mirroring Stage 2's `svg` / `svgDe`. Missing German
+// falls back to English.
+function tdText(obj, field) {
+  if (!obj) return '';
+  if (ORDER.language === 'de' && obj[field + 'De']) return obj[field + 'De'];
+  return obj[field] || '';
+}
+
+// The three worked examples above the funny-words rows. Row 4+ reuses the last.
+function wordExample(i) {
+  return t('addon.eg') + t('addon.word.ex' + Math.min(i, 3));
+}
 
 // ── Template registry: pick the active template's data by the `template` param.
 // Unknown / missing names fall back to Scribble (mirrors the chunk-020 engine seam).
@@ -698,6 +749,7 @@ function coverSlotLabel(slot) {
 // Init
 // ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  applyStrings();   // swap static markup to German before anything paints
   if (!ORDER.template) {
     document.getElementById('no-template').style.display = 'block';
     return;
@@ -722,14 +774,14 @@ let uploadStepsPrepared = false;
 
 function buildSteps() {
   const steps = [
-    { id: 'details', label: 'Your details', panelId: 'step1',      errId: 'step1', validate: validateDetailsStep },
-    { id: 'cover',   label: 'Your cover',   panelId: 'step-cover', errId: 'cover', validate: validateCoverStep },
+    { id: 'details', label: t('step.details'), panelId: 'step1',      errId: 'step1', validate: validateDetailsStep },
+    { id: 'cover',   label: t('step.cover'),   panelId: 'step-cover', errId: 'cover', validate: validateCoverStep },
   ];
   const hasSpecial = ORDER.addons.filter(a => !cancelledAddons.has(a.slug)).length > 0;
   if (hasSpecial) {
-    steps.push({ id: 'special', label: 'Special pages', panelId: 'step-special', errId: 'special', validate: validateSpecialStep });
+    steps.push({ id: 'special', label: t('step.special'), panelId: 'step-special', errId: 'special', validate: validateSpecialStep });
   }
-  steps.push({ id: 'photos', label: 'Your photos', panelId: 'step-photos', errId: 'step2', validate: validatePhotosStep });
+  steps.push({ id: 'photos', label: t('step.photos'), panelId: 'step-photos', errId: 'step2', validate: validatePhotosStep });
   STEPS = steps;
 }
 
@@ -840,10 +892,10 @@ function coverHasPhoto() {
 function coverPhotoHint(slot) {
   const o = (slot?.orientation || '').toLowerCase();
   if (o === 'landscape' || o === 'horizontal')
-    return 'One photo for the cover. Choose a <strong>landscape (horizontal)</strong> photo so it fills the frame.';
+    return t('cover.hintLandscape');
   if (o === 'portrait' || o === 'vertical')
-    return 'One photo for the cover. Choose a <strong>portrait (vertical)</strong> photo so it fills the frame.';
-  return 'One photo for the cover.';
+    return t('cover.hintPortrait');
+  return t('cover.hintPlain');
 }
 
 // Non-blocking orientation warning. Returns the message to show when the
@@ -886,7 +938,7 @@ function renderCoverSection() {
       <div class="drop-zone" id="dz-cover${sfx}">
         <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" onchange="${onchange}" />
         <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <div class="dz-text"><strong>Choose photo</strong> or drag here</div>
+        <div class="dz-text"><strong>${t('dz.choosePhoto')}</strong>${t('dz.orDrag')}</div>
         <div class="dz-formats">JPG · PNG · HEIC</div>
       </div>
       ${coverSlotPreview(sfx)}
@@ -900,8 +952,8 @@ function renderCoverSection() {
     // as-is; only the per-slot drop zones are gone.
     const n = coverSlots().length;
     html += `
-      <div class="upload-label">Required</div>
-      <div class="upload-heading">Cover photos</div>
+      <div class="upload-label">${t('cover.required')}</div>
+      <div class="upload-heading">${t('cover.photosHeading')}</div>
       <div class="upload-hint">${n} photos for the cover, one for each frame around the title. They fill the frames in the order you add them.</div>
       <div class="drop-zone" id="dz-cover">
         <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" multiple onchange="handleCoverFilesMulti(this.files); this.value=''" />
@@ -925,8 +977,8 @@ function renderCoverSection() {
     });
   } else if (coverHasPhoto()) {
     html += `
-      <div class="upload-label">Required</div>
-      <div class="upload-heading">Cover photo</div>
+      <div class="upload-label">${t('cover.required')}</div>
+      <div class="upload-heading">${t('cover.photoHeading')}</div>
       <div class="upload-hint">${coverPhotoHint(cover.slots[0])}</div>
       ${coverDropZone('', 'handleCoverFile(this.files[0])')}`;
   }
@@ -934,8 +986,8 @@ function renderCoverSection() {
   if (captions.length) {
     html += `
       <div style="margin-top:${coverHasPhoto() ? '20px' : '0'};">
-        <div class="upload-label">Cover text</div>
-        <div class="upload-hint" style="margin-bottom:14px;">Appears printed on your book cover and spine. You can change this later when you review your preview.</div>`;
+        <div class="upload-label">${t('cover.label')}</div>
+        <div class="upload-hint" style="margin-bottom:14px;">${t('cover.hint')}</div>`;
     // Two caption fields per row.
     for (let i = 0; i < captions.length; i += 2) {
       const pair = captions.slice(i, i + 2);
@@ -943,8 +995,8 @@ function renderCoverSection() {
       pair.forEach(cap => {
         html += `
           <div class="field" style="margin:0;">
-            <label for="cover-cap-${cap.key}" style="font-size:11px;color:var(--muted);">${cap.label || cap.key}</label>
-            <input type="text" id="cover-cap-${cap.key}" placeholder="${cap.placeholder || ''}"${cap.maxLength ? ` maxlength="${cap.maxLength}"` : ''} />
+            <label for="cover-cap-${cap.key}" style="font-size:11px;color:var(--muted);">${tdText(cap, 'label') || cap.key}</label>
+            <input type="text" id="cover-cap-${cap.key}" placeholder="${tdText(cap, 'placeholder')}"${cap.maxLength ? ` maxlength="${cap.maxLength}"` : ''} />
           </div>`;
       });
       html += `</div>`;
@@ -958,7 +1010,7 @@ function renderCoverSection() {
 function initSummary() {
   document.getElementById('sum-category').textContent = ORDER.category;
   document.getElementById('sum-title').textContent    = ORDER.template;
-  document.getElementById('sum-pages').textContent    = ORDER.pages + ' pages';
+  document.getElementById('sum-pages').textContent    = t('summary.pagesValue', { n: ORDER.pages });
   document.getElementById('sum-price').textContent    = ORDER.price;
   document.getElementById('back-link').href           = ORDER.backUrl;
 
@@ -978,7 +1030,7 @@ function initSummary() {
   const cat  = ORDER.category.toLowerCase();
   const tmpl = (ORDER.template || '').toLowerCase();
   document.getElementById('album-notes').placeholder =
-    TEMPLATE_NOTE_PLACEHOLDERS[tmpl] || ALBUM_NOTE_PLACEHOLDERS[cat] || DEFAULT_NOTE_PLACEHOLDER;
+    t(TEMPLATE_NOTE_PLACEHOLDERS[tmpl] || ALBUM_NOTE_PLACEHOLDERS[cat] || DEFAULT_NOTE_PLACEHOLDER);
 }
 
 function cancelAddon(slug, wrapId) {
@@ -1063,21 +1115,20 @@ function escHtml(s) {
 // Newborn birth-story template. All 5 are required (validated on submit), so the
 // template has no empty gaps. Staff can edit the composed text in the engine.
 function composeIntroBlock(v) {
-  return `On ${v.date} at ${v.time},
-you came into the world.
-
-Mommy and Daddy were waiting for you,
-and when we finally met you,
-we both had tears of happiness.
-
-You weighed ${v.weight} and were ${v.length} long.
-
-Our sweet little ${(v.gender || '').toLowerCase()}.`;
+  // The closing line is a separate key because German adjective endings agree
+  // with the noun's gender — "Unser suesser kleiner Junge" vs "Unser suesses
+  // kleines Maedchen" — so it cannot be built by lowercasing the customer's
+  // word the way English does.
+  const g = (v.gender || '').toLowerCase();
+  // The field is free text ("boy / girl", DE "Junge / Mädchen"), so match both.
+  const isGirl = /^(girl|m[äa]dchen|tochter)/.test(g);
+  const closing = t(isGirl ? 'compose.introGirl' : 'compose.introBoy', { gender: g });
+  return t('compose.intro', { date: v.date, time: v.time, weight: v.weight, length: v.length }) + closing;
 }
 
 // Newborn Labour left page: a short welcome built from the baby's name.
 function composeLabourLeft(name) {
-  return `Welcome to this world, ${name}!`;
+  return t('compose.labour', { name });
 }
 
 // The baby's name for the labour welcome comes from the cover text (first cover
@@ -1101,7 +1152,7 @@ function initAddonFields() {
   const container = document.getElementById('addon-fields');
   ORDER.addons.filter(a => a.inputType === 'text').forEach(addon => {
     const meta   = getFpMeta(addon.slug);
-    const hint   = (meta && meta.hint) || DEFAULT_ADDON_HINT;
+    const hint   = tdText(meta, 'hint') || t(DEFAULT_ADDON_HINT);
     const wrapId = `addon-wrap-${addon.slug}`;
     const wrap   = document.createElement('div');
     wrap.className = 'addon-field-wrap';
@@ -1111,7 +1162,7 @@ function initAddonFields() {
       <div style="display:flex;justify-content:space-between;align-items:baseline;">
         <div class="addon-field-name">${addon.name}</div>
         <button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
-          style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>
+          style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">${t('addon.remove')}</button>
       </div>
       <div class="addon-field-hint">${hint}</div>
     `;
@@ -1122,17 +1173,17 @@ function initAddonFields() {
       const rows3 = [1,2,3].map(i => `
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           <span style="min-width:22px;font-size:13px;color:var(--muted);text-align:right;">${i}.</span>
-          <input type="text" placeholder="e.g. ${['Noooo','More!','Biiiig'][i-1]}"
+          <input type="text" placeholder="${wordExample(i)}"
             style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;" />
         </div>`).join('');
       wrap.innerHTML = header + `
         <div id="fp-word-list-${addon.slug}">${rows3}</div>
         <button type="button" id="fp-add-btn-${addon.slug}" onclick="addWordRow('${addon.slug}',${maxWords})"
-          style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;font-family:var(--sans);color:var(--muted);cursor:pointer;margin-top:2px;">+ Add another word</button>
-        <div style="font-size:12px;color:var(--muted);margin-top:8px;">Minimum ${minWords} words, maximum ${maxWords}.</div>
+          style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;font-family:var(--sans);color:var(--muted);cursor:pointer;margin-top:2px;">${t('addon.addWord')}</button>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;">${t('addon.minMax', { min: minWords, max: maxWords })}</div>
       `;
     } else {
-      const ph = (meta && meta.placeholder) || ADDON_NOTE_PLACEHOLDERS[addon.slug] || "Add any notes you'd like us to include for this spread...";
+      const ph = tdText(meta, 'placeholder') || t(ADDON_NOTE_PLACEHOLDERS[addon.slug] || 'addon.defaultPh');
       wrap.innerHTML = header + `
         <textarea id="addon-text-${addon.slug}" placeholder="${ph}" rows="3"
           style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;resize:vertical;"></textarea>
@@ -1167,12 +1218,12 @@ function initFPSections() {
 
     // ── Header. Mandatory spreads show no remove link — they are part of the book.
     const removeLink = addon.mandatory
-      ? `<div style="font-size:13px;color:var(--muted);">Included in every book</div>`
+      ? `<div style="font-size:13px;color:var(--muted);">${t('addon.included')}</div>`
       : `<button type="button" onclick="cancelAddon('${addon.slug}','${wrapId}')"
-          style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">Remove this page</button>`;
+          style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;padding:0;">${t('addon.remove')}</button>`;
     let html = `
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-        <div class="upload-label">${addon.mandatory ? 'Your opening page' : 'Special page'}</div>
+        <div class="upload-label">${addon.mandatory ? t('addon.opening') : t('addon.special')}</div>
         ${removeLink}
       </div>
       <div class="upload-heading">${addon.name}</div>
@@ -1180,22 +1231,23 @@ function initFPSections() {
 
     // ── Photo zone(s)
     if (photoMeta) {
-      html += `<div class="upload-hint">${photoMeta.hint}</div>`;
+      html += `<div class="upload-hint">${tdText(photoMeta, 'hint')}</div>`;
       const count = photoMeta.count || 1;
+      const slotHints = (ORDER.language === 'de' && photoMeta.slotHintsDe) || photoMeta.slotHints;
       for (let i = 0; i < count; i++) {
         const slotKey   = count > 1 ? `${addon.slug}-${i}` : addon.slug;
         const slotLabel = count > 1
-          ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:500;">${i === 0 ? 'Photo 1 — left page' : 'Photo 2 — right page'}</div>`
+          ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:500;">${i === 0 ? t('addon.photoLeft') : t('addon.photoRight')}</div>`
           : '';
-        const slotHint = (photoMeta.slotHints && photoMeta.slotHints[i])
-          ? `<div style="font-size:12px;color:var(--muted);margin:-2px 0 10px;line-height:1.5;">${photoMeta.slotHints[i]}</div>`
+        const slotHint = (slotHints && slotHints[i])
+          ? `<div style="font-size:12px;color:var(--muted);margin:-2px 0 10px;line-height:1.5;">${slotHints[i]}</div>`
           : '';
         html += `
           ${slotLabel}${slotHint}
           <div class="drop-zone" id="dz-special-${slotKey}" style="${count > 1 && i < count - 1 ? 'margin-bottom:16px;' : ''}">
             <input type="file" accept=".jpg,.jpeg,.png,.heic,.heif" onchange="handleSpecialFile('${slotKey}', this.files[0])" />
             <svg class="dz-icon" viewBox="0 0 36 36" fill="none"><rect x="3" y="7" width="30" height="22" rx="2" stroke="#7d7570" stroke-width="1.5"/><circle cx="12" cy="16" r="4" stroke="#7d7570" stroke-width="1.5"/><path d="M3 24l8-8 7 7 5-5 10 8" stroke="#7d7570" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <div class="dz-text"><strong>Choose photo</strong> or drag here</div>
+            <div class="dz-text"><strong>${t('dz.choosePhoto')}</strong>${t('dz.orDrag')}</div>
             <div class="dz-formats">JPG · PNG · HEIC</div>
           </div>
           <div class="single-preview" id="special-preview-${slotKey}">
@@ -1211,8 +1263,8 @@ function initFPSections() {
       html += `<div style="margin-top:${photoMeta ? '22px' : '0'};">`;
       // Intro fields and the country-select render their own intro copy below.
       if (!textMeta.countrySelect && !textMeta.introFields) {
-        html += `<div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${textMeta.textPrompt || 'Notes'}</div>`;
-        html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${textMeta.hint || ''}</div>`;
+        html += `<div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${tdText(textMeta, 'textPrompt') || t('addon.notes')}</div>`;
+        html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${tdText(textMeta, 'hint')}</div>`;
       }
 
       if (textMeta.introFields) {
@@ -1227,28 +1279,29 @@ function initFPSections() {
         const rows3 = [1,2,3].map(i => `
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
             <span style="min-width:22px;font-size:13px;color:var(--muted);text-align:right;">${i}.</span>
-            <input type="text" placeholder="e.g. ${['Noooo','More!','Biiiig'][i-1]}"
+            <input type="text" placeholder="${wordExample(i)}"
               style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;" />
           </div>`).join('');
         html += `
           <div id="fp-word-list-${addon.slug}">${rows3}</div>
           <button type="button" id="fp-add-btn-${addon.slug}" onclick="addWordRow('${addon.slug}',${maxWords})"
-            style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;font-family:var(--sans);color:var(--muted);cursor:pointer;margin-top:2px;">+ Add another word</button>
-          <div style="font-size:12px;color:var(--muted);margin-top:8px;">Min ${minWords}, max ${maxWords}.</div>
+            style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;font-family:var(--sans);color:var(--muted);cursor:pointer;margin-top:2px;">${t('addon.addWord')}</button>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px;">${t('addon.minMaxShort', { min: minWords, max: maxWords })}</div>
         `;
       } else if (textMeta.count > 1) {
         // Multi-caption (e.g. FP5: one caption per page)
-        const labels = textMeta.labels || Array.from({ length: textMeta.count }, (_, i) => `Caption ${i + 1}`);
+        const labels = (ORDER.language === 'de' && textMeta.labelsDe) || textMeta.labels
+          || Array.from({ length: textMeta.count }, (_, i) => t('addon.caption', { n: i + 1 }));
         for (let ci = 0; ci < textMeta.count; ci++) {
           html += `
             <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;">${labels[ci]}</div>
-            <textarea id="addon-text-${addon.slug}-${ci}" placeholder="${textMeta.placeholder || ''}" rows="2"
+            <textarea id="addon-text-${addon.slug}-${ci}" placeholder="${tdText(textMeta, 'placeholder')}" rows="2"
               style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;resize:vertical;margin-bottom:${ci < textMeta.count - 1 ? '14px' : '0'};"></textarea>
           `;
         }
       } else {
         html += `
-          <textarea id="addon-text-${addon.slug}" placeholder="${textMeta.placeholder || ''}" rows="3"
+          <textarea id="addon-text-${addon.slug}" placeholder="${tdText(textMeta, 'placeholder')}" rows="3"
             style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;resize:vertical;"></textarea>
         `;
       }
@@ -1283,15 +1336,15 @@ function renderIntroFields(slug, meta) {
     pair.forEach(f => {
       rows += `
         <div>
-          <label for="intro-${slug}-${f.key}" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">${escHtml(f.label)}</label>
-          <input type="text" id="intro-${slug}-${f.key}" placeholder="${escHtml(f.placeholder || '')}" style="${inputStyle}" />
+          <label for="intro-${slug}-${f.key}" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">${escHtml(tdText(f, 'label'))}</label>
+          <input type="text" id="intro-${slug}-${f.key}" placeholder="${escHtml(tdText(f, 'placeholder'))}" style="${inputStyle}" />
         </div>`;
     });
     rows += `</div>`;
   }
   return `
-    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${escHtml(meta.heading || 'Intro details')}</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.55;">${escHtml(meta.hint || '')}</div>
+    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${escHtml(tdText(meta, 'heading') || t('addon.introDetails'))}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.55;">${escHtml(tdText(meta, 'hint'))}</div>
     ${rows}`;
 }
 
@@ -1378,27 +1431,27 @@ function renderCountrySelect(slug, meta) {
     opts += `</optgroup>`;
   });
   const inputStyle = 'background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;';
-  const itinExamples = ['Day 1: Arrival in Rome, rest', 'Days 2–4: Hiking in the Dolomites', 'Days 5–6: Florence — art & food'];
+  const itinExamples = [t('itin.ex1'), t('itin.ex2'), t('itin.ex3')];
   const itinRows = itinExamples.map((ex, i) => `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
       <span style="min-width:22px;font-size:13px;color:var(--muted);text-align:right;">${i + 1}.</span>
-      <input type="text" class="itin-line" placeholder="e.g. ${ex}" oninput="updateItinPreview('${slug}')"
+      <input type="text" class="itin-line" placeholder="${t('addon.eg')}${ex}" oninput="updateItinPreview('${slug}')"
         style="flex:1;${inputStyle}" />
     </div>`).join('');
   return `
-    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Countries visited</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">Select every country on this trip. They must all be in the same region — the map covers one region at a time.</div>
+    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${t('itin.countries')}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${t('itin.countriesHint')}</div>
     <select id="country-add-${slug}" autocomplete="off"
       onpointerdown="this.dataset.touched='1'" onkeydown="this.dataset.touched='1'"
       onchange="onCountryPick('${slug}', this)" style="${inputStyle}width:100%;">${opts}</select>
     <div id="country-tags-${slug}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;"></div>
     <div id="country-err-${slug}" style="display:none;font-size:12px;color:#b4413c;margin-top:8px;line-height:1.5;"></div>
-    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin:22px 0 6px;">${meta.textPrompt || 'Your route'}</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${meta.hint || 'List your route one stop per line — staff will set the final styling.'}</div>
+    <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin:22px 0 6px;">${tdText(meta, 'textPrompt') || t('addon.route')}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${tdText(meta, 'hint') || t('itin.hint')}</div>
     <div id="itin-list-${slug}">${itinRows}</div>
     <button type="button" id="itin-add-btn-${slug}" onclick="addItinRow('${slug}',7)"
-      style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;font-family:var(--sans);color:var(--muted);cursor:pointer;margin-top:2px;">+ Add a line</button>
-    <div style="font-size:12px;color:var(--muted);margin-top:8px;">Up to 7 lines.</div>
+      style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;font-family:var(--sans);color:var(--muted);cursor:pointer;margin-top:2px;">${t('itin.addLine')}</button>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px;">${t('itin.maxLines')}</div>
     <div id="region-map-${slug}" style="margin-top:22px;"></div>
   `;
 }
@@ -1558,7 +1611,7 @@ function itinLinesHtml(slug) {
   const itin = getItinLines(slug);
   return itin.length
     ? itin.map(l => `<div>${escHtml(l)}</div>`).join('')
-    : `<div style="opacity:0.45;font-style:italic;">Your route will appear here…</div>`;
+    : `<div style="opacity:0.45;font-style:italic;">${t('addon.routeEmpty')}</div>`;
 }
 
 function initSpecialDragDrop() {
@@ -1583,7 +1636,7 @@ function validateDetailsStep() {
   const name  = document.getElementById('inp-name').value.trim();
   const email = document.getElementById('inp-email').value.trim();
   if (!name || !email) {
-    return { ok: false, message: 'Please fill in your name and email before continuing.' };
+    return { ok: false, message: t('err.details') };
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { ok: false, message: 'That email address doesn\'t look right — please check it.' };
@@ -1597,7 +1650,7 @@ function prepareUploadSteps() {
   // Build the persistent summary bar
   const parts = [
     `<strong>${ORDER.template}</strong>`,
-    `<span class="sep">·</span><span>${ORDER.pages} pages</span>`,
+    `<span class="sep">·</span><span>${t('summary.pagesValue', { n: ORDER.pages })}</span>`,
   ];
   if (ORDER.addons.length) {
     parts.push(`<span class="sep">·</span><span>${ORDER.addons.map(a => a.name).join(', ')}</span>`);
@@ -1637,7 +1690,7 @@ function validateCoverStep() {
         return { ok: false, message: `Please upload the ${coverSlotLabel(missing).toLowerCase()} cover photo before continuing.` };
       }
     } else if (!coverFile) {
-      return { ok: false, message: 'Please upload a cover photo before continuing.' };
+      return { ok: false, message: t('err.coverPhoto') };
     }
   }
   // Primary cover caption is required (customer can still refine it at preview).
@@ -1645,7 +1698,7 @@ function validateCoverStep() {
   if (caps.length) {
     const el = document.getElementById(`cover-cap-${caps[0].key}`);
     if (el && !el.value.trim()) {
-      return { ok: false, message: 'Please add your cover text before continuing.' };
+      return { ok: false, message: t('err.coverText') };
     }
   }
   return { ok: true };
@@ -1685,7 +1738,7 @@ function validateSpecialStep() {
       // Labour: the left-page welcome uses the cover name, so require the cover text.
       if (textMeta.leftName) {
         if (!coverNameValue()) {
-          return { ok: false, message: `Please add your cover text — the labour page's welcome uses it.` };
+          return { ok: false, message: t('err.coverTextLabour') };
         }
       }
     } else if (textMeta && textMeta.countrySelect) {
@@ -1709,14 +1762,14 @@ function validateSpecialStep() {
       for (let ci = 0; ci < textMeta.count; ci++) {
         const val = (document.getElementById(`addon-text-${addon.slug}-${ci}`) || {}).value || '';
         if (!val.trim()) {
-          const labels = textMeta.labels || [];
-          return { ok: false, message: `Please fill in "${labels[ci] || `Caption ${ci + 1}`}" for ${addon.name}, or remove this page.` };
+          const labels = (ORDER.language === 'de' && textMeta.labelsDe) || textMeta.labels || [];
+          return { ok: false, message: t('err.fpCaption', { name: labels[ci] || t('addon.caption', { n: ci + 1 }), page: addon.name }) };
         }
       }
     } else if (textMeta) {
       const val = (document.getElementById(`addon-text-${addon.slug}`) || {}).value || '';
       if (!val.trim()) {
-        return { ok: false, message: `Please fill in "${textMeta.textPrompt || addon.name}", or remove this page.` };
+        return { ok: false, message: t('err.fpText', { name: tdText(textMeta, 'textPrompt') || addon.name }) };
       }
     }
   }
@@ -2216,7 +2269,7 @@ function refreshThumbBadge(f) {
     // HEIC conversion failed — calm note; the original photo still uploads.
     const note = document.createElement('div');
     note.className = 'converting-badge';
-    note.textContent = 'No preview';
+    note.textContent = t('photo.noPreview');
     note.title = 'Preview unavailable — your photo is still included';
     thumb.insertBefore(note, thumb.querySelector('.photo-thumb-remove'));
     return;
@@ -2254,7 +2307,7 @@ function buildThumbEl(f) {
   if (f._converting) {
     const badge = document.createElement('div');
     badge.className = 'converting-badge';
-    badge.textContent = 'Converting…';
+    badge.textContent = t('photo.converting');
     thumb.appendChild(badge);
   }
 
@@ -2393,7 +2446,7 @@ async function submitOrder() {
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    errEl.textContent = 'Please enter a valid email address so we can send your confirmation.';
+    errEl.textContent = t('err.email');
     errEl.style.display = 'block';
     errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
@@ -2558,7 +2611,7 @@ async function submitOrder() {
   const humourLines = [
     'Packing your memories carefully…',
     'Still uploading. Good books are worth the wait.',
-    'Almost there. Your photos are travelling to our Viennese studio.',
+    t('overlay.almost'),
   ];
   let humourIdx = 0;
   overlaySub.textContent = humourLines[0];
@@ -2975,7 +3028,7 @@ async function submitOrder() {
 
     clearInterval(humourTimer);
     overlayFill.style.width = '100%';
-    overlaySub.textContent = 'Done!';
+    overlaySub.textContent = t('overlay.done');
     overlayCount.textContent = '';
 
     // Show success — remove overlay first so it doesn't cover the success screen
@@ -2990,7 +3043,7 @@ async function submitOrder() {
     uploadInFlight = false;
     btn.disabled = false;
     overlay.classList.remove('active');
-    errEl.textContent = err.message || 'Something went wrong. Please try again or email us at support@aevia.at.';
+    errEl.textContent = err.message || t('err.generic');
     errEl.style.display = 'block';
 
     // S147 diagnostics: send whatever we learned to the order doc so a failure is
@@ -3188,7 +3241,7 @@ function collectSubmitWarnings() {
     ? coverSlots().map(s => coverFiles[s.key]).filter(Boolean)
     : (coverFile ? [coverFile] : []);
   if (coverHasPhoto() && coverList.some(f => f._orientationMismatch))
-    issues.push('Your cover photo is the wrong orientation for this template, so it will be cropped to fit.');
+    issues.push(t('issue.coverCrop'));
 
   let lowRes = 0;
   coverList.forEach(f => { if (f && f._lowRes) lowRes++; });
@@ -3330,7 +3383,7 @@ function preSubmitConfirm() {
     errEl.textContent = '';
     const email = $('signin-modal-email').value.trim();
     const pass  = $('signin-modal-password').value;
-    if (!email || !pass) { errEl.textContent = 'Please enter your email and password.'; return; }
+    if (!email || !pass) { errEl.textContent = t('err.signin'); return; }
     try {
       await signInWithEmailAndPassword(auth, email, pass);
       closeModal();
