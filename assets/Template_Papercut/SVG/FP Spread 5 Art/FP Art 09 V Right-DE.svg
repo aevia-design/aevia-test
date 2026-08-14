@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg id="a" data-name="Pages" xmlns="http://www.w3.org/2000/svg" width="200mm" height="200mm" viewBox="0 0 566.929 566.929">
-  <g id="b" data-name="FP Ar 09 Right">
+  <g id="b" data-name="FP Ar 09 Right" transform="translate(0 -14.174)">
     <g id="c" data-name="Layout Art (Horizontal + Heading)">
       <g>
         <path d="M146.371,57.075h4.073v14.686h.153c.832-1.143,1.754-2.146,2.569-3.073l10.467-11.612h5.186l-12.143,12.874,13.236,17.455h-4.938l-11.223-14.964-3.307,3.47v11.494h-4.073v-30.329Z" fill="#606161"/>

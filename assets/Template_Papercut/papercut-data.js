@@ -480,14 +480,14 @@ window.PAPERCUT_DATA = {
         left: {
           H: {
             bgColor: '#f3e8dc',
-            svg: 'FP Spread 5 Art/FP Art 09 H Left.svg',
+            svg: 'FP Spread 5 Art/FP Art 09 H Left.svg', svgDe: 'FP Spread 5 Art/FP Art 09 Left-DE.svg',
             slots: [
               { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, xMm: 98, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Source Sans 3', sizePt: 16, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#f3e8dc',
-            svg: 'FP Spread 5 Art/FP Art 09 V Left.svg',
+            svg: 'FP Spread 5 Art/FP Art 09 V Left.svg', svgDe: 'FP Spread 5 Art/FP Art 09 V Left-DE.svg',
             slots: [
               { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, xMm: 98, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Source Sans 3', sizePt: 16, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955' } }
             ]
@@ -496,14 +496,14 @@ window.PAPERCUT_DATA = {
         right: {
           H: {
             bgColor: '#f3e8dc',
-            svg: 'FP Spread 5 Art/FP Art 09 H Right.svg',
+            svg: 'FP Spread 5 Art/FP Art 09 H Right.svg', svgDe: 'FP Spread 5 Art/FP Art 09 Right-DE.svg',
             slots: [
               { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Source Sans 3', sizePt: 16, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#f3e8dc',
-            svg: 'FP Spread 5 Art/FP Art 09 V Right.svg',
+            svg: 'FP Spread 5 Art/FP Art 09 V Right.svg', svgDe: 'FP Spread 5 Art/FP Art 09 V Right-DE.svg',
             slots: [
               { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, xMm: 108, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Source Sans 3', sizePt: 16, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955' } }
             ]
