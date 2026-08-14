@@ -344,7 +344,7 @@ window.HEIRLOOM_GREEN_DATA = {
         },
         right: {
           default: { bgColor: '#dad0c5', svg: 'FP Spread 1 Our story/FP 02 Our story Right.svg', slots: [],
-            textPanel: { introFields: true, caption: { allowed: true, xMm: 108, yMm: 98, wMm: 110, hMm: 110, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#404737' } } },
+            textPanel: { introFields: true, aiCompose: true, caption: { allowed: true, xMm: 108, yMm: 98, wMm: 110, hMm: 110, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#404737' } } },
         },
       }
     },

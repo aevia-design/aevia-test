@@ -1294,18 +1294,23 @@
   // order's templateName, which the product form sets — e.g. 'Scribble',
   // 'Wander'). Add a new template by adding one entry here. Falls back to
   // Scribble for unknown/missing names (back-compat with pre-templateName orders).
+  //
+  // `collection` picks the caption voice register. The three values are defined in
+  // functions/caption/caption-voice.md ('Travel', 'Kids', 'Love'), each with its own
+  // emotional register and worked examples. It was hardcoded 'kids' until S175, so
+  // every wedding and travel caption was written under kids tone rules.
   const TEMPLATES = {
-    scribble: { data: () => window.SCRIBBLE_DATA, svgBase: '../../assets/Template_Scribble/Spreads/' },
-    wander:   { data: () => window.WANDER_DATA,   svgBase: '../../assets/Template_Wander/' },
-    newborn:  { data: () => window.NEWBORN_DATA,  svgBase: '../../assets/Template_Newborn/' },
-    papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../../assets/Template_Papercut/SVG/' },
-    tender:   { data: () => window.TENDER_DATA,   svgBase: '../../assets/Template_Tender/' },
-    joyride:  { data: () => window.JOYRIDE_DATA,  svgBase: '../../assets/Template_Joyride/SVG/' },
-    laguna:   { data: () => window.LAGUNA_DATA,   svgBase: '../../assets/Template_Laguna/SVG/' },
-    'heirloom-beige': { data: () => window.HEIRLOOM_DATA,       svgBase: '../../assets/Template_Heirloom/Beige/SVG/' },
-    'heirloom-brown': { data: () => window.HEIRLOOM_BROWN_DATA, svgBase: '../../assets/Template_Heirloom/Brown/SVG/' },
-    'heirloom-green': { data: () => window.HEIRLOOM_GREEN_DATA, svgBase: '../../assets/Template_Heirloom/Green/SVG/' },
-    'heirloom-blue':  { data: () => window.HEIRLOOM_BLUE_DATA,  svgBase: '../../assets/Template_Heirloom/Blue/SVG/' },
+    scribble: { data: () => window.SCRIBBLE_DATA, svgBase: '../../assets/Template_Scribble/Spreads/', collection: 'kids' },
+    wander:   { data: () => window.WANDER_DATA,   svgBase: '../../assets/Template_Wander/', collection: 'travel' },
+    newborn:  { data: () => window.NEWBORN_DATA,  svgBase: '../../assets/Template_Newborn/', collection: 'kids' },
+    papercut: { data: () => window.PAPERCUT_DATA, svgBase: '../../assets/Template_Papercut/SVG/', collection: 'kids' },
+    tender:   { data: () => window.TENDER_DATA,   svgBase: '../../assets/Template_Tender/', collection: 'love' },
+    joyride:  { data: () => window.JOYRIDE_DATA,  svgBase: '../../assets/Template_Joyride/SVG/', collection: 'travel' },
+    laguna:   { data: () => window.LAGUNA_DATA,   svgBase: '../../assets/Template_Laguna/SVG/', collection: 'travel' },
+    'heirloom-beige': { data: () => window.HEIRLOOM_DATA,       svgBase: '../../assets/Template_Heirloom/Beige/SVG/', collection: 'love' },
+    'heirloom-brown': { data: () => window.HEIRLOOM_BROWN_DATA, svgBase: '../../assets/Template_Heirloom/Brown/SVG/', collection: 'love' },
+    'heirloom-green': { data: () => window.HEIRLOOM_GREEN_DATA, svgBase: '../../assets/Template_Heirloom/Green/SVG/', collection: 'love' },
+    'heirloom-blue':  { data: () => window.HEIRLOOM_BLUE_DATA,  svgBase: '../../assets/Template_Heirloom/Blue/SVG/', collection: 'love' },
   };
 
   /** Is this caption ink LIGHT — i.e. does it sit on a dark ground? Drives the focus
@@ -1329,6 +1334,13 @@
 
   function getActiveTemplateData() {
     return _activeTemplateData;
+  }
+
+  /** Caption voice register for the active template. Falls back to 'kids' — the
+   *  pre-S175 hardcode — so a registry entry missing the field behaves as before
+   *  rather than sending the API an empty collection. */
+  function getActiveCollection() {
+    return (TEMPLATES[_activeTemplateKey] && TEMPLATES[_activeTemplateKey].collection) || 'kids';
   }
 
   // Missing templateName = pre-seam order, legitimately Scribble. A name we do not
@@ -3141,7 +3153,14 @@
 
           canvas.appendChild(captionEl);
 
-          // ── AI generate button ──
+          // ── AI generate button — STANDARD SPREADS ONLY (S175) ──
+          // On a functional page the caption text is the customer's own: a birthday
+          // message, the name of a toy, an art-gallery caption. Generating over it
+          // discards what they wrote and replaces it with a caption invented from the
+          // photo. See docs/briefs/caption-ai-modes.md for the per-page decisions.
+          // Safe as an early return: the button is the last statement in this callback.
+          if (spreadDef.type !== 'standard') return;
+
           const aiBtn = document.createElement('button');
           aiBtn.className = 'caption-ai-btn';
           aiBtn.textContent = '✦ Generate';
@@ -3172,7 +3191,7 @@
               const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/generateCaption', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: base64, collection: 'kids', previousCaptions: collectExistingCaptions() }),
+                body: JSON.stringify({ image: base64, collection: getActiveCollection(), previousCaptions: collectExistingCaptions() }),
               });
               if (!resp.ok) throw new Error((await resp.json()).error || resp.statusText);
               const { caption } = await resp.json();
@@ -3468,57 +3487,66 @@
 
         canvas.appendChild(panelEl);
 
-        // AI generate button below panel
-        const aiPanelBtn = document.createElement('button');
-        aiPanelBtn.className = 'caption-ai-btn';
-        aiPanelBtn.textContent = '✦ Generate';
-        aiPanelBtn.title = 'Generate text with AI';
-        aiPanelBtn.style.left = panelLeft + 'px';
-        aiPanelBtn.style.top  = (panelTop + panelHeight + 4) + 'px';
+        // No AI button on a text panel by default (S175). textPanel is a functional-page-
+        // only construct — zero standard spreads use one — and every functional page's
+        // panel holds text the customer wrote or answered into the order form: vows,
+        // why-I-love-him, the birth story, funny words, the itinerary. The old button sent
+        // only the photo, never this text, so it overwrote their words rather than
+        // improving them. Opt in per panel with textPanel.aiCompose; see
+        // docs/briefs/caption-ai-modes.md.
+        //
+        // ── ✦ Compose — Our story only ──
+        // Sends the panel's CURRENT text and no image: the customer answered "how you met"
+        // and "how it started" separately, compose() dropped them in as two stranded
+        // paragraphs, and this welds them into one passage. Never invents facts (the rule
+        // lives in functions/caption/caption-voice.md, "Compose mode").
+        if (tpCap.allowed && variant.textPanel.aiCompose) {
+          const composeBtn = document.createElement('button');
+          composeBtn.className = 'caption-ai-btn caption-compose-btn';
+          composeBtn.textContent = '✦ Compose';
+          composeBtn.title = 'Rewrite the customer\'s own words into one passage — adds no new facts';
+          composeBtn.style.left = panelLeft + 'px';
+          composeBtn.style.top  = (panelTop + panelHeight + 4) + 'px';
 
-        aiPanelBtn.addEventListener('click', async () => {
-          // Use first assigned photo from this spread (either side) for context
-          const asgn = window.bookAssignments?.[spreadIndex];
-          let poolIdx = null;
-          for (const s of ['left', 'right']) {
-            const arr = asgn?.[s] || [];
-            const found = arr.find(v => v !== null && v !== undefined);
-            if (found !== undefined) { poolIdx = found; break; }
-          }
-          if (poolIdx === null) return;
-          const photo = window.photoPool[poolIdx];
-          if (!photo?.url) return;
+          composeBtn.addEventListener('click', async () => {
+            const before = panelToPlain().trim();
+            if (!before) { dbLog('✦ Compose: panel is empty — nothing to compose', 'warn'); return; }
 
-          aiPanelBtn.textContent = '…';
-          aiPanelBtn.classList.add('loading');
-          aiPanelBtn.disabled = true;
-          try {
-            const base64 = await urlToBase64(photo.url);
-            const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/generateCaption', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ image: base64, collection: 'kids', previousCaptions: collectExistingCaptions() }),
-            });
-            if (!resp.ok) throw new Error((await resp.json()).error || resp.statusText);
-            const { caption } = await resp.json();
-            if (!window.bookCaptions) window.bookCaptions = {};
-            if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
-            if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
-            window.bookCaptions[spreadIndex][side]['textPanel'] = caption;
-            plainToPanel(isFunnyWords ? formatFunnyWords(caption) : applyTypographicRules(caption));
-            aiPanelBtn.textContent = '✦ Generate';
-            aiPanelBtn.title = '';
-          } catch (err) {
-            dbLog('⛔ Text panel AI error: ' + err.message, 'warn');
-            aiPanelBtn.textContent = '⚠ Failed — click to retry';
-            aiPanelBtn.title = err.message;
-          } finally {
-            aiPanelBtn.classList.remove('loading');
-            aiPanelBtn.disabled = false;
-          }
-        });
+            composeBtn.textContent = '…';
+            composeBtn.classList.add('loading');
+            composeBtn.disabled = true;
+            try {
+              const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/generateCaption', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: before, collection: getActiveCollection() }),
+              });
+              if (!resp.ok) throw new Error((await resp.json()).error || resp.statusText);
+              const { caption } = await resp.json();
+              // Staff may have edited while the request was in flight — never clobber that.
+              if (panelToPlain().trim() !== before) {
+                dbLog('✦ Compose: panel changed while composing — result discarded', 'warn');
+                return;
+              }
+              if (!window.bookCaptions) window.bookCaptions = {};
+              if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
+              if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
+              window.bookCaptions[spreadIndex][side]['textPanel'] = caption;
+              plainToPanel(applyTypographicRules(caption));
+              composeBtn.textContent = '✦ Compose';
+              composeBtn.title = '';
+            } catch (err) {
+              dbLog('⛔ Compose error: ' + err.message, 'warn');
+              composeBtn.textContent = '⚠ Failed — click to retry';
+              composeBtn.title = err.message;
+            } finally {
+              composeBtn.classList.remove('loading');
+              composeBtn.disabled = false;
+            }
+          });
 
-        canvas.appendChild(aiPanelBtn);
+          canvas.appendChild(composeBtn);
+        }
       }
 
       pagesWrap.appendChild(canvas);

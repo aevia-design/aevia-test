@@ -50,3 +50,86 @@ describe('Template data structure', () => {
     });
   });
 });
+
+// The engine's TEMPLATES registry carries a `collection` per template, which picks the
+// caption voice register (functions/caption/caption-voice.md). getActiveCollection()
+// falls back to 'kids' when the field is missing, so a new template added without one
+// gets kids tone-of-voice on a wedding book and nothing fails — it just reads wrong.
+// This is the guard for that. Text-scrapes the registry because the engine is a single
+// HTML file with no module boundary.
+describe('Caption collection registry', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const VALID = ['kids', 'travel', 'love'];
+
+  const html = fs.readFileSync(
+    path.join(__dirname, '..', 'pages', 'staff', 'template-engine.html'), 'utf8');
+  const block = html.match(/const TEMPLATES = \{([\s\S]*?)\n  \};/);
+
+  test('the registry block is findable', () => {
+    expect(block).not.toBeNull();
+  });
+
+  test('every template declares a valid collection', () => {
+    const found = {};
+    block[1].split('\n').forEach(raw => {
+      const line = raw.trim();
+      if (!line || line.startsWith('//')) return;
+      const key = (line.match(/^'?([a-z-]+)'?\s*:\s*\{/) || [])[1];
+      if (!key) return;                       // not an entry line
+      found[key] = (line.match(/collection:\s*'([a-z]+)'/) || [])[1] || null;
+    });
+
+    // Every registry key maps to one of the three voice registers. A null value means
+    // the entry exists but declares no collection — the silent-'kids' failure.
+    const invalid = Object.entries(found).filter(([, c]) => !VALID.includes(c));
+    expect({ invalid: Object.fromEntries(invalid) }).toEqual({ invalid: {} });
+    expect(Object.keys(found).length).toBeGreaterThanOrEqual(11);
+  });
+});
+
+// textPanel.aiCompose opts a text panel into the ✦ Compose button (S175). It belongs on
+// Our story and nowhere else: every other panel holds words the customer wants printed as
+// they wrote them — vows, why-I-love-him, the birth story, funny words, the itinerary.
+// Setting this flag on one of those turns AI loose on text it must not touch, which is
+// the exact bug this session removed. See docs/briefs/caption-ai-modes.md.
+describe('aiCompose flag placement', () => {
+  const DATA = {
+    'Template_Scribble/scribble-data.js': [],
+    'Template_Wander/wander-data.js': [],
+    'Template_Papercut/papercut-data.js': [],
+    'Template_Joyride/joyride-data.js': [],
+    'Template_Laguna/laguna-data.js': [],
+    'Template_Newborn/newborn-data.js': [],
+    'Template_Tender/tender-data.js': ['FPstory/right'],
+    'Template_Heirloom/Beige/heirloom-data.js': ['FPstory/right'],
+    'Template_Heirloom/Blue/heirloom-blue-data.js': ['FPstory/right'],
+    'Template_Heirloom/Brown/heirloom-brown-data.js': ['FPstory/right'],
+    'Template_Heirloom/Green/heirloom-green-data.js': ['FPstory/right'],
+  };
+
+  test('aiCompose appears on Our story only', () => {
+    const path = require('path');
+    const actual = {};
+    Object.keys(DATA).forEach(rel => {
+      const abs = path.join(__dirname, '..', 'assets', rel);
+      // Data files assign onto window as a side effect of loading, so each one must
+      // actually re-execute against the fresh window. Jest keeps its OWN module registry
+      // — `delete require.cache[...]` does not touch it, and a file an earlier test in
+      // this suite already required (Scribble, Wander) would silently return cached,
+      // leaving window empty. jest.resetModules() is what clears it.
+      jest.resetModules();
+      global.window = {};
+      require(abs);
+      const d = Object.values(global.window).find(v => v && v.spreads);
+      const hits = [];
+      Object.entries(d.spreads).forEach(([id, s]) =>
+        Object.entries(s.pages || {}).forEach(([side, variants]) =>
+          Object.values(variants || {}).forEach(v => {
+            if (v && v.textPanel && v.textPanel.aiCompose) hits.push(`${id}/${side}`);
+          })));
+      actual[rel] = hits;
+    });
+    expect(actual).toEqual(DATA);
+  });
+});

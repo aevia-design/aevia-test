@@ -59,6 +59,7 @@ _Real improvements, but nothing breaks if they wait._
 
 | # | Item | Notes |
 |---|------|-------|
+| 112 | Golden set for the caption AI | Ten sample inputs + the output the owner accepts, checked in, re-run after any prompt change. Voice drift is invisible — a tweak for one page quietly degrades captions elsewhere with every test still green. **Deferred S175 (owner): only test orders exist, too early to pick real samples.** → `docs/briefs/caption-ai-modes.md` |
 | 1 | Review the order-page link in the confirmation email | Token generation timing and email structure may be suboptimal. `functions/upload.js:130–226` |
 | 13 | Dashboard: overdue order tracking | Highlight orders that haven't moved status in X days. |
 | 44 | Prune the dashboard status bar | Unclear what it shows; may hold stale or redundant states. `pages/staff/dashboard.html` |

@@ -279,7 +279,12 @@ window.TENDER_DATA = {
         },
         right: {
           default: { bgColor: '#fbf8f6', svg: 'FP Spread 1 Our story/FP 02 Our story Right.svg', slots: [],
-            textPanel: { introFields: true, caption: { allowed: true, xMm: 108, yMm: 113, wMm: 120, hMm: 140, halign: 'left', valign: 'center', font: 'Parisienne', sizePt: 22, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#7c746e' } } },
+            // aiCompose: the ONE text panel where staff may call AI (S175). The customer
+            // answers "how you met" and "how it started" separately and compose() drops
+            // them in as two stranded paragraphs; AI welds them into one passage. Text-only,
+            // no image. Every other panel holds words the customer wants kept verbatim —
+            // see docs/briefs/caption-ai-modes.md.
+            textPanel: { introFields: true, aiCompose: true, caption: { allowed: true, xMm: 108, yMm: 113, wMm: 120, hMm: 140, halign: 'left', valign: 'center', font: 'Parisienne', sizePt: 22, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#7c746e' } } },
         },
       }
     },

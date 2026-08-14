@@ -103,9 +103,42 @@ exports.generateCaption = functions
       const OpenAI = require('openai');
       const client = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
 
-      // Expect JSON body: { image: "<base64>", collection: "kids", note: "optional", previousCaptions: [] }
-      const { image, collection = 'kids', note, previousCaptions } = req.body;
-      if (!image) { res.status(400).json({ error: 'image (base64) is required' }); return; }
+      // Expect JSON body, one of two shapes:
+      //   caption mode: { image: "<base64>", collection, note?, previousCaptions? }
+      //   compose mode: { text: "<customer's own words>", collection }   ← no image
+      // Compose is used by the Our-story panel only (S175). It sends no photograph: the
+      // passage is about the couple's account, and an image invites the model to describe
+      // it. See docs/briefs/caption-ai-modes.md.
+      const { image, text, collection = 'kids', note, previousCaptions } = req.body;
+      const composeText = typeof text === 'string' ? text.trim() : '';
+      if (!image && !composeText) {
+        res.status(400).json({ error: 'image (base64) or text is required' });
+        return;
+      }
+
+      if (composeText) {
+        const composed = await client.chat.completions.create({
+          model: 'gpt-4o-mini',
+          max_tokens: 300,
+          messages: [
+            { role: 'system', content: CAPTION_VOICE },
+            {
+              role: 'user',
+              content: [
+                `Compose mode. Collection: ${collection}`,
+                '',
+                "The customer's own text follows. Compose it into one passage of 45–65 words,",
+                'following the Compose mode section. Add no facts they did not write.',
+                'Return only the passage.',
+                '',
+                composeText,
+              ].join('\n'),
+            },
+          ],
+        });
+        res.json({ caption: composed.choices[0].message.content.trim() });
+        return;
+      }
 
       const userLines = [`Collection: ${collection}`];
       if (note) userLines.push(`Customer note: "${note}"`);
