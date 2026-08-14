@@ -78,8 +78,15 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     its `collection` to the engine registry (kids / travel / love) or it silently reads as kids.
   - **`germanization.md` — the DE/EN book-language build (S177). Read before touching the
     product-page selector, `svgDe`, the order form's language, or German captions.** Six
-    stages, gated so the owner tests each; **0–3 are DONE** (choice → Firestore → both engines
-    → PDF), 4–6 are not started. Settled and not to be re-raised: **one switch drives
+    stages, gated so the owner tests each; **0–4a are DONE** (choice → Firestore → both engines
+    → PDF → order-form chrome), **4b is part-done** (Newborn only, ten templates left), 5–6 are
+    not started. **The form's copy lives in `assets/js/order-strings.js`** as `{ en, de }` pairs
+    and is the single source of truth for BOTH languages — the page reads its English from it
+    too, so **never add a separate translation document** (owner, S178). Per-template copy stays
+    in the data files as `labelDe` / `placeholderDe` / `hintDe` / `copyDe`, resolved by
+    `tdText()`. ⚠ **Check for a `*_DE.txt` beside the artwork before writing German for a
+    template** — four exist (Newborn ×2, Heirloom, Tender) and are **authored book text that
+    overrides invented German**. Settled and not to be re-raised: **one switch drives
     everything**; the choice is made on the **product page regardless of site half**; the order
     form gets a **string table, not a `de/order.html` fork** (supersedes TO-DOS #101's framing);
     captions are written **natively in German**. Three invariants: **absent `language` reads as

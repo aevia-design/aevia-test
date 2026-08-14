@@ -86,8 +86,29 @@ customer-preview (parity). EN orders pixel-identical to today.
 **Stage 3 — PDF parity.** Same resolution in the renderer; predefined DE text included.
 *Gate: owner generates a PDF from the dashboard (in-region, free) and eyeballs the special pages.*
 
-**Stage 4 — German order form.** String table for visible UI copy in `order.html`, driven by the
-incoming `language` param; DE `compose()` predefined texts; `/stop-slop` pass on all DE strings.
+**Stage 4 — German order form.** ⚠ **This is TWO layers, not one** (found S178). The brief
+originally described only the first.
+
+- **4a — the form's own chrome. ✅ DONE S178.** `assets/js/order-strings.js` holds every string
+  as `{ en, de }` on one line — the page reads its *English* from the table too, so there is one
+  source of truth and no drift. `t(key, vars)` for JS-built markup, `data-i18n` / `-ph`
+  attributes plus one `applyStrings()` pass for static markup. DE `compose()` texts included.
+  **Decided (owner, S178): no separate markdown translation file** — it would give the same
+  side-by-side review view and then diverge.
+- **4b — per-template copy. STARTED S178 (Newborn done, ten to go).** The form renders
+  `cap.label` / `cap.placeholder` / `meta.hint` straight from the template data files
+  (`order.html:946`), so ~386 string fields across 11 files (~245 unique — the four Heirloom
+  colourways are identical) need `labelDe` / `placeholderDe` / `hintDe` / `copyDe` beside the
+  English. Resolved by `tdText()`, same fallback as `svgDe`: no German means English, never blank.
+
+⚠ **Check for a `*_DE.txt` beside the artwork before writing German for a template.** Four exist
+(Newborn ×2, Heirloom, Tender) and are **authored book text, not translations** — they overrode
+invented German on five points for Newborn. The other templates have no source doc in either
+language, so there the English data-file value is the source.
+
+Add-on names in the summary bar come from the product page's URL params, not the data files.
+**Owner's call (S178): they are fixed in Stage 6**, which touches the product page anyway.
+
 *Gate: click "Buch erstellen" from a DE product page; complete the form in German; place a test order.*
 
 **Stage 5 — German captions.** `language` param on `generateCaption`; German generation on

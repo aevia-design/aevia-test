@@ -1622,3 +1622,43 @@ function rebuilds its response field by field. Nothing errors; the field is just
 - **Adding an order field means editing `functions/index.js` too**, not only the writer.
 - Deploy filters must name the **exported** function: it is `createUploadSession`, not
   `createOrder`. The wrong name fails with "No function matches the filter".
+
+## 2026-08-14 (S178) — A regression guard built from a hand-picked list tests your memory
+
+Stage 4a moved the order form's copy into a string table. The guard test named **five** strings
+by hand and asserted they no longer sat loose in the markup. It passed. **Fourteen English
+sentences were still there** — the whole upload overlay, both modals, the Firebase auth errors,
+the cover-orientation warnings. The owner found them by clicking.
+
+- **A test that enumerates known cases proves only that you remembered those cases.** Where the
+  property is general ("no untranslated sentence reaches a customer"), assert the property:
+  scan for the *shape* of the defect, do not list instances of it.
+- The replacement sweeps for any capitalised multi-word sentence in customer-facing markup
+  without a `data-i18n` attribute, and any sentence-shaped string literal in the script not
+  wrapped in `t()`. **Confirmed red against the previous commit** — it flags all fourteen.
+- **Verify a new guard against the broken code it was written for.** A green sweep on fixed code
+  says nothing; the same sweep run on the prior commit is the proof.
+
+## 2026-08-14 (S178) — Translating where an authored source already exists
+
+Newborn's German was invented before checking `assets/Template_Newborn/**/*_DE.txt`. Xenia's
+docs are **authored book text, not translations**, and differed in five ways that mattered —
+including **"Bub"**, the Austrian word, where the German "Junge" had been written, and "Uhr"
+belonging *inside* the customer's time value rather than appended by the template.
+
+- **Search for a `*_DE.txt` beside the artwork before writing any German for a template.** Four
+  exist: Newborn ×2, Heirloom, Tender. The other templates have **no** source doc in either
+  language, so there the English in the data file IS the source and translating it is correct.
+- The same applies to any authored copy: check `assets/Template_*/` for a text doc before
+  inventing wording that will be printed and bound.
+
+## 2026-08-14 (S178) — An agent's "accept" deserves the scepticism a long list gets
+
+`/critic-agent` reviewed Stage 4a against six named traps and returned **accept** with one minor
+finding. Two of its claims failed checking: it asserted translation errors are caught by
+`npm run qa:order` (**that suite is English-only**), and its German review covered 13 of ~130
+keys while reading as complete.
+
+- **Check the agent's mitigations, not just its findings.** A wrong "this is covered elsewhere"
+  hides a gap more effectively than a missed defect does.
+- Its real findings were still worth having (dead `ADDON_HINTS`). Verify, then keep what holds.
