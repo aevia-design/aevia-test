@@ -144,7 +144,12 @@
     .img-break-who em { font-style: normal; color: var(--muted); }
     .img-break-venue {
       font-size: 10px; letter-spacing: 0.13em; text-transform: uppercase;
-      color: var(--muted); opacity: 0.72;
+      /* NOT var(--muted): #7d7570 is only 3.94:1 on --surface, and the
+         0.72 opacity this used to carry dropped it to 2.51:1 -- far under
+         the 4.5:1 AA floor. This credit is contractually required for the
+         photoshoot location, so rendering it near-invisible fails twice
+         over. #6f6660 measures 4.90:1 and still reads as quiet. */
+      color: #6f6660;
     }
     @media (max-width: 768px) {
       .img-break { padding-top: 52px; }
