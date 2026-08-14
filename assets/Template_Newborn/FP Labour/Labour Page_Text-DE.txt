@@ -1,0 +1,60 @@
+Left Page Default Text:
+
+Willkommen auf der Welt, [Nico]!
+
+Left page required fields from customer: [Name]
+
+
+Right Page Default Texts for each Zodiac:
+
+Stier: "Wachse stark und beständig.
+Mögest du stille Stärke
+und ein gütiges Herz in dir tragen, wohin das Leben dich auch führt."
+
+Widder: "Wachse mutig und strahlend.
+Möge dein furchtloses Herz
+von Staunen, Wärme und Liebe geleitet sein."
+
+Zwillinge: "Wachse neugierig und lebensfroh.
+Möge dein lebendiges Herz Freude finden
+in all den Geschichten, die das Leben schreibt."
+
+Krebs: "Wachse sanft und voller Liebe.
+Möge dein Herz sich geborgen fühlen
+und Wärme schenken, wohin du auch gehst."
+
+Löwe: "Wachse stolz und strahlend.
+Möge dein mutiges Herz voller Güte leuchten,
+wohin das Leben dich auch führt."
+
+Jungfrau: "Strahle sanft und weise.
+Möge dein fürsorgliches Herz Licht
+in die kleinen Dinge des Lebens bringen."
+
+Waage: "Strahle sanft und voller Wärme.
+Möge dein friedvolles Herz Balance finden
+in jedem schönen Augenblick."
+
+Skorpion: "Wachse tiefgründig und mutig.
+Möge dein leidenschaftliches Herz
+von Mut, Liebe und Licht geleitet sein."
+
+Schütze: "Strahle mutig und voller Freude.
+Möge dein neugieriger Geist Licht finden
+auf jedem Weg, den du gehst."
+
+Steinbock: "Strahle stark und beständig.
+Möge deine sanfte Stärke dich
+durch jeden Schritt des Lebens tragen."
+
+Wassermann: "Wachse strahlend und einzigartig.
+Möge dein offenes Herz frei träumen
+und Licht in die Welt bringen."
+
+Fische: "Wachse sanft und verträumt.
+Möge dein zartes Herz Staunen
+und Güte in sich tragen, wohin du auch gehst."
+
+Kein: "Wachse strahlend und sanft.
+Möge dein Herz voller Staunen und Liebe sein,
+wohin das Leben dich auch führt."

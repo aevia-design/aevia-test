@@ -1,0 +1,15 @@
+Intro Page Text:
+
+Am [15. Mai] um [6:09 Uhr]
+bist du auf die Welt gekommen.
+
+Mama und Papa haben schon sehnsüchtig auf dich gewartet,
+und als wir dich endlich in den Armen hielten,
+hatten wir beide Tränen vor Glück in den Augen.
+
+Du wogst [3,28 kg] und warst [53 cm] groß.
+
+Unser süßer kleiner [Bub/Mädchen].
+______________________________
+Required fields from customer:
+[Datum], [Uhrzeit], [Gewicht], [Größe], [Geschlecht]
