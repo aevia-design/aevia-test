@@ -120,6 +120,10 @@ exports.generateCaption = functions
         const composed = await client.chat.completions.create({
           model: 'gpt-4o-mini',
           max_tokens: 300,
+          // Editing, not writing. The API default is tuned for creative generation, which is
+          // what produced the invented detail found in S175 testing ("under the stars" from a
+          // text that never mentioned them). Low temperature keeps it close to the source.
+          temperature: 0.2,
           messages: [
             { role: 'system', content: CAPTION_VOICE },
             {
@@ -127,9 +131,21 @@ exports.generateCaption = functions
               content: [
                 `Compose mode. Collection: ${collection}`,
                 '',
-                "The customer's own text follows. Compose it into one passage of 45–65 words,",
-                'following the Compose mode section. Add no facts they did not write.',
-                'Return only the passage.',
+                // The no-invention rule is repeated HERE, not left to the system prompt alone.
+                // The system prompt is mostly a creative-writing manual for captions, and one
+                // section arguing the opposite loses to the weight of the rest.
+                "Below is the customer's own text, from two questions they answered separately.",
+                'Join it into one passage that reads as continuous prose.',
+                '',
+                'Rules, in order of importance:',
+                '1. Add NOTHING they did not write. No places, events, times of day, weather,',
+                '   feelings, or figures of speech. If it is not in their text, it does not exist.',
+                '2. Do not make a vague phrase specific.',
+                '3. There is no target length and no minimum. Never exceed 65 words. If their',
+                '   text is short, your answer is short — that is correct, not lazy.',
+                '4. Returning their words nearly unchanged is a good outcome.',
+                '',
+                'You are editing. Return only the passage.',
                 '',
                 composeText,
               ].join('\n'),

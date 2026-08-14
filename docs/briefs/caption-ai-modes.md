@@ -169,10 +169,16 @@ The addition is necessary because the existing rule **"One sentence. Sometimes j
 words. Never more than two sentences."** is tuned for photo captions and directly contradicts a
 60-word panel. Left unqualified, the model receives contradictory instructions.
 
-### Length: hard ceiling, not a target
+### Length: a ceiling ONLY — never a floor
 
-Aim **45–65 words.** Instruct as a maximum, not a goal — the panel does not shrink to fit, so
+**Never more than 65 words. No minimum, no target.** The panel does not shrink to fit, so
 anything longer runs over the artwork.
+
+⚠ **The first version said "45–65 words" and that was the main cause of the fabrication bug
+(S175).** On an editing task a lower bound is an instruction to invent: given a 21-word input
+and a 45-word floor, the model has nowhere to find the missing 24 words except from itself. A
+hedge underneath it ("if their text is too short, leave it short") lost to the number every
+time. **Do not reintroduce a minimum or a target length here.**
 
 Capacity, estimated from the panel geometry:
 
@@ -258,26 +264,42 @@ book that cannot be returned.
 
 ---
 
-## Open: compose invents facts
+## FIXED: compose was inventing facts (S175)
 
-The hard rule in `caption-voice.md` ("add no events, places, dates, people, or feelings that are
-not in their text") is **not holding**. Two live examples, both post-deploy:
+Found post-deploy, fixed the same session. Recorded because the causes are not obvious and the
+fix is easy to undo by accident.
 
-- `"coffee"` → `"coffee dates"` (mild)
-- the wedding example above — invented stars, an invented feeling, and greeting-card phrasing
-  (`"blossom"`) that the voice file's stop-slop section separately bans
+**The symptom.** Given *"We talked all night and missed the last train home, so we walked"*,
+compose returned *"...enjoying each other's company **under the stars**, laying the foundation
+for a relationship that would soon **blossom**."* Stars invented, feeling invented, and
+`blossom` is the greeting-card register the voice file separately bans. A second case turned
+`"coffee"` into `"coffee dates"`. Length held (22 and 53 words) — only fabrication failed.
 
-Length held both times (22 and 53 words), so the ceiling is fine. Fabrication is not.
+**Four causes, in order of how much each mattered:**
 
-**Probable cause, untested:** `generateCaption` never sets `temperature`, so compose runs at the
-API default — maximum creativity for what is an editing task. Two candidate fixes, cheap:
+1. **A word floor of 45.** The dominant cause. See the Length section — a minimum on an editing
+   task is an instruction to invent.
+2. **No `temperature` set,** so an editing job ran at the API's creative-writing default.
+3. **The no-invention rule lived only in the system prompt,** which is 60 lines of
+   creative-caption instruction ("write what the photo feels like"). One section arguing the
+   opposite loses to the weight of the rest.
+4. **Nothing told it that doing very little was acceptable.** Every other signal said produce
+   something.
 
-1. Set a low `temperature` on the compose call.
-2. Move the hard rule from the system prompt into the user message — models weight the most
-   recent instruction more heavily.
+**The fix**, all four addressed: ceiling-only length, `temperature: 0.2`, the rules repeated in
+the user message as a numbered list, and an explicit "returning their words nearly unchanged is
+a good outcome" in both the voice file and the request. The two real failures are written into
+`caption-voice.md` as worked negative examples.
 
-Not attempted yet. **Nobody should compose a real customer order until this is fixed** — the
-Our-story page is the couple's own account of how they met.
+**Verified live** on the two failing inputs plus a 5-word one:
+
+| Input | Before | After |
+|---|---|---|
+| Graz wedding, 21w | +"under the stars", +"would soon blossom" | 21w, only `friends` → `friend's` |
+| coffee, 18w | `"coffee"` → `"coffee dates"` | 17w — shorter than the input |
+| "Through friends. It just worked.", 5w | — | 7w, added "We met" to join them |
+
+Grammar and joining only, which is the permitted set.
 
 ---
 

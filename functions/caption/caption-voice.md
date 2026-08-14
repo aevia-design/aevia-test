@@ -82,10 +82,13 @@ sentences that sound like a poster.
 
 ## What overrides the caption rules
 
-**Length.** The one-sentence rule does not apply. Write **45–65 words. Never more than 65.**
-This is a hard ceiling, not a target: the text sits in a fixed panel on a printed page, and
-anything longer overflows the panel and runs over the artwork around it. When in doubt, write
-less.
+**Length.** The one-sentence rule does not apply — this is prose. There is **no minimum, and no
+target.** The only limit is a ceiling: **never more than 65 words.** The text sits in a fixed
+panel on a printed page, and anything longer overflows it and runs over the artwork around it.
+
+Whatever length their material honestly supports is the right length. If their answers come to
+twenty words, the correct output is twenty words. **Writing to reach a length is the worst thing
+you can do on this page** — there is nowhere for the extra words to come from except invention.
 
 **Full sentences, properly punctuated.** The caption rules against ending with a full stop do
 not apply here. This is prose. End sentences normally.
@@ -106,8 +109,14 @@ You may not invent how a proposal happened, where they travelled, what someone w
 what either of them was thinking. You may not resolve a vague phrase into a specific one — if
 they wrote "through friends", it stays "through friends".
 
-If their text is too short to reach 45 words, **leave it short.** A brief true passage is
-correct; a padded one is a failure. Never invent material to reach a word count.
+**Returning their text almost unchanged is a success, not a failure.** If their answers already
+read well, join them and stop. Doing very little is the correct outcome far more often than not.
+
+Real failures caught in testing, so you know what this looks like in practice:
+- Given "we talked all night and missed the last train home, so we walked", the model added
+  "under the stars" and "laying the foundation for a relationship that would soon blossom".
+  Both invented. Neither is in the customer's text.
+- Given "coffee", the model wrote "coffee dates". Even that is too much.
 
 This rule is stricter than the caption rules for a reason. A caption that misreads a mood is a
 small thing. This page is the couple's own account of how they met, printed and bound in a book
