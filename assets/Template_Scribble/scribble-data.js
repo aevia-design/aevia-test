@@ -312,7 +312,7 @@ window.SCRIBBLE_DATA = {
         left: {
           default: {
             bgColor: '#fdd16f',
-            svg: 'FP Spread 1/FP Birthday 01 L.svg',
+            svg: 'FP Spread 1/FP Birthday 01 L.svg', svgDe: 'FP Spread 1/FP Birthday 01 L-DE.svg',
             slots: [],
             textPanel: { caption: { allowed: true, xMm: 98, yMm: 113, wMm: 86, hMm: 140, halign: 'center', valign: 'center', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
           },
@@ -337,7 +337,7 @@ window.SCRIBBLE_DATA = {
         left: {
           default: {
             bgColor: '#f8ead9',
-            svg: 'FP Spread 2/FP Words 03 L.svg',
+            svg: 'FP Spread 2/FP Words 03 L.svg', svgDe: 'FP Spread 2/FP Words 03 L-DE.svg',
             slots: [],
             textPanel: { caption: { allowed: true, xMm: 98, yMm: 143, wMm: 90, hMm: 80, halign: 'center', valign: 'center', font: 'FirstTimeWriting', sizePt: 20, style: 'regular', letterSpacing: 0, lineSpacing: 1.2, color: '#493955' }, funnyWords: true }
           },
@@ -361,14 +361,14 @@ window.SCRIBBLE_DATA = {
         left: {
           H: {
             bgColor: '#c16ac1',
-            svg: 'FP Spread 3/FP Toy 05 H L.svg',
+            svg: 'FP Spread 3/FP Toy 05 H L.svg', svgDe: 'FP Spread 3/FP Toy 05 H L-DE.svg',
             slots: [
               { slot: 1, x: 95, y: 130, xBleed: 98, yBleed: 133, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, xMm: 98, yMm: 63, wMm: 100, hMm: 20, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#c16ac1',
-            svg: 'FP Spread 3/FP Toy 05 V L.svg',
+            svg: 'FP Spread 3/FP Toy 05 V L.svg', svgDe: 'FP Spread 3/FP Toy 05 H L-DE.svg',
             slots: [
               { slot: 1, x: 76, y: 115, xBleed: 79, yBleed: 118, w: 87, h: 130, ratio: '87:130', pool: 'special', caption: { allowed: true, xMm: 157.5, yMm: 73, wMm: 50, hMm: 40, halign: 'left', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
@@ -401,14 +401,14 @@ window.SCRIBBLE_DATA = {
         left: {
           H: {
             bgColor: '#f8ead9',
-            svg: 'FP Spread 4/FP Steps 07 H L.svg',
+            svg: 'FP Spread 4/FP Steps 07 H L.svg', svgDe: 'FP Spread 4/FP Steps 07 H L-DE.svg',
             slots: [
               { slot: 1, x: 95, y: 130, xBleed: 98, yBleed: 133, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, xMm: 98, yMm: 53, wMm: 100, hMm: 20, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
-            svg: 'FP Spread 4/FP Steps 07 V L.svg',
+            svg: 'FP Spread 4/FP Steps 07 V L.svg', svgDe: 'FP Spread 4/FP Steps 07 H L-DE.svg',
             slots: [
               { slot: 1, x: 76, y: 115, xBleed: 79, yBleed: 118, w: 87, h: 130, ratio: '93:139', pool: 'special', caption: { allowed: true, xMm: 157.5, yMm: 163, wMm: 50, hMm: 40, halign: 'left', valign: 'bottom', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
@@ -441,14 +441,14 @@ window.SCRIBBLE_DATA = {
         left: {
           H: {
             bgColor: '#ff8773',
-            svg: 'FP Spread 5/FP Art 09 H L.svg',
+            svg: 'FP Spread 5/FP Art 09 H L.svg', svgDe: 'FP Spread 5/FP Art H 09 Left-DE.svg',
             slots: [
               { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, xMm: 98, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'EB Garamond', sizePt: 18, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#ff8773',
-            svg: 'FP Spread 5/FP Art 09 V L.svg',
+            svg: 'FP Spread 5/FP Art 09 V L.svg', svgDe: 'FP Spread 5/FP Art V 09 Left-DE.svg',
             slots: [
               { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, xMm: 98, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'EB Garamond', sizePt: 18, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955' } }
             ]
@@ -457,14 +457,14 @@ window.SCRIBBLE_DATA = {
         right: {
           H: {
             bgColor: '#f8ead9',
-            svg: 'FP Spread 5/FP Art 10 H R.svg',
+            svg: 'FP Spread 5/FP Art 10 H R.svg', svgDe: 'FP Spread 5/FP Art H 10 Right-DE.svg',
             slots: [
               { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', pool: 'artwork', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'EB Garamond', sizePt: 18, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
-            svg: 'FP Spread 5/FP Art 12 V R.svg',
+            svg: 'FP Spread 5/FP Art 12 V R.svg', svgDe: 'FP Spread 5/FP Art V 12 Right-DE.svg',
             slots: [
               { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 110, h: 140, ratio: '11:14', pool: 'artwork', caption: { allowed: true, xMm: 108, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'EB Garamond', sizePt: 18, style: 'regular', letterSpacing: 0.03, lineSpacing: 1.35, color: '#493955' } }
             ]

@@ -347,7 +347,7 @@ window.PAPERCUT_DATA = {
         left: {
           default: {
             bgColor: '#b5ceb5',
-            svg: 'FP Spread 1 Birthday/FP Birthday 01 Left.svg',
+            svg: 'FP Spread 1 Birthday/FP Birthday 01 Left.svg', svgDe: 'FP Spread 1 Birthday/FP Birthday 01 Left-DE.svg',
             slots: [],
             textPanel: { caption: { allowed: true, xMm: 98, yMm: 113, wMm: 86, hMm: 140, halign: 'center', valign: 'center', font: 'Source Sans 3', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#4a4b40' } }
           },
@@ -373,7 +373,7 @@ window.PAPERCUT_DATA = {
         left: {
           default: {
             bgColor: '#f3e8dc',
-            svg: 'FP Spread 2 Words/FP Words 03 Left.svg',
+            svg: 'FP Spread 2 Words/FP Words 03 Left.svg', svgDe: 'FP Spread 2 Words/FP Words 03 Left-DE.svg',
             slots: [],
             textPanel: { caption: { allowed: true, xMm: 98, yMm: 143, wMm: 90, hMm: 80, halign: 'center', valign: 'center', font: 'FirstTimeWriting', sizePt: 20, style: 'regular', letterSpacing: 0, lineSpacing: 1.2, color: '#4a4b40' }, funnyWords: true }
           },
@@ -398,14 +398,14 @@ window.PAPERCUT_DATA = {
         left: {
           H: {
             bgColor: '#e7c979',
-            svg: 'FP Spread 3 Toys/FP Toy 05 H Left.svg',
+            svg: 'FP Spread 3 Toys/FP Toy 05 H Left.svg', svgDe: 'FP Spread 3 Toys/FP Toy 05 Left-DE.svg',
             slots: [
               { slot: 1, x: 95, y: 130, xBleed: 98, yBleed: 133, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, xMm: 98, yMm: 63, wMm: 100, hMm: 20, halign: 'center', valign: 'top', font: 'Source Sans 3', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#4a4b40' } }
             ]
           },
           V: {
             bgColor: '#e7c979',
-            svg: 'FP Spread 3 Toys/FP Toy 05 V Left.svg',
+            svg: 'FP Spread 3 Toys/FP Toy 05 V Left.svg', svgDe: 'FP Spread 3 Toys/FP Toy 05 Left-DE.svg',
             slots: [
               { slot: 1, x: 76, y: 115, xBleed: 79, yBleed: 118, w: 87, h: 130, ratio: '87:130', pool: 'special', caption: { allowed: true, xMm: 157.5, yMm: 73, wMm: 50, hMm: 40, halign: 'left', valign: 'top', font: 'Source Sans 3', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#4a4b40' } }
             ]
@@ -439,14 +439,14 @@ window.PAPERCUT_DATA = {
         left: {
           H: {
             bgColor: '#ddecf0',
-            svg: 'FP Spread 4 Steps/FP Steps 07 H Left.svg',
+            svg: 'FP Spread 4 Steps/FP Steps 07 H Left.svg', svgDe: 'FP Spread 4 Steps/FP Steps 07 Left-DE.svg',
             slots: [
               { slot: 1, x: 95, y: 130, xBleed: 98, yBleed: 133, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, xMm: 98, yMm: 53, wMm: 100, hMm: 20, halign: 'center', valign: 'top', font: 'Source Sans 3', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#ddecf0',
-            svg: 'FP Spread 4 Steps/FP Steps 07 V Left.svg',
+            svg: 'FP Spread 4 Steps/FP Steps 07 V Left.svg', svgDe: 'FP Spread 4 Steps/FP Steps 07 Left-DE.svg',
             slots: [
               { slot: 1, x: 76, y: 115, xBleed: 79, yBleed: 118, w: 87, h: 130, ratio: '93:139', pool: 'special', caption: { allowed: true, xMm: 157.5, yMm: 163, wMm: 50, hMm: 40, halign: 'left', valign: 'bottom', font: 'Source Sans 3', sizePt: 16, style: 'regular', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]

@@ -1164,6 +1164,21 @@
     return _activeTemplateData;
   }
 
+  /** Book language for this order (germanization Stage 2) — mirrors
+   *  template-engine.html. Anything other than 'de', including a pre-Stage-1 order
+   *  with no field, is English. */
+  let _bookLanguage = 'en';
+  function setBookLanguage(lang) { _bookLanguage = lang === 'de' ? 'de' : 'en'; }
+  function isGermanBook() { return _bookLanguage === 'de'; }
+
+  /** A German book takes `svgDe` where the data file declares one, and falls back to
+   *  the English artwork where it does not. Mirrored in template-engine.html and
+   *  scripts/export-pdf.js — the customer must approve exactly what prints. */
+  function resolvePageSvg(def) {
+    if (!def) return null;
+    return (isGermanBook() && def.svgDe) || def.svg;
+  }
+
   // An order whose templateName is MISSING is a pre-seam order and legitimately
   // defaults to Scribble. An order naming a template this page does not carry is a
   // different thing entirely — almost always a stale deploy — and must NOT be drawn
@@ -1321,6 +1336,8 @@
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       window.orderData = await resp.json();
       setActiveTemplate(window.orderData.templateName);
+      // Must precede any render — the language picks the artwork (germanization S2).
+      setBookLanguage(window.orderData.language);
       // Re-bucket special photos for the active template (adds e.g. Newborn's
       // FPlabour key so its labour photos aren't dropped on load). Mirrors the engine.
       window.specialPhotos = freshSpecialPhotos();
@@ -2399,7 +2416,7 @@
       if (variant.svg) {
         const overlay = document.createElement('img');
         overlay.className = 'svg-overlay';
-        overlay.src = SVG_BASE + ((variant.monogramSvg && pageMono && pageMono.introSvg) || variant.svg);
+        overlay.src = SVG_BASE + ((variant.monogramSvg && pageMono && pageMono.introSvg) || resolvePageSvg(variant));
         overlay.alt = '';
         overlay.decoding = 'async';
         // overlayBelow (per page, CSV overlay_position=below) OR spread-level

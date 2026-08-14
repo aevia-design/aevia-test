@@ -479,7 +479,7 @@ window.LAGUNA_DATA = {
         right: {
           default: {
             bgColor: '#c6ceba',
-            svg: 'FP Travel Itinerary/Travel Itinerary.svg',
+            svg: 'FP Travel Itinerary/Travel Itinerary.svg', svgDe: 'FP Travel Itinerary/Travel Itinerary-DE.svg',
             slots: [],
             textPanel: { caption: { allowed: true, xMm: 108, yMm: 116, wMm: 137, hMm: 120, halign: 'left', valign: 'center', font: 'Mulish', sizePt: 22, style: 'regular', letterSpacing: 0.10, lineSpacing: 1.28, color: '#1a344d' }, itinerary: true }
           },

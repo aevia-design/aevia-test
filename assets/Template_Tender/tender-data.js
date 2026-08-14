@@ -278,7 +278,7 @@ window.TENDER_DATA = {
             slots: [ { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 100, h: 100, ratio: '1:1', pool: 'story', caption: { allowed: false } } ] },
         },
         right: {
-          default: { bgColor: '#fbf8f6', svg: 'FP Spread 1 Our story/FP 02 Our story Right.svg', slots: [],
+          default: { bgColor: '#fbf8f6', svg: 'FP Spread 1 Our story/FP 02 Our story Right.svg', svgDe: 'FP Spread 1 Our story/FP 02 Our story Right-DE.svg', slots: [],
             // aiCompose: the ONE text panel where staff may call AI (S175). The customer
             // answers "how you met" and "how it started" separately and compose() drops
             // them in as two stranded paragraphs; AI welds them into one passage. Text-only,
@@ -306,7 +306,7 @@ window.TENDER_DATA = {
         // Left page = editable text panel; right page = full-bleed photo (matches the
         // SVG names + Xenia's example. CSV labels the photo "Left H" — treat as right.)
         left: {
-          default: { bgColor: '#fbf8f6', svg: 'FP Spread 2 Words/FP 03 Words Left.svg', slots: [],
+          default: { bgColor: '#fbf8f6', svg: 'FP Spread 2 Words/FP 03 Words Left.svg', svgDe: 'FP Spread 2 Words/FP 03 Words Left-DE.svg', slots: [],
             textPanel: { introFields: true, caption: { allowed: true, xMm: 98, yMm: 113, wMm: 120, hMm: 140, halign: 'left', valign: 'center', font: 'Parisienne', sizePt: 22, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#7c746e' } } },
         },
         right: {

@@ -68,6 +68,9 @@ function buildStateFromOrder(order, storedNames) {
   return {
     schemaVersion:      3,
     template:           order.templateName || 'Scribble',
+    // Book language — picks the DE artwork variants in renderPage. Absent on every
+    // pre-Stage-1 order, which is correct: they are English books.
+    language:           order.language === 'de' ? 'de' : 'en',
     pageCount:          order.pageCount    || 40,
     sequence:           order.staffBookSequence    || [],
     assignments:        order.staffBookAssignments || [],

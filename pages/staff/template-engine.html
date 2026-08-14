@@ -1343,6 +1343,22 @@
     return (TEMPLATES[_activeTemplateKey] && TEMPLATES[_activeTemplateKey].collection) || 'kids';
   }
 
+  /** Book language for the loaded order (germanization Stage 2). Set from the order's
+   *  stored `language`; anything other than 'de' — including every pre-Stage-1 order,
+   *  which has no field at all — is English. */
+  let _bookLanguage = 'en';
+  function setBookLanguage(lang) { _bookLanguage = lang === 'de' ? 'de' : 'en'; }
+  function isGermanBook() { return _bookLanguage === 'de'; }
+
+  /** The artwork a page should use, honouring the book language. A German book takes
+   *  `svgDe` where the data file declares one and falls back to the English artwork
+   *  where it does not — partial DE coverage degrades to English rather than blank.
+   *  Mirrored verbatim in customer-preview.html and scripts/export-pdf.js. */
+  function resolvePageSvg(def) {
+    if (!def) return null;
+    return (isGermanBook() && def.svgDe) || def.svg;
+  }
+
   // Missing templateName = pre-seam order, legitimately Scribble. A name we do not
   // carry = stale deploy; loading it into another template's slots would silently
   // produce the wrong book — and a Save here writes those wrong slots into
@@ -2809,7 +2825,7 @@
       if (variant.svg) {
         const overlay = document.createElement('img');
         overlay.className = 'svg-overlay';
-        overlay.src = SVG_BASE + ((variant.monogramSvg && pageMono && pageMono.introSvg) || variant.svg);
+        overlay.src = SVG_BASE + ((variant.monogramSvg && pageMono && pageMono.introSvg) || resolvePageSvg(variant));
         overlay.alt = '';
         overlay.decoding = 'async';
         // SVGs are currently content-area only (200×200mm). When Kseniia re-exports with 3mm bleed,
@@ -4893,6 +4909,9 @@
       // no "start from scratch" prompt: discarding a saved book was a footgun (native
       // confirm where Cancel/Esc = wipe the approved layout) with no real use case.
       setActiveTemplate(order.templateName);
+      // Before any page renders: the book language decides which artwork the spreads
+      // resolve, so it must be set ahead of loadOrderIntoEngine (germanization S2).
+      setBookLanguage(order.language);
       buildLocalTemplateUI(); // rebuild FP checkboxes for THIS order's template
                               // (the local selector may have left a different set)
       await loadOrderIntoEngine(order);

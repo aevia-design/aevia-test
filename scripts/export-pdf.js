@@ -413,7 +413,11 @@ async function coverExtract(photoData, targetW, targetH, cropX = 50, cropY = 50)
 // Render one page (left or right) as a PNG buffer
 async function renderPage(spreadId, side, pageDef, assignedPhotos, specialPhotos, variantKey) {
   const { bgColor, slots } = pageDef;
-  let svg = pageDef.svg;
+  // German books take the DE artwork where the data file declares one, falling back
+  // to English where it does not (germanization S3). Mirrors resolvePageSvg() in
+  // template-engine.html + customer-preview.html — print must match the approved
+  // screen exactly, so all three resolve identically.
+  let svg = (state.language === 'de' && pageDef.svgDe) || pageDef.svg;
   const col = hexToSharpColor(bgColor || '#ffffff');
 
   // ── Newborn zodiac overlay (Labour-right) ──────────────────────────────────

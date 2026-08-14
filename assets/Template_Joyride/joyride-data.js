@@ -343,7 +343,7 @@ window.JOYRIDE_DATA = {
         right: {
           default: {
             bgColor: '#f9d84d',
-            svg: 'FP Spread 1/FP 01 Right.svg',
+            svg: 'FP Spread 1/FP 01 Right.svg', svgDe: 'FP Spread 1/FP 01 Right-DE.svg',
             slots: [],
             textPanel: { caption: { allowed: true, xMm: 108, yMm: 94, wMm: 136, hMm: 70, halign: 'center', valign: 'center', font: 'Mulish', sizePt: 20, style: 'light', letterSpacing: 0, lineSpacing: 1.28, color: '#d94027' }, itinerary: true }
           },

@@ -349,7 +349,7 @@ window.HEIRLOOM_DATA = {
             slots: [ { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 100, h: 100, ratio: '1:1', pool: 'story', caption: { allowed: false } } ] },
         },
         right: {
-          default: { bgColor: '#dad0c5', svg: 'FP Spread 1 Our story/FP 02 Our story Right.svg', slots: [],
+          default: { bgColor: '#dad0c5', svg: 'FP Spread 1 Our story/FP 02 Our story Right.svg', svgDe: 'FP Spread 1 Our story/Our story DE Right Brown-DE.svg', slots: [],
             textPanel: { introFields: true, aiCompose: true, caption: { allowed: true, xMm: 108, yMm: 98, wMm: 110, hMm: 110, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#312128' } } },
         },
       }
@@ -373,7 +373,7 @@ window.HEIRLOOM_DATA = {
       },
       pages: {
         left: {
-          default: { bgColor: '#dad0c5', svg: 'FP Spread 2.3 Why I love Her.Him/FP 03 Why Him Left.svg', slots: [],
+          default: { bgColor: '#dad0c5', svg: 'FP Spread 2.3 Why I love Her.Him/FP 03 Why Him Left.svg', svgDe: 'FP Spread 2.3 Why I love Her.Him/Why Him DE Left-DE.svg', slots: [],
             textPanel: { introFields: true, caption: { allowed: true, xMm: 98, yMm: 98, wMm: 110, hMm: 110, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#312128' } } },
         },
         right: {
@@ -398,7 +398,7 @@ window.HEIRLOOM_DATA = {
       },
       pages: {
         left: {
-          default: { bgColor: '#dad0c5', svg: 'FP Spread 2.3 Why I love Her.Him/FP 03 Why Her Left.svg', slots: [],
+          default: { bgColor: '#dad0c5', svg: 'FP Spread 2.3 Why I love Her.Him/FP 03 Why Her Left.svg', svgDe: 'FP Spread 2.3 Why I love Her.Him/Why Her DE Left-DE.svg', slots: [],
             textPanel: { introFields: true, caption: { allowed: true, xMm: 98, yMm: 98, wMm: 110, hMm: 110, halign: 'center', valign: 'center', font: 'IM FELL English', sizePt: 16, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#312128' } } },
         },
         right: {
