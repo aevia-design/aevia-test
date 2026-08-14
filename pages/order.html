@@ -583,6 +583,10 @@ const ORDER = {
   pages:      params.get('pages')    || '40',
   price:      params.get('price')    || '',
   backUrl:    params.get('back')     || 'collections.html',
+  // Book language chosen on the product page (germanization Stage 1). Everything
+  // downstream (artwork variants, captions) reads the order's stored `language`;
+  // absent/anything-else means 'en' so old links and orders behave as before.
+  language:   params.get('lang') === 'de' ? 'de' : 'en',
 };
 
 // ── Template registry: pick the active template's data by the `template` param.
@@ -2584,6 +2588,7 @@ async function submitOrder() {
         customerName,
         email,
         templateName:    ORDER.template,
+        language:        ORDER.language,
         pageCount:       ORDER.pages,
         price:           ORDER.price,
         files:           filesMeta,

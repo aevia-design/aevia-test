@@ -528,7 +528,7 @@
           <div class="customer-name">${esc(o.customerName)}</div>
           <div class="customer-email"><a href="mailto:${esc(o.email)}">${esc(o.email)}</a></div>
         </td>
-        <td>${esc(o.templateName)}</td>
+        <td>${esc(o.templateName)}${o.language === 'de' ? ' <span style="background:#2c6e49;color:#fff;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;letter-spacing:0.04em;">DE</span>' : ''}</td>
         <td>${esc(String(o.pageCount ?? '—'))}</td>
         <td>${o.fileCount ?? '—'}</td>
         <td>${esc(price)}</td>

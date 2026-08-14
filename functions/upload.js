@@ -91,7 +91,7 @@ async function handler(req, res) {
     const {
       customerName, email, templateName, pageCount, files,
       specialRequests, photoNotes, price, fpTexts, fpSelections, photoCount, coverCaptions,
-      coverCaptionLabels,
+      coverCaptionLabels, language,
     } = req.body;
 
     const missing = ['customerName', 'email', 'templateName', 'pageCount']
@@ -192,6 +192,9 @@ async function handler(req, res) {
       customerName,
       email,
       templateName,
+      // Book language from the product-page selector; only 'de' is meaningful,
+      // anything else (or absent, e.g. every pre-Stage-1 order) reads as 'en'.
+      language: language === 'de' ? 'de' : 'en',
       pageCount,
       price: price || null,
       specialRequests: specialRequests || null,

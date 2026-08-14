@@ -295,6 +295,7 @@ exports.getOrder = functions
         orderNumber:          order.orderNumber,
         customerName:         order.customerName,
         templateName:         order.templateName || null,
+        language:             order.language === 'de' ? 'de' : 'en',
         email:                order.email || null,
         status:               order.status || null,
         price:                order.price || null,

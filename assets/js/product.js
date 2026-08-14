@@ -73,6 +73,33 @@
     else if (e.key === 'ArrowRight') navArrow(1);
   });
 
+  // ── Book language selector (germanization Stage 1) ──
+  // Injected above the page-count chips on every product page — no per-page markup.
+  // Default: DE on the /de/ pages, EN elsewhere; the customer can flip it either way.
+  // The choice drives the whole order (artwork, form, captions) via the `lang` param.
+  var LANG = window.location.pathname.indexOf('/de/') !== -1 ? 'de' : 'en';
+  var toggleHost = document.querySelector('.page-toggle');
+  if (toggleHost) {
+    var L = cfg.labels || {};
+    var wrap = document.createElement('div');
+    wrap.className = 'lang-toggle';
+    wrap.innerHTML =
+      '<div class="section-label">' + (L.bookLang || (LANG === 'de' ? 'Buchsprache' : 'Book language')) + '</div>' +
+      '<div class="chips">' +
+        '<div class="chip" data-lang="en"><span class="chip-label">English</span></div>' +
+        '<div class="chip" data-lang="de"><span class="chip-label">Deutsch</span></div>' +
+      '</div>';
+    toggleHost.parentNode.insertBefore(wrap, toggleHost);
+    var langChips = wrap.querySelectorAll('.chip');
+    var syncLang = function () {
+      langChips.forEach(function (c) { c.classList.toggle('on', c.dataset.lang === LANG); });
+    };
+    langChips.forEach(function (c) {
+      c.addEventListener('click', function () { LANG = c.dataset.lang; syncLang(); });
+    });
+    syncLang();
+  }
+
   // ── Page toggle + special-spread cards ──
   window.pick = function (el, p) {
     el.closest('.chips').querySelectorAll('.chip').forEach(function (c) { c.classList.remove('on'); });
@@ -105,7 +132,7 @@
       var meta = (cfg.fp || {})[a.dataset.fp];
       if (meta) selected.push(meta);
     });
-    var params = new URLSearchParams({ template: cfg.template, category: cfg.category, pages: pages, price: price, back: cfg.back });
+    var params = new URLSearchParams({ template: cfg.template, category: cfg.category, pages: pages, price: price, back: cfg.back, lang: LANG });
     if (selected.length) {
       params.set('addons', selected.map(function (m) { return m.name; }).join(','));
       params.set('addon_inputs', selected.map(function (m) { return m.inputType; }).join(','));

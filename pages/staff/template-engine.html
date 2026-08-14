@@ -4913,6 +4913,21 @@
 
     document.getElementById('oip-name').textContent = order.customerName || '';
 
+    // Book language badge (germanization Stage 1) — staff must see at a glance which
+    // language the customer chose. DE gets a filled badge; EN (and legacy orders with
+    // no language field) show a quiet grey one so its absence is never ambiguous.
+    let langBadge = document.getElementById('oip-lang');
+    if (!langBadge) {
+      langBadge = document.createElement('span');
+      langBadge.id = 'oip-lang';
+      langBadge.style.cssText = 'margin-left:8px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;letter-spacing:0.04em;vertical-align:1px;';
+      document.getElementById('oip-name').after(langBadge);
+    }
+    const isDe = order.language === 'de';
+    langBadge.textContent = isDe ? 'DEUTSCH' : 'ENGLISH';
+    langBadge.style.background = isDe ? '#2c6e49' : '#e8e5e0';
+    langBadge.style.color = isDe ? '#fff' : '#6f6660';
+
     const rows = document.getElementById('oip-rows');
     rows.innerHTML = '';
 
