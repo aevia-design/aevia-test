@@ -617,7 +617,10 @@ function applyStrings() {
   document.querySelectorAll('[data-i18n-ph]').forEach(el => {
     el.placeholder = t(el.getAttribute('data-i18n-ph'));
   });
-  if (ORDER.language === 'de') document.documentElement.lang = 'de';
+  if (ORDER.language === 'de') {
+    document.documentElement.lang = 'de';
+    document.title = t('page.title');
+  }
 }
 
 // Per-template customer-facing text lives in the template data files, not in
@@ -902,9 +905,9 @@ function coverOrientationWarning(slotOrientation, w, h) {
   const photoIsPortrait = h > w;
   const photoIsLandscape = w > h;
   if ((o === 'landscape' || o === 'horizontal') && photoIsPortrait)
-    return 'This photo is vertical. For the best result, upload a horizontal photo. Otherwise we\'ll crop it to fit the cover.';
+    return t('warn.coverVertical');
   if ((o === 'portrait' || o === 'vertical') && photoIsLandscape)
-    return 'This photo is horizontal. For the best result, upload a vertical photo. Otherwise we\'ll crop it to fit the cover.';
+    return t('warn.coverHorizontal');
   return '';
 }
 
@@ -1399,14 +1402,14 @@ function renderLabourFields(slug, meta, fpData) {
   if (meta.leftName) {
     // Name comes from the cover text (typed once at the cover step) — no separate field here.
     html += `
-      <div style="font-size:12px;color:var(--muted);margin-bottom:22px;line-height:1.55;">We'll print "Welcome to this world, [name]" on the left page, using the name from your cover.</div>`;
+      <div style="font-size:12px;color:var(--muted);margin-bottom:22px;line-height:1.55;">${t('labour.note')}</div>`;
   }
   const signs = fpData?.zodiac?.signs || [];
   if (meta.zodiacSelect && signs.length) {
-    const opts = signs.map(s => `<option value="${escHtml(s)}">${s === 'None' ? 'No constellation' : escHtml(s)}</option>`).join('');
+    const opts = signs.map(s => `<option value="${escHtml(s)}">${s === 'None' ? t('zodiac.none') : escHtml(s)}</option>`).join('');
     html += `
-      <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Star sign</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">We'll print your baby's zodiac constellation on the facing page. Choose "No constellation" to leave it off.</div>
+      <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${t('zodiac.label')}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${t('zodiac.hint')}</div>
       <select id="zodiac-${slug}" style="${inputStyle}">${opts}</select>`;
   }
   return html;
@@ -1419,7 +1422,7 @@ function renderCountrySelect(slug, meta) {
     const r = coords[name].region;
     (byRegion[r] = byRegion[r] || []).push(name);
   });
-  let opts = '<option value="">Add a country…</option>';
+  let opts = `<option value="">${t('map.addCountry')}</option>`;
   Object.keys(byRegion).forEach(r => {
     opts += `<optgroup label="${REGION_LABELS[r] || r}">`;
     byRegion[r].sort().forEach(name => { opts += `<option value="${name}">${name}</option>`; });
@@ -1526,7 +1529,7 @@ function renderRegionMap(slug) {
     el.innerHTML = `
       <div style="position:relative;width:100%;aspect-ratio:2 / 1;border:1px solid var(--border);border-radius:6px;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;">
         <span style="font-family:var(--serif);font-size:22px;color:var(--muted);letter-spacing:0.04em;">${label}</span>
-        <span style="position:absolute;bottom:8px;right:12px;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);">Region map</span>
+        <span style="position:absolute;bottom:8px;right:12px;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);">${t('map.regionLabel')}</span>
       </div>`;
     return;
   }
@@ -1582,7 +1585,7 @@ function renderRegionMap(slug) {
         <div id="itin-text-${slug}" style="${panelStyle}">${itinTextHtml}</div>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">Rough preview — click to enlarge. Staff will format the final layout before you approve.</div>`;
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">${t('map.previewNote')}</div>`;
 
   const canvas = document.getElementById(`map-canvas-${slug}`);
   // Base the scale on the canvas's true INNER width (clientWidth excludes the 1px
@@ -1634,7 +1637,7 @@ function validateDetailsStep() {
     return { ok: false, message: t('err.details') };
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { ok: false, message: 'That email address doesn\'t look right — please check it.' };
+    return { ok: false, message: t('err.emailShape') };
   }
   return { ok: true };
 }
@@ -1904,7 +1907,7 @@ async function renderCoverUpload(file, opts) {
     let displayBlob = file;
     if (isHeic(file)) {
       // Show converting indicator while Cloud Function runs
-      inner.innerHTML = `<div class="file-icon"><span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;">Converting…</span></div>`;
+      inner.innerHTML = `<div class="file-icon"><span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;">${t('photo.converting')}</span></div>`;
       preview.style.display = 'block';
       const converted = await convertHeic(file);
       if (converted) {
@@ -1912,7 +1915,7 @@ async function renderCoverUpload(file, opts) {
       } else {
         // Conversion failed — show reassurance tile (original HEIC still uploads)
         inner.innerHTML = `<div class="file-icon" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-          <span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;text-align:center;">Preview unavailable<br/>your photo is still included</span>
+          <span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;text-align:center;">${t('photo.previewUnavail')}</span>
         </div>`;
         inner.appendChild(removeBtn);
         nameEl.textContent = file.name;
@@ -2003,7 +2006,7 @@ async function handleSpecialFile(slug, file) {
     let displayBlob = file;
     if (isHeic(file)) {
       // Show converting indicator while Cloud Function runs
-      inner.innerHTML = `<div class="file-icon"><span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;">Converting…</span></div>`;
+      inner.innerHTML = `<div class="file-icon"><span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;">${t('photo.converting')}</span></div>`;
       preview.style.display = 'block';
       const converted = await convertHeic(file);
       if (converted) {
@@ -2011,7 +2014,7 @@ async function handleSpecialFile(slug, file) {
       } else {
         // Conversion failed — show reassurance tile (original HEIC still uploads)
         inner.innerHTML = `<div class="file-icon" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-          <span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;text-align:center;">Preview unavailable<br/>your photo is still included</span>
+          <span style="font-size:11px;color:var(--muted);letter-spacing:0.06em;text-align:center;">${t('photo.previewUnavail')}</span>
         </div>`;
         inner.appendChild(btn);
         document.getElementById(`special-preview-name-${slug}`).textContent = file.name;
@@ -2265,7 +2268,7 @@ function refreshThumbBadge(f) {
     const note = document.createElement('div');
     note.className = 'converting-badge';
     note.textContent = t('photo.noPreview');
-    note.title = 'Preview unavailable — your photo is still included';
+    note.title = t('photo.previewUnavailTitle');
     thumb.insertBefore(note, thumb.querySelector('.photo-thumb-remove'));
     return;
   }
@@ -2604,8 +2607,8 @@ async function submitOrder() {
   const overlayCount = document.getElementById('upload-progress-count');
 
   const humourLines = [
-    'Packing your memories carefully…',
-    'Still uploading. Good books are worth the wait.',
+    t('overlay.line1'),
+    t('overlay.line2'),
     t('overlay.almost'),
   ];
   let humourIdx = 0;
@@ -2671,7 +2674,7 @@ async function submitOrder() {
     // Add reassurance for large orders. Fold it into the rotating humourLines so it
     // recurs — the humourTimer would otherwise overwrite a one-off message within ~4s.
     if (total > 50) {
-      const bigOrderNote = 'Large albums can take a few minutes. Please keep this tab open.';
+      const bigOrderNote = t('overlay.bigOrder');
       humourLines.push(bigOrderNote);
       overlaySub.textContent = bigOrderNote;
     }
@@ -3285,12 +3288,12 @@ function preSubmitConfirm() {
 <!-- Pre-submit confirmation (orientation / low-res) -->
 <div class="confirm-modal" id="confirm-modal">
   <div class="confirm-card">
-    <h3>Before we start</h3>
+    <h3 data-i18n="confirm.title">Before we start</h3>
     <ul id="confirm-list"></ul>
-    <div class="confirm-sub">You can submit as is, or go back and swap these photos. Once you submit, our team begins designing your book.</div>
+    <div class="confirm-sub" data-i18n="confirm.sub">You can submit as is, or go back and swap these photos. Once you submit, our team begins designing your book.</div>
     <div class="confirm-actions">
-      <button type="button" id="confirm-back">Go back</button>
-      <button type="button" class="confirm-proceed" id="confirm-proceed">Submit anyway</button>
+      <button type="button" id="confirm-back" data-i18n="confirm.back">Go back</button>
+      <button type="button" class="confirm-proceed" id="confirm-proceed" data-i18n="confirm.proceed">Submit anyway</button>
     </div>
   </div>
 </div>
@@ -3298,14 +3301,14 @@ function preSubmitConfirm() {
 <!-- Upload progress overlay -->
 <div class="upload-overlay" id="upload-overlay">
   <div class="upload-overlay-inner">
-    <div class="upload-overlay-heading">Uploading your photos</div>
-    <div class="upload-overlay-sub" id="upload-overlay-sub">Packing your memories carefully…</div>
+    <div class="upload-overlay-heading" data-i18n="overlay.heading">Uploading your photos</div>
+    <div class="upload-overlay-sub" id="upload-overlay-sub" data-i18n="overlay.line1">Packing your memories carefully…</div>
     <div class="upload-progress-track">
       <div class="upload-progress-fill" id="upload-progress-fill"></div>
     </div>
     <div class="upload-progress-count" id="upload-progress-count"></div>
     <div id="upload-time-remaining" style="font-size:12px;color:var(--muted);margin-top:8px;min-height:1.2em;"></div>
-    <div style="font-size:12px;color:var(--muted);margin-top:16px;">Please keep this tab open until your photos finish uploading.</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:16px;" data-i18n="overlay.keepOpen">Please keep this tab open until your photos finish uploading.</div>
   </div>
 </div>
 
@@ -3313,17 +3316,17 @@ function preSubmitConfirm() {
 <div class="signin-modal" id="signin-modal">
   <div class="signin-card">
     <button type="button" class="signin-close" id="signin-modal-close">&times;</button>
-    <h3>Sign in</h3>
-    <p class="signin-sub">We'll fill in your name and email so you don't have to.</p>
+    <h3 data-i18n="signin.title">Sign in</h3>
+    <p class="signin-sub" data-i18n="signin.sub">We'll fill in your name and email so you don't have to.</p>
     <div class="signin-error" id="signin-modal-error"></div>
-    <label for="signin-modal-email">Email</label>
-    <input type="email" id="signin-modal-email" autocomplete="email" placeholder="anna@example.com" />
-    <label for="signin-modal-password">Password</label>
+    <label for="signin-modal-email" data-i18n="signin.email">Email</label>
+    <input type="email" id="signin-modal-email" autocomplete="email" data-i18n-ph="field.email.ph" placeholder="anna@example.com" />
+    <label for="signin-modal-password" data-i18n="signin.password">Password</label>
     <input type="password" id="signin-modal-password" autocomplete="current-password" />
-    <button type="button" class="btn-primary" id="signin-modal-submit">Sign in</button>
-    <div class="signin-divider">or</div>
-    <button type="button" class="signin-google" id="signin-modal-google">Continue with Google</button>
-    <p class="signin-guest"><button type="button" id="signin-modal-guest">Continue as guest instead</button></p>
+    <button type="button" class="btn-primary" id="signin-modal-submit" data-i18n="signin.title">Sign in</button>
+    <div class="signin-divider" data-i18n="signin.or">or</div>
+    <button type="button" class="signin-google" id="signin-modal-google" data-i18n="signin.google">Continue with Google</button>
+    <p class="signin-guest"><button type="button" id="signin-modal-guest" data-i18n="signin.guest">Continue as guest instead</button></p>
   </div>
 </div>
 
@@ -3358,14 +3361,14 @@ function preSubmitConfirm() {
 
   function friendlyError(code) {
     const map = {
-      'auth/invalid-email': 'That email looks off — please check it.',
-      'auth/invalid-credential': 'Email or password is incorrect.',
-      'auth/wrong-password': 'Email or password is incorrect.',
-      'auth/user-not-found': 'No account found for that email.',
-      'auth/too-many-requests': 'Too many attempts — please try again shortly.',
+      'auth/invalid-email': t('auth.invalidEmail'),
+      'auth/invalid-credential': t('auth.badCredential'),
+      'auth/wrong-password': t('auth.badCredential'),
+      'auth/user-not-found': t('auth.noUser'),
+      'auth/too-many-requests': t('auth.tooMany'),
       'auth/popup-closed-by-user': 'Sign-in was cancelled.',
     };
-    return map[code] || 'Could not sign in — please try again.';
+    return map[code] || t('auth.generic');
   }
 
   $('signin-open')?.addEventListener('click', openModal);
@@ -3412,7 +3415,7 @@ function preSubmitConfirm() {
         emailEl.readOnly = true;
         emailEl.style.background = '#f5f2ee';
         emailEl.style.cursor = 'not-allowed';
-        emailEl.title = 'Linked to your Aevia account. Sign out to order with a different email.';
+        emailEl.title = t('signin.linked');
       }
       $('signin-email').textContent = user.email || '';
       if (prompt)  prompt.style.display  = 'none';

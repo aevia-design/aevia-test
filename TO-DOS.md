@@ -66,7 +66,7 @@ _Real improvements, but nothing breaks if they wait._
 | 30 | Dashboard: internal notes per order | Free-text staff field, e.g. "customer requested warmer tones". |
 | 101 | German order flow — the form is still English | **Germanization Stage 4.** Brief written and approach settled S177: a **string table in `order.html` keyed off `?lang=`**, NOT a `de/order.html` fork. The `lang` param already arrives. → `docs/briefs/germanization.md` |
 | 108 | Book language option (EN / DE) | **Stages 0–3 DONE S177** — selector, Firestore `language`, DE artwork in both engines and the PDF. Remaining: #101 (form), German captions, DE mockups. → `docs/briefs/germanization.md` |
-| 113 | German transactional emails | Order confirmation, preview-ready, approval. Scoped OUT of the germanization brief; a DE customer gets German artwork but English email. |
+| 113 | German transactional emails | Order confirmation, preview-ready, approval. Scoped OUT of the germanization brief; a DE customer gets German artwork, a German form and an English email. **Own session (owner, S178).** First decision is bilingual-in-one-email vs German-only off the order's `language` — not yet made. |
 | 17 | Customer delivery tracking | Send the tracking number when status → `in_delivery`; show it in `my-order.html`. |
 | 18 | Post-delivery review collection | Automated email after delivery. Concept-test leads are the first targets. |
 | 19 | Repeat-order prompt | "Make another book?" via email or `my-order.html`. |

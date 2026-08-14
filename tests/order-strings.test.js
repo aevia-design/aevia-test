@@ -80,16 +80,34 @@ describe('order form string table', () => {
     expect(tableAt).toBeLessThan(usesAt);
   });
 
-  test('no customer-facing literal was left behind in the markup', () => {
-    // A regression guard for the sentences Stage 4 moved into the table.
-    const strays = [
-      'Submit your order', 'Your photos are in.', 'Upload your photos',
-      'Change template', 'incl. VAT, excl. shipping',
-    ].filter(s => {
-      // Allowed only inside a data-i18n element's fallback text.
-      const re = new RegExp(`data-i18n[^>]*>${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
-      return ORDER_HTML.includes(s) && !re.test(ORDER_HTML);
-    });
+  // The first version of this test named five strings by hand and passed while
+  // the upload overlay, both modals and the auth errors were still English
+  // (found by the owner clicking, S178). It now sweeps instead of sampling:
+  // any English-looking sentence in customer-facing markup must either carry a
+  // `data-i18n` attribute or be built through `t()`.
+  test('no untranslated English sentence is left in the markup', () => {
+    const strays = [];
+    // Element text: >Some English words< with no data-i18n on the tag and no
+    // ${t(...)} interpolation inside.
+    for (const m of ORDER_HTML.matchAll(/<([a-z0-9]+)([^>]*)>([A-Z][a-z][^<>{}$]{10,})</g)) {
+      const [, tag, attrs, text] = m;
+      if (tag === 'title' || tag === 'option') continue;
+      if (/data-i18n/.test(attrs)) continue;
+      if (!/[a-z] [a-z]/.test(text)) continue;      // needs ≥2 lowercase words
+      strays.push(text.trim().slice(0, 60));
+    }
+    expect(strays).toEqual([]);
+  });
+
+  test('no untranslated English sentence is left in the script', () => {
+    // Quoted string literals of sentence shape that are not a t() key and not
+    // an internal identifier. Deliberately narrow: a capitalised first word,
+    // at least three words, and a sentence-ending character.
+    const script = ORDER_HTML.slice(ORDER_HTML.indexOf('<script>'));
+    const strays = [];
+    for (const m of script.matchAll(/(?<![\w.])'([A-Z][a-z]+(?: [A-Za-z',’—-]+){2,}[.!?…])'/g)) {
+      strays.push(m[1].slice(0, 60));
+    }
     expect(strays).toEqual([]);
   });
 });

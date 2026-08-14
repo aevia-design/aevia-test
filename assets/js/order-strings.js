@@ -144,6 +144,74 @@ window.ORDER_STRINGS = {
   'overlay.almost':    { en: 'Almost there. Your photos are travelling to our Viennese studio.',
                          de: 'Fast geschafft. Ihre Fotos sind auf dem Weg in unser Wiener Atelier.' },
   'overlay.done':      { en: 'Done!',                      de: 'Fertig!' },
+  'overlay.heading':   { en: 'Uploading your photos',      de: 'Ihre Fotos werden hochgeladen' },
+  'overlay.line1':     { en: 'Packing your memories carefully…',
+                         de: 'Wir verpacken Ihre Erinnerungen sorgfältig …' },
+  'overlay.line2':     { en: 'Still uploading. Good books are worth the wait.',
+                         de: 'Noch am Hochladen. Auf gute Bücher wartet man gern.' },
+  'overlay.keepOpen':  { en: 'Please keep this tab open until your photos finish uploading.',
+                         de: 'Bitte lassen Sie diesen Tab geöffnet, bis alle Fotos hochgeladen sind.' },
+  'overlay.bigOrder':  { en: 'Large albums can take a few minutes. Please keep this tab open.',
+                         de: 'Große Alben können einige Minuten dauern. Bitte lassen Sie diesen Tab geöffnet.' },
+
+  // ── Pre-submit confirmation modal ──
+  'confirm.title':     { en: 'Before we start',            de: 'Bevor wir beginnen' },
+  'confirm.sub':       { en: 'You can submit as is, or go back and swap these photos. Once you submit, our team begins designing your book.',
+                         de: 'Sie können so abschicken oder zurückgehen und diese Fotos tauschen. Nach dem Absenden beginnt unser Team mit der Gestaltung.' },
+  'confirm.back':      { en: 'Go back',                    de: 'Zurück' },
+  'confirm.proceed':   { en: 'Submit anyway',              de: 'Trotzdem abschicken' },
+
+  // ── Sign-in modal ──
+  'signin.title':      { en: 'Sign in',                    de: 'Anmelden' },
+  'signin.sub':        { en: "We'll fill in your name and email so you don't have to.",
+                         de: 'Wir tragen Namen und E-Mail-Adresse für Sie ein.' },
+  'signin.email':      { en: 'Email',                      de: 'E-Mail' },
+  'signin.password':   { en: 'Password',                   de: 'Passwort' },
+  'signin.or':         { en: 'or',                         de: 'oder' },
+  'signin.google':     { en: 'Continue with Google',       de: 'Mit Google fortfahren' },
+  'signin.guest':      { en: 'Continue as guest instead',  de: 'Stattdessen als Gast fortfahren' },
+  'signin.linked':     { en: 'Linked to your Aevia account. Sign out to order with a different email.',
+                         de: 'Mit Ihrem Aevia-Konto verknüpft. Melden Sie sich ab, um mit einer anderen E-Mail-Adresse zu bestellen.' },
+
+  // ── Firebase auth errors ──
+  'auth.invalidEmail': { en: 'That email looks off — please check it.',
+                         de: 'Diese E-Mail-Adresse sieht nicht richtig aus. Bitte prüfen Sie sie.' },
+  'auth.badCredential': { en: 'Email or password is incorrect.',
+                         de: 'E-Mail-Adresse oder Passwort ist falsch.' },
+  'auth.noUser':       { en: 'No account found for that email.',
+                         de: 'Zu dieser E-Mail-Adresse gibt es kein Konto.' },
+  'auth.tooMany':      { en: 'Too many attempts — please try again shortly.',
+                         de: 'Zu viele Versuche. Bitte versuchen Sie es in Kürze erneut.' },
+  'auth.generic':      { en: 'Could not sign in — please try again.',
+                         de: 'Anmeldung nicht möglich. Bitte versuchen Sie es erneut.' },
+
+  // ── Photo warnings ──
+  'warn.coverVertical': { en: "This photo is vertical. For the best result, upload a horizontal photo. Otherwise we'll crop it to fit the cover.",
+                         de: 'Dieses Foto ist hochformatig. Für das beste Ergebnis laden Sie ein querformatiges Foto hoch. Andernfalls schneiden wir es passend zu.' },
+  'warn.coverHorizontal': { en: "This photo is horizontal. For the best result, upload a vertical photo. Otherwise we'll crop it to fit the cover.",
+                         de: 'Dieses Foto ist querformatig. Für das beste Ergebnis laden Sie ein hochformatiges Foto hoch. Andernfalls schneiden wir es passend zu.' },
+  'err.emailShape':    { en: "That email address doesn't look right — please check it.",
+                         de: 'Diese E-Mail-Adresse sieht nicht richtig aus. Bitte prüfen Sie sie.' },
+  'photo.previewUnavail': { en: 'Preview unavailable<br/>your photo is still included',
+                         de: 'Vorschau nicht verfügbar<br/>Ihr Foto ist trotzdem dabei' },
+  'photo.previewUnavailTitle': { en: 'Preview unavailable — your photo is still included',
+                         de: 'Vorschau nicht verfügbar – Ihr Foto ist trotzdem dabei' },
+
+  // ── Newborn labour page + zodiac ──
+  'labour.note':       { en: 'We\'ll print "Welcome to this world, [name]" on the left page, using the name from your cover.',
+                         de: 'Wir drucken „Willkommen auf dieser Welt, [Name]“ auf die linke Seite und verwenden dafür den Namen von Ihrem Cover.' },
+  'zodiac.label':      { en: 'Star sign',                  de: 'Sternzeichen' },
+  'zodiac.hint':       { en: 'We\'ll print your baby\'s zodiac constellation on the facing page. Choose "No constellation" to leave it off.',
+                         de: 'Wir drucken das Sternbild Ihres Babys auf die gegenüberliegende Seite. Wählen Sie „Kein Sternbild“, um darauf zu verzichten.' },
+  'zodiac.none':       { en: 'No constellation',           de: 'Kein Sternbild' },
+
+  // ── Travel map ──
+  'map.addCountry':    { en: 'Add a country…',             de: 'Land hinzufügen …' },
+  'map.regionLabel':   { en: 'Region map',                 de: 'Regionskarte' },
+  'map.previewNote':   { en: 'Rough preview — click to enlarge. Staff will format the final layout before you approve.',
+                         de: 'Grobe Vorschau, zum Vergrößern klicken. Das endgültige Layout gestalten wir vor Ihrer Freigabe.' },
+
+  'page.title':        { en: 'Create your book — Aevia',   de: 'Ihr Buch gestalten — Aevia' },
 
   // ── Special / add-on pages ──
   'addon.opening':     { en: 'Your opening page',          de: 'Ihre Eröffnungsseite' },
