@@ -76,6 +76,21 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     must carry **a length ceiling and NEVER a floor** — "45–65 words" is what made it invent
     "under the stars" about a couple who never mentioned stars. Adding a template means adding
     its `collection` to the engine registry (kids / travel / love) or it silently reads as kids.
+  - **`germanization.md` — the DE/EN book-language build (S177). Read before touching the
+    product-page selector, `svgDe`, the order form's language, or German captions.** Six
+    stages, gated so the owner tests each; **0–3 are DONE** (choice → Firestore → both engines
+    → PDF), 4–6 are not started. Settled and not to be re-raised: **one switch drives
+    everything**; the choice is made on the **product page regardless of site half**; the order
+    form gets a **string table, not a `de/order.html` fork** (supersedes TO-DOS #101's framing);
+    captions are written **natively in German**. Three invariants: **absent `language` reads as
+    `'en'`** so every old order is untouched; **a page with no `svgDe` falls back to English,
+    never blank**; and the resolution rule is **duplicated across three surfaces** (both engines
+    + `export-pdf.js`) — `tests/de-artwork-resolution.test.js` mirror-checks them, because print
+    drifting from the approved preview is the failure that matters. Adding an order field also
+    means editing `getOrder` in `functions/index.js`, which whitelists its response fields.
+    ⚠ **Re-run `work/germanization/make-papercut-v-de.mjs`** if Papercut's two Art `-DE` files
+    are re-exported — its portrait variants are generated in-repo from them. Validation trail:
+    `work/germanization/stage0-report.md`.
   - `upload-failures.md` — **CLOSED S150** (owner's call; root cause never proven). Instrumentation
     is deployed and untriggered. Read it before touching the upload path or re-diagnosing a stall:
     it records what was ruled out, and the one variable never tested.

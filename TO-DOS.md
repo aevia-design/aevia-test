@@ -64,8 +64,9 @@ _Real improvements, but nothing breaks if they wait._
 | 13 | Dashboard: overdue order tracking | Highlight orders that haven't moved status in X days. |
 | 44 | Prune the dashboard status bar | Unclear what it shows; may hold stale or redundant states. `pages/staff/dashboard.html` |
 | 30 | Dashboard: internal notes per order | Free-text staff field, e.g. "customer requested warmer tones". |
-| 101 | German order flow — `pages/de/order.html` does not exist | DE product pages hand off to the English form. Needs a brief: bilingual `?lang=de` beats a 2500-line fork → [notes](docs/todo-notes.md#101) |
-| 108 | Book language option (EN / DE) | The printed book's captions and FP labels, distinct from the site language. Selector on the product page, passed to the order. |
+| 101 | German order flow — the form is still English | **Germanization Stage 4.** Brief written and approach settled S177: a **string table in `order.html` keyed off `?lang=`**, NOT a `de/order.html` fork. The `lang` param already arrives. → `docs/briefs/germanization.md` |
+| 108 | Book language option (EN / DE) | **Stages 0–3 DONE S177** — selector, Firestore `language`, DE artwork in both engines and the PDF. Remaining: #101 (form), German captions, DE mockups. → `docs/briefs/germanization.md` |
+| 113 | German transactional emails | Order confirmation, preview-ready, approval. Scoped OUT of the germanization brief; a DE customer gets German artwork but English email. |
 | 17 | Customer delivery tracking | Send the tracking number when status → `in_delivery`; show it in `my-order.html`. |
 | 18 | Post-delivery review collection | Automated email after delivery. Concept-test leads are the first targets. |
 | 19 | Repeat-order prompt | "Make another book?" via email or `my-order.html`. |

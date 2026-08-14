@@ -1567,3 +1567,58 @@ special pages now default to safe.
 - **Before adding a flag to N places, test whether existing structure already says it.** Verify
   across every data file, including all four Heirloom colourways — one exception would have
   made the deletion a removed feature.
+
+## 2026-08-14 (S177) — `design-review` still cannot see, and its numbers are claims
+
+Second session running, the agent reported **no browser access**, reviewed source instead of
+pixels, and produced a **wrong contrast measurement stated as fact**: 4.61:1 for `#6f6660` on
+white, against the correct **5.61:1**. Its method omitted the gamma linearisation WCAG requires
+(`((c/255+0.055)/1.055)^2.4` per channel before weighting) — and its own stated shortcut would
+have produced 2.30:1, so it did not apply its formula consistently either.
+
+- **Verify its browser access before relying on it** (already the S174 lesson; it has not
+  changed). Ask it to say so up front — it will.
+- **Recompute every number it reports.** A contrast ratio takes ten seconds to check in node.
+  This is the second wrong figure from this agent in three sessions.
+- It still earns a run for **structural** findings, which need no browser: it correctly caught a
+  missing group `aria-label` and an absent `:focus-visible` style. Take those; verify the rest.
+- Reject its reflex to add `aria-label` to elements whose **visible text is already the
+  accessible name** — that makes the spoken label diverge from the seen one.
+
+## 2026-08-14 (S177) — Timestamps are not evidence about someone else's work
+
+Used file mtimes to argue Xenia had not re-exported two SVGs (13:32 vs 14:01 on their
+neighbours). **The 14:01 stamps came from git rewriting line endings during my own commit.**
+The conclusion happened to be right, but the evidence was mine, not hers.
+
+- On a repo with `core.autocrlf`, **checkout and commit both touch mtimes.** Never reason about
+  provenance from them.
+- The real proof was structural and took one command: `<text>` count vs `<path>` count. Outlined
+  artwork has zero `<text>`; live text has zero `<path>`.
+
+## 2026-08-14 (S177) — Validate the owner's instinct even when it is mostly right
+
+The owner believed the missing German portrait (V) page variants were unnecessary because H and
+V share artwork, position coming from the CSV — and asked for validation rather than agreement.
+**True for Toys and Steps** (paths identical, ≤0.07mm jitter), saving four exports. **False for
+all four Art pages**, where the outlined heading sits exactly 5mm higher in V to clear the taller
+photo. Wiring the H file there overlapped the photo by 0.68mm on a spread that draws artwork
+above photos — it would have printed.
+
+- **A rule that holds in most cases still needs the exception hunted.** Compare path data
+  numerically; do not eyeball two thumbnails and call them the same.
+- When artwork must be shifted in-repo, apply it as a **`transform` on the group, not rewritten
+  path coordinates** — identical result, no chance of misparsing curve commands.
+- **Measure the RENDER to verify, not the source.** `work/germanization/verify-v-shift.mjs`
+  rasterises and finds the ink bounding box; that is what caught the 0.68mm overlap in the
+  first place and what proved the fix.
+
+## 2026-08-14 (S177) — `getOrder` has a field whitelist that silently eats new fields
+
+A new Firestore field reaches the **dashboard** (it reads docs wholesale via `...d.data()`) but
+is **invisible to the engine and customer-preview**, which go through `getOrder` — and that
+function rebuilds its response field by field. Nothing errors; the field is just `undefined`.
+
+- **Adding an order field means editing `functions/index.js` too**, not only the writer.
+- Deploy filters must name the **exported** function: it is `createUploadSession`, not
+  `createOrder`. The wrong name fails with "No function matches the filter".
