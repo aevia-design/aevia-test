@@ -184,8 +184,6 @@ window.ORDER_STRINGS = {
                          de: 'Bitte füllen Sie „{name}“ für {page} aus oder entfernen Sie diese Seite.' },
   'err.coverTextLabour': { en: "Please add your cover text — the labour page's welcome uses it.",
                          de: 'Bitte ergänzen Sie Ihren Covertext, die Begrüßung auf der Geburtsseite verwendet ihn.' },
-  'addon.funnyHint':   { en: "Enter 3 to 10 of your child's funniest words or phrases, one per line.",
-                         de: 'Tragen Sie 3 bis 10 der lustigsten Wörter oder Sätze Ihres Kindes ein, eines pro Zeile.' },
 
   // ── Album-notes placeholders, per template category ──
   'notes.ph.default':  { en: "Your child's name, their personality, a favourite toy or game. Anything you'd love us to weave through the design.",

@@ -33,7 +33,7 @@ function keysUsedInPage() {
   // `[,)]` excludes the concatenated form `t('addon.word.ex' + n)`, whose
   // real keys are listed in DYNAMIC_KEYS.
   for (const m of ORDER_HTML.matchAll(/\bt\(\s*'([a-zA-Z0-9._]+)'\s*[,)]/g)) used.add(m[1]);
-  for (const m of ORDER_HTML.matchAll(/data-i18n(?:-ph|-html)?="([a-zA-Z0-9._]+)"/g)) used.add(m[1]);
+  for (const m of ORDER_HTML.matchAll(/data-i18n(?:-ph)?="([a-zA-Z0-9._]+)"/g)) used.add(m[1]);
   // The note/hint maps hold keys rather than literals.
   for (const m of ORDER_HTML.matchAll(/'((?:notes|addon)\.(?:ph\.)?[a-zA-Z]+)'/g)) used.add(m[1]);
   return used;
