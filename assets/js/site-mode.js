@@ -45,7 +45,7 @@
     bar.href = '/pages/waitlist';
     bar.textContent = isDE
       ? 'Unsere Website ist noch im Aufbau. Aevia eröffnet im Herbst 2026. Zur Warteliste →'
-      : 'Our site is still being built. Aevia opens autumn 2026. Join the waitlist →';
+      : 'Our website is still being built. Aevia opens autumn 2026. Join the waitlist →';
     bar.style.cssText =
       'display:block;text-align:center;padding:6px 16px;background:#9a3b26;' +
       'color:#fdf6f0;font:500 12px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;' +
