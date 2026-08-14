@@ -70,6 +70,13 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   - `upload-failures.md` — **CLOSED S150** (owner's call; root cause never proven). Instrumentation
     is deployed and untriggered. Read it before touching the upload path or re-diagnosing a stall:
     it records what was ruled out, and the one variable never tested.
+  - `upload-failure-recovery.md` — the stranded-upload lifecycle (`upload_failed` status, a
+    detection job, a Retry button, staff-email timing). **READY TO IMPLEMENT as of S174**, after
+    every claim in two reviews was checked against the code. **Nothing in it is built yet.**
+    ⚠ Its one blocking defect was fixed in code, not prose (`7864391`): **`uploadFailures` now
+    means exactly "not in GCS"**, including the slots the circuit breaker never attempted. A
+    Retry may trust it — but **must not skip `neverAttempted` entries**, or it will confirm a
+    book with photos missing. That is the bug that blocked the brief.
   - ⚠ **`print-api-integration.md` is obsolete** — it was written for Site Flow, which the
     2026-08-05 call ruled out. Its replacement is `printsmarter-api.md` (the print house's real
     API contract), with the integration brief in `work/print-api/brief.md`. **Merged to `main` in

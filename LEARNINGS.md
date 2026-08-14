@@ -1445,3 +1445,80 @@ the owner caught it, and not something a gate would have flagged.
   thumbnail and unarguable in a number.
 - `compose-closed.mjs` ignores the env and stays at 240 — matching the other templates, so the
   collections card was never affected. Worth knowing before "fixing" it.
+
+## 2026-08-13 (S174) — A safety mechanism can hide the damage it caused
+
+The `#112` consecutive-failure breaker stops the upload queue after five failures in a row.
+That is correct behaviour. The defect was in what it left behind: slots after the stop were
+**never attempted**, so they failed nothing, so nothing recorded them. `uploadFailures`
+listed only what had been tried and lost.
+
+AEV-096 therefore told the customer **one** photo was missing when **28** were, and the staff
+dashboard, reading the same field, agreed with the customer.
+
+- **A "failed" list built from failure events is not a list of what is missing.** Anything the
+  system never reached is absent from both the storage and the record. Ask "what is not
+  present?", not "what threw?".
+- **Derive the gap instead of tracking it, when the data is already there.** Each worker claims
+  its slot with `nextIndex++`, so once `Promise.all` returns, any index at or above the final
+  `nextIndex` was never claimed by anybody. ~25 lines and no new state. A reviewer proposed
+  tracking a positive `succeeded` set (~40 lines); both give the same invariant.
+- The point of the fix is the invariant, not the message: `uploadFailures` now means exactly
+  **"not in GCS"**. Any future Retry that re-sends only the recorded failures and then confirms
+  would otherwise mark an incomplete book as complete.
+- **The existing test could never have caught it.** The `#112` qa case scatters five failures,
+  so a success always resets the counter and **the breaker never fires** — the entire
+  breaker-tripped path had no coverage while appearing well tested. Reproducing it needs five
+  *consecutive* failures. Always confirm a new case goes **red** first: without the fix it
+  reports "47 missing slots unreported".
+
+## 2026-08-13 (S174) — An unrubriced reviewer beat a rubriced one on facts
+
+S173 gave Codex a task file with no skill and no rubric, and logged its output as "claims to
+verify, not findings to accept". Correct caution — but on checking every claim this session,
+**six were true**, and two assertions the brief had accepted from the *rubriced* `critic-agent`
+were **false**.
+
+The false pair matter because both were about failure modes that do not exist: an unenumerated
+status does not vanish from the staff dashboard (the All view is unfiltered), and an unmapped
+status does not leak a raw string to `account.html` (it returns `labels[status] || 'In
+progress'` — a dead order shown a reassuring label, which is a different and worse bug).
+
+- **"No rubric" predicts the output FORM, not its accuracy.** It means claims arrive unranked,
+  unevenly severe and unformatted — not that they are wrong.
+- **A rubric can make a review feel authoritative enough to skip checking.** The critic's
+  findings were adopted into the brief verbatim and never verified.
+- **Verify by reading the code, whatever the source.** Both reviews cost the same to check, and
+  checking is what separated six real defects from two invented ones.
+
+## 2026-08-14 (S174) — `var(--muted)` does not pass AA on `--surface`
+
+The about-page venue credit shipped as `var(--muted)` at `opacity: 0.72` on the `--surface`
+beige: **2.51:1**, against a 4.5:1 AA floor. Removing the opacity is not enough — `--muted`
+(`#7d7570`) on `#f3efe9` is **3.94:1** and fails on its own.
+
+`context/design-principles.md` warns only that `--muted` is "borderline" on `--bg`. On
+`--surface` it does not pass at all, and the file does not say so.
+
+- **Check muted text against the surface it actually sits on**, not against the page default.
+  `#6f6660` measures 4.90:1 on `--surface` and still reads as quiet.
+- **Opacity is invisible in a contrast check that only looks at the colour token.** Compute the
+  blended value: `a*fg + (1-a)*bg`.
+- The credit was **contractually required** (photoshoot location). Near-invisible text is a
+  commercial failure as well as an accessibility one — a credit nobody can read is not a credit.
+
+## 2026-08-14 (S174) — The design-review agent ran with no browser
+
+Asked to review a new animated section at three breakpoints, `design-review` reported it could
+not render pages, resize viewports or take screenshots, and fell back to reading CSS. Every
+question that needed a browser — responsive behaviour, the loop seam, visual balance, the
+reduced-motion fallback — came back as "cannot verify". Its own definition lists the Playwright
+MCP tools and the dev server was running.
+
+- **Confirm the agent can actually see before asking it to look.** A blind review returns
+  confident prose about code, which reads like a design review and is not one.
+- It still earned the run: it found the contrast failure. But its measurement was **wrong**
+  (1.53:1 claimed, 2.51:1 actual), and verifying it surfaced the larger fact it had missed.
+  **Treat its numbers as claims**, exactly like any other reviewer's.
+- The checks it could not run were ~60 lines of Playwright and took one pass. When an agent
+  cannot see, write the probe.

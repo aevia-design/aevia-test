@@ -34,6 +34,11 @@ Premium, editorial, art-forward. A photo book studio that feels like a small Vie
 - Dark mode is not required yet
 
 **Contrast check (WCAG AA):**
+- ⚠ **`--muted` does NOT pass on `--surface`** — `#7d7570` on `#f3efe9` is **3.94:1**, under the
+  4.5:1 floor, before any opacity is applied. Use `#6f6660` (4.90:1) for muted text on a beige
+  band. Measured S174, after a contractually required photo credit shipped at 2.51:1.
+- Any `opacity` on text changes its effective contrast. Compute the blend (`a*fg + (1-a)*bg`)
+  and check that, not the colour token.
 - `--text` on `--bg`: passes easily
 - `--muted` on `--bg`: check — borderline, only use for secondary/supporting text not critical content
 
