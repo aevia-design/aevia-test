@@ -165,7 +165,7 @@ window.ORDER_STRINGS = {
   'addon.caption':     { en: 'Caption {n}',                de: 'Bildtext {n}' },
   'addon.minMaxShort': { en: 'Min {min}, max {max}.',      de: 'Min. {min}, max. {max}.' },
   'dz.choosePhoto':    { en: 'Choose photo',               de: 'Foto auswählen' },
-  'addon.introDetails': { en: 'Intro details',             de: 'Angaben zur Eröffnungsseite' },
+  'addon.introDetails': { en: 'Intro details',             de: 'Ihre Eröffnungsseite' },
 
   // ── Travel map + itinerary (Wander / Joyride / Laguna) ──
   'itin.countries':    { en: 'Countries visited',          de: 'Besuchte Länder' },
