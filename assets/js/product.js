@@ -82,20 +82,27 @@
   if (toggleHost) {
     var L = cfg.labels || {};
     var wrap = document.createElement('div');
-    wrap.className = 'lang-toggle';
+    wrap.className = 'lang-row';
+    // Buttons, not divs: this is a real control, so it should be tabbable and
+    // announce its state. aria-pressed carries the choice to a screen reader.
     wrap.innerHTML =
-      '<div class="section-label">' + (L.bookLang || (LANG === 'de' ? 'Buchsprache' : 'Book language')) + '</div>' +
-      '<div class="chips">' +
-        '<div class="chip" data-lang="en"><span class="chip-label">English</span></div>' +
-        '<div class="chip" data-lang="de"><span class="chip-label">Deutsch</span></div>' +
-      '</div>';
-    toggleHost.parentNode.insertBefore(wrap, toggleHost);
-    var langChips = wrap.querySelectorAll('.chip');
+      '<span class="section-label">' + (L.bookLang || (LANG === 'de' ? 'Buchsprache' : 'Book language')) + '</span>' +
+      '<span class="seg" role="group" aria-label="' + (L.bookLang || (LANG === 'de' ? 'Buchsprache' : 'Book language')) + '">' +
+        '<button type="button" data-lang="en">English</button>' +
+        '<button type="button" data-lang="de">Deutsch</button>' +
+      '</span>';
+    // AFTER the page-count chips: page count carries the price and leads.
+    toggleHost.parentNode.insertBefore(wrap, toggleHost.nextSibling);
+    var langBtns = wrap.querySelectorAll('.seg button');
     var syncLang = function () {
-      langChips.forEach(function (c) { c.classList.toggle('on', c.dataset.lang === LANG); });
+      langBtns.forEach(function (b) {
+        var on = b.dataset.lang === LANG;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
     };
-    langChips.forEach(function (c) {
-      c.addEventListener('click', function () { LANG = c.dataset.lang; syncLang(); });
+    langBtns.forEach(function (b) {
+      b.addEventListener('click', function () { LANG = b.dataset.lang; syncLang(); });
     });
     syncLang();
   }

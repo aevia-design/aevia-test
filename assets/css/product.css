@@ -51,6 +51,26 @@
 .page-toggle{margin-bottom:28px;}.chips{display:flex;gap:8px;margin-top:8px;}
 .chip{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 22px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;min-width:108px;background:var(--white);transition:border-color 0.15s,background 0.15s;user-select:none;}.chip:hover{border-color:var(--text);}.chip.on{border-color:var(--text);background:var(--text);color:var(--white);}
 .chip-label{font-size:12px;font-weight:500;letter-spacing:0.03em;}.chip-price{font-family:var(--serif);font-size:15px;}
+/* ── Book language: a segmented toggle, deliberately NOT a .chip ──
+   Page count carries a price and is a primary decision; language is a preference.
+   Giving it the same 108px two-line box made two unrelated choices compete, so this
+   is a single compact control that sits inline with its own label and reads as
+   subordinate. Label + control share a row on desktop, wrapping only if cramped. */
+.lang-row{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  flex-wrap:wrap;margin-bottom:28px;}
+.lang-row .section-label{margin:0;}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:3px;
+  background:var(--white);padding:2px;}
+/* #6f6660, not var(--muted): muted on white is 4.52:1 — passing with no margin for
+   11px INTERACTIVE text. This is 5.61:1. Same fix as the S174 photo credit. */
+.seg button{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;
+  color:#6f6660;padding:7px 16px;border-radius:2px;cursor:pointer;
+  background:none;border:0;transition:color .15s,background .15s;white-space:nowrap;}
+.seg button:hover{color:var(--text);}
+.seg button.on{background:var(--text);color:var(--white);}
+/* The default ring sits outside the 2px-padded container and looks clipped; inset it. */
+.seg button:focus-visible{outline:2px solid var(--text);outline-offset:-2px;}
+
 .price-row{display:flex;align-items:baseline;gap:5px;margin-bottom:20px;}.price-sym{font-family:var(--serif);font-size:22px;color:var(--muted);}.price-val{font-family:var(--serif);font-size:52px;font-weight:400;letter-spacing:-0.03em;line-height:1;}.price-note{font-size:11px;color:var(--muted);}
 .cta{width:100%;background:var(--text);color:var(--white);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;padding:17px 32px;border-radius:3px;transition:background 0.2s;margin-bottom:11px;}.cta:hover{background:#2e2e2e;}.cta-note{text-align:center;font-size:11px;color:var(--muted);}
 
