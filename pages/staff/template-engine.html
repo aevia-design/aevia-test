@@ -4543,7 +4543,9 @@
     const seq = window._bookSequence || [];
     const spreads = getActiveTemplateData()?.spreads || {};
     Object.entries(spreads).forEach(([fpKey, spreadDef]) => {
-      const copy = spreadDef?.zodiac?.copy;
+      // A German book takes the German verses; same fallback rule as the
+      // artwork — no `copyDe` means the English copy, never an empty caption.
+      const copy = (isGermanBook() && spreadDef?.zodiac?.copyDe) || spreadDef?.zodiac?.copy;
       if (!copy) return;
       const spreadIndex = seq.indexOf(fpKey);
       if (spreadIndex === -1) return;

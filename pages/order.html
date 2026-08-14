@@ -1406,7 +1406,13 @@ function renderLabourFields(slug, meta, fpData) {
   }
   const signs = fpData?.zodiac?.signs || [];
   if (meta.zodiacSelect && signs.length) {
-    const opts = signs.map(s => `<option value="${escHtml(s)}">${s === 'None' ? t('zodiac.none') : escHtml(s)}</option>`).join('');
+    // The option VALUE stays English: it keys the artwork path and the stored
+    // order. Only the visible label changes.
+    const signLabels = (ORDER.language === 'de' && fpData?.zodiac?.signLabelsDe) || {};
+    const opts = signs.map(s => {
+      const shown = s === 'None' ? t('zodiac.none') : (signLabels[s] || s);
+      return `<option value="${escHtml(s)}">${escHtml(shown)}</option>`;
+    }).join('');
     html += `
       <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${t('zodiac.label')}</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.55;">${t('zodiac.hint')}</div>

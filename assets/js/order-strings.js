@@ -199,7 +199,7 @@ window.ORDER_STRINGS = {
 
   // ── Newborn labour page + zodiac ──
   'labour.note':       { en: 'We\'ll print "Welcome to this world, [name]" on the left page, using the name from your cover.',
-                         de: 'Wir drucken „Willkommen auf dieser Welt, [Name]“ auf die linke Seite und verwenden dafür den Namen von Ihrem Cover.' },
+                         de: 'Wir drucken „Willkommen auf der Welt, [Name]“ auf die linke Seite und verwenden dafür den Namen von Ihrem Cover.' },
   'zodiac.label':      { en: 'Star sign',                  de: 'Sternzeichen' },
   'zodiac.hint':       { en: 'We\'ll print your baby\'s zodiac constellation on the facing page. Choose "No constellation" to leave it off.',
                          de: 'Wir drucken das Sternbild Ihres Babys auf die gegenüberliegende Seite. Wählen Sie „Kein Sternbild“, um darauf zu verzichten.' },
@@ -296,9 +296,14 @@ window.ORDER_STRINGS = {
   // Grammar note: German adjective endings agree with the noun's gender, so the
   // closing line cannot be built by lowercasing the customer's word the way
   // English does. `compose.introBoy` / `compose.introGirl` carry the whole line.
+  // The German is Xenia's, verbatim from
+  // `assets/Template_Newborn/FP Intro/Intro Page_Text-DE.txt` and
+  // `FP Labour/Labour Page_Text-DE.txt`. It is the authored book text, not a
+  // translation of the English — do not "improve" it here. Note "Bub", the
+  // Austrian word for a boy, and "auf der Welt" rather than "auf dieser Welt".
   'compose.intro':     { en: 'On {date} at {time},\nyou came into the world.\n\nMommy and Daddy were waiting for you,\nand when we finally met you,\nwe both had tears of happiness.\n\nYou weighed {weight} and were {length} long.\n\n',
-                         de: 'Am {date} um {time} Uhr\nkamst du auf die Welt.\n\nMama und Papa haben auf dich gewartet,\nund als wir dich endlich sahen,\nhatten wir beide Tränen des Glücks.\n\nDu wogst {weight} und warst {length} groß.\n\n' },
-  'compose.introBoy':  { en: 'Our sweet little {gender}.', de: 'Unser süßer kleiner Junge.' },
+                         de: 'Am {date} um {time}\nbist du auf die Welt gekommen.\n\nMama und Papa haben schon sehnsüchtig auf dich gewartet,\nund als wir dich endlich in den Armen hielten,\nhatten wir beide Tränen vor Glück in den Augen.\n\nDu wogst {weight} und warst {length} groß.\n\n' },
+  'compose.introBoy':  { en: 'Our sweet little {gender}.', de: 'Unser süßer kleiner Bub.' },
   'compose.introGirl': { en: 'Our sweet little {gender}.', de: 'Unser süßes kleines Mädchen.' },
-  'compose.labour':    { en: 'Welcome to this world, {name}!', de: 'Willkommen auf dieser Welt, {name}!' },
+  'compose.labour':    { en: 'Welcome to this world, {name}!', de: 'Willkommen auf der Welt, {name}!' },
 };

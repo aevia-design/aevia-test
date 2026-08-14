@@ -60,9 +60,9 @@ window.NEWBORN_DATA = {
     // (Twinkle Star, rotated). `italic`/`weight` carry the CSV's intended default styling
     // (cover-caption render must honour these — Stage-3 fix).
     captions: [
-      { key: 'name',     xMm: 327, yMm: 175, wMm: 115, hMm: 20, font: 'Twinkle Star', sizePt: 44, align: 'center', color: '#c0d5ee', label: 'Front — name', placeholder: 'Nico', maxLength: 24 },
-      { key: 'subtitle', xMm: 327, yMm: 193, wMm: 100, hMm: 12, font: 'Baskervville', sizePt: 17, align: 'center', color: '#c0d5ee', italic: true, weight: 500, label: 'Front — subtitle / date', placeholder: 'Your First Months', maxLength: 40 },
-      { key: 'spine',    xMm: 222.5, yMm: 118, wMm: 65,  hMm: 8,  font: 'Twinkle Star', sizePt: 20, align: 'center', color: '#21386e', rotate: 270, label: 'Spine — name / phrase', placeholder: 'Our Nico', maxLength: 24 },
+      { key: 'name',     xMm: 327, yMm: 175, wMm: 115, hMm: 20, font: 'Twinkle Star', sizePt: 44, align: 'center', color: '#c0d5ee', label: 'Front — name', labelDe: 'Vorderseite — Name', placeholder: 'Nico', placeholderDe: 'Nico', maxLength: 24 },
+      { key: 'subtitle', xMm: 327, yMm: 193, wMm: 100, hMm: 12, font: 'Baskervville', sizePt: 17, align: 'center', color: '#c0d5ee', italic: true, weight: 500, label: 'Front — subtitle / date', labelDe: 'Vorderseite — Untertitel / Datum', placeholder: 'Your First Months', placeholderDe: 'Deine ersten Monate', maxLength: 40 },
+      { key: 'spine',    xMm: 222.5, yMm: 118, wMm: 65,  hMm: 8,  font: 'Twinkle Star', sizePt: 20, align: 'center', color: '#21386e', rotate: 270, label: 'Spine — name / phrase', labelDe: 'Buchrücken — Name / Text', placeholder: 'Our Nico', placeholderDe: 'Unser Nico', maxLength: 24 },
     ]
   },
 
@@ -232,13 +232,14 @@ window.NEWBORN_DATA = {
       orderFormMeta: {
         introFields: true,
         fields: [
-          { key: 'date',   label: 'Date of birth', placeholder: '15 May, 2026' },
-          { key: 'time',   label: 'Time of birth', placeholder: '6:09 a.m.' },
-          { key: 'weight', label: 'Weight',        placeholder: '3.28 kg' },
-          { key: 'length', label: 'Length',        placeholder: '53 cm' },
-          { key: 'gender', label: 'Gender', placeholder: 'boy / girl' },
+          { key: 'date',   label: 'Date of birth', labelDe: 'Geburtsdatum', placeholder: '15 May, 2026', placeholderDe: '15. Mai 2026' },
+          { key: 'time',   label: 'Time of birth', labelDe: 'Geburtszeit', placeholder: '6:09 a.m.', placeholderDe: '6:09 Uhr' },
+          { key: 'weight', label: 'Weight',        labelDe: 'Gewicht', placeholder: '3.28 kg', placeholderDe: '3,28 kg' },
+          { key: 'length', label: 'Length',        labelDe: 'Größe', placeholder: '53 cm', placeholderDe: '53 cm' },
+          { key: 'gender', label: 'Gender', labelDe: 'Geschlecht', placeholder: 'boy / girl', placeholderDe: 'Bub / Mädchen' },
         ],
-        hint: 'A few key details about your little one. We weave these into a short birth story on the intro page.'
+        hint: 'A few key details about your little one. We weave these into a short birth story on the intro page.',
+        hintDe: 'Ein paar Eckdaten zu Ihrem Baby. Daraus schreiben wir eine kurze Geburtsgeschichte für die Eröffnungsseite.'
       },
       pages: {
         // Single page (one side). svg is the fixed Intro artwork; no orientation variants.
@@ -264,10 +265,14 @@ window.NEWBORN_DATA = {
     // Photos are dedicated Labour uploads (pool 'labour'), not from the main grid.
     FPlabour: {
       type: 'functional', id: 'FPlabour', label: 'Labour',
-      orderFormPhoto: { pool: 'labour', count: 2, label: 'Labour photos', hint: 'Two photos from the day, one for each page of the labour spread.',
+      orderFormPhoto: { pool: 'labour', count: 2, label: 'Labour photos', labelDe: 'Fotos von der Geburt', hint: 'Two photos from the day, one for each page of the labour spread.', hintDe: 'Zwei Fotos von diesem Tag, eines für jede Seite der Doppelseite.',
         slotHints: [
           'We recommend a photo of mum, or the whole family, with the baby around the birth.',
           'We recommend a portrait of the baby in the first hours or days.',
+        ],
+        slotHintsDe: [
+          'Wir empfehlen ein Foto der Mama oder der ganzen Familie mit dem Baby rund um die Geburt.',
+          'Wir empfehlen ein Porträt des Babys in den ersten Stunden oder Tagen.',
         ] },
       // Left page: collect just the baby's name; composeLabourLeft() in order.html
       // builds "Welcome to this world, {name}!". Right page: the chosen zodiac drives
@@ -275,7 +280,7 @@ window.NEWBORN_DATA = {
       // the engine pre-fills; staff can edit it afterwards.
       orderFormMeta: {
         zodiacSelect: true,
-        leftName: { label: "Baby's name", placeholder: 'Nico' },
+        leftName: { label: "Baby's name", labelDe: 'Name des Babys', placeholder: 'Nico', placeholderDe: 'Nico' },
       },
       // Zodiac overlay assets for the RIGHT page, keyed by orientation then sign.
       // Display name → file token (note "Sagittarius" → "Saggit"). 'None' = no overlay.
@@ -303,6 +308,33 @@ window.NEWBORN_DATA = {
           Capricorn:   'Shine strong and steady.\nMay your gentle strength carry you\nthrough every step of life.',
           Aquarius:    'Grow bright and original.\nMay your open heart dream freely\nand bring light to the world.',
           Pisces:      'Grow gentle and dreamy.\nMay your tender heart carry wonder\nand kindness wherever you go.',
+        },
+        // German default captions, verbatim from Xenia's
+        // `FP Labour/Labour Page_Text-DE.txt`. Authored book text, not a
+        // translation of `copy` above — do not re-word.
+        copyDe: {
+          None:        'Wachse strahlend und sanft.\nMöge dein Herz voller Staunen und Liebe sein,\nwohin das Leben dich auch führt.',
+          Aries:       'Wachse mutig und strahlend.\nMöge dein furchtloses Herz\nvon Staunen, Wärme und Liebe geleitet sein.',
+          Taurus:      'Wachse stark und beständig.\nMögest du stille Stärke\nund ein gütiges Herz in dir tragen, wohin das Leben dich auch führt.',
+          Gemini:      'Wachse neugierig und lebensfroh.\nMöge dein lebendiges Herz Freude finden\nin all den Geschichten, die das Leben schreibt.',
+          Cancer:      'Wachse sanft und voller Liebe.\nMöge dein Herz sich geborgen fühlen\nund Wärme schenken, wohin du auch gehst.',
+          Leo:         'Wachse stolz und strahlend.\nMöge dein mutiges Herz voller Güte leuchten,\nwohin das Leben dich auch führt.',
+          Virgo:       'Strahle sanft und weise.\nMöge dein fürsorgliches Herz Licht\nin die kleinen Dinge des Lebens bringen.',
+          Libra:       'Strahle sanft und voller Wärme.\nMöge dein friedvolles Herz Balance finden\nin jedem schönen Augenblick.',
+          Scorpio:     'Wachse tiefgründig und mutig.\nMöge dein leidenschaftliches Herz\nvon Mut, Liebe und Licht geleitet sein.',
+          Sagittarius: 'Strahle mutig und voller Freude.\nMöge dein neugieriger Geist Licht finden\nauf jedem Weg, den du gehst.',
+          Capricorn:   'Strahle stark und beständig.\nMöge deine sanfte Stärke dich\ndurch jeden Schritt des Lebens tragen.',
+          Aquarius:    'Wachse strahlend und einzigartig.\nMöge dein offenes Herz frei träumen\nund Licht in die Welt bringen.',
+          Pisces:      'Wachse sanft und verträumt.\nMöge dein zartes Herz Staunen\nund Güte in sich tragen, wohin du auch gehst.',
+        },
+        // Display names for the order-form dropdown. The VALUE stays English —
+        // it keys the artwork path and the stored order — so only the label
+        // changes. 'None' is handled by the `zodiac.none` string-table key.
+        signLabelsDe: {
+          Aries: 'Widder', Taurus: 'Stier', Gemini: 'Zwillinge', Cancer: 'Krebs',
+          Leo: 'Löwe', Virgo: 'Jungfrau', Libra: 'Waage', Scorpio: 'Skorpion',
+          Sagittarius: 'Schütze', Capricorn: 'Steinbock', Aquarius: 'Wassermann',
+          Pisces: 'Fische',
         }
       },
       pages: {
