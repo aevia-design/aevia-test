@@ -261,7 +261,9 @@ Was dir bleibt, ist das, worum es die ganze Zeit ging: ein Buch, auf das du stol
 Weniger Auswahl. Ein Buch, das bleibt.
 
 *Подпись фотосерии:*
-Das Studio, an den meisten Tagen.
+Gründer von Aevia: Eugene und Xenia. Unser Studio, an den meisten Tagen.
+
+*Ortsangabe, Kapitälchen am rechten Rand derselben Zeile:* Spaces Business Centre, Wien
 
 Wir fangen gerade erst an.
 

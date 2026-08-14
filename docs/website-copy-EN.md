@@ -271,7 +271,11 @@ What you're left with is the thing that mattered all along: a book you're proud 
 Fewer choices. A book worth keeping.
 
 *Фотосерия студии (Сет F), 3–4 кадра, подпись:*
-The studio, most days.
+Founders of Aevia: Eugene and Xenia. Our studio, most days.
+
+*Venue credit, small caps at the right edge of the same line:* Spaces Business Centre, Vienna
+
+*(Contractual credit for the photoshoot location. "Eugene" is the deliberate public spelling of Evgenii for the Austrian audience — use it consistently wherever the founders are named.)*
 
 We're just getting started.
 
