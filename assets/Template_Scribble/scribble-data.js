@@ -21,7 +21,7 @@ window.SCRIBBLE_DATA = {
     ],
     captions: [
       { key: 'year', xMm: 327, yMm: 43, wMm: 180, font: 'EB Garamond', sizePt: 33, align: 'center', color: '#493955', label: 'Front — year', labelDe: 'Vorderseite — Jahr', placeholder: '2026', placeholderDe: '2026', maxLength: 10 },
-      { key: 'name', xMm: 327, yMm: 193, wMm: 180, font: 'NT Somic', sizePt: 28, align: 'center', color: '#493955', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Our sweet Ann', placeholderDe: 'Unsere süße Ann', maxLength: 60 },
+      { key: 'name', xMm: 327, yMm: 193, wMm: 180, font: 'NT Somic', sizePt: 28, align: 'center', color: '#493955', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Our sweet Ann', placeholderDe: 'Unsere kleine Ann', maxLength: 60 },
       { key: 'spineName', xMm: 222.5, yMm: 158, wMm: 130, font: 'NT Somic', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — name', labelDe: 'Buchrücken — Name', placeholder: 'Ann', placeholderDe: 'Ann', maxLength: 20 },
       { key: 'spineYear', xMm: 222.5, yMm: 78, wMm: 70, font: 'EB Garamond', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — year', labelDe: 'Buchrücken — Jahr', placeholder: '2026', placeholderDe: '2026', maxLength: 10 },
     ]
@@ -31,6 +31,11 @@ window.SCRIBBLE_DATA = {
   fonts: { display: 'NT Comic', body: 'EB Garamond' },
   // Fonts offered in the caption toolbar for this template (values match COVER_FONTS
   // in the engine). FirstTimeWriting stays gated to the funny-words panel separately.
+  // ⚠ NT Somic has ä ö ü and é but NO ß (verified S180,
+  // `node scripts/check-font-glyphs.mjs`). It is this template's default caption
+  // font, so German text containing ß cannot be set in it — the placeholder above
+  // says "kleine" rather than "süße" for exactly that reason. The other two faces
+  // in this picker both carry ß, so staff have a fallback.
   fontPicker: ['NT Somic', 'EB Garamond', 'FirstTimeWriting'],
   colors: {
     plum:     '#493955',
