@@ -75,7 +75,19 @@ const GERMAN_COMPOSE_RULES = [
   'The couple\'s voice is first person plural — wir. Keep it there, never Sie.',
   'German runs longer than English for the same content, so the ceiling bites sooner.',
   'That is a reason to add nothing, never a reason to compress what they meant.',
+  // S182, from real output: given the sentence above about length, the model
+  // silently deleted "an einem Dienstag" from a proposal story. Losing the
+  // customer's own specific is a different failure from inventing one, and the
+  // add-nothing rules did not cover it.
+  'KEEP EVERY DETAIL THEY GAVE. You are joining their sentences, not summarising',
+  'them. Deleting one of their specifics — a day, a place, a name — is exactly as',
+  'wrong as inventing one. If you must choose, keep their detail and drop your own',
+  'connecting words.',
   'No Nominalstil, no "einfangen", no exclamation marks.',
+  // The German section forbids a trailing full stop — for CAPTIONS. Compose mode
+  // is prose and keeps its punctuation, but that exception lives in the system
+  // prompt and lost to the nearer rule, so it is restated here (S182).
+  'This is prose, not a caption: punctuate normally and END WITH A FULL STOP.',
 ];
 
 /**
