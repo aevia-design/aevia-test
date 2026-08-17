@@ -1,14 +1,37 @@
 # Session Status
-_Last updated: 2026-08-17 (session 180)_
-_Context at save: **five commits on `main`, NOTHING PUSHED** — so the live rig still shows S178's
-state and none of S180 is testable in a browser yet. 550 unit tests green, `npm run qa:order` 19/19.
-Two deploys outstanding: the Cloud Run `pdf-renderer` (owner said he would run it; German PDFs need
-it) and `generateCaption` (only once Stage 5 is wired). Still uncommitted and awaiting owner
-decisions, carried since S174: `.claude/settings.local.json`, `assets/about us photos/`,
-`work/about-photos/`, `work/low-res-badge/`, `assets/packaging/`, `work/packaging/`, ~14 untracked
-`qa/` one-offs._
+_Last updated: 2026-08-17 (session 181)_
+_Context at save: S180's five commits + S181's one commit are on `main` and PUSHED
+(`2f61566`). 556 unit tests green. Two Cloud Run deploys outstanding: the `pdf-renderer` — now
+carries BOTH the German-PDF fix (S180) and the caption-line-integrity fix (S181) — owner is
+redeploying it now, in parallel with this handover; and `generateCaption` (only once
+germanization Stage 5 is wired). Still uncommitted and awaiting owner decisions, carried since
+S174: `.claude/settings.local.json`, `assets/about us photos/`, `work/about-photos/`,
+`work/low-res-badge/`, `assets/packaging/`, `work/packaging/`, ~14 untracked `qa/` one-offs._
 
 ## Status
+**🐛 Session 181 (2026-08-17) — caption line-break/text divergence found and fixed, root cause
++ scope verified. Germanization Stage 5 (AI captions) still not started — this session was a
+detour from it.**
+
+Full detail: **`sessions/2026-08-17-s181.md`**. Decision record:
+**`work/caption-line-integrity/decision.md`**.
+
+### What S181 fixed
+Heirloom order AEV-099 printed with letters moved across line breaks ("Anna & M / ichael"). Root
+cause: the engine recorded caption line breaks off the raw DOM while the saved caption text was
+normalised on the way out — a typography helper (`applyTypographicRules`, now deleted from both
+engines) injected non-breaking spaces that could strip a caption of all wrap points, causing a
+mid-word break that got recorded and then printed verbatim. The PDF's own staleness check
+(`linesMatchText`) missed it because it squashed whitespace and JS `\s` matches U+00A0 same as a
+space; tightened to require an exact rejoin, which **also repairs AEV-099 without a re-save.**
+Scanned all 90 orders: only AEV-099 affected (7 orders total carry recorded lines — feature is
+young). Mechanism is template-agnostic; confidence other templates are clean rests on n=1, not a
+guarantee. 556/556 tests pass including 6 new tests built from AEV-099's real stored data.
+**Not yet done: regenerate AEV-099's PDF against the redeployed renderer and eyeball it** — that
+is the real proof, owner doing this now.
+
+---
+
 **🇩🇪 Session 180 (2026-08-17) — germanization Stage 4b CLOSED for all eleven templates. Stage 5
 half-built: the caption guide is written, none of it is wired.**
 
@@ -60,6 +83,10 @@ at `functions/index.js:1495`, not a bigger number. **Still blocked on our `produ
 paper quality does not depend on the transport. Draft reply written in-session, not sent.
 
 ## Recent decisions
+- **Caption typographic polish (non-breaking spaces after short words, widow prevention) removed
+  from both engines (S181, decided per `work/caption-line-integrity/decision.md`)** — it never
+  reached print anyway (PDF stripped NBSP already) and it caused AEV-099's line-break bug. If
+  ever wanted back, it must save what it displays — see the decision record before re-adding.
 - **Replace Scribble's NT Somic with a face that carries ß (S180, owner)** → TO-DOS #115.
 - **Caption length is NOT calibrated (S180, owner)** — captions are a staff support tool; staff trim
   or regenerate. Keep a ceiling in the prompt, do not spend a session measuring it.
@@ -93,25 +120,26 @@ paper quality does not depend on the transport. Draft reply written in-session, 
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **Push S180's five commits**, then walk the German form on the rig. Nothing from this session is
-   visible until then.
-2. **Finish Stage 5 wiring.** Pass `language` to `generateCaption`; **restate the German rules in
-   the user message**, not only the system prompt (S175's lesson — a section buried in a mostly
-   English manual loses to the weight of the rest); deploy the function; then re-run the S175
-   invention cases translated to German ("under the stars", "coffee" → "coffee dates").
-   ⚠ **Needs owner approval for the OpenAI spend** (a few cents, not yet given).
-3. **Deploy the Cloud Run `pdf-renderer`** (owner doing this), then run the Stage 1–3 gate test.
-4. **TO-DOS #115 — replace Scribble's NT Somic**, then `node scripts/check-font-glyphs.mjs`.
-5. **Send the Printsmarter reply with sample PDFs.** Which templates to attach is undecided; a
+1. **Confirm the `pdf-renderer` redeploy landed** (owner doing this now), then **regenerate
+   AEV-099's PDF and eyeball the cover + the two affected text panels** — this is the real proof
+   of S181's fix, not the unit tests. If clean, re-run the all-90-orders scan to confirm nothing
+   else flags.
+2. **Finish germanization Stage 5 wiring.** Pass `language` to `generateCaption`; **restate the
+   German rules in the user message**, not only the system prompt (S175's lesson — a section
+   buried in a mostly English manual loses to the weight of the rest); deploy the function; then
+   re-run the S175 invention cases translated to German ("under the stars", "coffee" → "coffee
+   dates"). ⚠ **Needs owner approval for the OpenAI spend** (a few cents, not yet given).
+3. **TO-DOS #115 — replace Scribble's NT Somic**, then `node scripts/check-font-glyphs.mjs`.
+4. **Send the Printsmarter reply with sample PDFs.** Which templates to attach is undecided; a
    photo-heavy 80pp answers the colour question best. Then the `v4` → `v2` signed-URL change.
-6. **Stage 6 — DE mockups + product-page gallery swap + the add-on names.**
-7. **Generate the EN/DE review document for a native proofreader.** Best done now that 4b is
+5. **Stage 6 — DE mockups + product-page gallery swap + the add-on names.**
+6. **Generate the EN/DE review document for a native proofreader.** Best done now that 4b is
    complete, so they read the form, the `/de/` pages and the captions in one pass.
-8. **Implement `docs/briefs/upload-failure-recovery.md`** — ready and unblocked since S174.
+7. **Implement `docs/briefs/upload-failure-recovery.md`** — ready and unblocked since S174.
    Piece 0 (Retry) is independent of the scheduled job.
-9. **Packaging, when Xenia replies** — entry point `work/packaging/README.md`; first action is
+8. **Packaging, when Xenia replies** — entry point `work/packaging/README.md`; first action is
    getting the vector logo.
-10. **Confirm the venue credit wording against the agreement** (live now as "Spaces Business
+9. **Confirm the venue credit wording against the agreement** (live now as "Spaces Business
     Centre, Vienna"; the clause says "Regus/Spaces Business Centre Austria").
 11. **Decide the ~14 untracked `qa/` one-offs.** Proposal made S175, not actioned.
 12. **Decide whether to delete `pages/spread-preview.html`** — dead prototype carrying HEIC code.

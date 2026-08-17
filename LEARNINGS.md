@@ -1,3 +1,44 @@
+## 2026-08-17 — Two representations of one caption drifted apart, and only one got cleaned (S181)
+
+AEV-099 (Heirloom) printed with letters moved across line breaks: "Anna & M / ichael", "…more t
+/ han a simple hello." The PDF was innocent — its own wrapper, run on the real font and box
+width, produces the correct lines. The **bad lines were stored in Firestore.**
+
+Since S159 the engine records where captions actually broke on screen (`captionVisualLines`)
+and the PDF draws those verbatim instead of re-wrapping — a deliberate, good decision that
+guarantees print matches what staff approved. But the engine was saving **two descriptions of
+the same caption from two different places**: the text (normalised — `&nbsp;` stripped on the
+way out) and the line breaks (measured off the raw, un-normalised DOM). Nothing kept them in
+step. `applyTypographicRules()` injected non-breaking spaces into the DOM for typographic
+polish (never reaching print — the PDF already stripped NBSP before this bug); with enough of
+them, the browser ran out of legal wrap points and broke **mid-word**. That got recorded
+faithfully and printed faithfully.
+
+The existing safety net (`linesMatchText`) missed it because it squashed all whitespace to
+compare recorded lines against the saved text, and JS `\s` matches U+00A0 identically to a
+plain space — the one difference that mattered was the one thing it couldn't see.
+
+**This is the same bug SHAPE as the S180 font-glyph entry directly above, one layer up the
+stack**: two surfaces describing the same fact, one silently drifting from the other, with no
+error anywhere. Font: glyph existence described by a font family name vs. the font file's own
+cmap. Here: caption content described by a DOM's live state vs. its saved serialization. Watch
+for this pattern generally — **anywhere the engine derives print truth from a live DOM
+snapshot, ask what could make the DOM's saved text and the DOM's rendered state disagree.**
+
+Fixed two ways, deliberately not one: (1) `applyTypographicRules` removed from both engines —
+the DOM can no longer say anything the saved text doesn't, so recording and saving describe the
+same string by construction; `captionVisualLines` also normalises NBSP before measuring, so
+even an adversarial DOM state records correctly. (2) `linesMatchText` tightened to require the
+recorded lines to REJOIN into the exact saved text (not just same-characters-ignoring-all-
+whitespace) — this is what repaired AEV-099 without a re-save, and it's the seatbelt for the
+next version of this bug, whatever creates it.
+
+Scanned all 90 orders before and after: only AEV-099 (7 orders total had recorded lines; the
+feature is young) was affected, and the damage wasn't Heirloom-specific — it hit two ordinary
+photo captions in the same order too, not just text panels. Confidence that OTHER templates are
+safe is genuinely thin (n=1 in the wild); the fix itself is template-agnostic since it lives in
+shared engine/PDF code, not template data.
+
 ## 2026-08-17 — A font can be missing a letter, and nothing anywhere says so (S180)
 
 German needs ä ö ü Ä Ö Ü ß **in the font file**. NT Somic — Scribble's default caption font on
