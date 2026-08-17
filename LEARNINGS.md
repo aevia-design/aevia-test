@@ -1,3 +1,68 @@
+## 2026-08-17 — A font can be missing a letter, and nothing anywhere says so (S180)
+
+German needs ä ö ü Ä Ö Ü ß **in the font file**. NT Somic — Scribble's default caption font on
+every spread — has ä ö ü and é but **no ß**. A missing glyph does not throw: the renderer
+substitutes another face or draws nothing, so the failure arrives as a printed book that looks
+subtly wrong. No test in the repo could see it, and no screenshot would look obviously broken.
+
+It had already bitten us within the hour: a `placeholderDe` written that session read
+**"Unsere süße Ann"** — a ß, in NT Somic.
+
+`node scripts/check-font-glyphs.mjs` now reads the TrueType `cmap` table directly (no dependency)
+and audits every family the data files name. **Run it on any font drop.**
+
+**This is the same bug shape as the S136 / S154 / S170 caption-cut family** — a property described
+in one vocabulary and consumed in another, degrading silently. Here it is one layer lower: the
+character exists in our data, the renderer accepts it, and only the *font* cannot honour it.
+Generalisation worth carrying: **whenever we add a writing system, a character class, or a
+typeface, the question is not "does the code handle it" but "does every consumer down to the glyph
+handle it".**
+
+## 2026-08-17 — I invented a style rule by analogy, and the analogy did not hold (S180)
+
+Writing the German caption guide, I carried the English rule "do not start a caption with A or An"
+across as "do not start with Ein or Eine". **No German style authority treats a sentence-initial
+indefinite article as a defect.** The English rule exists for reasons particular to English. The
+owner challenged it; research withdrew it.
+
+Then, fixing it, I justified the replacement with **journalism** caption guidance — in a note whose
+own §2 said journalism must not govern this genre, because a news caption informs and Aevia's
+evokes. The owner caught that too.
+
+Three durable lessons:
+
+1. **A rule imported by analogy from another language is a hypothesis, not a rule.** Label it as
+   such at the moment of writing, or it hardens into fact. The guide now marks which lines have a
+   citation behind them and which are our judgement ("einfangen" is ours).
+2. **Check the sources against the genre before the claim.** Authority in an adjacent genre is not
+   authority. Both of these mistakes were sourcing errors, not language errors.
+3. **The best evidence was already in the repo.** Xenia's four authored `*_DE.txt` files are the
+   only lifestyle German we hold — in the right genre and the right brand voice. Her two fragments
+   ("Unser süßer kleiner Bub.", "Der Anfang von für immer.") settled the question better than
+   fourteen external sources. **Look for in-house evidence before searching outward.**
+
+**Also worth carrying: her German breaks our own caption rules** — "Willkommen auf der Welt, Nico!"
+carries an exclamation mark that both voice sections forbid. When the brand's own author and the
+brand's own style guide disagree, that is a decision to surface, not a discrepancy to fix silently.
+
+## 2026-08-17 — Guarding a prompt, and a German test trap (S180)
+
+`caption-voice.md` is a **prompt**, not code: editing or truncating it fails silently and only
+shows up as worse German in a printed book. `tests/caption-voice-de.test.js` pins the decisions —
+including **the withdrawal of a rule**, so nobody reasoning from the English version re-adds it. It
+justified itself immediately by catching one of my own examples breaking my own rule.
+
+⚠ **A German-specific trap for any such test:** `/\bSie\b/` cannot detect formal address. German
+capitalises "sie" (she/they) at the start of a sentence anyway, so *"Sie hat alles verschlafen"* is
+correct third person, not formality. Only a capitalised **Sie/Ihnen/Ihre mid-sentence** is
+unambiguous.
+
+⚠ **Two mechanical traps from the same session.** `joyride-data.js` is **CRLF** while the other data
+files are LF — a multi-line search string matched zero times until the script was made line-ending
+aware (do **not** convert the file; it diffs every line and buries the change). And restoring a
+deliberately-broken file with `git checkout <file>` **reverted the whole file**, wiping work written
+minutes earlier. Revert the hunk, not the file.
+
 ## 2026-08-12 — A caption cut named as a WORD was only read as a NUMBER (S170)
 
 Laguna's cover title is Fredoka **Bold**. It printed bold and rendered **Light on screen** —
@@ -1662,3 +1727,27 @@ keys while reading as complete.
 - **Check the agent's mitigations, not just its findings.** A wrong "this is covered elsewhere"
   hides a gap more effectively than a missed defect does.
 - Its real findings were still worth having (dead `ADDON_HINTS`). Verify, then keep what holds.
+
+## 2026-08-17 (S179) — CSS applies `filter` before `mask`, so a drop-shadow on a masked element vanishes
+
+The debossed logo rendered **invisible** in the packaging studies. A single element carried both
+`mask-image` (to cut the logo shape) and `filter: drop-shadow(...)` (to fake the pressed edge).
+The shadows are computed on the *unmasked* box and then clipped away by the mask.
+
+- **Split them across two elements: `filter` on the parent, `mask` on the child.**
+- Found only because the page was screenshotted and looked at before publishing. A DOM check
+  would have passed — the element was present, positioned and sized correctly, and simply
+  painted nothing. **Render and look; presence is not proof of visibility.**
+
+## 2026-08-17 (S179) — Read the skill, then say which line of it you used
+
+The owner asked, mid-task, whether the skills being named were actually being *used* or whether
+default behaviour was being dressed up in their vocabulary. The answer had to be specific to be
+worth anything: which artefact in the output traces to which rule in the skill.
+
+- **When citing a skill as the basis for work, be able to point at the output it changed.**
+  Here: mm/pt specs and the per-option "where this breaks" notes came from
+  `effective-print-design`; the pre-design questions and the "build on existing brand identity"
+  discipline came from `brand-packaging`.
+- **Say plainly what the skill did NOT supply.** Neither supplied the layouts. Claiming
+  otherwise is the exact failure the owner was probing for.

@@ -95,11 +95,23 @@ originally described only the first.
   attributes plus one `applyStrings()` pass for static markup. DE `compose()` texts included.
   **Decided (owner, S178): no separate markdown translation file** — it would give the same
   side-by-side review view and then diverge.
-- **4b — per-template copy. STARTED S178 (Newborn done, ten to go).** The form renders
+- **4b — per-template copy. ✅ DONE S180, all eleven data files.** The form renders
   `cap.label` / `cap.placeholder` / `meta.hint` straight from the template data files
   (`order.html:946`), so ~386 string fields across 11 files (~245 unique — the four Heirloom
   colourways are identical) need `labelDe` / `placeholderDe` / `hintDe` / `copyDe` beside the
   English. Resolved by `tdText()`, same fallback as `svgDe`: no German means English, never blank.
+  The real inventory was far smaller than 386 — most `label:` hits are **staff-facing spread
+  labels**, so it came to ~20 customer strings per template.
+  ⚠ **Two templates had English words baked INSIDE `compose()`**, a function in the data file that
+  no `*De` field can reach. `order.html:2497` now prefers a **`composeDe`** when the order is
+  German; Tender's and Heirloom's German there is Xenia's authored text verbatim. Every other
+  composer only interleaves the customer's own words and needs no twin —
+  `tests/de-template-strings.test.js` fails if one grows English prose without a `composeDe`.
+  ⚠ **Papercut reuses Scribble's German verbatim** (word-identical prompts, verified by diff) and
+  **Heirloom's four colourway files are string-identical** — one translation, four files, with a
+  test asserting they stay identical.
+  **The gate is a sweep over all eleven templates**, because `tdText()`'s fallback makes a missing
+  translation *silent*: an English label on a German form, and nobody hears about it.
 
 ⚠ **Check for a `*_DE.txt` beside the artwork before writing German for a template.** Four exist
 (Newborn ×2, Heirloom, Tender) and are **authored book text, not translations** — they overrode
@@ -111,9 +123,32 @@ Add-on names in the summary bar come from the product page's URL params, not the
 
 *Gate: click "Buch erstellen" from a DE product page; complete the form in German; place a test order.*
 
-**Stage 5 — German captions.** `language` param on `generateCaption`; German generation on
-standard spreads and German compose on Our story; verified against the S175 failing inputs
-translated to the DE context (no invention, ceiling only).
+**Stage 5 — German captions. 🟡 HALF DONE S180 — the guide is written, nothing is wired.**
+`language` param on `generateCaption`; German generation on standard spreads and German compose on
+Our story; verified against the S175 failing inputs translated to the DE context (no invention,
+ceiling only).
+
+- **Done S180:** the `# German books` section of `functions/caption/caption-voice.md`. One file,
+  not two, so the function keeps loading one system prompt. Register derived from **Xenia's four
+  authored `*_DE.txt` files**, not invented. Guarded by `tests/caption-voice-de.test.js` — the
+  guide is a *prompt*, so it fails silently when edited.
+- **Not done:** passing `language` from the engine, restating the German rules in the **user**
+  message (S175's lesson: a section buried in a mostly-English manual loses to the weight of the
+  rest), deploying, and re-running the S175 invention cases in German. **Needs owner approval for
+  the OpenAI spend.**
+- ⚠ **Length is NOT calibrated, by decision (owner, S180):** captions are a staff support tool, so
+  staff trim or regenerate. Keep a ceiling in the prompt; do not spend a session measuring it.
+- ⚠ **Xenia's predefined book verses are a DIFFERENT GENRE from captions** — the Newborn star-sign
+  blessings and the wedding intro are elevated and deliberately sentimental, written once for a
+  fixed page. A caption in that voice is greeting-card writing. Take the warmth, not the form. She
+  also writes "Willkommen auf der Welt, Nico!" **with an exclamation mark**, which both voice
+  sections forbid: her German is warmer than our caption rules, and the caption rules are ours.
+- ⚠ **Do not re-derive the German style rules** — `work/german-caption-voice/research_v1.md` holds
+  14 sources and two recorded corrections. Settled there: the English "no A/An" rule **does not
+  carry over** (invented by analogy, withdrawn); **Nominalstil** is the primary target (Wolf
+  Schneider); journalism caption guidance **must not govern this genre** (informing vs evoking);
+  and **"einfangen"** is our judgement, not a sourced finding.
+
 *Gate: generate captions on the DE test order in the engine.*
 
 **Stage 6 — DE mockups + product-page swap.** New capture script shooting **functional pages

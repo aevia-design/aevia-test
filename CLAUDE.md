@@ -98,6 +98,12 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     ⚠ **Re-run `work/germanization/make-papercut-v-de.mjs`** if Papercut's two Art `-DE` files
     are re-exported — its portrait variants are generated in-repo from them. Validation trail:
     `work/germanization/stage0-report.md`.
+    **German style rules are researched — do not re-derive them**:
+    `work/german-caption-voice/research_v1.md` (14 sources, two recorded corrections). Settled
+    there: the English "no A/An" caption rule **does not carry over** to German; **Nominalstil** is
+    the primary target; **journalism caption guidance must not govern this genre** (informing vs
+    evoking); and Xenia's authored `*_DE.txt` files are the **in-genre evidence that outranks
+    external sources**.
   - `upload-failures.md` — **CLOSED S150** (owner's call; root cause never proven). Instrumentation
     is deployed and untriggered. Read it before touching the upload path or re-diagnosing a stall:
     it records what was ruled out, and the one variable never tested.
@@ -131,6 +137,13 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   drop, and never copy a template's `placeholder` from wording baked into its artwork.
   The durable upstream fix for the viewBox: **Illustrator writes the artboard as the viewBox**,
   so the artboard must BE the trim (409×200mm) with 18mm bleed in Document Setup.
+- **Fonts are machine-checked for German**: `node scripts/check-font-glyphs.mjs` reads each
+  TrueType `cmap` directly and audits every family the data files name for ä ö ü Ä Ö Ü ß plus the
+  German quote marks. **Run it on any font drop** — a missing glyph does not throw, it draws
+  nothing or substitutes another face, so it reaches the printed book (S180). One known gap:
+  **NT Somic has no ß**, and it is Scribble's default caption font → TO-DOS #115.
+  `tests/de-font-glyphs.test.js` guards that no German string we ship uses a character its own font
+  lacks, and that the known-gap table still matches the font file.
 - **Heirloom letter geometry is machine-checked**: `node scripts/check-heirloom-letters.mjs`
   compares all 24 monogram-letter coordinates per colourway against the two sizing CSVs and
   enforces `with-bleed = without-bleed + 3` (interior) / `+ 18` (cover). Run it after ANY CSV
