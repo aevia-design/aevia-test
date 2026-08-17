@@ -41,6 +41,9 @@ Thumbs.db
 /mockups/
 firebase-debug.log
 
+# caption harness run artefacts (one JSON per generated caption; regenerate by re-running)
+functions/caption/outputs/
+
 # DNS zone exports + dashboard screenshots gathered for the aevia.at migration
 # (infrastructure detail; keep local — see docs/briefs/domain-migration.md)
 docs/Zone file for aevia.at.txt

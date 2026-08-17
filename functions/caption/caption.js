@@ -23,21 +23,32 @@ const path = require("path");
 const https = require("https");
 
 // ── Load .env ────────────────────────────────────────────────────────────────
+// Prefers a local caption/.env, then falls back to functions/.env — where the
+// deployed function's OPENAI_API_KEY already lives. The fallback exists so the
+// key is never copied into a second file just to run this harness.
 
-const envPath = path.join(__dirname, ".env");
-if (fs.existsSync(envPath)) {
+const ENV_PATHS = [
+  path.join(__dirname, ".env"),
+  path.join(__dirname, "..", ".env"),
+];
+
+for (const envPath of ENV_PATHS) {
+  if (!fs.existsSync(envPath)) continue;
   for (const line of fs.readFileSync(envPath, "utf8").split("\n")) {
     const trimmed = line.trim();
     if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
       const [key, ...rest] = trimmed.split("=");
-      process.env[key.trim()] = rest.join("=").trim();
+      // First file wins, so a caption-local override still beats functions/.env.
+      if (process.env[key.trim()] === undefined) {
+        process.env[key.trim()] = rest.join("=").trim();
+      }
     }
   }
 }
 
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 if (!OPENAI_KEY) {
-  console.error("ERROR: OPENAI_API_KEY not found in .env file.");
+  console.error("ERROR: OPENAI_API_KEY not found in caption/.env or functions/.env.");
   process.exit(1);
 }
 

@@ -110,6 +110,43 @@ describe('caption mode — German', () => {
     expect(de).toContain('nicht nur…, sondern auch…');
   });
 
+  test('it demands a concrete, visible detail rather than a mood', () => {
+    // S182, from real output: the rules were a pure blocklist, and the model
+    // answered with generic abstractions that dodged every banned string
+    // ("Die ersten gemeinsamen Momente", "So viel Freude in einem kleinen
+    // Moment"). A prohibition list cannot produce concreteness — this positive
+    // rule is what fixed it. Do not demote it below the no-invention rule.
+    expect(de).toMatch(/NAME SOMETHING THAT IS ACTUALLY IN THE PHOTOGRAPH/);
+    expect(de).toMatch(/would sit equally well under any other photo in\s*\n?\s*the book is wrong/);
+  });
+
+  test('the forbidden-word list names the abstractions the model reaches for', () => {
+    // Each of these appeared in, or is one paraphrase away from, real S182 output.
+    ['Moment', 'Augenblick', 'Erinnerung', 'Abenteuer', 'Freude', 'unvergesslich', 'magisch']
+      .forEach(w => expect(de).toContain(w));
+  });
+
+  test('it closes the paraphrase loophole explicitly', () => {
+    // The model dodged "in diesem Moment" by writing "in einem kleinen Moment".
+    // Banning strings without banning the register just moves the problem.
+    expect(de).toMatch(/do not reach for a synonym or a paraphrase/);
+    expect(de).toMatch(/the register is the problem, not/);
+  });
+
+  test('it forbids reusing the guide\'s example captions verbatim', () => {
+    // The one good caption in the first S182 run ("Immer noch derselbe Blick")
+    // was a near-verbatim copy of the guide's own example. Examples set register;
+    // they must not become stock answers, or captions repeat across books.
+    expect(de).toMatch(/show the REGISTER/);
+    expect(de).toMatch(/Do not reuse their wording/);
+  });
+
+  test('it rejects the trailing present participle', () => {
+    // Real output: "geduldig auf das nächste Abenteuer wartend" — stiff, and it
+    // also invented the waiting.
+    expect(de).toMatch(/No trailing present participle/);
+  });
+
   test('it forbids the exclamation mark and the trailing full stop', () => {
     expect(de).toMatch(/No exclamation mark/);
     expect(de).toMatch(/Do not end with a full stop/);
