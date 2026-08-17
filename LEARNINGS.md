@@ -1,3 +1,34 @@
+## 2026-08-17 — `firebase deploy` fails on this machine unless you raise the discovery timeout (S182)
+
+A functions deploy dies with:
+
+```
+Error: User code failed to load. Cannot determine backend specification. Timeout after 10000.
+```
+
+**This is not a code fault, and the error actively misleads — it names your code.** The CLI's
+discovery step (it boots a throwaway server, loads `index.js`, and reads the exported functions
+back off it) is flaky on this machine and gives up after 10s. `functions/index.js` loads in
+roughly 1 second when timed directly, so the ceiling is nowhere near being hit.
+
+**Fix — PowerShell, from `functions/`:**
+
+```powershell
+$env:FUNCTIONS_DISCOVERY_TIMEOUT = "120"
+npx firebase deploy --only functions:<name>
+```
+
+The env var lasts only for that terminal session. It is not a bash `export`, and `&&` does not
+parse in Windows PowerShell 5.1 — put each command on its own line.
+
+**Before blaming your own diff, time the load:** `node -e "const t=Date.now(); require('./index.js'); console.log(Date.now()-t)"`.
+If that is fast, the deploy failure is environmental and the code is fine. This cost time in
+S159/S160 and again in S182, because it was recorded only in a session log — hence this entry.
+
+Also: **prefer `--only functions:<name>`**. The `npm run deploy` script in `functions/` is
+`firebase deploy --only functions`, which redeploys *everything* — upload, payment and email
+paths included — for what may be a one-function change. No reason to widen the blast radius.
+
 ## 2026-08-17 — Two representations of one caption drifted apart, and only one got cleaned (S181)
 
 AEV-099 (Heirloom) printed with letters moved across line breaks: "Anna & M / ichael", "…more t
