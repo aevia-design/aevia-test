@@ -854,7 +854,7 @@ function wrapText(font, text, sizePt, maxWidthPt, charSpacing) {
 // Falls back to wrapping for orders saved before S159, and for any caption the engine
 // did not record (e.g. added to book state by a script rather than the UI).
 function captionLinesFor(stored, text, font, sizePt, boxWidthPt, charSpacing) {
-  if (linesMatchText(stored, text)) return stored;
+  if (linesMatchText(stored, text)) return drawableLines(stored);
   return String(text).split('\n').flatMap(l =>
     l.trim() ? wrapText(font, l, sizePt, boxWidthPt, charSpacing) : ['']);
 }
@@ -867,15 +867,40 @@ function captionLinesFor(stored, text, font, sizePt, boxWidthPt, charSpacing) {
 // underneath them. Drawing those would drop or duplicate words in print — strictly worse
 // than a line breaking in the wrong place.
 //
-// So the lines are only trusted when they still reconstruct the text exactly. Whitespace
-// is ignored on both sides: a line that wrapped mid-sentence has no separator of its own,
-// and the space it wrapped on is dropped when recorded. Any real divergence changes a
-// non-space character and is caught. On mismatch the PDF word-wraps as it always did —
-// the pre-S159 behaviour, which is wrong-looking but never wrong-worded.
+// So the lines are only trusted when they REJOIN into exactly this text: each break is put
+// back as the single space the browser wrapped on, and the result must equal the text with
+// its own whitespace collapsed. A break at a hyphen or dash rejoins with no space, because
+// that is a real break opportunity the browser takes.
+//
+// This is stricter than "same characters, ignoring all whitespace", which is what it used to
+// be — and that laxity printed AEV-099 wrong (S181). Two failures it could not see:
+//   - a break INSIDE a word ("…more t" / "han a simple hello.") rejoins with a space in the
+//     middle of "than", so it no longer matches. Nothing in the engine should ever produce
+//     one; when it does, the wrong lines must not reach print.
+//   - `\s` matches U+00A0, so a non-breaking space in the recorded lines squashed away
+//     identically to the plain space in the text. That divergence WAS the bug: the lines had
+//     been laid out against a different string than the one that got saved.
+// On mismatch the PDF word-wraps as it always did — wrong-looking at worst, never wrong-worded.
+// Recorded lines are compared with U+00A0 read as a space, so a line can be trusted while
+// still carrying one. The print fonts have no NBSP glyph and draw a .notdef box for it (the
+// box that once appeared after "WILD"), so strip it on the way to the page. Same normalising
+// stripHtml already does for the text itself.
+function drawableLines(lines) {
+  return lines.map(l => String(l == null ? '' : l).replace(/ /g, ' '));
+}
+
 function linesMatchText(stored, text) {
   if (!Array.isArray(stored) || !stored.length) return false;
-  const squash = (s) => String(s == null ? '' : s).replace(/\s+/g, '');
-  return squash(stored.join('')) === squash(text);
+  const norm = (s) => String(s == null ? '' : s).replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  let joined = '';
+  for (const line of stored) {
+    const l = norm(line);
+    if (!l) continue;                       // blank lines are paragraph spacing, not content
+    if (!joined) { joined = l; continue; }
+    // A line ending in a hyphen or dash broke AT that character, with no space to restore.
+    joined += /[-‐‒–—]$/.test(joined) ? l : ' ' + l;   // U+2011 is a NON-breaking hyphen: excluded
+  }
+  return joined === norm(text);
 }
 
 // Split a NON-autoShrink cover caption into drawn lines.
@@ -892,7 +917,7 @@ function linesMatchText(stored, text) {
 //
 // Pure — exported for tests.
 function coverCaptionLines(text, font, sizePt, capDef = {}, ov = {}, fontName = '', stored = null) {
-  if (linesMatchText(stored, text)) return stored;
+  if (linesMatchText(stored, text)) return drawableLines(stored);
   const boxWPt = capDef.rotate ? 0 : (capDef.wMm || 0) * MM_TO_PT;
   const cs = SUPPRESS_LETTER_SPACING_FONTS.has(fontName) ? 0 : ((ov.letterSpacing || 0)) * sizePt;
   return String(text).split('\n').flatMap(l => l.trim() ? wrapText(font, l, sizePt, boxWPt, cs) : []);

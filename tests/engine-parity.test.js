@@ -33,7 +33,10 @@ function functionNames(file) {
 // the contract that both copies honour the same drawing steps.
 const SHARED_RENDER_FUNCTIONS = [
   'applyStyleToSpreadCapEl',
-  'applyTypographicRules',
+  // 'applyTypographicRules' was removed from BOTH engines in S181. It injected
+  // non-breaking spaces into the caption DOM that the save path stripped, so the
+  // recorded line breaks could describe a string nobody stored — which printed
+  // AEV-099 with letters moved across the breaks.
   'assignPhotosToSpreads',
   'assignmentsToIndices',
   'assignmentsToNames',

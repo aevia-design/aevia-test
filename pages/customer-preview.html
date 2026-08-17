@@ -1715,15 +1715,6 @@
     return [firstOverride || 'SP0', ...standards];
   }
 
-  // Mirror of the staff engine's typographic rules (non-breaking spaces + widow prevention)
-  function applyTypographicRules(text) {
-    if (!text) return text;
-    const NBSP = ' ';
-    const preps = /\b(a|an|the|in|on|at|by|of|to|for|with|from|up|as|into|under|over|about|and|but|or) /gi;
-    text = text.replace(preps, (_, p) => p + NBSP);
-    text = text.replace(/ (\S+)$/, NBSP + '$1');
-    return text;
-  }
 
   // Position + style a cover caption from coverCaptionStyles (merged with CSV defaults).
   // Shared by renderCover and the caption toolbar so edits re-render identically.
@@ -2782,7 +2773,7 @@
         const plainToTitle = (text) => { titleEl.innerHTML = text.replace(/\n/g, '<br>'); };
 
         const savedTitle = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanelTitle'] || '';
-        if (savedTitle) plainToTitle(applyTypographicRules(savedTitle));
+        if (savedTitle) plainToTitle(savedTitle);
 
         const saveTitleCaption = () => {
           const raw = titleToPlain();
@@ -2800,7 +2791,7 @@
         });
         titleEl.addEventListener('blur', () => {
           const raw = saveTitleCaption();
-          plainToTitle(applyTypographicRules(raw));
+          plainToTitle(raw);
         });
         titleEl.addEventListener('mousedown', e => e.stopPropagation());
         titleEl.addEventListener('keydown', e => {
@@ -2924,7 +2915,7 @@
         const plainToPanel = (text) => { panelEl.innerHTML = text.replace(/\n/g, '<br>'); };
 
         const saved = window.bookCaptions?.[spreadIndex]?.[side]?.['textPanel'] || '';
-        if (saved) plainToPanel(isFunnyWords ? formatFunnyWords(saved) : applyTypographicRules(saved));
+        if (saved) plainToPanel(isFunnyWords ? formatFunnyWords(saved) : saved);
 
         const savePanelCaption = () => {
           const raw = panelToPlain();
@@ -2942,7 +2933,7 @@
         });
         panelEl.addEventListener('blur', () => {
           const raw = savePanelCaption();
-          plainToPanel(isFunnyWords ? formatFunnyWords(raw) : applyTypographicRules(raw));
+          plainToPanel(isFunnyWords ? formatFunnyWords(raw) : raw);
         });
         panelEl.addEventListener('mousedown', e => e.stopPropagation());
         panelEl.addEventListener('keydown', e => {

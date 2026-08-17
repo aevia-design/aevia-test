@@ -1401,16 +1401,6 @@
     return result;
   }
 
-  function applyTypographicRules(text) {
-    if (!text) return text;
-    const NBSP = ' ';
-    // Non-breaking space after short prepositions/articles
-    const preps = /\b(a|an|the|in|on|at|by|of|to|for|with|from|up|as|into|under|over|about|and|but|or) /gi;
-    text = text.replace(preps, (_, p) => p + ' ');
-    // Widow prevention: keep last two words together
-    text = text.replace(/ (\S+)$/, ' $1');
-    return text;
-  }
 
   async function urlToBase64(url, maxPx = 1200) {
     const resp = await fetch(url);
@@ -3215,8 +3205,8 @@
               if (!window.bookCaptions) window.bookCaptions = {};
               if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
               if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
-              window.bookCaptions[spreadIndex][side][slotIdx] = applyTypographicRules(caption);
-              captionEl.innerHTML = applyTypographicRules(caption);
+              window.bookCaptions[spreadIndex][side][slotIdx] = caption;
+              captionEl.innerHTML = caption;
               aiBtn.textContent = '✦ Generate';
               aiBtn.title = '';
             } catch (err) {
@@ -3298,7 +3288,7 @@
           .trim();
         const plainToTitle = (text) => { titleEl.innerHTML = text.replace(/\n/g, '<br>'); };
 
-        if (savedTitle) plainToTitle(applyTypographicRules(savedTitle));
+        if (savedTitle) plainToTitle(savedTitle);
 
         const saveTitleCaption = () => {
           const raw = titleToPlain();
@@ -3316,7 +3306,7 @@
         });
         titleEl.addEventListener('blur', () => {
           const raw = saveTitleCaption();
-          plainToTitle(applyTypographicRules(raw));
+          plainToTitle(raw);
         });
         titleEl.addEventListener('mousedown', e => e.stopPropagation());
         titleEl.addEventListener('keydown', e => {
@@ -3471,7 +3461,7 @@
           panelEl.innerHTML = text.replace(/\n/g, '<br>');
         };
 
-        if (saved) plainToPanel(isFunnyWords ? formatFunnyWords(saved) : applyTypographicRules(saved));
+        if (saved) plainToPanel(isFunnyWords ? formatFunnyWords(saved) : saved);
 
         const savePanelCaption = () => {
           const raw = panelToPlain();
@@ -3489,7 +3479,7 @@
         });
         panelEl.addEventListener('blur', () => {
           const raw = savePanelCaption();
-          plainToPanel(isFunnyWords ? formatFunnyWords(raw) : applyTypographicRules(raw));
+          plainToPanel(isFunnyWords ? formatFunnyWords(raw) : raw);
         });
         panelEl.addEventListener('mousedown', e => e.stopPropagation());
         panelEl.addEventListener('keydown', e => {
@@ -3548,7 +3538,7 @@
               if (!window.bookCaptions[spreadIndex]) window.bookCaptions[spreadIndex] = {};
               if (!window.bookCaptions[spreadIndex][side]) window.bookCaptions[spreadIndex][side] = {};
               window.bookCaptions[spreadIndex][side]['textPanel'] = caption;
-              plainToPanel(applyTypographicRules(caption));
+              plainToPanel(caption);
               composeBtn.textContent = '✦ Compose';
               composeBtn.title = '';
             } catch (err) {
@@ -3883,6 +3873,16 @@
      which the PDF already preserves as one line-height. */
   function captionVisualLines(el) {
     if (!el) return null;
+    // What we MEASURE has to be what gets SAVED. The save path normalises non-breaking
+    // spaces away (panelToPlain, titleToPlain); contentEditable inserts them on its own
+    // when you type or paste. A caption whose spaces are all non-breaking cannot wrap at
+    // a space, so the browser breaks it mid-word — and this function would faithfully
+    // record breaks describing a string nobody stored. That is what printed AEV-099 as
+    // "Anna & M / ichael" (S181). Normalise first, so the recorded lines and the saved
+    // text can never describe different strings.
+    const html = el.innerHTML;
+    const clean = html.replace(/&nbsp;/gi, ' ').replace(/ /g, ' ');
+    if (clean !== html) el.innerHTML = clean;
     // Which screen axis a NEW LINE advances along. Normally lines stack downward, so a
     // jump in rect.top means a wrap. Spine captions are rotate(270deg): their text runs
     // vertically, so every character has a different `top` and the naive test would put

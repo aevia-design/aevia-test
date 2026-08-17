@@ -85,6 +85,72 @@ describe('stale stored lines are rejected, not drawn', () => {
   });
 });
 
+// AEV-099 (S181). The engine recorded line breaks that split words in half — the caption
+// DOM had lost its wrap opportunities, so the browser broke mid-word and the recorder wrote
+// down what it saw. The saved TEXT was normalised on the way out and the recorded LINES were
+// not, so the two described different strings. The old check compared characters with all
+// whitespace squashed out, which cannot see either failure, and the book printed
+// "Anna & M / ichael".
+//
+// These are the real stored values from that order.
+describe('recorded lines that split a word are rejected (AEV-099)', () => {
+  test('a cover name broken mid-word falls back to wrapping', () => {
+    // 100mm box, ~4pt/char at 10pt with the stub → "Anna & Michael" fits on one line here;
+    // the point is that the stored lines are refused, not what replaces them.
+    expect(coverCaptionLines('Anna & Michael', stubFont, 10, { wMm: 100 }, {}, '',
+                             ['Anna & M', 'ichael']))
+      .toEqual(['Anna & Michael']);
+  });
+
+  test('a text panel broken mid-word falls back to wrapping', () => {
+    const stored = ['We met through work, with nothing more t', 'han a simple hello.'];
+    const text   = 'We met through work, with nothing more than a simple hello.';
+    expect(captionLinesFor(stored, text, stubFont, 10, 9999, 0)).toEqual([text]);
+  });
+
+  test('a mid-word break is caught even when the paragraph structure is right', () => {
+    // Blank lines line up and every character is present — only the break positions are
+    // wrong. This is exactly what the squash-all-whitespace check waved through.
+    const stored = ['Little by little, we found our way to each o', 'ther.', '', 'Anna & Michael'];
+    const text   = 'Little by little, we found our way to each other.\n\nAnna & Michael';
+    expect(captionLinesFor(stored, text, stubFont, 10, 9999, 0))
+      .toEqual(['Little by little, we found our way to each other.', '', 'Anna & Michael']);
+  });
+
+  test('a non-breaking space is compared as a space, and never drawn as one', () => {
+    // The divergence that caused the bug: the lines were laid out against a string with
+    // U+00A0 where the saved text has a plain space. `\s` matches U+00A0, so squashing made
+    // them identical. Where the breaks are still at word boundaries the layout is sound and
+    // the lines are kept; but the print fonts have no NBSP glyph and would draw a .notdef box
+    // (the box that once appeared after "WILD"), so the drawn strings are normalised.
+    const stored = ['We met through work, with nothing more', 'than a simple hello.'];
+    const text   = 'We met through work, with nothing more than a simple hello.';
+    expect(captionLinesFor(stored, text, stubFont, 10, 9999, 0))
+      .toEqual(['We met through work, with nothing more', 'than a simple hello.']);
+  });
+
+  test('a clean break at the same place is still trusted', () => {
+    // The guard must not become "distrust everything" — the S159 contract still holds.
+    const stored = ['We met through work, with nothing more', 'than a simple hello.'];
+    const text   = 'We met through work, with nothing more than a simple hello.';
+    expect(captionLinesFor(stored, text, stubFont, 10, 9999, 0)).toEqual(stored);
+  });
+
+  test('a break at a hyphen rejoins with no space and is trusted', () => {
+    // Browsers do break after a hyphen, and that break has no space to restore. Rejecting it
+    // would push a legitimate layout back to the PDF's own wrap for no reason.
+    const stored = ['our hand-', 'written vows'];
+    expect(captionLinesFor(stored, 'our hand-written vows', stubFont, 10, 9999, 0))
+      .toEqual(stored);
+  });
+
+  test('an em dash break rejoins with no space too', () => {
+    const stored = ['the beginning—', 'of forever'];
+    expect(captionLinesFor(stored, 'the beginning—of forever', stubFont, 10, 9999, 0))
+      .toEqual(stored);
+  });
+});
+
 describe('fallback for orders saved before S159', () => {
   test('no stored lines → the PDF wraps as before', () => {
     const lines = captionLinesFor(undefined, 'a b c d e f g h i j', stubFont, 10, 20 * MM_TO_PT, 0);
