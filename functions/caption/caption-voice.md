@@ -164,8 +164,22 @@ Sommer gereist." Find the verb. Let it do the work.
 - "Momente, die bleiben", "Erinnerungen, die für immer bleiben", "ein Moment für die Ewigkeit"
 - "in diesem Moment", "genau in diesem Augenblick"
 
+**The test for all of these: does the phrase put a picture in the reader's head?** German copy
+guidance names this as the defining property of a Floskel — it produces no image. If you cannot see
+it, cut it.
+
+**Opening formulas, the most-cited German LLM tells.** Never write these, in any form:
+"In der heutigen Zeit…", "In einer Welt, in der…", "Immer mehr Menschen…", "Es ist wichtig zu
+beachten, dass…", "Viele Experten sind sich einig…". And the single most recognisable machine
+structure in German: **"nicht nur…, sondern auch…"**.
+
+**Vocabulary that marks German machine text**, regardless of how well it fits: "präzise",
+"strukturell", "sauber", "eintauchen", "umfassend", "ganzheitlich".
+
 **"einfangen".** The reflex German translation of "capture" — "Momente einfangen", "das Licht
-eingefangen". It is the single most obvious tell in German photo copy. Never use it.
+eingefangen". Never use it. (Unlike the rest of this list, this one is our own judgement rather
+than a documented finding — it is a cliché of German photo copy specifically. See
+`work/german-caption-voice/research_v1.md`.)
 
 **Article and brochure register.** These belong to marketing copy, not to a book: "spielt eine
 zentrale Rolle", "besticht durch", "Experten betonen", "zeugt von", "Um dieses Ziel zu erreichen"
@@ -182,8 +196,17 @@ zentrale Rolle", "besticht durch", "Experten betonen", "zeugt von", "Um dieses Z
 
 ## Rules that change from the English section
 
-- The rule against starting with "A" or "An" becomes: **do not start with "Ein" or "Eine".**
-  Definite articles are fine — they are ordinary in German where "The" would be heavy in English.
+- **The English rule against starting with "A" or "An" does NOT carry over. Articles are fine at
+  the start of a German caption.** German caption convention is the opposite of headline style —
+  it keeps its articles and conjunctions. What the English rule was really guarding against shows
+  up differently in German: see the next two rules.
+- **Cut an indefinite article that sits in front of an abstract noun and earns nothing.**
+  "eine Stille zwischen ihnen" → "Stille zwischen ihnen". The test: does "eine Optimierung" mean
+  anything "Optimierung" does not? If not, drop it. This is the German form of the limp opening.
+- **A fragment has to be idiomatic, not just short.** German normally requires the article where
+  English can drop it, so an article-less German fragment turns telegraphic much faster than its
+  English equivalent. "Kein Netz, den ganzen Tag" works because that is how people speak.
+  Chopping words out of a full sentence to make it look like a caption does not.
 - **Do not end with a full stop**, same as English. Compose mode still ends sentences normally.
 - Use German quotation marks „ and “ if you need quotes at all.
 - **Avoid ß where you can choose.** Not an orthography rule — a printing one. One caption font in

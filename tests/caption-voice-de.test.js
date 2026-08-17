@@ -57,6 +57,28 @@ describe('caption-voice.md — German section', () => {
     expect(GERMAN).toMatch(/never substitute "ss"/i);
   });
 
+  test('the withdrawn Ein/Eine rule has not crept back in', () => {
+    // Researched and removed (work/german-caption-voice/research_v1.md): no German
+    // authority treats a sentence-initial indefinite article as a defect, and
+    // caption convention explicitly keeps articles where headlines drop them.
+    // The guide must say so positively rather than fall silent, or the next
+    // person reasoning from the English rule will re-add it.
+    expect(GERMAN).toMatch(/does NOT carry over/);
+    expect(GERMAN).not.toMatch(/do not start with "Ein"/i);
+  });
+
+  test('it carries the researched German LLM tells, not just the invented ones', () => {
+    expect(GERMAN).toContain('nicht nur…, sondern auch…');   // most-cited structure
+    expect(GERMAN).toContain('In einer Welt, in der');        // opening formula
+    expect(GERMAN).toMatch(/put a picture in the reader's head/); // the Floskel test
+  });
+
+  test('it flags which rules are our judgement rather than sourced', () => {
+    // Honesty about provenance, so a future editor knows which lines have a
+    // citation behind them and which are ours.
+    expect(GERMAN).toMatch(/our own judgement rather\s*\n?than a documented finding/);
+  });
+
   test('it warns against imitating the authored book verses', () => {
     // The Newborn star-sign blessings and the wedding intro are a different
     // genre — elevated and deliberately sentimental. A caption in that voice is
@@ -82,7 +104,10 @@ describe('caption-voice.md — German section', () => {
 
     const offenders = [];
     bullets.forEach(b => {
-      if (/^Ein(e)?\s/.test(b))  offenders.push(`starts with Ein/Eine: "${b}"`);
+      // NOTE: there is deliberately no "must not start with Ein/Eine" check.
+      // That rule was written by analogy with the English "no A/An" rule and
+      // withdrawn after research (work/german-caption-voice/research_v1.md):
+      // German caption convention keeps its articles, unlike headline style.
       if (/[.!]$/.test(b))       offenders.push(`ends with . or !: "${b}"`);
       // Formal address vs "she": at the START of a sentence, German capitalises
       // "sie" (she/they) anyway, so "Sie hat alles verschlafen" is "SHE slept
