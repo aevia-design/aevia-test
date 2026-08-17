@@ -88,6 +88,9 @@ exports.reportUploadFailure = functions
 const fs = require('fs');
 const path = require('path');
 const CAPTION_VOICE = fs.readFileSync(path.join(__dirname, 'caption/caption-voice.md'), 'utf8');
+// User-message prompt builders. Extracted so the German path is testable —
+// see functions/caption/prompts.js and tests/caption-prompts.test.js.
+const { buildCaptionUserText, buildComposeUserText } = require('./caption/prompts');
 
 exports.generateCaption = functions
   .region('europe-west1')
@@ -104,12 +107,15 @@ exports.generateCaption = functions
       const client = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
 
       // Expect JSON body, one of two shapes:
-      //   caption mode: { image: "<base64>", collection, note?, previousCaptions? }
-      //   compose mode: { text: "<customer's own words>", collection }   ← no image
+      //   caption mode: { image: "<base64>", collection, note?, previousCaptions?, language? }
+      //   compose mode: { text: "<customer's own words>", collection, language? }   ← no image
       // Compose is used by the Our-story panel only (S175). It sends no photograph: the
       // passage is about the couple's account, and an image invites the model to describe
       // it. See docs/briefs/caption-ai-modes.md.
-      const { image, text, collection = 'kids', note, previousCaptions } = req.body;
+      //
+      // `language` is the BOOK's language (germanization Stage 5). Absent reads as 'en',
+      // so every caller that predates this — and every English order — is unaffected.
+      const { image, text, collection = 'kids', note, previousCaptions, language } = req.body;
       const composeText = typeof text === 'string' ? text.trim() : '';
       if (!image && !composeText) {
         res.status(400).json({ error: 'image (base64) or text is required' });
@@ -127,28 +133,12 @@ exports.generateCaption = functions
           messages: [
             { role: 'system', content: CAPTION_VOICE },
             {
+              // The no-invention rule is repeated in the USER message, not left to the
+              // system prompt alone: the system prompt is mostly a creative-writing manual
+              // for captions, and one section arguing the opposite loses to the weight of
+              // the rest. German rules ride along the same way. See caption/prompts.js.
               role: 'user',
-              content: [
-                `Compose mode. Collection: ${collection}`,
-                '',
-                // The no-invention rule is repeated HERE, not left to the system prompt alone.
-                // The system prompt is mostly a creative-writing manual for captions, and one
-                // section arguing the opposite loses to the weight of the rest.
-                "Below is the customer's own text, from two questions they answered separately.",
-                'Join it into one passage that reads as continuous prose.',
-                '',
-                'Rules, in order of importance:',
-                '1. Add NOTHING they did not write. No places, events, times of day, weather,',
-                '   feelings, or figures of speech. If it is not in their text, it does not exist.',
-                '2. Do not make a vague phrase specific.',
-                '3. There is no target length and no minimum. Never exceed 65 words. If their',
-                '   text is short, your answer is short — that is correct, not lazy.',
-                '4. Returning their words nearly unchanged is a good outcome.',
-                '',
-                'You are editing. Return only the passage.',
-                '',
-                composeText,
-              ].join('\n'),
+              content: buildComposeUserText({ collection, composeText, language }),
             },
           ],
         });
@@ -156,15 +146,7 @@ exports.generateCaption = functions
         return;
       }
 
-      const userLines = [`Collection: ${collection}`];
-      if (note) userLines.push(`Customer note: "${note}"`);
-      if (Array.isArray(previousCaptions) && previousCaptions.length > 0) {
-        userLines.push('');
-        userLines.push('Captions already used elsewhere in this book — do not repeat similar phrasing, structure, opening words, or emotional register:');
-        previousCaptions.slice(-8).forEach(c => userLines.push(`- ${c}`));
-      }
-      userLines.push('', 'IMPORTANT: Do not start the caption with the word "A" or "An".');
-      userLines.push('Generate one caption for this photo. Return only the caption text, nothing else.');
+      const userText = buildCaptionUserText({ collection, note, previousCaptions, language });
 
       const response = await client.chat.completions.create({
         model: 'gpt-4o-mini',
@@ -175,7 +157,7 @@ exports.generateCaption = functions
             role: 'user',
             content: [
               { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}` } },
-              { type: 'text', text: userLines.join('\n') },
+              { type: 'text', text: userText },
             ],
           },
         ],

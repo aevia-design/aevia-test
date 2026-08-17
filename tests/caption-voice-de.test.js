@@ -50,11 +50,16 @@ describe('caption-voice.md — German section', () => {
     expect(GERMAN).toMatch(/no-invention rule/);
   });
 
-  test('it records the ß printing constraint', () => {
-    // The ß rule stands regardless of font — Scribble's caption font was NT Somic
-    // (no ß glyph), now Onest (tests/de-font-glyphs.test.js).
-    expect(GERMAN).toContain('ß');
-    expect(GERMAN).toMatch(/never substitute "ss"/i);
+  test('it asks for ß rather than avoiding it', () => {
+    // This rule INVERTED in S182. It used to say "avoid ß where you can choose",
+    // because Scribble's caption font (NT Somic) had no ß glyph and the letter
+    // would not render. That font was replaced with Onest, which carries it, and
+    // check-font-glyphs.mjs now passes for every face — so the constraint is gone
+    // and German orthography wins. Guard the new direction, not just the letter:
+    // a silent revert would quietly distort German word choice again.
+    expect(GERMAN).toMatch(/Write ß where German orthography requires it/);
+    expect(GERMAN).toMatch(/never\*{0,2} a reason\s*\n?\s*to substitute "ss"/i);
+    expect(GERMAN).not.toMatch(/Avoid ß/i);
   });
 
   test('the withdrawn Ein/Eine rule has not crept back in', () => {

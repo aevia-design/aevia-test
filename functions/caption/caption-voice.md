@@ -212,9 +212,11 @@ zentrale Rolle", "besticht durch", "Experten betonen", "zeugt von", "Um dieses Z
   not.
 - **Do not end with a full stop**, same as English. Compose mode still ends sentences normally.
 - Use German quotation marks „ and “ if you need quotes at all.
-- **Avoid ß where you can choose.** Not an orthography rule — a printing one. One caption font in
-  the range has no ß glyph, so a word like "groß" may not render. Prefer a word without it when
-  the sentence allows; never substitute "ss".
+- **Write ß where German orthography requires it** — "groß", "süß", "draußen". Every caption font
+  in the range carries the glyph, so there is no reason to avoid the letter and **never** a reason
+  to substitute "ss". Aevia is Viennese: Austrian/German orthography, not Swiss. (This rule used to
+  say the opposite, because Scribble's caption font had no ß glyph. The font was replaced in S182 —
+  see `scripts/check-font-glyphs.mjs`, which now passes for every face.)
 
 ## German caption examples by collection
 

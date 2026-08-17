@@ -3197,7 +3197,9 @@
               const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/generateCaption', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: base64, collection: getActiveCollection(), previousCaptions: collectExistingCaptions() }),
+                // `language` makes the German section of caption-voice.md apply at all
+                // (germanization Stage 5) — without it the model writes English.
+                body: JSON.stringify({ image: base64, collection: getActiveCollection(), previousCaptions: collectExistingCaptions(), language: isGermanBook() ? 'de' : 'en' }),
               });
               if (!resp.ok) throw new Error((await resp.json()).error || resp.statusText);
               const { caption } = await resp.json();
@@ -3525,7 +3527,7 @@
               const resp = await fetch('https://europe-west1-aevia-uploads.cloudfunctions.net/generateCaption', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: before, collection: getActiveCollection() }),
+                body: JSON.stringify({ text: before, collection: getActiveCollection(), language: isGermanBook() ? 'de' : 'en' }),
               });
               if (!resp.ok) throw new Error((await resp.json()).error || resp.statusText);
               const { caption } = await resp.json();

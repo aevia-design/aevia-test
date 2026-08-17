@@ -7,8 +7,15 @@
  *   node caption.js --image path/to/photo.jpg --collection travel
  *   node caption.js --image path/to/photo.jpg --collection kids --note "First steps"
  *   node caption.js --image https://signed-gcs-url --collection love
+ *   node caption.js --image photo.jpg --collection kids --language de
  *
  * Collections: travel, kids, love
+ * Languages:   en (default), de
+ *
+ * This is the local harness for the SAME prompts the deployed generateCaption
+ * function uses (both build their user message from ./prompts.js), so a German
+ * caption tested here is the caption the engine will produce. Cheapest way to
+ * check German output — no deploy needed.
  */
 
 const fs = require("fs");
@@ -55,8 +62,10 @@ function getArg(name) {
 const imagePath = getArg("--image");
 const collection = getArg("--collection") || "travel";
 const customerNote = getArg("--note") || null;
+const language = getArg("--language") || "en";
 
 const VALID_COLLECTIONS = ["travel", "kids", "love"];
+const VALID_LANGUAGES = ["en", "de"];
 
 if (!imagePath) {
   console.error("ERROR: --image is required.");
@@ -66,6 +75,11 @@ if (!imagePath) {
 
 if (!VALID_COLLECTIONS.includes(collection)) {
   console.error(`ERROR: --collection must be one of: ${VALID_COLLECTIONS.join(", ")}`);
+  process.exit(1);
+}
+
+if (!VALID_LANGUAGES.includes(language)) {
+  console.error(`ERROR: --language must be one of: ${VALID_LANGUAGES.join(", ")}`);
   process.exit(1);
 }
 
@@ -105,13 +119,10 @@ function getMediaType(src) {
 }
 
 // ── Build prompt ─────────────────────────────────────────────────────────────
+// Shared with the deployed function, so what this harness prints is what the
+// engine's ✦ Generate button produces.
 
-function buildUserPrompt() {
-  const lines = [`Collection: ${collection}`];
-  if (customerNote) lines.push(`Customer note: "${customerNote}"`);
-  lines.push("", "Generate one caption for this photo. Return only the caption text, nothing else.");
-  return lines.join("\n");
-}
+const { buildCaptionUserText } = require("./prompts");
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
@@ -121,6 +132,7 @@ async function run() {
 
   console.log(`\nImage:      ${imagePath}`);
   console.log(`Collection: ${collection}`);
+  console.log(`Language:   ${language}`);
   if (customerNote) console.log(`Note:       "${customerNote}"`);
   console.log("\nGenerating caption...\n");
 
@@ -136,7 +148,7 @@ async function run() {
         role: "user",
         content: [
           { type: "image_url", image_url: { url: `data:${mediaType};base64,${data}` } },
-          { type: "text", text: buildUserPrompt() },
+          { type: "text", text: buildCaptionUserText({ collection, note: customerNote, language }) },
         ],
       },
     ],
@@ -159,6 +171,7 @@ async function run() {
     date: today,
     image: imagePath,
     collection,
+    language,
     customer_note: customerNote,
     caption,
     model: "gpt-4o-mini",
