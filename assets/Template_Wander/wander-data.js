@@ -42,8 +42,8 @@ window.WANDER_DATA = {
     // Wander cover text is FREE TEXT (no fixed name/year fields like Scribble) — staff type
     // whatever suits the trip, e.g. "Dolomites, 2025". `placeholder` is just a suggestion.
     captions: [
-      { key: 'front', xMm: 379, yMm: 200, wMm: 65, hMm: 5, font: 'Cormorant Garamond', sizePt: 18, align: 'right', color: '#3E2A55', label: 'Front — album name', placeholder: 'Dolomites, 2026', maxLength: 30 },
-      { key: 'spine', xMm: 222.5, yMm: 158, wMm: 65, hMm: 5, font: 'Cormorant Garamond', sizePt: 18, align: 'left',  color: '#3E2A55', rotate: 270, label: 'Spine — album name', placeholder: 'Dolomites, 2026', maxLength: 30 },
+      { key: 'front', xMm: 379, yMm: 200, wMm: 65, hMm: 5, font: 'Cormorant Garamond', sizePt: 18, align: 'right', color: '#3E2A55', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Dolomites, 2026', placeholderDe: 'Dolomiten, 2026', maxLength: 30 },
+      { key: 'spine', xMm: 222.5, yMm: 158, wMm: 65, hMm: 5, font: 'Cormorant Garamond', sizePt: 18, align: 'left',  color: '#3E2A55', rotate: 270, label: 'Spine — album name', labelDe: 'Buchrücken — Albumname', placeholder: 'Dolomites, 2026', placeholderDe: 'Dolomiten, 2026', maxLength: 30 },
     ]
   },
 
@@ -337,7 +337,7 @@ window.WANDER_DATA = {
     //   this is the data contract for that work.
     FP1: {
       orderFormPhoto: null,
-      orderFormMeta: { countrySelect: true, sameRegionOnly: true, textPrompt: 'Your route', hint: 'List the places on your trip, in order, and we\'ll lay out the itinerary for you.', placeholder: 'e.g. Vienna → Hallstatt → Salzburg → Innsbruck' },
+      orderFormMeta: { countrySelect: true, sameRegionOnly: true, textPrompt: 'Your route', textPromptDe: 'Ihre Route', hint: 'List the places on your trip, in order, and we\'ll lay out the itinerary for you.', hintDe: 'Listen Sie die Orte Ihrer Reise der Reihe nach auf, wir setzen daraus die Reiseroute.', placeholder: 'e.g. Vienna → Hallstatt → Salzburg → Innsbruck', placeholderDe: 'z. B. Wien → Hallstatt → Salzburg → Innsbruck' },
       type: 'functional', id: 'FP1', label: 'Travel map', mapPage: true,
       pin: { png: 'FP Spread 1 - Special Files/GEO PIN.png', wMm: 12, hMm: 23, anchor: 'center' },
       // region code (from mapCoordinates) → left-page map SVG

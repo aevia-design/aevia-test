@@ -75,9 +75,9 @@ window.TENDER_DATA = {
     // (Parisienne, rotated 270). Front captions = taupe #7c746e; the spine label is
     // cream #fbf8f6 per the cover CSV (it sits on the dark #8a817a spine band).
     captions: [
-      { key: 'name',     xMm: 328, yMm: 175, wMm: 150, hMm: 20, font: 'Parisienne', sizePt: 48, align: 'center', color: '#7c746e', letterSpacing: 0.01, label: 'Front — title',    placeholder: 'Our wedding',   maxLength: 60 },
-      { key: 'subtitle', xMm: 328, yMm: 195, wMm: 150, hMm: 12, font: 'Parisienne', sizePt: 18, align: 'center', color: '#7c746e', letterSpacing: 0.01, label: 'Front — subtitle',  placeholder: 'We found love', maxLength: 60 },
-      { key: 'spine',    xMm: 222.5, yMm: 118, wMm: 120, hMm: 8,  font: 'Parisienne', sizePt: 18, align: 'center', color: '#fbf8f6', letterSpacing: 0.01, rotate: 270, label: 'Spine — label', placeholder: 'Our wedding', maxLength: 60 },
+      { key: 'name',     xMm: 328, yMm: 175, wMm: 150, hMm: 20, font: 'Parisienne', sizePt: 48, align: 'center', color: '#7c746e', letterSpacing: 0.01, label: 'Front — title',    labelDe: 'Vorderseite — Titel',      placeholder: 'Our wedding',   placeholderDe: 'Unsere Hochzeit', maxLength: 60 },
+      { key: 'subtitle', xMm: 328, yMm: 195, wMm: 150, hMm: 12, font: 'Parisienne', sizePt: 18, align: 'center', color: '#7c746e', letterSpacing: 0.01, label: 'Front — subtitle',  labelDe: 'Vorderseite — Untertitel', placeholder: 'We found love', placeholderDe: 'Wir haben uns gefunden', maxLength: 60 },
+      { key: 'spine',    xMm: 222.5, yMm: 118, wMm: 120, hMm: 8,  font: 'Parisienne', sizePt: 18, align: 'center', color: '#fbf8f6', letterSpacing: 0.01, rotate: 270, label: 'Spine — label', labelDe: 'Buchrücken — Text', placeholder: 'Our wedding', placeholderDe: 'Unsere Hochzeit', maxLength: 60 },
     ]
   },
 
@@ -235,16 +235,24 @@ window.TENDER_DATA = {
       orderFormMeta: {
         introFields: true,
         heading: 'Your day',
+        headingDe: 'Ihr Tag',
         fields: [
-          { key: 'date',  label: 'Wedding date',  placeholder: 'June 14th, 2026' },
-          { key: 'place', label: 'Place',         placeholder: 'Vienna, Austria' },
-          { key: 'bride', label: "One name",      placeholder: 'Anna' },
-          { key: 'groom', label: 'Partner name',  placeholder: 'Michael' },
+          { key: 'date',  label: 'Wedding date',  labelDe: 'Hochzeitsdatum',    placeholder: 'June 14th, 2026',  placeholderDe: '14. Juni 2026' },
+          { key: 'place', label: 'Place',         labelDe: 'Ort',               placeholder: 'Vienna, Austria',  placeholderDe: 'Wien, Österreich' },
+          { key: 'bride', label: "One name",      labelDe: 'Ein Name',          placeholder: 'Anna',             placeholderDe: 'Anna' },
+          { key: 'groom', label: 'Partner name',  labelDe: 'Name des Partners', placeholder: 'Michael',          placeholderDe: 'Michael' },
         ],
         hint: 'A few details about your day. We weave these into a short opening on the intro page.',
+        hintDe: 'Ein paar Angaben zu Ihrem Hochzeitstag. Daraus schreiben wir einen kurzen Text für die Eröffnungsseite.',
         // Composes the customer's fields into the opening block. Staff can refine the
         // wording in the engine afterwards (like the Newborn intro / Wander itinerary).
-        compose: (v) => `We said "I do"\non ${v.date},\nin ${v.place}.\n\n${v.bride} & ${v.groom}`
+        compose: (v) => `We said "I do"\non ${v.date},\nin ${v.place}.\n\n${v.bride} & ${v.groom}`,
+        // German is Xenia's authored book text, verbatim from
+        // `FP Spread 0 Intro/Intro Page_Text_DE.txt` — not a translation of the
+        // English. Do not "improve" it here. Note it is not a token-swap of the
+        // English line: German puts the verb at the end, so the whole sentence
+        // reorders around the date and place, and the date takes no comma.
+        composeDe: (v) => `Am ${v.date}\nin ${v.place}\nhaben wir Ja zueinander gesagt.\n\n${v.bride} & ${v.groom}`
       },
       pages: {
         right: {
@@ -261,15 +269,17 @@ window.TENDER_DATA = {
     // ── FPstory — Our story (optional full spread: left square photo / right text panel) ──
     FPstory: {
       type: 'functional', id: 'FPstory', label: 'Our story',
-      orderFormPhoto: { pool: 'story', count: 1, label: 'Our story photo', hint: 'One photo for the Our-story spread.' },
+      orderFormPhoto: { pool: 'story', count: 1, label: 'Our story photo', labelDe: 'Foto für „Unsere Geschichte“', hint: 'One photo for the Our-story spread.', hintDe: 'Ein Foto für die Doppelseite „Unsere Geschichte“.' },
       orderFormMeta: {
         introFields: true,            // same mechanic as the intro: labelled fields → composed block
         heading: 'Our story',
+        headingDe: 'Unsere Geschichte',
         fields: [
-          { key: 'meet',    label: 'How you met',             placeholder: 'Through work and mutual friends…' },
-          { key: 'started', label: 'How your relationship started', placeholder: 'A simple hello that became coffee, long walks…' },
+          { key: 'meet',    label: 'How you met',             labelDe: 'Wie Sie sich kennengelernt haben', placeholder: 'Through work and mutual friends…', placeholderDe: 'Über die Arbeit und gemeinsame Freunde …' },
+          { key: 'started', label: 'How your relationship started', labelDe: 'Wie Ihre Beziehung begonnen hat', placeholder: 'A simple hello that became coffee, long walks…', placeholderDe: 'Ein einfaches Hallo, daraus wurden Kaffee und lange Spaziergänge …' },
         ],
         hint: 'Tell us how you met. We shape it into the Our-story page and polish the wording.',
+        hintDe: 'Erzählen Sie uns, wie Sie sich kennengelernt haben. Wir formen daraus die Seite „Unsere Geschichte“ und feilen an der Formulierung.',
         compose: (v) => `${v.meet}\n\n${v.started}`
       },
       pages: {
@@ -292,14 +302,16 @@ window.TENDER_DATA = {
     // ── FPwords — Words (optional full spread: left FULL-BLEED photo / right text panel) ──
     FPwords: {
       type: 'functional', id: 'FPwords', label: 'Words',
-      orderFormPhoto: { pool: 'words', count: 1, label: 'Words photo', hint: 'One full-bleed photo for the Words spread.' },
+      orderFormPhoto: { pool: 'words', count: 1, label: 'Words photo', labelDe: 'Foto für „Worte“', hint: 'One full-bleed photo for the Words spread.', hintDe: 'Ein randloses Foto für die Doppelseite „Worte“.' },
       orderFormMeta: {
         introFields: true,            // same mechanic as the intro: labelled fields → composed block
         heading: 'Words',
+        headingDe: 'Worte',
         fields: [
-          { key: 'words', label: 'Vows, toasts or wishes', placeholder: 'A line or two you want to keep.' },
+          { key: 'words', label: 'Vows, toasts or wishes', labelDe: 'Eheversprechen, Reden oder Wünsche', placeholder: 'A line or two you want to keep.', placeholderDe: 'Ein oder zwei Sätze, die bleiben sollen.' },
         ],
         hint: 'A few words: vows, a toast, a wish. We set them on the Words page.',
+        hintDe: 'Ein paar Worte: das Eheversprechen, eine Rede, ein Wunsch. Wir setzen sie auf die Seite „Worte“.',
         compose: (v) => v.words
       },
       pages: {

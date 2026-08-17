@@ -52,12 +52,12 @@ window.PAPERCUT_DATA = {
       // the year on the left and the name on the right. Swapped the GEOMETRY between the
       // two rows rather than the keys, so any caption text already saved against
       // 'name'/'year' stays with the right field.
-      { key: 'name',      xMm: 301, yMm: 180, wMm: 120, font: 'Source Sans 3', sizePt: 26, weight: 700, align: 'center',  color: '#4a4b40', label: 'Front — album name', placeholder: 'Our sweet Ann', maxLength: 60 },
-      { key: 'year',      xMm: 390, yMm: 180, wMm: 60,  font: 'Source Sans 3', sizePt: 28, weight: 400, align: 'center', color: '#4a4b40', label: 'Front — year',       placeholder: '2026',          maxLength: 10 },
+      { key: 'name',      xMm: 301, yMm: 180, wMm: 120, font: 'Source Sans 3', sizePt: 26, weight: 700, align: 'center',  color: '#4a4b40', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Our sweet Ann', placeholderDe: 'Unsere süße Ann', maxLength: 60 },
+      { key: 'year',      xMm: 390, yMm: 180, wMm: 60,  font: 'Source Sans 3', sizePt: 28, weight: 400, align: 'center', color: '#4a4b40', label: 'Front — year',       labelDe: 'Vorderseite — Jahr', placeholder: '2026', placeholderDe: '2026',          maxLength: 10 },
       // Spine order corrected S154: the artboard puts the NAME at the top of the spine
       // and the YEAR below it; the y values were the wrong way round. Swapped yMm only.
-      { key: 'spineName', xMm: 222.5, yMm: 78,  wMm: 98,  font: 'Source Sans 3', sizePt: 16, weight: 400, color: '#4a4b40', rotate: 270, label: 'Spine — name', placeholder: 'Ann',  maxLength: 20 },
-      { key: 'spineYear', xMm: 222.5, yMm: 158, wMm: 38,  font: 'Source Sans 3', sizePt: 16, weight: 400, color: '#4a4b40', rotate: 270, label: 'Spine — year', placeholder: '2026', maxLength: 10 },
+      { key: 'spineName', xMm: 222.5, yMm: 78,  wMm: 98,  font: 'Source Sans 3', sizePt: 16, weight: 400, color: '#4a4b40', rotate: 270, label: 'Spine — name', labelDe: 'Buchrücken — Name', placeholder: 'Ann', placeholderDe: 'Ann',  maxLength: 20 },
+      { key: 'spineYear', xMm: 222.5, yMm: 158, wMm: 38,  font: 'Source Sans 3', sizePt: 16, weight: 400, color: '#4a4b40', rotate: 270, label: 'Spine — year', labelDe: 'Buchrücken — Jahr', placeholder: '2026', placeholderDe: '2026', maxLength: 10 },
     ]
   },
 
@@ -339,8 +339,8 @@ window.PAPERCUT_DATA = {
     },
 
     FP1: {
-      orderFormPhoto: { count: 1, hint: 'A photo of the birthday child for the centrepiece of the birthday page.' },
-      orderFormMeta: { textPrompt: 'Birthday wishes', hint: 'A short message or poem for the birthday page.', placeholder: 'e.g. Happy first birthday, Leo! We love you to the moon and back.' },
+      orderFormPhoto: { count: 1, hint: 'A photo of the birthday child for the centrepiece of the birthday page.', hintDe: 'Ein Foto des Geburtstagskinds für die Mitte der Geburtstagsseite.' },
+      orderFormMeta: { textPrompt: 'Birthday wishes', textPromptDe: 'Geburtstagswünsche', hint: 'A short message or poem for the birthday page.', hintDe: 'Eine kurze Botschaft oder ein Gedicht für die Geburtstagsseite.', placeholder: 'e.g. Happy first birthday, Leo! We love you to the moon and back.', placeholderDe: 'z. B. Alles Liebe zum ersten Geburtstag, Leo! Wir lieben dich bis zum Mond und zurück.' },
       type: 'functional', id: 'FP1', label: 'Birthday wishes', textLeft: true,
       overlayAbovePhotos: true,
       pages: {
@@ -390,8 +390,8 @@ window.PAPERCUT_DATA = {
     },
 
     FP3: {
-      orderFormPhoto: { count: 1, hint: 'A photo of the favourite toy for the left page, with a caption.' },
-      orderFormMeta: { textPrompt: 'Caption', hint: 'Name the toy and add a word or two about it.', placeholder: 'e.g. Bunny — Leo\'s constant companion since day one.' },
+      orderFormPhoto: { count: 1, hint: 'A photo of the favourite toy for the left page, with a caption.', hintDe: 'Ein Foto des Lieblingsspielzeugs für die linke Seite, mit Bildtext.' },
+      orderFormMeta: { textPrompt: 'Caption', textPromptDe: 'Bildtext', hint: 'Name the toy and add a word or two about it.', hintDe: 'Nennen Sie das Spielzeug und schreiben Sie ein paar Worte dazu.', placeholder: 'e.g. Bunny — Leo\'s constant companion since day one.', placeholderDe: 'z. B. Hase — Leos treuer Begleiter von Tag eins.' },
       type: 'functional', id: 'FP3', label: 'Favourite toy', specialLeft: true,
       overlayAbovePhotos: true,
       pages: {
@@ -431,8 +431,8 @@ window.PAPERCUT_DATA = {
     },
 
     FP4: {
-      orderFormPhoto: { count: 1, hint: 'A photo of those first steps for the left page, with a caption.' },
-      orderFormMeta: { textPrompt: 'Caption', hint: 'A short note about the moment.', placeholder: 'e.g. First wobbly steps — 14 March 2024, at home in the kitchen.' },
+      orderFormPhoto: { count: 1, hint: 'A photo of those first steps for the left page, with a caption.', hintDe: 'Ein Foto der ersten Schritte für die linke Seite, mit Bildtext.' },
+      orderFormMeta: { textPrompt: 'Caption', textPromptDe: 'Bildtext', hint: 'A short note about the moment.', hintDe: 'Eine kurze Notiz zu diesem Moment.', placeholder: 'e.g. First wobbly steps — 14 March 2024, at home in the kitchen.', placeholderDe: 'z. B. Erste wackelige Schritte — 14. März 2024, zu Hause in der Küche.' },
       type: 'functional', id: 'FP4', label: 'First steps', specialLeft: true,
       overlayAbovePhotos: false,
       pages: {
@@ -472,8 +472,8 @@ window.PAPERCUT_DATA = {
     },
 
     FP5: {
-      orderFormPhoto: { count: 2, hint: 'Two pieces of artwork, one per page. Scan or photograph them flat on a surface.' },
-      orderFormMeta: { count: 2, labels: ['Left page caption', 'Right page caption'], placeholder: 'e.g. Autumn leaves, October 2024' },
+      orderFormPhoto: { count: 2, hint: 'Two pieces of artwork, one per page. Scan or photograph them flat on a surface.', hintDe: 'Zwei Kunstwerke, eines pro Seite. Flach auf einer Fläche scannen oder fotografieren.' },
+      orderFormMeta: { count: 2, labels: ['Left page caption', 'Right page caption'], labelsDe: ['Bildtext linke Seite', 'Bildtext rechte Seite'], placeholder: 'e.g. Autumn leaves, October 2024', placeholderDe: 'z. B. Herbstblätter, Oktober 2024' },
       type: 'functional', id: 'FP5', label: 'Art-Gallery', allArtwork: true,
       overlayAbovePhotos: true,
       pages: {

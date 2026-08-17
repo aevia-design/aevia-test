@@ -95,9 +95,9 @@ window.LAGUNA_DATA = {
     // and Joyride), so her 100 becomes wMm, and hMm stays under the 10mm spine band.
     // Getting that backwards would put a 100mm-wide box across a 10mm spine.
     captions: [
-      { key: 'front',    xMm: 328,   yMm: 180, wMm: 100, hMm: 12, font: 'Fredoka', sizePt: 30, style: 'bold',   align: 'center', color: '#ffffff', label: 'Front — album name', placeholder: 'Greece, 2026',                 maxLength: 60 },
-      { key: 'frontSub', xMm: 328,   yMm: 193, wMm: 100, hMm: 6,  font: 'Mulish',  sizePt: 18, style: 'medium', align: 'center', color: '#ffffff', label: 'Front — subtitle',   placeholder: 'Where everything slowed down', maxLength: 100 },
-      { key: 'spine',    xMm: 223,   yMm: 118, wMm: 100, hMm: 8,  font: 'Fredoka', sizePt: 16, style: 'bold',   align: 'center', color: '#ffffff', rotate: 270, label: 'Spine — album name', placeholder: 'Greece, 2026',    maxLength: 60 },
+      { key: 'front',    xMm: 328,   yMm: 180, wMm: 100, hMm: 12, font: 'Fredoka', sizePt: 30, style: 'bold',   align: 'center', color: '#ffffff', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Greece, 2026', placeholderDe: 'Griechenland, 2026',                 maxLength: 60 },
+      { key: 'frontSub', xMm: 328,   yMm: 193, wMm: 100, hMm: 6,  font: 'Mulish',  sizePt: 18, style: 'medium', align: 'center', color: '#ffffff', label: 'Front — subtitle',   labelDe: 'Vorderseite — Untertitel', placeholder: 'Where everything slowed down', placeholderDe: 'Wo alles langsamer wurde', maxLength: 100 },
+      { key: 'spine',    xMm: 223,   yMm: 118, wMm: 100, hMm: 8,  font: 'Fredoka', sizePt: 16, style: 'bold',   align: 'center', color: '#ffffff', rotate: 270, label: 'Spine — album name', labelDe: 'Buchrücken — Albumname', placeholder: 'Greece, 2026', placeholderDe: 'Griechenland, 2026',    maxLength: 60 },
     ]
   },
 
@@ -422,12 +422,14 @@ window.LAGUNA_DATA = {
       orderFormMeta: {
         introFields: true,
         heading: 'Your trip',
+        headingDe: 'Ihre Reise',
         fields: [
-          { key: 'place', label: 'Where you went',            placeholder: 'Greece' },
-          { key: 'when',  label: 'When',                      placeholder: 'August, 2026' },
-          { key: 'line',  label: 'A line to remember it by',  placeholder: 'Where everything slowed down.' },
+          { key: 'place', label: 'Where you went',            labelDe: 'Wohin es ging',       placeholder: 'Greece',                        placeholderDe: 'Griechenland' },
+          { key: 'when',  label: 'When',                      labelDe: 'Wann',                placeholder: 'August, 2026',                  placeholderDe: 'August 2026' },
+          { key: 'line',  label: 'A line to remember it by',  labelDe: 'Ein Satz, der bleibt', placeholder: 'Where everything slowed down.', placeholderDe: 'Wo alles langsamer wurde.' },
         ],
         hint: 'A few details about the trip. We set them on the opening page.',
+        hintDe: 'Ein paar Angaben zur Reise. Wir setzen sie auf die Eröffnungsseite.',
         compose: (v) => `${v.line}\n\n${v.place}, ${v.when}`
       },
       pages: {
@@ -452,7 +454,7 @@ window.LAGUNA_DATA = {
     //   the same projection, so the pin table is shared rather than duplicated.
     FP1: {
       orderFormPhoto: null,
-      orderFormMeta: { countrySelect: true, sameRegionOnly: true, textPrompt: 'Your route', hint: 'List the places on your trip, in order, and we\'ll lay out the itinerary for you.', placeholder: 'e.g. Athens → Naxos → Paros → Milos' },
+      orderFormMeta: { countrySelect: true, sameRegionOnly: true, textPrompt: 'Your route', textPromptDe: 'Ihre Route', hint: 'List the places on your trip, in order, and we\'ll lay out the itinerary for you.', hintDe: 'Listen Sie die Orte Ihrer Reise der Reihe nach auf, wir setzen daraus die Reiseroute.', placeholder: 'e.g. Athens → Naxos → Paros → Milos', placeholderDe: 'z. B. Athen → Naxos → Paros → Milos' },
       type: 'functional', id: 'FP1', label: 'Travel map', mapPage: true,
       pin: { png: 'FP Travel Itinerary/Location pin/Asset 501.png', wMm: 12, hMm: 22.3, anchor: 'center' },
       // region code (from mapCoordinates) → left-page map PNG.

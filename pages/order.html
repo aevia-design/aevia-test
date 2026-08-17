@@ -2493,8 +2493,11 @@ async function submitOrder() {
         vals[f.key] = (document.getElementById(`intro-${a.slug}-${f.key}`) || {}).value?.trim() || '';
       });
       // Per-spread composer if the template provides one (Tender intro/story/words);
-      // else the Newborn birth-story default.
-      const block = (textMeta.compose || composeIntroBlock)(vals);
+      // else the Newborn birth-story default. `composeDe` is the German twin of
+      // `compose`, same fallback rule as tdText: no German means English.
+      const composer = (ORDER.language === 'de' && textMeta.composeDe)
+        || textMeta.compose || composeIntroBlock;
+      const block = composer(vals);
       if (block) {
         fpTexts[a.slug] = block;
         addonNoteLines.push(`${a.name}: ${block.replace(/\n/g, ' · ')}`);

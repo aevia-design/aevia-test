@@ -145,8 +145,8 @@ window.HEIRLOOM_BLUE_DATA = {
     // rotated 270 (CSV box 6w×70h → wMm 70 / hMm 6, same swap Tender's data makes).
     // Back-cover monogram letters live in monograms[*].backLetters, not here.
     captions: [
-      { key: 'name',  xMm: 327, yMm: 183, wMm: 100, hMm: 30, font: 'IM FELL English', sizePt: 50, align: 'center', color: '#3d3d4f', letterSpacing: 0.01, label: 'Front — names', placeholder: 'ANNA & MICHAEL', maxLength: 100 },
-      { key: 'spine', xMm: 223, yMm: 118, wMm: 70,  hMm: 6,  font: 'IM FELL English', sizePt: 16, align: 'center', color: '#3d3d4f', letterSpacing: 0.01, rotate: 270, label: 'Spine — label', placeholder: 'Anna & Michael', maxLength: 100 },
+      { key: 'name',  xMm: 327, yMm: 183, wMm: 100, hMm: 30, font: 'IM FELL English', sizePt: 50, align: 'center', color: '#3d3d4f', letterSpacing: 0.01, label: 'Front — names', labelDe: 'Vorderseite — Namen', placeholder: 'ANNA & MICHAEL', placeholderDe: 'ANNA & MICHAEL', maxLength: 100 },
+      { key: 'spine', xMm: 223, yMm: 118, wMm: 70,  hMm: 6,  font: 'IM FELL English', sizePt: 16, align: 'center', color: '#3d3d4f', letterSpacing: 0.01, rotate: 270, label: 'Spine — label', labelDe: 'Buchrücken — Text', placeholder: 'Anna & Michael', placeholderDe: 'Anna & Michael', maxLength: 100 },
     ]
   },
 
@@ -293,21 +293,26 @@ window.HEIRLOOM_BLUE_DATA = {
       orderFormMeta: {
         introFields: true,
         heading: 'Your day',
+        headingDe: 'Ihr Tag',
         fields: [
-          { key: 'date',  label: 'Wedding date', placeholder: 'June 14th, 2026' },
-          { key: 'place', label: 'Place',        placeholder: 'Vienna, Austria' },
-          { key: 'bride', label: 'One name',     placeholder: 'Anna' },
-          { key: 'groom', label: 'Partner name', placeholder: 'Michael' },
+          { key: 'date',  label: 'Wedding date', labelDe: 'Hochzeitsdatum',    placeholder: 'June 14th, 2026', placeholderDe: '14. Juni 2026' },
+          { key: 'place', label: 'Place',        labelDe: 'Ort',               placeholder: 'Vienna, Austria', placeholderDe: 'Wien, Österreich' },
+          { key: 'bride', label: 'One name',     labelDe: 'Ein Name',          placeholder: 'Anna',            placeholderDe: 'Anna' },
+          { key: 'groom', label: 'Partner name', labelDe: 'Name des Partners', placeholder: 'Michael',         placeholderDe: 'Michael' },
         ],
         // The two monogram initials are the first letters of these two fields — the
         // customer never types them separately. Order of keys = order of letters.
         initialsFrom: ['bride', 'groom'],
         hint: 'A few details about your day. We weave these into a short opening on the intro page, beside your family monogram.',
+        hintDe: 'Ein paar Angaben zu Ihrem Hochzeitstag. Daraus schreiben wir einen kurzen Text für die Eröffnungsseite, neben Ihrem Familienmonogramm.',
         // Canonical intro copy — assets/Template_Heirloom/Intro Page_Text.txt. Only the
         // four bracketed fields vary; the rest of the passage is fixed house copy.
         compose: (v) => `On ${v.date},\nin ${v.place},\nwe said “I do.”\n\n`
           + `Surrounded by the people we love,\nwe promised to choose each other\ntoday and always.\n\n`
-          + `The beginning of our forever.\n\n${v.bride} & ${v.groom}`
+          + `The beginning of our forever.\n\n${v.bride} & ${v.groom}`,
+        composeDe: (v) => `Am ${v.date}\nin ${v.place}\nhaben wir Ja zueinander gesagt.\n\n`
+          + `Umgeben von den Menschen, die wir lieben,\nhaben wir uns versprochen,\nuns jeden Tag füreinander zu entscheiden.\n\n`
+          + `Der Anfang von für immer.\n\n${v.bride} & ${v.groom}`
       },
       pages: {
         right: {
@@ -326,15 +331,17 @@ window.HEIRLOOM_BLUE_DATA = {
     // ── FPstory — Our story (optional full spread: left square photo / right text panel) ──
     FPstory: {
       type: 'functional', id: 'FPstory', label: 'Our story',
-      orderFormPhoto: { pool: 'story', count: 1, label: 'Our story photo', hint: 'One photo for the Our-story spread.' },
+      orderFormPhoto: { pool: 'story', count: 1, label: 'Our story photo', labelDe: 'Foto für „Unsere Geschichte“', hint: 'One photo for the Our-story spread.', hintDe: 'Ein Foto für die Doppelseite „Unsere Geschichte“.' },
       orderFormMeta: {
         introFields: true,
         heading: 'Our story',
+        headingDe: 'Unsere Geschichte',
         fields: [
-          { key: 'meet',    label: 'How you met',                  placeholder: 'Through work and mutual friends…' },
-          { key: 'started', label: 'How your relationship started', placeholder: 'A simple hello that became coffee, long walks…' },
+          { key: 'meet',    label: 'How you met',                  labelDe: 'Wie Sie sich kennengelernt haben', placeholder: 'Through work and mutual friends…', placeholderDe: 'Über die Arbeit und gemeinsame Freunde …' },
+          { key: 'started', label: 'How your relationship started', labelDe: 'Wie Ihre Beziehung begonnen hat', placeholder: 'A simple hello that became coffee, long walks…', placeholderDe: 'Ein einfaches Hallo, daraus wurden Kaffee und lange Spaziergänge …' },
         ],
         hint: 'Tell us how you met. We shape it into the Our-story page and polish the wording.',
+        hintDe: 'Erzählen Sie uns, wie Sie sich kennengelernt haben. Wir formen daraus die Seite „Unsere Geschichte“ und feilen an der Formulierung.',
         compose: (v) => `${v.meet}\n\n${v.started}`
       },
       pages: {
@@ -355,14 +362,16 @@ window.HEIRLOOM_BLUE_DATA = {
     FPhim: {
       type: 'functional', id: 'FPhim', label: 'Why I love him',
       addonGroup: 'whylove',
-      orderFormPhoto: { pool: 'him', count: 1, label: 'Why-I-love-him photo', hint: 'One full-bleed photo for the "Why I love him" spread.' },
+      orderFormPhoto: { pool: 'him', count: 1, label: 'Why-I-love-him photo', labelDe: 'Foto für „Warum ich ihn liebe“', hint: 'One full-bleed photo for the "Why I love him" spread.', hintDe: 'Ein randloses Foto für die Doppelseite „Warum ich ihn liebe“.' },
       orderFormMeta: {
         introFields: true,
         heading: 'Why I love him',
+        headingDe: 'Warum ich ihn liebe',
         fields: [
-          { key: 'whyhim', label: 'Why you love him', placeholder: 'The way he laughs at his own jokes…' },
+          { key: 'whyhim', label: 'Why you love him', labelDe: 'Warum Sie ihn lieben', placeholder: 'The way he laughs at his own jokes…', placeholderDe: 'Wie er über seine eigenen Witze lacht …' },
         ],
         hint: 'A few lines about him. We set them on the left page, facing your photo.',
+        hintDe: 'Ein paar Zeilen über ihn. Wir setzen die Worte auf die linke Seite, gegenüber Ihrem Foto.',
         compose: (v) => v.whyhim
       },
       pages: {
@@ -380,14 +389,16 @@ window.HEIRLOOM_BLUE_DATA = {
     FPher: {
       type: 'functional', id: 'FPher', label: 'Why I love her',
       addonGroup: 'whylove',
-      orderFormPhoto: { pool: 'her', count: 1, label: 'Why-I-love-her photo', hint: 'One full-bleed photo for the "Why I love her" spread.' },
+      orderFormPhoto: { pool: 'her', count: 1, label: 'Why-I-love-her photo', labelDe: 'Foto für „Warum ich sie liebe“', hint: 'One full-bleed photo for the "Why I love her" spread.', hintDe: 'Ein randloses Foto für die Doppelseite „Warum ich sie liebe“.' },
       orderFormMeta: {
         introFields: true,
         heading: 'Why I love her',
+        headingDe: 'Warum ich sie liebe',
         fields: [
-          { key: 'whyher', label: 'Why you love her', placeholder: 'The way she dances in the kitchen…' },
+          { key: 'whyher', label: 'Why you love her', labelDe: 'Warum Sie sie lieben', placeholder: 'The way she dances in the kitchen…', placeholderDe: 'Wie sie in der Küche tanzt …' },
         ],
         hint: 'A few lines about her. We set them on the left page, facing your photo.',
+        hintDe: 'Ein paar Zeilen über sie. Wir setzen die Worte auf die linke Seite, gegenüber Ihrem Foto.',
         compose: (v) => v.whyher
       },
       pages: {

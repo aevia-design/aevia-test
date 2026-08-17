@@ -77,10 +77,10 @@ window.JOYRIDE_DATA = {
     // 12pt; spine sub 16 chars in 35mm at Mulish 12pt; front sub ~24 chars in 40mm at
     // Mulish 20pt) — autoShrink is what makes the caps safe rather than a silent overflow.
     captions: [
-      { key: 'name',     xMm: 327,   yMm: 112, wMm: 50, hMm: 41, font: 'Lora',   sizePt: 28, style: 'regular', halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, label: 'Front — title',     placeholder: 'Hot Getaway in Milan', maxLength: 60 },
-      { key: 'subtitle', xMm: 327,   yMm: 140, wMm: 40, hMm: 8,  font: 'Mulish', sizePt: 20, style: 'light',   halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, label: 'Front — sub label',  placeholder: 'July, 2026', maxLength: 60 },
-      { key: 'spine',    xMm: 222.5, yMm: 61,  wMm: 60, hMm: 5,  font: 'Lora',   sizePt: 14, style: 'regular', halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, rotate: 270, label: 'Spine — label',     placeholder: 'Hot Getaway in Milan', maxLength: 60 },
-      { key: 'spineSub', xMm: 222.5, yMm: 193, wMm: 40, hMm: 5,  font: 'Mulish', sizePt: 14, style: 'light',   halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, rotate: 270, label: 'Spine — sub label', placeholder: 'July, 2026', maxLength: 60 },
+      { key: 'name',     xMm: 327,   yMm: 112, wMm: 50, hMm: 41, font: 'Lora',   sizePt: 28, style: 'regular', halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, label: 'Front — title',     labelDe: 'Vorderseite — Titel', placeholder: 'Hot Getaway in Milan', placeholderDe: 'Heiße Auszeit in Mailand', maxLength: 60 },
+      { key: 'subtitle', xMm: 327,   yMm: 140, wMm: 40, hMm: 8,  font: 'Mulish', sizePt: 20, style: 'light',   halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, label: 'Front — sub label',  labelDe: 'Vorderseite — Untertitel', placeholder: 'July, 2026', placeholderDe: 'Juli 2026', maxLength: 60 },
+      { key: 'spine',    xMm: 222.5, yMm: 61,  wMm: 60, hMm: 5,  font: 'Lora',   sizePt: 14, style: 'regular', halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, rotate: 270, label: 'Spine — label',     labelDe: 'Buchrücken — Text', placeholder: 'Hot Getaway in Milan', placeholderDe: 'Heiße Auszeit in Mailand', maxLength: 60 },
+      { key: 'spineSub', xMm: 222.5, yMm: 193, wMm: 40, hMm: 5,  font: 'Mulish', sizePt: 14, style: 'light',   halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, rotate: 270, label: 'Spine — sub label', labelDe: 'Buchrücken — Untertitel', placeholder: 'July, 2026', placeholderDe: 'Juli 2026', maxLength: 60 },
     ]
   },
 
@@ -290,12 +290,14 @@ window.JOYRIDE_DATA = {
       orderFormMeta: {
         introFields: true,
         heading: 'Your trip',
+        headingDe: 'Ihre Reise',
         fields: [
-          { key: 'place', label: 'Where you went',      placeholder: 'Milan' },
-          { key: 'when',  label: 'When',                placeholder: 'July, 2026' },
-          { key: 'line',  label: 'A line to remember it by', placeholder: 'Two days of sun, trains and gelato.' },
+          { key: 'place', label: 'Where you went',      labelDe: 'Wohin es ging',        placeholder: 'Milan',     placeholderDe: 'Mailand' },
+          { key: 'when',  label: 'When',                labelDe: 'Wann',                 placeholder: 'July, 2026', placeholderDe: 'Juli 2026' },
+          { key: 'line',  label: 'A line to remember it by', labelDe: 'Ein Satz, der bleibt', placeholder: 'Two days of sun, trains and gelato.', placeholderDe: 'Zwei Tage Sonne, Züge und Gelato.' },
         ],
         hint: 'A few details about the trip. We set them on the opening page.',
+        hintDe: 'Ein paar Angaben zur Reise. Wir setzen sie auf die Eröffnungsseite.',
         compose: (v) => `${v.line}\n\n${v.place}, ${v.when}`
       },
       pages: {
@@ -323,7 +325,7 @@ window.JOYRIDE_DATA = {
     //   — those are raster/vector art, not CSV-driven, so restyling them needs Xenia.
     FP1: {
       orderFormPhoto: null,
-      orderFormMeta: { countrySelect: true, sameRegionOnly: true, textPrompt: 'Your route', hint: 'List the places on your trip, in order, and we\'ll lay out the itinerary for you.', placeholder: 'e.g. Vienna → Hallstatt → Salzburg → Innsbruck' },
+      orderFormMeta: { countrySelect: true, sameRegionOnly: true, textPrompt: 'Your route', textPromptDe: 'Ihre Route', hint: 'List the places on your trip, in order, and we\'ll lay out the itinerary for you.', hintDe: 'Listen Sie die Orte Ihrer Reise der Reihe nach auf, wir setzen daraus die Reiseroute.', placeholder: 'e.g. Vienna → Hallstatt → Salzburg → Innsbruck', placeholderDe: 'z. B. Wien → Hallstatt → Salzburg → Innsbruck' },
       type: 'functional', id: 'FP1', label: 'Travel map', mapPage: true,
       pin: { png: 'FP Spread 1 - Special Files/GEO pin.png', wMm: 12, hMm: 23, anchor: 'center' },
       // region code (from mapCoordinates) → left-page map image
