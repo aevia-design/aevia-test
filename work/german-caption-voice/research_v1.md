@@ -15,6 +15,34 @@ read of the page — that distinction is recorded rather than smoothed over.
 
 ---
 
+## 0. Correction, added after owner review
+
+The owner read this note and rejected the sourcing, correctly: **sources [3] and [4] are
+professional journalism guidance and must not be the basis for a decision about lifestyle photobook
+captions.** §2 below says exactly that, and then §1 leaned on them anyway. Two consequences:
+
+1. **The removal of the Ein/Eine rule does not depend on them, and never did.** It rests on the
+   absence of any German authority treating a sentence-initial article as a defect, plus the fact
+   that the rule was invented by analogy with English. The burden of proof sat on the rule.
+   [3] and [4] are demoted to context; they are not evidence for how Aevia writes.
+2. **The replacement rule about fragments was re-grounded on in-genre evidence.** Aevia's own
+   authored German — Xenia's, the only lifestyle German we hold — has exactly two fragments:
+   *"Unser süßer kleiner Bub."* and *"Der Anfang von für immer."* Both are led by a determiner;
+   neither is a bare noun. That is better evidence than any journalism handbook, it is in the right
+   genre, and it is in the right brand voice. The guide now cites it instead.
+
+Also worth recording, because it cuts against our own rules: Xenia's Newborn labour page reads
+*"Willkommen auf der Welt, Nico!"* — **with an exclamation mark**, which both the English and German
+voice sections forbid. That is book text on a fixed page rather than a caption, so the two are not
+in direct conflict, but it is a reminder that her German is warmer than the caption rules allow and
+that the caption rules are ours, not hers.
+
+What no source anywhere supports either way: whether an Aevia German caption *should* open with
+"Ein/Eine". There is no in-brand example. If the owner wants that kept as a house preference it is a
+legitimate brand-voice choice — it just cannot be presented as a German style rule.
+
+---
+
 ## 1. Is there a German rule against opening with "Ein/Eine"?
 
 **No. Not for captions, and not in the sense the guide claimed.** I found no German style

@@ -196,17 +196,20 @@ zentrale Rolle", "besticht durch", "Experten betonen", "zeugt von", "Um dieses Z
 
 ## Rules that change from the English section
 
-- **The English rule against starting with "A" or "An" does NOT carry over. Articles are fine at
-  the start of a German caption.** German caption convention is the opposite of headline style —
-  it keeps its articles and conjunctions. What the English rule was really guarding against shows
-  up differently in German: see the next two rules.
-- **Cut an indefinite article that sits in front of an abstract noun and earns nothing.**
+- **The English rule against starting with "A" or "An" does NOT carry over. An article is fine at
+  the start of a German caption.** No German style authority treats a sentence-initial article as a
+  defect; that rule exists in English for reasons particular to English. What it was really
+  guarding against — the limp, stock opening — shows up in German as the next rule instead.
+- **Cut an indefinite article sitting in front of an abstract noun where it earns nothing.**
   "eine Stille zwischen ihnen" → "Stille zwischen ihnen". The test: does "eine Optimierung" mean
-  anything "Optimierung" does not? If not, drop it. This is the German form of the limp opening.
-- **A fragment has to be idiomatic, not just short.** German normally requires the article where
-  English can drop it, so an article-less German fragment turns telegraphic much faster than its
-  English equivalent. "Kein Netz, den ganzen Tag" works because that is how people speak.
-  Chopping words out of a full sentence to make it look like a caption does not.
+  anything that "Optimierung" does not? If not, drop it. This is a documented German rule and the
+  same fault as Nominalstil — the problem is the abstract noun, not the article in front of it.
+- **A fragment needs a determiner more often in German than in English.** Aevia's own authored
+  German fragments are "Unser süßer kleiner Bub." and "Der Anfang von für immer." — both led by a
+  determiner, neither one a bare noun. German normally carries the article where English can drop
+  it, so a bare-noun German fragment reads clipped rather than spare. "Kein Netz, den ganzen Tag"
+  works because that is how people actually speak; a full sentence with the words chopped out does
+  not.
 - **Do not end with a full stop**, same as English. Compose mode still ends sentences normally.
 - Use German quotation marks „ and “ if you need quotes at all.
 - **Avoid ß where you can choose.** Not an orthography rule — a printing one. One caption font in
