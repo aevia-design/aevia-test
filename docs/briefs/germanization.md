@@ -123,7 +123,7 @@ Add-on names in the summary bar come from the product page's URL params, not the
 
 *Gate: click "Buch erstellen" from a DE product page; complete the form in German; place a test order.*
 
-**Stage 5 — German captions. 🟡 HALF DONE S180 — the guide is written, nothing is wired.**
+**Stage 5 — German captions. ✅ DONE S182 — wired, deployed, and verified on a real order.**
 `language` param on `generateCaption`; German generation on standard spreads and German compose on
 Our story; verified against the S175 failing inputs translated to the DE context (no invention,
 ceiling only).
@@ -132,10 +132,25 @@ ceiling only).
   not two, so the function keeps loading one system prompt. Register derived from **Xenia's four
   authored `*_DE.txt` files**, not invented. Guarded by `tests/caption-voice-de.test.js` — the
   guide is a *prompt*, so it fails silently when edited.
-- **Not done:** passing `language` from the engine, restating the German rules in the **user**
-  message (S175's lesson: a section buried in a mostly-English manual loses to the weight of the
-  rest), deploying, and re-running the S175 invention cases in German. **Needs owner approval for
-  the OpenAI spend.**
+- **Done S182:** `language` param on `generateCaption` (absent reads `'en'`); both engine buttons
+  pass it from the existing `isGermanBook()`; German rules restated in the **user** message;
+  deployed; owner confirmed German captions working on a Newborn order.
+  - ⚠ **Prompt building lives in `functions/caption/prompts.js`, not inline in `index.js`** — it
+    was extracted so the German path is testable (`tests/caption-prompts.test.js`, 27 tests). A
+    prompt regresses **silently**; edit it and nothing throws.
+  - ⚠ **The English "no A/An" rule is deliberately NOT sent for a German book.** Research
+    withdrew it for German, so sending it pushed the model away from correct German.
+  - **A blocklist alone does not work.** First real output paraphrased around every banned string
+    ("So viel Freude in einem kleinen Moment" dodged "in diesem Moment") and fell back on generic
+    abstraction. What fixed it was a **positive rule ranked second, under no-invention: name
+    something actually in the photograph.** Do not demote it back into the prohibition list.
+  - **Compose mode needed two extra rules**, both found by running it: it silently **deleted** a
+    customer's detail ("an einem Dienstag"), and it dropped the final full stop because the
+    no-trailing-full-stop rule (a *caption* rule) beat the prose exception buried in the system
+    prompt. Deleting the customer's own specific is a distinct failure from inventing one.
+  - `functions/caption/caption.js --language de` is the local harness — same builders as the
+    deployed function, so it reproduces engine output without a deploy. It reads
+    `functions/.env` as a fallback, so the key is never copied to a second file.
 - ⚠ **Length is NOT calibrated, by decision (owner, S180):** captions are a staff support tool, so
   staff trim or regenerate. Keep a ceiling in the prompt; do not spend a session measuring it.
 - ⚠ **Xenia's predefined book verses are a DIFFERENT GENRE from captions** — the Newborn star-sign

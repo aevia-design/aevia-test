@@ -47,8 +47,8 @@ Brief (read before touching anything German): **`docs/briefs/germanization.md`**
 | 3 · PDF parity | ✅ code pushed — **still needs the Cloud Run redeploy** |
 | 4a · Order-form chrome | ✅ done S178 — `assets/js/order-strings.js` |
 | 4b · Per-template copy | ✅ **done S180, all eleven data files** |
-| 5 · German AI captions | 🟡 **guide written S180; wiring + deploy + spend not done** |
-| 6 · DE mockups + gallery swap + add-on names | ⬜ not started |
+| 5 · German AI captions | ✅ **done S182 — wired, deployed, verified on a Newborn order** |
+| 6 · DE mockups + gallery swap + add-on names | ⬜ not started — **the only unbuilt stage** |
 
 ### Facts worth carrying
 1. **The string table is the translation record** for the form's chrome (`order-strings.js`,
