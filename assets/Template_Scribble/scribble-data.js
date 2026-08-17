@@ -21,8 +21,8 @@ window.SCRIBBLE_DATA = {
     ],
     captions: [
       { key: 'year', xMm: 327, yMm: 43, wMm: 180, font: 'EB Garamond', sizePt: 33, align: 'center', color: '#493955', label: 'Front — year', labelDe: 'Vorderseite — Jahr', placeholder: '2026', placeholderDe: '2026', maxLength: 10 },
-      { key: 'name', xMm: 327, yMm: 193, wMm: 180, font: 'NT Somic', sizePt: 28, align: 'center', color: '#493955', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Our sweet Ann', placeholderDe: 'Unsere kleine Ann', maxLength: 60 },
-      { key: 'spineName', xMm: 222.5, yMm: 158, wMm: 130, font: 'NT Somic', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — name', labelDe: 'Buchrücken — Name', placeholder: 'Ann', placeholderDe: 'Ann', maxLength: 20 },
+      { key: 'name', xMm: 327, yMm: 193, wMm: 180, font: 'Onest', sizePt: 28, align: 'center', color: '#493955', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Our sweet Ann', placeholderDe: 'Unsere kleine Ann', maxLength: 60 },
+      { key: 'spineName', xMm: 222.5, yMm: 158, wMm: 130, font: 'Onest', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — name', labelDe: 'Buchrücken — Name', placeholder: 'Ann', placeholderDe: 'Ann', maxLength: 20 },
       { key: 'spineYear', xMm: 222.5, yMm: 78, wMm: 70, font: 'EB Garamond', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — year', labelDe: 'Buchrücken — Jahr', placeholder: '2026', placeholderDe: '2026', maxLength: 10 },
     ]
   },
@@ -31,12 +31,9 @@ window.SCRIBBLE_DATA = {
   fonts: { display: 'NT Comic', body: 'EB Garamond' },
   // Fonts offered in the caption toolbar for this template (values match COVER_FONTS
   // in the engine). FirstTimeWriting stays gated to the funny-words panel separately.
-  // ⚠ NT Somic has ä ö ü and é but NO ß (verified S180,
-  // `node scripts/check-font-glyphs.mjs`). It is this template's default caption
-  // font, so German text containing ß cannot be set in it — the placeholder above
-  // says "kleine" rather than "süße" for exactly that reason. The other two faces
-  // in this picker both carry ß, so staff have a fallback.
-  fontPicker: ['NT Somic', 'EB Garamond', 'FirstTimeWriting'],
+  // Onest (replaced NT Somic, S182) carries ä ö ü Ä Ö Ü ß — verified via
+  // `node scripts/check-font-glyphs.mjs` — closing the ß gap NT Somic had (TO-DOS #115).
+  fontPicker: ['Onest', 'EB Garamond', 'FirstTimeWriting'],
   colors: {
     plum:     '#493955',
     beige:    '#FDF1E5',
@@ -57,14 +54,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 0/SP 06 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 0/SP 06 V Right.svg',
             slots: [
-              { slot: 1, x: 85, y: 100, xBleed: 88, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 173, yMm: 43, wMm: 40, hMm: 40, halign: 'left', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 85, y: 100, xBleed: 88, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 173, yMm: 43, wMm: 40, hMm: 40, halign: 'left', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
         },
@@ -79,14 +76,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 1/SP 01 H Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 1/SP 01 V Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 90, xBleed: 98, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 98, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 95, y: 90, xBleed: 98, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 98, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
         },
@@ -177,14 +174,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 3/SP 06 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 3/SP 06 V Right.svg',
             slots: [
-              { slot: 1, x: 85, y: 100, xBleed: 88, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 173, yMm: 43, wMm: 40, hMm: 40, halign: 'left', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 85, y: 100, xBleed: 88, yBleed: 103, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 173, yMm: 43, wMm: 40, hMm: 40, halign: 'left', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
         },
@@ -217,14 +214,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#fdd16f',
             svg: 'SP Spread 4/SP 08 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#fdd16f',
             svg: 'SP Spread 4/SP 08 V Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 90, xBleed: 108, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 105, y: 90, xBleed: 108, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
         },
@@ -257,14 +254,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 5/SP 10 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 130, xBleed: 108, yBleed: 133, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 66.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 105, y: 130, xBleed: 108, yBleed: 133, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 66.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 5/SP 10 V Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 110, xBleed: 108, yBleed: 113, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 21.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 105, y: 110, xBleed: 108, yBleed: 113, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 21.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
         },
@@ -279,14 +276,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#ff8773',
             svg: 'SP Spread 6/SP 11 H Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 95, y: 100, xBleed: 98, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 98, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#ff8773',
             svg: 'SP Spread 6/SP 11 V Left.svg',
             slots: [
-              { slot: 1, x: 95, y: 90, xBleed: 98, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 98, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 95, y: 90, xBleed: 98, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 98, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
         },
@@ -295,14 +292,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'SP Spread 6/SP 12 H Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 105, y: 100, xBleed: 108, yBleed: 103, w: 150, h: 100, ratio: '3:2', caption: { allowed: true, xMm: 108, yMm: 169.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'SP Spread 6/SP 12 V Right.svg',
             slots: [
-              { slot: 1, x: 105, y: 90, xBleed: 108, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 105, y: 90, xBleed: 108, yBleed: 93, w: 120, h: 160, ratio: '3:4', caption: { allowed: true, xMm: 108, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
         },
@@ -319,7 +316,7 @@ window.SCRIBBLE_DATA = {
             bgColor: '#fdd16f',
             svg: 'FP Spread 1/FP Birthday 01 L.svg', svgDe: 'FP Spread 1/FP Birthday 01 L-DE.svg',
             slots: [],
-            textPanel: { caption: { allowed: true, xMm: 98, yMm: 113, wMm: 86, hMm: 140, halign: 'center', valign: 'center', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+            textPanel: { caption: { allowed: true, xMm: 98, yMm: 113, wMm: 86, hMm: 140, halign: 'center', valign: 'center', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
           },
         },
         right: {
@@ -368,14 +365,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#c16ac1',
             svg: 'FP Spread 3/FP Toy 05 H L.svg', svgDe: 'FP Spread 3/FP Toy 05 H L-DE.svg',
             slots: [
-              { slot: 1, x: 95, y: 130, xBleed: 98, yBleed: 133, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, xMm: 98, yMm: 63, wMm: 100, hMm: 20, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 95, y: 130, xBleed: 98, yBleed: 133, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, xMm: 98, yMm: 63, wMm: 100, hMm: 20, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#c16ac1',
             svg: 'FP Spread 3/FP Toy 05 V L.svg', svgDe: 'FP Spread 3/FP Toy 05 H L-DE.svg',
             slots: [
-              { slot: 1, x: 76, y: 115, xBleed: 79, yBleed: 118, w: 87, h: 130, ratio: '87:130', pool: 'special', caption: { allowed: true, xMm: 157.5, yMm: 73, wMm: 50, hMm: 40, halign: 'left', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 76, y: 115, xBleed: 79, yBleed: 118, w: 87, h: 130, ratio: '87:130', pool: 'special', caption: { allowed: true, xMm: 157.5, yMm: 73, wMm: 50, hMm: 40, halign: 'left', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
         },
@@ -408,14 +405,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'FP Spread 4/FP Steps 07 H L.svg', svgDe: 'FP Spread 4/FP Steps 07 H L-DE.svg',
             slots: [
-              { slot: 1, x: 95, y: 130, xBleed: 98, yBleed: 133, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, xMm: 98, yMm: 53, wMm: 100, hMm: 20, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 95, y: 130, xBleed: 98, yBleed: 133, w: 150, h: 100, ratio: '3:2', pool: 'special', caption: { allowed: true, xMm: 98, yMm: 53, wMm: 100, hMm: 20, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'FP Spread 4/FP Steps 07 V L.svg', svgDe: 'FP Spread 4/FP Steps 07 H L-DE.svg',
             slots: [
-              { slot: 1, x: 76, y: 115, xBleed: 79, yBleed: 118, w: 87, h: 130, ratio: '93:139', pool: 'special', caption: { allowed: true, xMm: 157.5, yMm: 163, wMm: 50, hMm: 40, halign: 'left', valign: 'bottom', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 76, y: 115, xBleed: 79, yBleed: 118, w: 87, h: 130, ratio: '93:139', pool: 'special', caption: { allowed: true, xMm: 157.5, yMm: 163, wMm: 50, hMm: 40, halign: 'left', valign: 'bottom', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
         },
@@ -424,14 +421,14 @@ window.SCRIBBLE_DATA = {
             bgColor: '#f8ead9',
             svg: 'FP Spread 4/FP Steps 08 H R.svg',
             slots: [
-              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', pool: 'regular', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 105, y: 70, xBleed: 108, yBleed: 73, w: 150, h: 100, ratio: '3:2', pool: 'regular', caption: { allowed: true, xMm: 108, yMm: 179.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
           V: {
             bgColor: '#f8ead9',
             svg: 'FP Spread 4/FP Steps 08 V R.svg',
             slots: [
-              { slot: 1, x: 105, y: 90, xBleed: 108, yBleed: 93, w: 120, h: 160, ratio: '3:4', pool: 'regular', caption: { allowed: true, xMm: 108, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'NT Somic', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
+              { slot: 1, x: 105, y: 90, xBleed: 108, yBleed: 93, w: 120, h: 160, ratio: '3:4', pool: 'regular', caption: { allowed: true, xMm: 108, yMm: 184.5, wMm: 100, hMm: 13, halign: 'center', valign: 'top', font: 'Onest', sizePt: 16, style: 'medium', letterSpacing: -0.02, lineSpacing: 1.28, color: '#493955' } }
             ]
           },
         },

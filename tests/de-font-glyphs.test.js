@@ -1,8 +1,10 @@
 // Can the font a string is printed in actually render that string? (S180)
 //
-// NT Somic — Scribble's default caption font — carries ä ö ü and é but NOT ß.
 // A missing glyph does not throw: the renderer substitutes another face or draws
 // nothing, so the failure surfaces as a printed book that looks subtly wrong.
+// NT Somic — Scribble's former default caption font — carried ä ö ü and é but
+// NOT ß; it was replaced by Onest (S182, TO-DOS #115), which has full coverage,
+// closing this table's only entry.
 //
 // `node scripts/check-font-glyphs.mjs` audits the font FILES. This test guards
 // the other half: that no German string we ship is set in a font that cannot
@@ -23,10 +25,9 @@ function loadTemplate(relPath, globalName) {
 }
 
 // Characters a font is known to lack, by family name as the data files spell it.
-// Extend this when check-font-glyphs.mjs reports a new gap.
-const MISSING_BY_FONT = {
-  'NT Somic': ['ß'],
-};
+// Extend this when check-font-glyphs.mjs reports a new gap. Empty since Onest
+// replaced NT Somic (S182) — no active font in any template's fontPicker has a gap.
+const MISSING_BY_FONT = {};
 
 const TEMPLATES = {
   Newborn:        ['assets/Template_Newborn/newborn-data.js',               'NEWBORN_DATA'],
@@ -64,10 +65,9 @@ describe('German text is only set in fonts that can render it', () => {
     expect(problems).toEqual([]);
   });
 
-  test('the known-gap table matches what the font files actually say', () => {
-    // Guards against the table drifting from reality after a font re-drop: if
-    // NT Somic ever gains ß, this fails and the table should lose the entry.
-    const file = path.join(ROOT, 'assets/fonts/NTSomic-Regular.ttf');
+  test('Onest (Scribble\'s default caption font) carries ä ö ü and ß', () => {
+    // Guards against a future font swap silently reintroducing the gap NT Somic had.
+    const file = path.join(ROOT, 'assets/fonts/Onest-Regular.ttf');
     const buf = fs.readFileSync(file);
     const numTables = buf.readUInt16BE(4);
     let cmapOff = null;
@@ -100,6 +100,6 @@ describe('German text is only set in fonts that can render it', () => {
 
     expect(has(0x00E4)).toBe(true);   // ä — present
     expect(has(0x00FC)).toBe(true);   // ü — present
-    expect(has(0x00DF)).toBe(false);  // ß — the gap this table records
+    expect(has(0x00DF)).toBe(true);   // ß — present (unlike NT Somic)
   });
 });

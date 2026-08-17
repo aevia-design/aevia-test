@@ -48,7 +48,7 @@ describe('cover caption fonts resolve to a registered cut', () => {
       expect(captions.length).toBeGreaterThan(0);
       const missing = [];
       for (const capDef of captions) {
-        const fontName = capDef.font || 'NT Somic';
+        const fontName = capDef.font || 'Onest';
         const style = coverCaptionStyle(capDef, {});
         if (!lookupFont(fontMapStub, fontName, style)) {
           missing.push(`${capDef.key} → ${fontName}_${style} (declared style: ${capDef.style ?? 'none'})`);

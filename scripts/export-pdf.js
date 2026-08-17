@@ -657,9 +657,9 @@ let   BLEED_PT;  // assigned in initializePrintConstants() — depends on lazy B
 const CAPTION_COLOR = rgb(0.12, 0.12, 0.12); // default near-black
 
 const FONT_FILE_MAP = {
-  'NT Somic_regular':          'NTSomic-Regular.ttf',
-  'NT Somic_medium':           'NTSomic-Medium.ttf',
-  'NT Somic_bold':             'NTSomic-Bold.ttf',
+  'Onest_regular':              'Onest-Regular.ttf',
+  'Onest_medium':                'Onest-Medium.ttf',
+  'Onest_bold':                  'Onest-Bold.ttf',
   'EB Garamond_regular':       'EBGaramond-Regular.ttf',
   'EB Garamond_italic':        'EBGaramond-Italic.ttf',
   'EB Garamond_semibold':      'EBGaramond-SemiBold.ttf',
@@ -1003,7 +1003,7 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
                 : halign === 'right' ? textXPt + boxWidthPt - textWidthPt
                 :                      textXPt + (boxWidthPt - textWidthPt) / 2; // center
       // Y position: start from top of box, advance by line height.
-      // 0.75 ≈ cap-height ratio for typical serif fonts (NT Somic, EB Garamond).
+      // 0.75 ≈ cap-height ratio for typical serif fonts (Onest, EB Garamond).
       // Converts font sizePt to the vertical distance from line-top to text baseline.
       const lineTopPt = textYPt + boxHeightPt - yOffsetPt - li * lineSpacingPt;
       const baselinePt = lineTopPt - sizePt * 0.75;
@@ -1446,7 +1446,7 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
     if (ov.weight !== undefined && typeof ov.weight !== 'number') {
       console.warn('cover caption override schema mismatch (weight should be numeric):', ov);
     }
-    const fontName = ov.font || capDef.font || 'NT Somic';
+    const fontName = ov.font || capDef.font || 'Onest';
     // Default weight/italic from the caption's own styling (capDef), not a hardcoded
     // 400/non-italic — so e.g. the Newborn Baskervville subtitle is italic 500 (→
     // mediumitalic) by default. User overrides (ov.*) still win. Mirrors the engine.
@@ -1530,7 +1530,7 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
       // heightAtSize. pdf-lib returns INVERTED ascent/descent for some fonts (e.g. Parisienne:
       // asc 8.05 / desc 16.47 — backwards), which flips this offset negative and shoves the
       // spine caption ~3mm off the band. fontkit reports correct metrics, and for every other
-      // spine font (Cormorant, Twinkle Star, NT Somic, EB Garamond) it yields the identical
+      // spine font (Cormorant, Twinkle Star, Onest, EB Garamond) it yields the identical
       // value pdf-lib already gave — so the shipped templates are unchanged.
       let spineOffsetPt;
       const fkFont = font.embedder && font.embedder.font;

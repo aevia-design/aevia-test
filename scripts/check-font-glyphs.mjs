@@ -5,7 +5,7 @@
 // not error — the renderer silently substitutes another face or draws nothing,
 // so a missing umlaut reaches the printed book looking like a design choice.
 // Several of our faces are decorative or handwriting fonts (Twinkle Star,
-// NT Somic, FirstTimeWriting), and those very often ship Latin-basic only.
+// FirstTimeWriting), and those very often ship Latin-basic only.
 //
 // Reads the TrueType/OpenType `cmap` table directly — no dependency. Formats 4
 // and 12 cover every font in the repo; anything else is reported as UNKNOWN

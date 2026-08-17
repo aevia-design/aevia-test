@@ -51,8 +51,8 @@ describe('caption-voice.md — German section', () => {
   });
 
   test('it records the ß printing constraint', () => {
-    // NT Somic has no ß glyph (tests/de-font-glyphs.test.js), and it is
-    // Scribble's default caption font.
+    // The ß rule stands regardless of font — Scribble's caption font was NT Somic
+    // (no ß glyph), now Onest (tests/de-font-glyphs.test.js).
     expect(GERMAN).toContain('ß');
     expect(GERMAN).toMatch(/never substitute "ss"/i);
   });
