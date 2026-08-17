@@ -244,15 +244,24 @@ window.TENDER_DATA = {
         ],
         hint: 'A few details about your day. We weave these into a short opening on the intro page.',
         hintDe: 'Ein paar Angaben zu Ihrem Hochzeitstag. Daraus schreiben wir einen kurzen Text für die Eröffnungsseite.',
-        // Composes the customer's fields into the opening block. Staff can refine the
-        // wording in the engine afterwards (like the Newborn intro / Wander itinerary).
-        compose: (v) => `We said "I do"\non ${v.date},\nin ${v.place}.\n\n${v.bride} & ${v.groom}`,
-        // German is Xenia's authored book text, verbatim from
-        // `FP Spread 0 Intro/Intro Page_Text_DE.txt` — not a translation of the
-        // English. Do not "improve" it here. Note it is not a token-swap of the
-        // English line: German puts the verb at the end, so the whole sentence
-        // reorders around the date and place, and the date takes no comma.
-        composeDe: (v) => `Am ${v.date}\nin ${v.place}\nhaben wir Ja zueinander gesagt.\n\n${v.bride} & ${v.groom}`
+        // ⚠ This is PRE-DEFINED BOOK TEXT, not generated copy. Both passages are
+        // Xenia's authored text verbatim from `FP Spread 0 Intro/Intro Page_Text.txt`
+        // and `Intro Page_Text_DE.txt`; only the four bracketed fields vary. The whole
+        // passage must print — it is never abridged to fit (owner, S182). Byte-identical
+        // to Heirloom's, because the two templates share the same authored wedding copy
+        // (verified by diff, S182) — change both together or neither.
+        // Until S182 this emitted only the first and last stanza, in BOTH languages, and
+        // reordered the English opening with straight quotes. The text box was too small
+        // to hold the full passage, so it was silently cropped; the box was grown instead
+        // (wMm/hMm below) and the type size Xenia set was kept.
+        compose: (v) => `On ${v.date},\nin ${v.place},\nwe said “I do.”\n\n`
+          + `Surrounded by the people we love,\nwe promised to choose each other\ntoday and always.\n\n`
+          + `The beginning of our forever.\n\n${v.bride} & ${v.groom}`,
+        // Not a token-swap of the English: German puts the verb at the end, so the
+        // sentence reorders around the date and place, and the date takes no comma.
+        composeDe: (v) => `Am ${v.date}\nin ${v.place}\nhaben wir Ja zueinander gesagt.\n\n`
+          + `Umgeben von den Menschen, die wir lieben,\nhaben wir uns versprochen,\nuns jeden Tag füreinander zu entscheiden.\n\n`
+          + `Der Anfang von für immer.\n\n${v.bride} & ${v.groom}`
       },
       pages: {
         right: {
@@ -260,7 +269,18 @@ window.TENDER_DATA = {
             bgColor: '#fbf8f6',
             svg: 'FP Spread 0 Intro/FP 01 Intro.svg',
             slots: [],
-            textPanel: { introFields: true, caption: { allowed: true, xMm: 108, yMm: 103, wMm: 110, hMm: 100, halign: 'center', valign: 'center', font: 'Parisienne', sizePt: 22, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#7c746e' } }
+            // Box grown 110×100 → 132×140mm (S182) so the FULL authored passage fits at
+            // Xenia's 22pt — it did not fit before and the text was cropped instead.
+            // The type size is unchanged.
+            // ⚠ 132mm is not arbitrary. The longest German line, "Umgeben von den
+            // Menschen, die wir lieben,", measures 130.3mm at 22pt Parisienne including
+            // letter-spacing; at 130mm it wrapped and left "lieben," as a widow. 132mm
+            // sets every authored line on its own line, in both languages, as written.
+            // The floral frame's clear interior is 136.8mm (measured off the artwork),
+            // so this leaves ~2.4mm each side — do not widen further.
+            // xMm/yMm are the frame's optical centre (its clear area centres on
+            // 108.4 / 102.9mm) — do not move them.
+            textPanel: { introFields: true, caption: { allowed: true, xMm: 108, yMm: 103, wMm: 132, hMm: 140, halign: 'center', valign: 'center', font: 'Parisienne', sizePt: 22, style: 'regular', letterSpacing: 0.01, lineSpacing: 1.28, color: '#7c746e' } }
           },
         },
       }
