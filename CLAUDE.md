@@ -78,15 +78,24 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     its `collection` to the engine registry (kids / travel / love) or it silently reads as kids.
   - **`germanization.md` — the DE/EN book-language build (S177). Read before touching the
     product-page selector, `svgDe`, the order form's language, or German captions.** Six
-    stages, gated so the owner tests each; **0–4a are DONE** (choice → Firestore → both engines
-    → PDF → order-form chrome), **4b is part-done** (Newborn only, ten templates left), 5–6 are
-    not started. **The form's copy lives in `assets/js/order-strings.js`** as `{ en, de }` pairs
+    stages, gated so the owner tests each; **0–5 are DONE** (choice → Firestore → both engines
+    → PDF → order-form chrome → per-template copy → German AI captions), **Stage 6 is the only
+    unbuilt one** (DE mockups, product-page gallery swap, add-on names).
+    **The form's copy lives in `assets/js/order-strings.js`** as `{ en, de }` pairs
     and is the single source of truth for BOTH languages — the page reads its English from it
     too, so **never add a separate translation document** (owner, S178). Per-template copy stays
     in the data files as `labelDe` / `placeholderDe` / `hintDe` / `copyDe`, resolved by
     `tdText()`. ⚠ **Check for a `*_DE.txt` beside the artwork before writing German for a
     template** — four exist (Newborn ×2, Heirloom, Tender) and are **authored book text that
-    overrides invented German**. Settled and not to be re-raised: **one switch drives
+    overrides invented German**.
+    ⚠⚠ **Intro pages print PRE-DEFINED book copy, and the WHOLE passage must print.** The
+    customer's answers only fill the bracketed slots; the text is never abridged to fit a box
+    (owner, S182). If it does not fit, **grow the box — never shrink Xenia's type or trim her
+    words**. Tender printed two of four stanzas in BOTH languages until S182 because its panel
+    was too small. `tests/authored-book-text.test.js` now compares composer output against the
+    `.txt` documents for Tender and all four Heirloom colourways; Tender and Heirloom share
+    byte-identical source documents, so **change both composers together or neither**.
+    Settled and not to be re-raised: **one switch drives
     everything**; the choice is made on the **product page regardless of site half**; the order
     form gets a **string table, not a `de/order.html` fork** (supersedes TO-DOS #101's framing);
     captions are written **natively in German**. Three invariants: **absent `language` reads as
@@ -140,8 +149,11 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 - **Fonts are machine-checked for German**: `node scripts/check-font-glyphs.mjs` reads each
   TrueType `cmap` directly and audits every family the data files name for ä ö ü Ä Ö Ü ß plus the
   German quote marks. **Run it on any font drop** — a missing glyph does not throw, it draws
-  nothing or substitutes another face, so it reaches the printed book (S180). One known gap:
-  **NT Somic has no ß**, and it is Scribble's default caption font → TO-DOS #115.
+  nothing or substitutes another face, so it reaches the printed book (S180). **Every face now
+  passes** — the one known gap (NT Somic had no ß) closed in S182 when Scribble's caption font
+  became **Onest**, so `caption-voice.md`'s German section now *requires* correct ß orthography
+  rather than avoiding the letter. ⚠ **A font swap changes text metrics**: Scribble wraps
+  differently since S182 and no Scribble page has been PDF'd since.
   `tests/de-font-glyphs.test.js` guards that no German string we ship uses a character its own font
   lacks, and that the known-gap table still matches the font file.
 - **Heirloom letter geometry is machine-checked**: `node scripts/check-heirloom-letters.mjs`
