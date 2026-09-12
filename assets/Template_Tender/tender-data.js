@@ -49,35 +49,35 @@ window.TENDER_DATA = {
       // Spine bgColor must match the SVG's own spine rect (#8a817a, dark taupe) — since the
       // page-count spine change (S152) the engine's gradient paints the spine band instead of
       // the SVG strip, so a mismatch here changes the visible spine colour.
-      spine: { xMm: 200, wMm: 9,   bgColor: '#8a817a' },
-      front: { xMm: 209, wMm: 200, bgColor: '#fbf8f6' },
+      spine: { xMm: 200, wMm: 10,  bgColor: '#8a817a' },
+      front: { xMm: 210, wMm: 200, bgColor: '#fbf8f6' },
     },
     // Spine width the cover artwork + coordinates were authored against (mm). The engine
     // shifts front-panel items by (actual spine − this) when page count changes the spine.
-    referenceSpineMm: 9,
+    referenceSpineMm: 10,
     mockupEdges: { front: '#fbf8f6', spine: '#fbf8f6', back: '#fbf8f6' },
     // Cover coords are WITH-BLEED (18mm) and box-CENTRE; the render subtracts COVER_BLEED_MM.
     // The cover photo is clipped to clipShapes.coverFrame (the elliptical opening).
     slots: [
-      { key: 'cover', xMm: 327, yMm: 103, wMm: 150, hMm: 100, pool: 'cover', orientation: 'landscape', clipShape: 'coverFrame' }
+      { key: 'cover', xMm: 333, yMm: 103, wMm: 150, hMm: 100, pool: 'cover', orientation: 'landscape', clipShape: 'coverFrame' }
     ],
     // Elliptical front-cover opening, expressed as a path in the cover SVG's space.
-    // viewBox 1159.37×566.929 over a 409mm-wide trim cover ⇒ 2.835 px/mm, origin at the
-    // trim top-left (NO bleed offset). Ellipse cx875.906 cy240.053 rx211.963 ry139.155.
+    // viewBox 1162.205×566.929 over a 410mm-wide trim cover ⇒ 2.835 px/mm, origin at the
+    // trim top-left (NO bleed offset). Ellipse cx892.913 cy240.92 rx211.963 ry139.155 (S187 drop: +6mm right).
     clipShapes: {
       coverFrame: {
-        pxPerMm: 2.835,          // 1159.37 / 409
-        bboxPx: { minX: 663.943, minY: 100.898, maxX: 1087.869, maxY: 379.208 },
-        d: 'M663.943,240.053 a211.963,139.155 0 1,0 423.926,0 a211.963,139.155 0 1,0 -423.926,0 Z'
+        pxPerMm: 2.835,          // 1162.205 / 410
+        bboxPx: { minX: 680.950, minY: 101.765, maxX: 1104.876, maxY: 380.075 },
+        d: 'M680.950,240.920 a211.963,139.155 0 1,0 423.926,0 a211.963,139.155 0 1,0 -423.926,0 Z'
       }
     },
     // Front: couple's names (Parisienne 48pt) + subtitle (Parisienne 18pt). Spine: label
     // (Parisienne, rotated 270). Front captions = taupe #7c746e; the spine label is
     // cream #fbf8f6 per the cover CSV (it sits on the dark #8a817a spine band).
     captions: [
-      { key: 'name',     xMm: 328, yMm: 175, wMm: 150, hMm: 20, font: 'Parisienne', sizePt: 48, align: 'center', color: '#7c746e', letterSpacing: 0.01, label: 'Front — title',    labelDe: 'Vorderseite — Titel',      placeholder: 'Our wedding',   placeholderDe: 'Unsere Hochzeit', maxLength: 60 },
-      { key: 'subtitle', xMm: 328, yMm: 195, wMm: 150, hMm: 12, font: 'Parisienne', sizePt: 18, align: 'center', color: '#7c746e', letterSpacing: 0.01, label: 'Front — subtitle',  labelDe: 'Vorderseite — Untertitel', placeholder: 'We found love', placeholderDe: 'Wir haben uns gefunden', maxLength: 60 },
-      { key: 'spine',    xMm: 222.5, yMm: 118, wMm: 120, hMm: 8,  font: 'Parisienne', sizePt: 18, align: 'center', color: '#fbf8f6', letterSpacing: 0.01, rotate: 270, label: 'Spine — label', labelDe: 'Buchrücken — Text', placeholder: 'Our wedding', placeholderDe: 'Unsere Hochzeit', maxLength: 60 },
+      { key: 'name',     xMm: 333, yMm: 175, wMm: 150, hMm: 20, font: 'Parisienne', sizePt: 48, align: 'center', color: '#7c746e', letterSpacing: 0.01, label: 'Front — title',    labelDe: 'Vorderseite — Titel',      placeholder: 'Our wedding',   placeholderDe: 'Unsere Hochzeit', maxLength: 60 },
+      { key: 'subtitle', xMm: 333, yMm: 195, wMm: 150, hMm: 12, font: 'Parisienne', sizePt: 18, align: 'center', color: '#7c746e', letterSpacing: 0.01, label: 'Front — subtitle',  labelDe: 'Vorderseite — Untertitel', placeholder: 'We found love', placeholderDe: 'Wir haben uns gefunden', maxLength: 60 },
+      { key: 'spine',    xMm: 223, yMm: 118, wMm: 120, hMm: 8,  font: 'Parisienne', sizePt: 18, align: 'center', color: '#fbf8f6', letterSpacing: 0.01, rotate: 270, label: 'Spine — label', labelDe: 'Buchrücken — Text', placeholder: 'Our wedding', placeholderDe: 'Unsere Hochzeit', maxLength: 60 },
     ]
   },
 

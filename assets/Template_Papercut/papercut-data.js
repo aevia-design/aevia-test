@@ -33,15 +33,15 @@ window.PAPERCUT_DATA = {
     // Consequence: the photo box is no longer 7:5 (139.6×104.4), so the crop differs
     // slightly — the silhouette is the authority for what is actually visible.
     slots: [
-      { xMm: 327.65, yMm: 117.21, wMm: 139.6, hMm: 104.4, pool: 'cover', orientation: 'landscape', clipShape: 'coverFrame' }
+      { xMm: 332, yMm: 117.21, wMm: 139.6, hMm: 104.4, pool: 'cover', orientation: 'landscape', clipShape: 'coverFrame' }
     ],
     // Custom photo silhouette — polygon from <clipPath id="ac"> in Cover/Artboard 1.svg.
     // ViewBox 1159.37×566.929 over 409mm trim cover → 2.835 px/mm, origin at trim top-left.
     clipShapes: {
       coverFrame: {
         pxPerMm: 2.835,
-        bboxPx: { minX: 679.993, minY: 133.321, maxX: 1075.697, maxY: 429.184 },
-        d: 'M679.993,152.586 L928.959,136.568 L890.239,135.772 L1048.378,133.321 L1075.3,176.408 L1075.697,415.982 L773.304,429.184 L706.838,423.024 L683.433,415.124 L684.257,309.395 Z'
+        bboxPx: { minX: 691.993, minY: 133.321, maxX: 1087.697, maxY: 429.184 },
+        d: 'M691.993,152.586 L940.959,136.568 L902.239,135.772 L1060.378,133.321 L1087.300,176.408 L1087.697,415.982 L785.304,429.184 L718.838,423.024 L695.433,415.124 L696.257,309.395 Z'
       }
     },
     captions: [
@@ -52,8 +52,8 @@ window.PAPERCUT_DATA = {
       // the year on the left and the name on the right. Swapped the GEOMETRY between the
       // two rows rather than the keys, so any caption text already saved against
       // 'name'/'year' stays with the right field.
-      { key: 'name',      xMm: 301, yMm: 180, wMm: 120, font: 'Source Sans 3', sizePt: 26, weight: 700, align: 'center',  color: '#4a4b40', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Our sweet Ann', placeholderDe: 'Unsere süße Ann', maxLength: 60 },
-      { key: 'year',      xMm: 390, yMm: 180, wMm: 60,  font: 'Source Sans 3', sizePt: 28, weight: 400, align: 'center', color: '#4a4b40', label: 'Front — year',       labelDe: 'Vorderseite — Jahr', placeholder: '2026', placeholderDe: '2026',          maxLength: 10 },
+      { key: 'name',      xMm: 305, yMm: 180, wMm: 120, font: 'Source Sans 3', sizePt: 26, weight: 700, align: 'center',  color: '#4a4b40', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Our sweet Ann', placeholderDe: 'Unsere süße Ann', maxLength: 60 },
+      { key: 'year',      xMm: 394, yMm: 180, wMm: 60,  font: 'Source Sans 3', sizePt: 28, weight: 400, align: 'center', color: '#4a4b40', label: 'Front — year',       labelDe: 'Vorderseite — Jahr', placeholder: '2026', placeholderDe: '2026',          maxLength: 10 },
       // Spine order corrected S154: the artboard puts the NAME at the top of the spine
       // and the YEAR below it; the y values were the wrong way round. Swapped yMm only.
       { key: 'spineName', xMm: 222.5, yMm: 78,  wMm: 98,  font: 'Source Sans 3', sizePt: 16, weight: 400, color: '#4a4b40', rotate: 270, label: 'Spine — name', labelDe: 'Buchrücken — Name', placeholder: 'Ann', placeholderDe: 'Ann',  maxLength: 20 },

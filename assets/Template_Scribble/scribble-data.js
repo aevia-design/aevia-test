@@ -17,11 +17,11 @@ window.SCRIBBLE_DATA = {
     // fill behind the cover SVG).
     mockupEdges: { front: '#f7e9d8', spine: '#fdd16f', back: '#3e2a55' },
     slots: [
-      { xMm: 327, yMm: 118, wMm: 140, hMm: 100, pool: 'cover', orientation: 'landscape' }
+      { xMm: 333, yMm: 118, wMm: 140, hMm: 100, pool: 'cover', orientation: 'landscape' }
     ],
     captions: [
-      { key: 'year', xMm: 327, yMm: 43, wMm: 180, font: 'EB Garamond', sizePt: 33, align: 'center', color: '#493955', label: 'Front — year', labelDe: 'Vorderseite — Jahr', placeholder: '2026', placeholderDe: '2026', maxLength: 10 },
-      { key: 'name', xMm: 327, yMm: 193, wMm: 180, font: 'Onest', sizePt: 28, align: 'center', color: '#493955', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Our sweet Ann', placeholderDe: 'Unsere kleine Ann', maxLength: 60 },
+      { key: 'year', xMm: 333, yMm: 43, wMm: 180, font: 'EB Garamond', sizePt: 33, align: 'center', color: '#493955', label: 'Front — year', labelDe: 'Vorderseite — Jahr', placeholder: '2026', placeholderDe: '2026', maxLength: 10 },
+      { key: 'name', xMm: 333, yMm: 193, wMm: 180, font: 'Onest', sizePt: 28, align: 'center', color: '#493955', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Our sweet Ann', placeholderDe: 'Unsere kleine Ann', maxLength: 60 },
       { key: 'spineName', xMm: 222.5, yMm: 158, wMm: 130, font: 'Onest', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — name', labelDe: 'Buchrücken — Name', placeholder: 'Ann', placeholderDe: 'Ann', maxLength: 20 },
       { key: 'spineYear', xMm: 222.5, yMm: 78, wMm: 70, font: 'EB Garamond', sizePt: 16, color: '#493955', rotate: 270, label: 'Spine — year', labelDe: 'Buchrücken — Jahr', placeholder: '2026', placeholderDe: '2026', maxLength: 10 },
     ]

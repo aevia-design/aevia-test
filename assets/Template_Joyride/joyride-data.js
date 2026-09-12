@@ -61,10 +61,10 @@ window.JOYRIDE_DATA = {
     // Four square photos around the centred title (grid centre x=327 with-bleed =
     // 309 without = the front page's true centre). Each supports the reposition drag.
     slots: [
-      { key: 'coverTop',    xMm: 327, yMm: 57,  wMm: 57, hMm: 57, pool: 'cover', ratio: '1:1' },
-      { key: 'coverLeft',   xMm: 266, yMm: 118, wMm: 57, hMm: 57, pool: 'cover', ratio: '1:1' },
-      { key: 'coverRight',  xMm: 388, yMm: 118, wMm: 57, hMm: 57, pool: 'cover', ratio: '1:1' },
-      { key: 'coverBottom', xMm: 327, yMm: 179, wMm: 57, hMm: 57, pool: 'cover', ratio: '1:1' },
+      { key: 'coverTop',    xMm: 333, yMm: 57,  wMm: 57, hMm: 57, pool: 'cover', ratio: '1:1' },
+      { key: 'coverLeft',   xMm: 272, yMm: 118, wMm: 57, hMm: 57, pool: 'cover', ratio: '1:1' },
+      { key: 'coverRight',  xMm: 394, yMm: 118, wMm: 57, hMm: 57, pool: 'cover', ratio: '1:1' },
+      { key: 'coverBottom', xMm: 333, yMm: 179, wMm: 57, hMm: 57, pool: 'cover', ratio: '1:1' },
     ],
     // Every cover caption sits in a FIXED box and autoShrinks to stay inside it — the
     // boxes are small and none of them can afford to overflow onto the artwork or, on
@@ -77,8 +77,8 @@ window.JOYRIDE_DATA = {
     // 12pt; spine sub 16 chars in 35mm at Mulish 12pt; front sub ~24 chars in 40mm at
     // Mulish 20pt) — autoShrink is what makes the caps safe rather than a silent overflow.
     captions: [
-      { key: 'name',     xMm: 327,   yMm: 112, wMm: 50, hMm: 41, font: 'Lora',   sizePt: 28, style: 'regular', halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, label: 'Front — title',     labelDe: 'Vorderseite — Titel', placeholder: 'Hot Getaway in Milan', placeholderDe: 'Heiße Auszeit in Mailand', maxLength: 60 },
-      { key: 'subtitle', xMm: 327,   yMm: 140, wMm: 40, hMm: 8,  font: 'Mulish', sizePt: 20, style: 'light',   halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, label: 'Front — sub label',  labelDe: 'Vorderseite — Untertitel', placeholder: 'July, 2026', placeholderDe: 'Juli 2026', maxLength: 60 },
+      { key: 'name',     xMm: 333,   yMm: 112, wMm: 50, hMm: 41, font: 'Lora',   sizePt: 28, style: 'regular', halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, label: 'Front — title',     labelDe: 'Vorderseite — Titel', placeholder: 'Hot Getaway in Milan', placeholderDe: 'Heiße Auszeit in Mailand', maxLength: 60 },
+      { key: 'subtitle', xMm: 333,   yMm: 140, wMm: 40, hMm: 8,  font: 'Mulish', sizePt: 20, style: 'light',   halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, label: 'Front — sub label',  labelDe: 'Vorderseite — Untertitel', placeholder: 'July, 2026', placeholderDe: 'Juli 2026', maxLength: 60 },
       { key: 'spine',    xMm: 222.5, yMm: 61,  wMm: 60, hMm: 5,  font: 'Lora',   sizePt: 14, style: 'regular', halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, rotate: 270, label: 'Spine — label',     labelDe: 'Buchrücken — Text', placeholder: 'Hot Getaway in Milan', placeholderDe: 'Heiße Auszeit in Mailand', maxLength: 60 },
       { key: 'spineSub', xMm: 222.5, yMm: 193, wMm: 40, hMm: 5,  font: 'Mulish', sizePt: 14, style: 'light',   halign: 'center', valign: 'center', color: '#d94027', autoShrink: true, rotate: 270, label: 'Spine — sub label', labelDe: 'Buchrücken — Untertitel', placeholder: 'July, 2026', placeholderDe: 'Juli 2026', maxLength: 60 },
     ]

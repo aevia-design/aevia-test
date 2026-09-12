@@ -32,73 +32,70 @@
       <feComposite in2="m" operator="in"/>
       <feComposite in="SourceGraphic"/>
     </filter>
-    <filter id="s" data-name="drop-shadow-5" x="633.339" y="504.915" width="102.24" height="109.92" filterUnits="userSpaceOnUse">
+    <filter id="t" data-name="drop-shadow-5" x="677.063" y="26.658" width="124.56" height="123.6" filterUnits="userSpaceOnUse">
       <feOffset dx=".567" dy=".567"/>
-      <feGaussianBlur result="t" stdDeviation=".567"/>
+      <feGaussianBlur result="u" stdDeviation=".567"/>
       <feFlood flood-color="#000" flood-opacity=".2"/>
-      <feComposite in2="t" operator="in"/>
+      <feComposite in2="u" operator="in"/>
       <feComposite in="SourceGraphic"/>
     </filter>
-    <filter id="u" data-name="drop-shadow-6" x="1058.489" y="479.584" width="106.56" height="121.44" filterUnits="userSpaceOnUse">
-      <feOffset dx=".85" dy="1.984"/>
-      <feGaussianBlur result="v" stdDeviation=".85"/>
-      <feFlood flood-color="#000" flood-opacity=".2"/>
-      <feComposite in2="v" operator="in"/>
-      <feComposite in="SourceGraphic"/>
-    </filter>
-    <filter id="w" data-name="drop-shadow-7" x="899.019" y="156.675" width="203.76" height="250.32" filterUnits="userSpaceOnUse">
+    <filter id="v" data-name="drop-shadow-6" x="938.379" y="497.715" width="51.12" height="57.6" filterUnits="userSpaceOnUse">
       <feOffset dx=".567" dy=".567"/>
-      <feGaussianBlur result="x" stdDeviation=".567"/>
+      <feGaussianBlur result="w" stdDeviation=".567"/>
       <feFlood flood-color="#000" flood-opacity=".2"/>
-      <feComposite in2="x" operator="in"/>
+      <feComposite in2="w" operator="in"/>
       <feComposite in="SourceGraphic"/>
     </filter>
-    <filter id="z" data-name="drop-shadow-8" x="657.514" y="106.832" width="483.826" height="339.666" filterUnits="userSpaceOnUse">
+    <filter id="x" data-name="drop-shadow-7" x="913.899" y="468.195" width="81.6" height="58.08" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="y" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="y" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="z" data-name="drop-shadow-8" x="622.343" y="99.138" width="108.72" height="54.96" filterUnits="userSpaceOnUse">
       <feOffset dx=".567" dy=".567"/>
       <feGaussianBlur result="aa" stdDeviation=".567"/>
       <feFlood flood-color="#000" flood-opacity=".2"/>
       <feComposite in2="aa" operator="in"/>
       <feComposite in="SourceGraphic"/>
     </filter>
-    <clipPath id="ac">
-      <polygon points="679.993 152.586 928.959 136.568 890.239 135.772 1048.378 133.321 1075.3 176.408 1075.697 415.982 773.304 429.184 706.838 423.024 683.433 415.124 684.257 309.395 679.993 152.586" fill="none"/>
-    </clipPath>
-    <filter id="ae" data-name="drop-shadow-9" x="677.063" y="26.658" width="124.56" height="123.6" filterUnits="userSpaceOnUse">
+    <filter id="ab" data-name="drop-shadow-9" x="599.039" y="386.08" width="85.68" height="65.04" filterUnits="userSpaceOnUse">
       <feOffset dx=".567" dy=".567"/>
-      <feGaussianBlur result="af" stdDeviation=".567"/>
+      <feGaussianBlur result="ac" stdDeviation=".567"/>
       <feFlood flood-color="#000" flood-opacity=".2"/>
-      <feComposite in2="af" operator="in"/>
+      <feComposite in2="ac" operator="in"/>
       <feComposite in="SourceGraphic"/>
     </filter>
-    <filter id="ag" data-name="drop-shadow-10" x="938.379" y="497.715" width="51.12" height="57.6" filterUnits="userSpaceOnUse">
+    <filter id="ad" data-name="drop-shadow-10" x="819.099" y="-7.005" width="174.24" height="50.88" filterUnits="userSpaceOnUse">
+      <feOffset dx=".567" dy=".567"/>
+      <feGaussianBlur result="ae" stdDeviation=".567"/>
+      <feFlood flood-color="#000" flood-opacity=".2"/>
+      <feComposite in2="ae" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="ag" data-name="drop-shadow-11" x="645.339" y="504.915" width="102.24" height="109.92" filterUnits="userSpaceOnUse">
       <feOffset dx=".567" dy=".567"/>
       <feGaussianBlur result="ah" stdDeviation=".567"/>
       <feFlood flood-color="#000" flood-opacity=".2"/>
       <feComposite in2="ah" operator="in"/>
       <feComposite in="SourceGraphic"/>
     </filter>
-    <filter id="ai" data-name="drop-shadow-11" x="913.899" y="468.195" width="81.6" height="58.08" filterUnits="userSpaceOnUse">
-      <feOffset dx=".567" dy=".567"/>
-      <feGaussianBlur result="aj" stdDeviation=".567"/>
+    <filter id="ai" data-name="drop-shadow-12" x="1070.489" y="479.584" width="106.56" height="121.44" filterUnits="userSpaceOnUse">
+      <feOffset dx=".85" dy="1.984"/>
+      <feGaussianBlur result="aj" stdDeviation=".85"/>
       <feFlood flood-color="#000" flood-opacity=".2"/>
       <feComposite in2="aj" operator="in"/>
       <feComposite in="SourceGraphic"/>
     </filter>
-    <filter id="ak" data-name="drop-shadow-12" x="622.343" y="99.138" width="108.72" height="54.96" filterUnits="userSpaceOnUse">
+    <filter id="ak" data-name="drop-shadow-13" x="911.019" y="156.675" width="203.76" height="250.32" filterUnits="userSpaceOnUse">
       <feOffset dx=".567" dy=".567"/>
       <feGaussianBlur result="al" stdDeviation=".567"/>
       <feFlood flood-color="#000" flood-opacity=".2"/>
       <feComposite in2="al" operator="in"/>
       <feComposite in="SourceGraphic"/>
     </filter>
-    <filter id="am" data-name="drop-shadow-13" x="599.039" y="386.08" width="85.68" height="65.04" filterUnits="userSpaceOnUse">
-      <feOffset dx=".567" dy=".567"/>
-      <feGaussianBlur result="an" stdDeviation=".567"/>
-      <feFlood flood-color="#000" flood-opacity=".2"/>
-      <feComposite in2="an" operator="in"/>
-      <feComposite in="SourceGraphic"/>
-    </filter>
-    <filter id="ao" data-name="drop-shadow-14" x="819.099" y="-7.005" width="174.24" height="50.88" filterUnits="userSpaceOnUse">
+    <filter id="ao" data-name="drop-shadow-14" x="669.514" y="106.832" width="484.393" height="340.233" filterUnits="userSpaceOnUse">
       <feOffset dx=".567" dy=".567"/>
       <feGaussianBlur result="ap" stdDeviation=".567"/>
       <feFlood flood-color="#000" flood-opacity=".2"/>
@@ -158,43 +155,9 @@
     <rect x="566.929" y="-50.943" width="25.512" height="668.783" fill="#79ba9b"/>
   </g>
   <g id="q" data-name="Front">
-    <g id="r" data-name="Illustrations Under">
-      <g filter="url(#s)">
-        <polygon points="679.748 579.955 711.343 612.292 732.891 600.542 717.666 581.812 653.553 506.285 634.573 524.679 679.748 579.955" fill="#e7c979"/>
-      </g>
-      <g filter="url(#u)">
-        <polygon points="1104.229 480.33 1060.391 596.098 1161.39 592.855 1156.35 574.218 1104.229 480.33" fill="#e7c979"/>
-      </g>
-      <g filter="url(#w)">
-        <polygon points="1100.203 157.837 900.269 297.647 1068.315 404.524 1080.805 368.583 1100.203 157.837" fill="#e97f91"/>
-      </g>
-      <polygon points="1080.525 411.083 865.93 433.198 704.283 439.063 675.751 394.117 669.772 141.113 978.676 120.904 1046.783 126.032 1070.9 133.89 1072.517 245.567 1080.525 411.083" fill="#f7e9e1"/>
-      <g id="y" data-name="Dots">
-        <circle cx="631.192" cy="284.085" r="4.267" fill="#e7c979"/>
-        <circle cx="1035.092" cy="52.269" r="4.267" fill="#e97f91"/>
-        <circle cx="1122.414" cy="137.6" r="4.267" fill="#e7c979"/>
-        <circle cx="740.131" cy="529.553" r="4.267" fill="#e97f91"/>
-        <circle cx="1105.632" cy="535.242" r="4.267" fill="#79ba9b"/>
-        <circle cx="659.067" cy="442.231" r="4.267" fill="#79ba9b"/>
-        <circle cx="634.606" cy="472.381" r="4.267" fill="#e97f91"/>
-        <circle cx="652.241" cy="69.335" r="4.267" fill="#e7c979"/>
-        <circle cx="1134.076" cy="312.528" r="4.267" fill="#79ba9b"/>
-        <circle cx="997.195" cy="108.656" r="4.267" fill="#79ba9b"/>
-        <circle cx="1068.087" cy="73.602" r="4.267" fill="#f7e9e1"/>
-        <circle cx="1145.607" cy="413.73" r="4.267" fill="#f7e9e1"/>
-        <circle cx="641.148" cy="34.634" r="4.267" fill="#e97f91"/>
-        <circle cx="1138.627" cy="433.698" r="4.267" fill="#e97f91"/>
-        <circle cx="881.212" cy="109.156" r="4.267" fill="#e97f91"/>
-        <circle cx="865.568" cy="534.673" r="4.267" fill="#f7e9e1"/>
-      </g>
-    </g>
-    <g id="ab" data-name="Image" filter="url(#z)">
-      <g clip-path="url(#ac)">
-        <rect x="659.067" y="106.832" width="482.273" height="339.666" fill="#914c77"/>
-      </g>
-    </g>
-    <g id="ad" data-name="Illustrations Above">
-      <g filter="url(#ae)">
+    <rect id="r" data-name="Front BG Color" x="592.441" y="-50.972" width="617.965" height="668.891" fill="#8bb8d8"/>
+    <g id="s" data-name="Illustrations Above">
+      <g filter="url(#t)">
         <polygon points="738.329 30.993 739.769 79.548 742.667 79.251 746.36 28.194 743.632 27.812 738.329 30.993" fill="#e7c979"/>
         <polygon points="797.94 71.015 750.692 82.296 751.572 85.074 795.446 78.969 798.931 79.624 797.94 71.015" fill="#e7c979"/>
         <polygon points="774.143 39.922 746.338 79.753 748.842 81.244 787.118 46.98 774.143 39.922" fill="#e7c979"/>
@@ -206,21 +169,51 @@
         <path d="M718.747,77.507l11.254-7.64,16.491-1.898,12.033,6.961,8.503,13.643c1.01,1.746,1.466,6.591-4.79,12-6.255,5.41-22.372,6.414-29.649,6.24l-11.468-8.681-2.915-12.079.542-8.546Z" fill="#e7c979"/>
       </g>
       <g>
-        <g filter="url(#ag)">
+        <g filter="url(#v)">
           <polygon points="947.854 537.272 939.543 514.544 975.583 499.058 986.645 534.834 987.011 541.499 966.075 552.771 955.803 548.042 947.854 537.272" fill="#f7e9e1"/>
         </g>
-        <g filter="url(#ai)">
+        <g filter="url(#x)">
           <path d="M979.612,498.571l-34.282,15.519-28.559,9.686s-2.441-12.139-1.42-19.712l10.891-19.836,20.007-14.897,29.48,1.439,17.255,15.545-2.272,5.653-11.1,6.602Z" fill="#79ba9b"/>
         </g>
       </g>
-      <g filter="url(#ak)">
+      <g filter="url(#z)">
         <path d="M627.96,124.127c-1.659,1.742-3.581,5.011-3.581,5.011,0,0-1.515,5.654-.359,8.96,1.18,3.376,6.045,6.878,6.045,6.878l6.377,4.299,15.508,2.334,15.915-1.68,30.312-12.163s7.855-.501,12.779-1.502c4.922-1.001,12.346-3.606,12.346-3.606,0,0,8.056-11.375,4.115-20.146,0,0-9.383-8.889-16.931-9.42-4.567-.321-11.514,2.202-11.514,2.202l-11.469,6.083s-2.697-8.792-3.66-9.352c-.963-.56-13.708-4.089-25.174,1.707l-4.085,2.378-3.989,5.523s-2.434,5.814-3.486,5.888c-9.647.672-13.695.879-19.149,6.607Z" fill="#79ba9b"/>
       </g>
-      <g filter="url(#am)">
+      <g filter="url(#ab)">
         <path d="M681.81,433.852c-.224-2.388-.522-4.304-1.453-6.499-.651-1.534-1.699-3.847-3.39-6.886-3.764-6.765-9.424-16.395-17.58-18.945-1.057-.33-2.074-.938-2.074-.938,0,0,.564-.6,1.172-1.21,2.541-2.543,5.264-5.503,5.529-6.332.022-.069.035-.139.051-.208.434-.116.853-.232,1.224-.342,1.269-.377,2.019-.634,2.611-1.022,1.112-.73,1.722-1.174,1.666-1.227-.063-.06-.253-.158-.832-.173-.441-.011-1.167.002-2.278.112-.808.079-1.793.206-2.628.322-.344-.952-.842-1.661-.842-1.661l-7.131-1.397s-2.662.385-4.478.874c-1.816.488-3.987,1.663-5.853,2.462-3.068,1.313-3.508,3.064-4.351,3.089-.193.006-.47-.189-1.922-.828s-5.602-2.261-5.602-2.261l-31.516-3.336,6.682,7.861,2.863,2.231,8.162,3.986c3.787,1.821,7.356,4.019,10.85,6.345l-.044,2.415c-5.088,4.85-13.179,16.096-13.179,16.096,0,0-7.07,4.49-9.575,6.444-1.007.785-7.704,4.224-7.625,5.678,0,0,2.179,1.949,2.949,2.351,3.675,1.915,8.622,4.064,14.251,6.43,1.193.501,3.062,1.267,3.062,1.267,0,0,.374-2.611,1.715-4.763.858-1.377,1.972-3.354,2.764-5.118,1.468-3.271,3.205-10.697,3.205-10.697,0,0,11.276-8.429,14.13-11.356l3.181-3.054s.845.144,1.827.607c8.634,4.068,16.419,11.374,24.035,17.021,4.223,3.132,4.384,3.335,4.768,3.608,2.568,1.828,5.827,3.515,5.827,3.515,0,0,.181-.717-.171-4.46Z" fill="#e97f91"/>
       </g>
-      <g filter="url(#ao)">
+      <g filter="url(#ad)">
         <polygon points="919.985 4.976 828.146 -5.724 820.271 17.522 844.16 20.97 989.184 41.376 990.668 14.987 919.985 4.976" fill="#79ba9b"/>
+      </g>
+    </g>
+    <g id="af" data-name="Illustrations Under">
+      <g filter="url(#ag)">
+        <polygon points="691.748 579.955 723.343 612.292 744.891 600.542 729.666 581.812 665.553 506.285 646.573 524.679 691.748 579.955" fill="#e7c979"/>
+      </g>
+      <g filter="url(#ai)">
+        <polygon points="1116.229 480.33 1072.391 596.098 1173.39 592.855 1168.35 574.218 1116.229 480.33" fill="#e7c979"/>
+      </g>
+      <g filter="url(#ak)">
+        <polygon points="1112.203 157.837 912.269 297.647 1080.315 404.524 1092.805 368.583 1112.203 157.837" fill="#e97f91"/>
+      </g>
+      <polygon points="1092.525 411.083 877.93 433.198 716.283 439.063 687.751 394.117 681.772 141.113 990.676 120.904 1058.783 126.032 1082.9 133.89 1084.517 245.567 1092.525 411.083" fill="#f7e9e1"/>
+      <g id="am" data-name="Dots">
+        <circle cx="643.192" cy="284.085" r="4.267" fill="#e7c979"/>
+        <circle cx="1047.092" cy="52.269" r="4.267" fill="#e97f91"/>
+        <circle cx="1134.414" cy="137.6" r="4.267" fill="#e7c979"/>
+        <circle cx="752.131" cy="529.553" r="4.267" fill="#e97f91"/>
+        <circle cx="1117.632" cy="535.242" r="4.267" fill="#79ba9b"/>
+        <circle cx="671.067" cy="442.231" r="4.267" fill="#79ba9b"/>
+        <circle cx="646.606" cy="472.381" r="4.267" fill="#e97f91"/>
+        <circle cx="664.241" cy="69.335" r="4.267" fill="#e7c979"/>
+        <circle cx="1146.076" cy="312.528" r="4.267" fill="#79ba9b"/>
+        <circle cx="1009.195" cy="108.656" r="4.267" fill="#79ba9b"/>
+        <circle cx="1080.087" cy="73.602" r="4.267" fill="#f7e9e1"/>
+        <circle cx="1157.607" cy="413.73" r="4.267" fill="#f7e9e1"/>
+        <circle cx="653.148" cy="34.634" r="4.267" fill="#e97f91"/>
+        <circle cx="1150.627" cy="433.698" r="4.267" fill="#e97f91"/>
+        <circle cx="893.212" cy="109.156" r="4.267" fill="#e97f91"/>
+        <circle cx="877.568" cy="534.673" r="4.267" fill="#f7e9e1"/>
       </g>
     </g>
   </g>

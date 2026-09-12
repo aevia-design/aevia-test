@@ -67,8 +67,8 @@ window.HEIRLOOM_DATA = {
         { key: 'letter2', xMm: 107.2, yMm: 174, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
       ],
       backLetters: [
-        { key: 'letter1', xMm: 117.5, yMm: 107, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
-        { key: 'letter2', xMm: 117.5, yMm: 130, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter1', xMm: 113, yMm: 107, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter2', xMm: 113, yMm: 130, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
       ],
     },
     birds: {
@@ -81,8 +81,8 @@ window.HEIRLOOM_DATA = {
         { key: 'letter2', xMm: 111, yMm: 169.5, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
       ],
       backLetters: [
-        { key: 'letter1', xMm: 116, yMm: 108, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
-        { key: 'letter2', xMm: 121, yMm: 124.5, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter1', xMm: 111, yMm: 108, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter2', xMm: 116, yMm: 124.5, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
       ],
     },
     roses: {
@@ -98,8 +98,8 @@ window.HEIRLOOM_DATA = {
         { key: 'letter2', xMm: 120.7, yMm: 167, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 23, color: '#312128' },
       ],
       backLetters: [
-        { key: 'letter1', xMm: 102.7, yMm: 123, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
-        { key: 'letter2', xMm: 132.7, yMm: 123, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter1', xMm: 98.2, yMm: 123, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
+        { key: 'letter2', xMm: 128.2, yMm: 123, wMm: 8, hMm: 9, font: 'IM FELL English', sizePt: 22, color: '#312128' },
       ],
     },
   },
@@ -122,36 +122,38 @@ window.HEIRLOOM_DATA = {
     // centre is at trim y = 80mm (clip 113.386–340.159px), and the engine subtracts 18
     // from BOTH axes — so yMm here is 98 (98 − 18 = 80). Verified against the render S157.
     slots: [
-      // xMm tracks the Roots opening centre (309.62 trim + 18 bleed). The second cover
-      // drop moved the opening 0.62mm right; without this the photo sits off-centre in
-      // the frame by that much and background shows down one edge.
-      { key: 'cover', xMm: 327.62, yMm: 98, wMm: 80, hMm: 80, pool: 'cover', orientation: 'square', clipShape: 'coverFrame' }
+      // xMm tracks the Roots opening centre (314.63 trim + 18 bleed). The S187 drop moved
+      // the opening 5.0mm right; the cover CSV says 315.00, which disagrees by 0.37mm —
+      // the ARTWORK wins here, or the photo sits off-centre and background shows down
+      // one edge.
+      { key: 'cover', xMm: 332.63, yMm: 98, wMm: 80, hMm: 80, pool: 'cover', orientation: 'square', clipShape: 'coverFrame' }
     ],
     // Rounded-corner 80×80mm square opening (r = 2mm), expressed in the cover SVG's space:
     // viewBox 1162.205×566.929 over the 410mm trim ⇒ 2.83465 px/mm, origin at trim
     // top-left (NO bleed offset). Birds/Roses art is shifted +1.418px (0.5mm) right.
     clipShapes: {
-      // RE-EXTRACTED S158 from Xenia's second cover drop. The opening kept its 80mm
-      // size but moved right (Roots +0.62mm, Birds/Roses +1.00mm) and down 0.03mm.
+      // RE-EXTRACTED S187 from Xenia's third cover drop. The opening kept its 80mm size
+      // and y, and moved right by 5.0mm (Roots 769.965→784.138, Birds 771.028→785.201).
+      // ⚠ Roses' new SVG has NO opening path at all — it reuses Birds' value, as before.
       // Source of truth is the `fill="none"` rounded-square PATH in each cover SVG —
       // NOT the solid rect beside it, whose x disagrees with the path by up to 1.8px.
       // Re-extract on every re-export; a stale path clips the photo off-centre.
       coverFrame: {          // Roots
         pxPerMm: 2.83465,    // 1162.205 / 410
-        bboxPx: { minX: 764.291, minY: 113.464, maxX: 991.064, maxY: 340.237 },
-        d: 'M769.965,113.464h215.425c3.133,0,5.674,2.54,5.674,5.674v215.425c0,3.133-2.54,5.674-5.674,5.674h-215.425c-3.133,0-5.674-2.54-5.674-5.674V119.137c0-3.133,2.54-5.674,5.674-5.674Z'
+        bboxPx: { minX: 778.464, minY: 113.464, maxX: 1005.237, maxY: 340.237 },
+        d: 'M784.138,113.464h215.425c3.133,0,5.674,2.54,5.674,5.674v215.425c0,3.133-2.54,5.674-5.674,5.674h-215.425c-3.133,0-5.674-2.54-5.674-5.674V119.137c0-3.133,2.54-5.674,5.674-5.674Z'
       },
       coverFrameShifted: {   // Birds + Roses (+1.063px right of Roots)
         pxPerMm: 2.83465,
-        bboxPx: { minX: 765.354, minY: 113.464, maxX: 992.127, maxY: 340.237 },
-        d: 'M771.028,113.464h215.425c3.133,0,5.674,2.54,5.674,5.674v215.425c0,3.133-2.54,5.674-5.674,5.674h-215.425c-3.133,0-5.674-2.54-5.674-5.674V119.137c0-3.133,2.54-5.674,5.674-5.674Z'
+        bboxPx: { minX: 779.527, minY: 113.464, maxX: 1006.300, maxY: 340.237 },
+        d: 'M785.201,113.464h215.425c3.133,0,5.674,2.54,5.674,5.674v215.425c0,3.133-2.54,5.674-5.674,5.674h-215.425c-3.133,0-5.674-2.54-5.674-5.674V119.137c0-3.133,2.54-5.674,5.674-5.674Z'
       }
     },
     // Front: couple's names (IM FELL 50pt, one caption — no subtitle). Spine: label
     // rotated 270 (CSV box 6w×70h → wMm 70 / hMm 6, same swap Tender's data makes).
     // Back-cover monogram letters live in monograms[*].backLetters, not here.
     captions: [
-      { key: 'name',  xMm: 327, yMm: 183, wMm: 100, hMm: 30, font: 'IM FELL English', sizePt: 50, align: 'center', color: '#312128', letterSpacing: 0.01, label: 'Front — names', labelDe: 'Vorderseite — Namen', placeholder: 'ANNA & MICHAEL', placeholderDe: 'ANNA & MICHAEL', maxLength: 100 },
+      { key: 'name',  xMm: 333, yMm: 183, wMm: 100, hMm: 30, font: 'IM FELL English', sizePt: 50, align: 'center', color: '#312128', letterSpacing: 0.01, label: 'Front — names', labelDe: 'Vorderseite — Namen', placeholder: 'ANNA & MICHAEL', placeholderDe: 'ANNA & MICHAEL', maxLength: 100 },
       { key: 'spine', xMm: 223, yMm: 118, wMm: 70,  hMm: 6,  font: 'IM FELL English', sizePt: 16, align: 'center', color: '#312128', letterSpacing: 0.01, rotate: 270, label: 'Spine — label', labelDe: 'Buchrücken — Text', placeholder: 'Anna & Michael', placeholderDe: 'Anna & Michael', maxLength: 100 },
     ]
   },

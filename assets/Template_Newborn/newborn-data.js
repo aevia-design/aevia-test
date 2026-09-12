@@ -43,7 +43,7 @@ window.NEWBORN_DATA = {
     // Cover coords are WITH-BLEED (18mm) and box-CENTRE, same as Scribble/Wander; the
     // render subtracts COVER_BLEED_MM. The cover photo is clipped to clipShapes.coverFrame.
     slots: [
-      { key: 'cover', xMm: 327, yMm: 103, wMm: 135, hMm: 115, pool: 'cover', orientation: 'landscape', clipShape: 'coverFrame' }
+      { key: 'cover', xMm: 333, yMm: 103, wMm: 135, hMm: 115, pool: 'cover', orientation: 'landscape', clipShape: 'coverFrame' }
     ],
     // Custom photo silhouette (the scalloped front-cover opening). Path is in the cover
     // SVG's coordinate space: viewBox 1159.37×566.929 over a 409mm-wide trim cover =
@@ -52,16 +52,16 @@ window.NEWBORN_DATA = {
     clipShapes: {
       coverFrame: {
         pxPerMm: 2.835,          // 1159.37 / 409
-        bboxPx: { minX: 684.3, minY: 80.5, maxX: 1065.7, maxY: 401.3 },
-        d: 'M874.882,80.544s57.727,21.133,95.508,26.227c22.339,3.012,52.366,2.395,72.712,1.428,12.197-.58,22.639,9.062,22.639,21.273v222.908c0,12.211-10.442,21.852-22.639,21.273-20.346-.967-50.373-1.584-72.712,1.428-37.782,5.095-95.508,26.227-95.508,26.227-.091-.033-57.564-21.128-95.193-26.227-22.335-3.027-52.357-2.407-72.703-1.436-12.2.582-22.648-9.061-22.648-21.274v-222.889c0-12.214,10.448-21.857,22.648-21.274,20.346.971,50.368,1.591,72.703-1.436,37.63-5.099,95.102-26.194,95.193-26.227Z'
+        bboxPx: { minX: 702.174, minY: 80.5, maxX: 1083.574, maxY: 401.3 },
+        d: 'M892.756,80.544s57.727,21.133,95.508,26.227c22.339,3.012,52.366,2.395,72.712,1.428,12.197-.58,22.639,9.062,22.639,21.273v222.908c0,12.211-10.442,21.852-22.639,21.273-20.346-.967-50.373-1.584-72.712,1.428-37.782,5.095-95.508,26.227-95.508,26.227-.091-.033-57.564-21.128-95.193-26.227-22.335-3.027-52.357-2.407-72.703-1.436-12.2.582-22.648-9.061-22.648-21.274v-222.889c0-12.214,10.448-21.857,22.648-21.274,20.346.971,50.368,1.591,72.703-1.436,37.63-5.099,95.102-26.194,95.193-26.227Z'
       }
     },
     // Front: big name (Twinkle Star) + italic subtitle (Baskervville). Spine: name/phrase
     // (Twinkle Star, rotated). `italic`/`weight` carry the CSV's intended default styling
     // (cover-caption render must honour these — Stage-3 fix).
     captions: [
-      { key: 'name',     xMm: 327, yMm: 175, wMm: 115, hMm: 20, font: 'Twinkle Star', sizePt: 44, align: 'center', color: '#c0d5ee', label: 'Front — name', labelDe: 'Vorderseite — Name', placeholder: 'Nico', placeholderDe: 'Nico', maxLength: 24 },
-      { key: 'subtitle', xMm: 327, yMm: 193, wMm: 100, hMm: 12, font: 'Baskervville', sizePt: 17, align: 'center', color: '#c0d5ee', italic: true, weight: 500, label: 'Front — subtitle / date', labelDe: 'Vorderseite — Untertitel / Datum', placeholder: 'Your First Months', placeholderDe: 'Deine ersten Monate', maxLength: 40 },
+      { key: 'name',     xMm: 333, yMm: 175, wMm: 115, hMm: 20, font: 'Twinkle Star', sizePt: 44, align: 'center', color: '#c0d5ee', label: 'Front — name', labelDe: 'Vorderseite — Name', placeholder: 'Nico', placeholderDe: 'Nico', maxLength: 24 },
+      { key: 'subtitle', xMm: 333, yMm: 193, wMm: 100, hMm: 12, font: 'Baskervville', sizePt: 17, align: 'center', color: '#c0d5ee', italic: true, weight: 500, label: 'Front — subtitle / date', labelDe: 'Vorderseite — Untertitel / Datum', placeholder: 'Your First Months', placeholderDe: 'Deine ersten Monate', maxLength: 40 },
       { key: 'spine',    xMm: 222.5, yMm: 118, wMm: 65,  hMm: 8,  font: 'Twinkle Star', sizePt: 20, align: 'center', color: '#21386e', rotate: 270, label: 'Spine — name / phrase', labelDe: 'Buchrücken — Name / Text', placeholder: 'Our Nico', placeholderDe: 'Unser Nico', maxLength: 24 },
     ]
   },

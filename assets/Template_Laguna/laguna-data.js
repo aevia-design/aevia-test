@@ -79,7 +79,7 @@ window.LAGUNA_DATA = {
     // verified against the SVG's "Frame" rect, which centres on 310/93mm without
     // bleed, exactly where the CSV puts the photo.
     slots: [
-      { key: 'cover', xMm: 328, yMm: 111, wMm: 100, hMm: 100, pool: 'cover', ratio: '1:1' },
+      { key: 'cover', xMm: 333, yMm: 111, wMm: 100, hMm: 100, pool: 'cover', ratio: '1:1' },
     ],
     // With-bleed box centres. Cover text is FREE TEXT (staff type what suits the
     // trip); `placeholder` is only a suggestion. Per-caption font/size/colour are
@@ -95,8 +95,8 @@ window.LAGUNA_DATA = {
     // and Joyride), so her 100 becomes wMm, and hMm stays under the 10mm spine band.
     // Getting that backwards would put a 100mm-wide box across a 10mm spine.
     captions: [
-      { key: 'front',    xMm: 328,   yMm: 180, wMm: 100, hMm: 12, font: 'Fredoka', sizePt: 30, style: 'bold',   align: 'center', color: '#ffffff', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Greece, 2026', placeholderDe: 'Griechenland, 2026',                 maxLength: 60 },
-      { key: 'frontSub', xMm: 328,   yMm: 193, wMm: 100, hMm: 6,  font: 'Mulish',  sizePt: 18, style: 'medium', align: 'center', color: '#ffffff', label: 'Front — subtitle',   labelDe: 'Vorderseite — Untertitel', placeholder: 'Where everything slowed down', placeholderDe: 'Wo alles langsamer wurde', maxLength: 100 },
+      { key: 'front',    xMm: 333,   yMm: 180, wMm: 100, hMm: 12, font: 'Fredoka', sizePt: 30, style: 'bold',   align: 'center', color: '#ffffff', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Greece, 2026', placeholderDe: 'Griechenland, 2026',                 maxLength: 60 },
+      { key: 'frontSub', xMm: 333,   yMm: 193, wMm: 100, hMm: 6,  font: 'Mulish',  sizePt: 18, style: 'medium', align: 'center', color: '#ffffff', label: 'Front — subtitle',   labelDe: 'Vorderseite — Untertitel', placeholder: 'Where everything slowed down', placeholderDe: 'Wo alles langsamer wurde', maxLength: 100 },
       { key: 'spine',    xMm: 223,   yMm: 118, wMm: 100, hMm: 8,  font: 'Fredoka', sizePt: 16, style: 'bold',   align: 'center', color: '#ffffff', rotate: 270, label: 'Spine — album name', labelDe: 'Buchrücken — Albumname', placeholder: 'Greece, 2026', placeholderDe: 'Griechenland, 2026',    maxLength: 60 },
     ]
   },
