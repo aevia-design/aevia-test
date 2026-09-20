@@ -115,6 +115,12 @@ function buildOrderPayload(order, files, config) {
     customer_id: config.customerId,
     order_id_client: order.orderNumber,
     currency: 'EUR',
+    // Their example carries this and the docs give exactly two values,
+    // Standard and Express (brief §5.4). Sent explicitly rather than omitted:
+    // if their default is Express we would quietly pay for it. No
+    // shipping_price — we charge none, and inventing a figure would misstate a
+    // customs/proforma field (open question, brief §5).
+    shipping_code: 'Standard',
     shipping_address: {
       first_name: first,
       last_name: last,

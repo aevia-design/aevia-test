@@ -168,6 +168,10 @@ describe('buildOrderPayload — maps an Aevia order onto add_Order', () => {
     expect(p.customer_id).toBe('3983');
     expect(p.order_id_client).toBe('AEV-052');
     expect(p.currency).toBe('EUR');
+    // Two documented values; never omitted, in case their default is Express.
+    expect(p.shipping_code).toBe('Standard');
+    // We charge no shipping, so no figure is invented for a customs field.
+    expect(p.shipping_price).toBeUndefined();
     expect(p.products).toHaveLength(1);
   });
 
