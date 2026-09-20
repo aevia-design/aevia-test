@@ -25,7 +25,8 @@ const COUNTRY_NAMES = { AT: 'Austria', DE: 'Germany' };
 // so a fresh env, a typo or a copied test env all stay safely inert.
 function printsmarterConfig(env) {
   const required = ['PRINTSMARTER_API_TOKEN', 'PRINTSMARTER_CUSTOMER_ID',
-                    'PRINTSMARTER_API_BASE', 'PRINTSMARTER_PRODUCT_ID'];
+                    'PRINTSMARTER_API_BASE', 'PRINTSMARTER_PRODUCT_ID',
+                    'PRINTSMARTER_PRODUCT_ID_HEIRLOOM'];
   for (const key of required) {
     if (!env[key]) throw new Error(`${key} is not set — refusing to build a Printsmarter client`);
   }
@@ -33,9 +34,27 @@ function printsmarterConfig(env) {
     token: env.PRINTSMARTER_API_TOKEN,
     customerId: env.PRINTSMARTER_CUSTOMER_ID,
     base: env.PRINTSMARTER_API_BASE,
-    productId: env.PRINTSMARTER_PRODUCT_ID,
+    // Two paper stocks, two product ids (S188). Heirloom prints on offset;
+    // every other template on matte. Their ids are issued by email, so both
+    // live in env — a new stock is a new env var plus a line in productIdFor().
+    productIds: {
+      default: env.PRINTSMARTER_PRODUCT_ID,
+      heirloom: env.PRINTSMARTER_PRODUCT_ID_HEIRLOOM,
+    },
     live: env.PRINTSMARTER_LIVE === 'true',
   };
+}
+
+// Which product (= which paper) a template prints on. Keyed off the order's
+// templateName, which IS the registry key ('heirloom-beige', 'scribble', …),
+// so all four Heirloom colourways match on the prefix and a fifth needs no
+// change here. Throws on a missing name rather than defaulting: silently
+// sending a Heirloom order to the matte product prints the wrong paper, and
+// nothing downstream would catch it.
+function productIdFor(templateName, config) {
+  const key = String(templateName || '').trim().toLowerCase();
+  if (!key) throw new Error('Order has no templateName — cannot choose a Printsmarter product');
+  return key.startsWith('heirloom') ? config.productIds.heirloom : config.productIds.default;
 }
 
 // "Max Mustermann" → { first: 'Max', last: 'Mustermann' }. A single word goes
@@ -86,7 +105,7 @@ function buildOrderPayload(order, files, config) {
       project_name: order.orderNumber,
       quantity: 1,
       product_id_client: `${order.orderNumber}-1`,
-      product_id: config.productId,
+      product_id: productIdFor(order.templateName, config),
       price: price.toFixed(2),
       pages: order.pageCount,
       file_cover: files.cover,
@@ -147,6 +166,7 @@ function parseShippingPostback(json) {
 
 module.exports = {
   printsmarterConfig,
+  productIdFor,
   buildOrderPayload,
   parseAddOrderResponse,
   parseShippingPostback,

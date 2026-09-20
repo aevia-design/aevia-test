@@ -118,9 +118,10 @@ Cloud Function, a postback receiver, order statuses past `paid`, and the **dispa
 
 Two things the earlier brief assumed and this API does not give us:
 
-- **No dry-run.** Site Flow had `POST /order/validate`. Printsmarter has no validate mode
-  documented, so the first real call is a real order. Ask them for a sandbox or a test product
-  code before we point anything at production.
+- **No dry-run.** Site Flow had `POST /order/validate`. Printsmarter has no validate mode.
+  ⚠ Updated S185: there is **no sandbox**, but our account is currently set so that submitted
+  orders are **not forwarded to production**. That is an account setting they can flip, not a
+  test mode — see §5.2.
 - **No documented GDPR erasure endpoint.** Under the Site Flow plan this was an API call. Here it
   is a contract/process question. Route it into the contract review.
 
@@ -128,30 +129,52 @@ Two things the earlier brief assumed and this API does not give us:
 
 ## 5. Open questions
 
-Ordered by what blocks work.
+_Updated S185 (2026-08-30). Four of the original nine are closed — the docs were re-read at
+source and Printsmarter answered by email. **Do not re-ask the closed ones.**_
 
-1. 🔴 **Our product code.** `printsmartergmbh_hardcover` is *their example*, a 126-page book of
-   unknown trim. We need the `product_id` for **our** book — 200×200mm, Rebecca content paper,
-   our cover stock. Nothing can be submitted without it.
-2. 🔴 **Sandbox or test mode.** Is there any way to submit without printing? If not, our first
-   test order is a book we pay for — which may be the sensible way to run the sample round anyway.
-3. **`price` — retail or cost?** Carried over unanswered from the old brief (Q13). Does it appear
-   on a delivery note the customer sees?
-4. **`shipping_code` values** for Austria, and the price per weight band. Our checkout delivery fee
-   is still a placeholder.
-5. **`return_address`** — their example is an Elanders address. A failed delivery must not come to
-   a flat in Vienna. Confirm what we may put there.
-6. **Postback registration.** The docs describe the payload but not how we register our endpoint,
-   or whether it is authenticated. If it is unauthenticated, anyone who learns the URL can forge a
-   dispatch email to a customer. Treat as a security question, not a plumbing one.
-7. **Preflight failures** — who tells us, how fast, and through which channel.
-8. **File size limit and URL lifetime** for the fetched PDFs.
-9. **Geometry.** The one-pager's §A questions (board overhang, hinge gap, turn-in, and whether
-   `spine = 6 + 0.1 × pages` is a formula or two data points) are not recorded as answered.
-   S152/S153 shipped against 10mm/14mm and the print came back correct, so this is confirmation,
-   not discovery — but it should land in writing in the contract.
+### Closed
 
----
+1. ✅ **Two product codes, one per paper stock** (owner, S188): Heirloom prints on offset
+   (`aevia_hardcover_offset`, `PRINTSMARTER_PRODUCT_ID_HEIRLOOM`), every other template on
+   matte (`aevia_hardcover_matte`, `PRINTSMARTER_PRODUCT_ID`). Both in `functions/.env`; both
+   required, so a half-set env refuses to build a client. `productIdFor()` picks between them
+   off the order's `templateName`, matching all four Heirloom colourways on the prefix.
+   This supersedes the single `aevia_hardcover` code of S185. Their shop configurator defaults to 28 pages / quantity 10; the owner
+   confirmed 40pp and quantity 1 are selectable, but **their written confirmation that the API
+   accepts `pages: 40|80` at `quantity: 1` is still outstanding.**
+2. ✅ **No sandbox** — but "your orders are not automatically forwarded to production by now, so
+   you can submit as many orders as you like and they will not be produced" (email, S185).
+   ⚠ **This is an account setting on their side, not a test mode.** When they enable forwarding,
+   every submission becomes a real book with no change on our side. The owner asked for notice
+   before that happens. `PRINTSMARTER_LIVE` guards our code paths only, not their switch.
+3. ✅ **`price` is the actual sales price** — the docs say "it is absolutely necessary to transmit
+   the actual sales price", for customs and proforma documents. Our `PRICE_BY_PAGE_COUNT`
+   (€70 / €100 retail) is **correct as written**. Our *cost* (€8.47 at 40pp, €11.67 at 80pp,
+   agreed on the call) must **never** go in this field.
+4. ✅ **`shipping_code` accepts `"Standard"` or `"Express"`.** Only two values, documented.
+   The Austrian shipping *price* per weight band is still unknown, but that is a **contract**
+   question for the agreement they are drafting, not an API one.
+
+### Still open
+
+5. **`return_address`** — appears in their example but the docs never say whether it is required
+   or what belongs in it. We send none. A failed delivery must not route to a private address in
+   Vienna. Asked S185, unanswered.
+6. **Postback registration.** The docs say the postback goes "to the URL provided by you" but
+   document **no mechanism** for providing it. Our URL is deployed and verified (S185); it is
+   registered by emailing it to them. ✅ *Security is no longer an open question* — the secret in
+   the URL path authenticates their requests, so their dev team needs to build nothing. The S155
+   question "can you add a token or signature?" (answered "I guess so, I'll check with our DEV
+   team") is **withdrawn, not pending**.
+7. **`order_id_client` idempotency.** Nothing in the docs. Until confirmed, assume a retry could
+   print two books. Our own `printsmarterOrderId` once-only guard is the real protection.
+8. **Preflight failures** — who tells us, how fast, through which channel.
+9. **File size limit and URL lifetime** for the fetched PDFs. We sign for 7 days (v4 maximum).
+   ⚠ Print PDFs are large — AEV-095's *preview* alone is 231 MB.
+10. **Geometry.** The one-pager's §A questions (board overhang, hinge gap, turn-in, and whether
+    `spine = 6 + 0.1 x pages` is a formula or two data points) are not recorded as answered.
+    S152/S153 shipped against 10mm/14mm and the print came back correct, so this is confirmation,
+    not discovery — but it should land in writing in the contract.
 
 ## 6. Watch-outs
 

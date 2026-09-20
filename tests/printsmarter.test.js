@@ -6,6 +6,7 @@
 
 const {
   printsmarterConfig,
+  productIdFor,
   buildOrderPayload,
   parseAddOrderResponse,
   submitOrder,
@@ -18,7 +19,8 @@ function fullEnv(overrides = {}) {
     PRINTSMARTER_API_TOKEN: 'test-token',
     PRINTSMARTER_CUSTOMER_ID: '3983',
     PRINTSMARTER_API_BASE: 'https://www.printsmarter.de/index.php?route=api/custom_shop_webhook/',
-    PRINTSMARTER_PRODUCT_ID: 'aevia_hardcover_200',
+    PRINTSMARTER_PRODUCT_ID: 'aevia_hardcover_matte',
+    PRINTSMARTER_PRODUCT_ID_HEIRLOOM: 'aevia_hardcover_offset',
     PRINTSMARTER_LIVE: 'false',
     ...overrides,
   };
@@ -30,6 +32,7 @@ function paidOrder(overrides = {}) {
     orderNumber: 'AEV-052',
     status: 'paid',
     pageCount: 40,
+    templateName: 'scribble',
     customerName: 'Max Mustermann',
     email: 'max@example.com',
     shippingAddress: {
@@ -52,7 +55,8 @@ describe('printsmarterConfig — env validation', () => {
   test('reads a complete env', () => {
     const cfg = printsmarterConfig(fullEnv());
     expect(cfg.customerId).toBe('3983');
-    expect(cfg.productId).toBe('aevia_hardcover_200');
+    expect(cfg.productIds.default).toBe('aevia_hardcover_matte');
+    expect(cfg.productIds.heirloom).toBe('aevia_hardcover_offset');
     expect(cfg.live).toBe(false);
   });
 
@@ -60,6 +64,12 @@ describe('printsmarterConfig — env validation', () => {
     const env = fullEnv();
     delete env.PRINTSMARTER_PRODUCT_ID;
     expect(() => printsmarterConfig(env)).toThrow(/PRINTSMARTER_PRODUCT_ID/);
+  });
+
+  test('throws loudly when the Heirloom product id is unset', () => {
+    const env = fullEnv();
+    delete env.PRINTSMARTER_PRODUCT_ID_HEIRLOOM;
+    expect(() => printsmarterConfig(env)).toThrow(/PRINTSMARTER_PRODUCT_ID_HEIRLOOM/);
   });
 
   test('throws when the token is missing', () => {
@@ -78,6 +88,37 @@ describe('printsmarterConfig — env validation', () => {
   });
 });
 
+describe('productIdFor — two paper stocks, two products (S188)', () => {
+  const cfg = printsmarterConfig(fullEnv());
+
+  test('every Heirloom colourway prints on offset', () => {
+    for (const t of ['heirloom-beige', 'heirloom-blue', 'heirloom-brown', 'heirloom-green']) {
+      expect(productIdFor(t, cfg)).toBe('aevia_hardcover_offset');
+    }
+  });
+
+  test('every other template prints on matte', () => {
+    for (const t of ['scribble', 'wander', 'newborn', 'tender', 'papercut', 'joyride', 'laguna']) {
+      expect(productIdFor(t, cfg)).toBe('aevia_hardcover_matte');
+    }
+  });
+
+  test('matching is case-insensitive — the product page may send "Heirloom-Beige"', () => {
+    expect(productIdFor('Heirloom-Beige', cfg)).toBe('aevia_hardcover_offset');
+    expect(productIdFor('Scribble', cfg)).toBe('aevia_hardcover_matte');
+  });
+
+  test('a missing templateName throws rather than defaulting to matte', () => {
+    expect(() => productIdFor('', cfg)).toThrow(/templateName/);
+    expect(() => productIdFor(undefined, cfg)).toThrow(/templateName/);
+  });
+
+  test('buildOrderPayload picks the product from the order (a Heirloom order gets offset)', () => {
+    const [book] = buildOrderPayload(paidOrder({ templateName: 'heirloom-blue' }), files, cfg).products;
+    expect(book.product_id).toBe('aevia_hardcover_offset');
+  });
+});
+
 describe('buildOrderPayload — maps an Aevia order onto add_Order', () => {
   const cfg = printsmarterConfig(fullEnv());
 
@@ -91,7 +132,7 @@ describe('buildOrderPayload — maps an Aevia order onto add_Order', () => {
 
   test('book product carries pages, both file URLs and our product id', () => {
     const [book] = buildOrderPayload(paidOrder(), files, cfg).products;
-    expect(book.product_id).toBe('aevia_hardcover_200');
+    expect(book.product_id).toBe('aevia_hardcover_matte');
     expect(book.product_id_client).toBe('AEV-052-1');
     expect(book.quantity).toBe(1);
     expect(book.pages).toBe(40);
