@@ -1,6 +1,22 @@
-# Upload failures — evidence log and reporting procedure
-
 **Status:** **CLOSED S150 (2026-08-04) — owner's call, root cause never proven.** TO-DOS #88.
+⚠ **S187: the capture this brief was waiting for finally happened (AEV-096), and it KILLED the
+duplicate-`File` hypothesis below without replacing it.** The failing photo was used exactly
+once in the order (55 pool photos, 55 distinct originals) and the browser was Chrome 151 on
+Windows, not Safari. **Do not re-open that theory.**
+⚠ The capture also does NOT prove a file fault. All three attempts stopped at exactly 371,712
+bytes, which reads like "the file could not be read past that offset" — but `bytesTransferred`
+is only assigned inside the `xhr.upload.progress` handler and **the number of progress events is
+never recorded**, so "one progress event at a ~363 KiB buffer flush, then the connection wedged"
+fits the same data. The evidence cannot separate a file fault from a transport fault.
+⚠ A OneDrive Files On-Demand placeholder was the leading S187 theory and **did not survive
+checking** — "Free up space" is greyed out on the owner's photos, so they are not placeholders.
+One candidate survives regardless: OneDrive rewrites files during sync, and Chrome's `File` is a
+snapshot tied to modification time.
+**Next move is instrumentation, not a fix** (TO-DOS #116). Full reasoning:
+`sessions/2026-09-20-s187.md` and `work/upload-file-read/brief.md` (PROVISIONAL).
+**What S173/S174 already fixed, and must not be re-diagnosed:** the *cascade*. AEV-096 lost 28
+photos because a failed photo killed its worker; today it would lose one. See `bb311f1`,
+`fc1145a`.
 **Created:** 2026-07-22 (S147)
 
 > **Why it was closed.** Xenia's account: she had left the upload tab open for a very long

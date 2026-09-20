@@ -1,3 +1,44 @@
+## 2026-09-20 — A patch inside a supplier's file is a patch that will be lost (S187)
+
+Xenia's third cover drop re-filled the photo windows on Heirloom Roots/Birds, Tender and
+Newborn. The customer's photo loaded, clipped and positioned correctly, and was then painted
+over by an opaque placeholder in the artwork above it. **This is the third time** (S154 Wander
+viewBox, S157 Heirloom filled window, S187 all of the above again).
+
+The reason it recurs is structural, not careless. The fix in S157 was to edit the SVG so the
+window read `fill="none"` — a hand edit **inside a file Illustrator rewrites wholesale on every
+export.** CLAUDE.md said "re-apply any in-repo SVG patch after a re-export"; a human still has
+to remember, and nobody did.
+
+**The rule: if a fix lives in a file a supplier regenerates, it is not fixed until a test
+asserts it.** `tests/cover-photo-window.test.js` now fails on opaque paint inside the photo
+window of any cover whose artwork overlays its photo, and states the remedy in the failure
+message. The same applies to any future in-repo edit to a Xenia asset — write the test in the
+same commit, or budget for finding it again by eye.
+
+**Two things that made the diagnosis fast, worth reusing.** The templates that *worked* were
+the evidence: Roses, Scribble and Joyride have no window group, and Papercut and Laguna set
+`overlayAbovePhotos: false`. Nine templates, nine matches, root cause confirmed before a line
+changed. And Newborn returning to its **exact pre-drop byte size** after the placeholder was
+removed proved nothing else in that file had changed.
+
+## 2026-09-20 — A test that searches from the wrong root silently checks one file four times (S187)
+
+`tests/cover-svg-viewbox.test.js` resolves each template's cover by searching for a relative
+path (`Cover/Cover_40_Roots.svg`) beneath a root directory. For Heirloom it passes
+`assets/Template_Heirloom` rather than the colourway folder, so `findUnder()` returns the first
+match in readdir order — **Beige's copy — for Blue, Brown and Green as well.** Three of its
+passing cases are Beige counted four times. **Blue, Brown and Green have never been checked.**
+
+It was found only because a new test written on the same helper reported failures for three
+files that turned out to be clean, and the contradiction had to be explained. A green suite
+would never have surfaced it.
+
+**The rule: a test that discovers its own inputs must assert it found the input it meant.**
+Resolution by search is convenient and quietly wrong when several candidates share a name. When
+a suite enumerates files, print or assert the resolved path — a test whose subject is wrong
+still passes, and "34 suites green" reads exactly the same.
+
 ## 2026-08-17 — `firebase deploy` fails on this machine unless you raise the discovery timeout (S182)
 
 A functions deploy dies with:
@@ -1823,3 +1864,46 @@ worth anything: which artefact in the output traces to which rule in the skill.
   discipline came from `brand-packaging`.
 - **Say plainly what the skill did NOT supply.** Neither supplied the layouts. Claiming
   otherwise is the exact failure the owner was probing for.
+
+## 2026-08-30 (S185) — Read the vendor's own docs before asking the vendor
+
+Three questions were about to be emailed to Printsmarter. The owner pushed back — weren't they
+answered in the documentation already? Two of the three were, verbatim: `price` is documented as
+"the actual sales price", and `shipping_code` accepts exactly `"Standard"` or `"Express"`.
+
+The questions came from `docs/briefs/printsmarter-api.md` §5, written S155. That list was accurate
+*as a record of what was unresolved on the call* and was then treated as the state of the world for
+five sessions, without the source ever being re-read.
+
+- **A brief's "open questions" list is a snapshot, not a live index.** It decays silently. Re-read
+  the primary source before acting on one — especially before sending it to a third party, where a
+  stale question costs credibility and a round-trip.
+- **Fetch the doc, don't recall it.** The whole check took one `WebFetch`.
+- **Then write the answers back into the brief.** §5 was rewritten with a Closed / Still open
+  split, so the next session cannot repeat this.
+- The generalisation, worth watching for elsewhere in this repo: **several briefs carry question
+  lists that have never been revisited.** Treat any "open questions" section older than a few
+  sessions as unverified.
+
+## 2026-09-12 (S186) — A competitor's compliance page is evidence, not authority
+
+The legal drafts were benchmarked against Journi GmbH — Vienna, photo books, lawyer-drafted, the
+best available like-for-like. It was the right comparator and it found the single biggest gap in
+our AGB (no list of what is *not* a defect). But two of its features would have been actively wrong
+to copy:
+
+- Journi links the **EU ODR platform**, which was permanently shut down on 20 July 2025
+  (Reg. (EU) 2024/3228). Their page is stale. Copying it would have pointed customers at a dead
+  page. Our omission was already correct — but S183 had recorded the wrong *reason* for it
+  ("Austria-only delivery"), which is exactly the kind of soft reasoning a later session overrides
+  when it sees a competitor doing otherwise.
+- Journi publishes an **accessibility statement** under the EAA. Aevia is exempt as a
+  microenterprise. Copying it would have volunteered an obligation.
+
+- **Benchmark to find gaps, verify against the regulation before adopting anything.** A competitor
+  shows you what a question looks like answered; it does not tell you the answer is current, or
+  that it applies to a business of your size.
+- **Record the REAL reason for an omission, not a plausible one.** A weak reason in the file is
+  worse than none: it survives review, and it loses to the next contradicting observation.
+- Related to S185's lesson: the failure mode is the same shape — **trusting a secondhand snapshot
+  instead of the primary source.** There it was our own brief; here it was a competitor's page.

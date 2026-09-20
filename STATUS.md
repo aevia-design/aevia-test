@@ -1,37 +1,55 @@
 # Session Status
-_Last updated: 2026-08-18 (session 182)_
-_Context at save: S182's seven commits are on `main` and PUSHED (`fda9023`). 596 unit tests
-green. **One deploy outstanding and it is REQUIRED, not optional — see "Do this first".**
-Still uncommitted and awaiting owner decisions, carried since S174: `.claude/settings.local.json`,
-`assets/about us photos/`, `work/about-photos/`, `work/low-res-badge/`, `assets/packaging/`,
-`work/packaging/`, ~14 untracked `qa/` one-offs. **Separately, S183 (legal pages) ran in parallel
-and ALL of its output is untracked** — `sessions/2026-08-18-s183.md`, `docs/business-legal-facts.md`,
-`work/legal-pages/`. Those are S183's, not loose ends from S182._
+_Last updated: 2026-09-20 (session 187)_
+_Context at save: **Xenia's third cover drop is validated, synced and PUSHED** — two commits,
+`6604dd5` (coordinate sync) and `cf3d9b3` (photo-window fix). Owner has confirmed all three
+broken covers render correctly in the engine and has **redeployed the Cloud Run renderer**.
+`git status` otherwise unchanged from S186, plus one new untracked folder:
+`work/upload-file-read/` (a PROVISIONAL brief — see below)._
 
 ## Status
-**🇩🇪 Session 182 (2026-08-17/18) — germanization Stage 5 CLOSED (German AI captions live and
-verified), Scribble's font replaced, and a print-content bug found and fixed in Tender.**
+**🖼 Session 187 — the cover drop landed, was validated, and broke the cover photo on three
+templates until it was fixed.**
 
-Full detail: **`sessions/2026-08-17-s182.md`**.
+Full detail: **`sessions/2026-09-20-s187.md`**.
 
-## ⚠ Do this first — the working tree and production disagree
+Front-panel content now sits at **trim X 315mm** on every template (Papercut at 314, owner's
+deliberate choice). All four clipped templates had their clip shapes re-derived from the new
+artwork. Tender was re-authored at 410mm and now declares `referenceSpineMm: 10`. Laguna's
+cover came back at 36.5 MB and was re-optimised to 3.56 MB. `npm test` 614/614.
 
-**Redeploy the Cloud Run renderer.** Two of S182's changes reach the browser (Cloudflare
-auto-deploys `main`) but **not** print, because `export-pdf.js` loads template data *and fonts
-from a copy of the repo baked into the container*.
+## ⚠ Do this first — generate the PDFs
+
+The renderer is redeployed and the engine is verified. **Nothing has been printed yet.**
+Generate PDFs from the dashboard and look at them:
+
+1. **Heirloom Beige, Tender, Newborn** — the cover photo must be visible, not a coloured shape.
+   ⚠ **The print path had the identical bug** (`export-pdf.js:1259`, `:1387`), so this is a real
+   check, not a formality.
+2. **Tender's spine** — the only template whose sheet width changed (409 → 410mm).
+3. **Scribble's captions** — still the outstanding S182 item; the Onest swap has never been
+   PDF'd. ⚠ **The font miss is silent**: `embedAllFonts` logs `Font file missing:` and carries
+   on, so a clean log is not proof. Look at the captions.
+4. **Is the front-panel content where the owner wants it?** Print is the only place to judge the
+   centring the whole drop was correcting.
+
+⚠ **The +6mm nudge is NOT uniform in print.** The engine shifts front-panel items by
+`actualSpine − referenceSpineMm`, which at 40pp is **+1mm for the six 9mm-authored templates
+and 0 for Heirloom, Laguna and Tender.** The same CSV number prints at 316 on
+Joyride/Scribble/Newborn/Papercut/Wander and 315 on the other three. Compare two templates from
+different families before nudging again.
 
 ```powershell
 gcloud run deploy aevia-pdf-renderer --source C:/Users/evgmy/aevia-test --region europe-west1 --memory 8Gi --cpu 4 --timeout 900 --allow-unauthenticated --project aevia-uploads --quiet
 ```
 
-Until it runs, a new **Tender** order stores the full 8-line intro passage but the stale renderer
-draws it into the OLD 100mm box, and **Scribble** PDFs look for `Onest-Regular.ttf` that container
-does not have. ⚠ **The font miss is silent** — `embedAllFonts` only logs `Font file missing:` and
-carries on, so Scribble captions would just lose their face. The 2026-08-17 morning redeploy
-predates both changes. `--source` builds from the **working tree**, not GitHub.
-
-**Then generate one Tender PDF and one Scribble PDF.** That single pass verifies all of S182:
-the restored authored text, the new 132×140mm box, the Onest swap, and that ß now prints.
+## ⚠ Carried into the next Heirloom drop
+Owner will apply Beige's coordinates to **Blue, Brown and Green** next.
+- Their windows are `fill="none"` today; **expect the re-export to re-fill them** exactly as it
+  did Beige's. `tests/cover-photo-window.test.js` now catches that before the engine does.
+- **Heirloom's slot tracks the ARTWORK opening centre, not the CSV** (332.63 vs 333.00). Do not
+  "fix" it to match the CSV — the file's own comment explains why.
+- ⚠ **Roses' new SVG has no photo opening at all** — no `<defs>`, no clipPath. It reuses Birds'
+  value, as before, but nothing in the artwork confirms it.
 
 ## Where germanization stands
 | Stage | State |
@@ -60,7 +78,64 @@ the restored authored text, the new 132×140mm box, the Onest swap, and that ß 
 5. `functions/caption/caption.js --language de` reproduces engine output locally, no deploy
    needed. It reads `functions/.env` as a fallback — never copy the key to a second file.
 
+## Where Printsmarter stands
+| Piece | State |
+|---|---|
+| `product_id` = `aevia_hardcover` | ✅ set in `functions/.env` (S185) |
+| Token / customer id 3983 / base URL | ✅ set since S155 |
+| `printsmarterPostback` | ✅ **deployed + verified live** (S185), 5 cases green |
+| Postback URL registered with them | ⏳ emailed to them, awaiting confirmation |
+| `submitPrintOrder` | ❌ **not deployed** |
+| `PRINTSMARTER_LIVE` | ❌ `false` — deliberate kill-switch |
+| A first live order | ❌ deferred by owner |
+
+**To send a first order:** the order needs `status: 'paid'` (dashboard dropdown), **print-mode**
+PDFs in GCS, and a `shippingAddress` (no dashboard control — needs a hand-edit). AEV-095 (Laguna)
+and AEV-091 (Heirloom Blue) are prepared except for the PDFs. Then set `PRINTSMARTER_LIVE=true`
+and deploy `submitPrintOrder`.
+⚠ **Their "orders are not forwarded to production" is an account setting, not a test mode** — when
+they flip it, submissions become real books with no change on our side.
+
 ## Recent decisions
+- **Cover coordinates land at trim X 315mm everywhere; Papercut at 314 is deliberate (S187,
+  owner)** — to be judged in print, not on screen.
+- **For a CLIPPED template the ARTWORK wins over the CSV (S187)** — Heirloom's slot is 332.63
+  because that is the opening centre; the CSV says 333.00. A 0.37mm error shows background down
+  one edge of an 80mm window.
+- **Tender declares `referenceSpineMm: 10` (S187)** — its sheet was re-exported at 410mm. With
+  `9` the engine squeezes a 410mm sheet into 409mm.
+- **Joyride and Scribble stay at `referenceSpineMm: 9` (S187)** — their artwork now draws a 10mm
+  spine band on a 409mm sheet, but **the engine never displays the SVG's spine band**; it paints
+  its own. **Do not raise this as a print defect** — that is the S168 mistake (LEARNINGS 178).
+- **Resumable uploads are NOT part of the upload-stall work (S187, owner)** — the signed URL is
+  `action: 'write'`, a single-shot PUT, so retries restart at byte zero. Worth doing, own
+  session, and it would not have fixed AEV-096.
+- **Nothing to build for the upload stall yet (S187, owner)** — the root cause is still not
+  established and the OneDrive premise did not survive checking. See "Open questions".
+- **Heirloom's different paper = a SECOND `product_id`, requested by email (S186)** — their ids are
+  issued by email, no catalogue and no self-service. Our side: `printsmarter.js:89` sends one
+  hard-wired id for every order and becomes a per-template lookup keyed off the **registry key**,
+  standard id as the default. ~10 lines. **Not built.** `pages`, `quantity` and retail `price`
+  are unaffected.
+- **Liability: keep the order-value cap, do NOT exclude slight negligence (S186)** —
+  `work/legal-pages/decision-liability.md`. ⚠ Reversible **only until the first live order**
+  (AGB §10 locks the live version into each order). **Insurance, not wording, is the real
+  protection for a personally-liable e.U.** Do not re-raise Journi's blanket exclusion.
+- **Our missing ODR link is CORRECT — the platform shut down 20 July 2025 (S186)**, Reg. (EU)
+  2024/3228. S183 recorded the wrong reason. Journi still links it; theirs is stale. **Do not
+  re-add it after seeing it on a competitor site.**
+- **No accessibility statement — microenterprise exemption under the EAA (S186).** Not permanent;
+  revisit if the business grows past 10 staff / €2m.
+- **Photo retention follows the cheap mechanism (S186, owner)** — "12 months after **upload**" plus
+  a 365-day GCS lifecycle rule, not a scheduled function reading delivery dates.
+- **OpenAI stays disclosed as a processor (S186, owner)** — GDPR Art. 13 recipients.
+- **Printsmarter `price` = retail, not cost (S185, their docs)** — our €70/€100 is correct.
+  Cost is €8.47 (40pp) / €11.67 (80pp). **Never put cost in that field.**
+- **Postback auth solved on our side (S185)** — secret in the URL path; their dev team builds
+  nothing. The S155 "can you sign requests?" question is **withdrawn, not pending**.
+- **Do not weaken `submitPrintOrder`'s guards for testing (S185)** — set the fields on the
+  Firestore doc instead. A missing address returns 400 and bills nothing, so the dashboard
+  button is safe to click.
 - **Intro pages print pre-defined book copy and are NEVER abridged (S182, owner)** — if the text
   does not fit, **grow the box**, never shrink Xenia's type or trim her words.
 - **Scribble's NT Somic replaced with Onest (S182)** — closes TO-DOS #115 outright; every font
@@ -89,26 +164,34 @@ the restored authored text, the new 132×140mm box, the Onest swap, and that ß 
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **The Cloud Run redeploy + the two verification PDFs** — see "Do this first" above.
-2. **Get ONE native German read of everything at once** — the `/de/` pages, the order form, the
+1. **Generate the PDFs** — see "Do this first". The renderer is redeployed; nothing is printed.
+   This closes both the cover drop AND the two S182 verification PDFs (Tender + Scribble) in one
+   pass, since Tender now also carries the 410mm spine change.
+2. **Apply Beige's coordinates to Heirloom Blue, Brown and Green** — see "Carried into the next
+   Heirloom drop". Their front-panel coordinates are still the old, off-centre ones.
+3. **Ask Printsmarter for Heirloom's second `product_id`** — and in the same email: exact paper
+   spec per product, written confirmation that `pages: 40|80` at `quantity: 1` is accepted, whether
+   the cover board differs, the cost impact, and the **geometry in writing** now that they have
+   printed samples (§5 item 10). Then build the per-template lookup.
+4. **Get ONE native German read of everything at once** — the `/de/` pages, the order form, the
    per-template copy, and now the captions. **Nothing German has ever been read by a native
    speaker.** Highest-leverage item left: one pass covers every surface, and doing it late means
    rework on stages already marked ✅. It also hands you Stage 6's 11 add-on names for free.
-3. **Stage 6 — DE mockups + gallery swap** (treat as ONE job; each is useless without the other),
+5. **Stage 6 — DE mockups + gallery swap** (treat as ONE job; each is useless without the other),
    then the add-on names. ⚠ Capture reads the **deployed** rig — push first (LEARNINGS S172).
    Owner is creating one German order per template for this. Functional pages only, so the orders
    need special pages filled but not full photo sets; Heirloom's four colourways are four orders.
    ⚠ When building the add-on names, key the map off the English **`name`**, NOT the `slug` —
    slugs are positional (`fp1` is "Travel map" on Joyride but "Birthday spread" on Papercut).
-4. **Send the Printsmarter reply with sample PDFs.** Then the `v4` → `v2` signed-URL change at
-   `functions/index.js:1495`. Still blocked on their `product_id`.
-5. **TO-DOS #113 — German transactional emails.** Own session; bilingual-vs-German-only undecided.
-6. **Implement `docs/briefs/upload-failure-recovery.md`** — ready and unblocked since S174.
+6. **Print the first Printsmarter order when ready** — no longer blocked. Generate print-mode
+   PDFs, then `PRINTSMARTER_LIVE=true` + deploy `submitPrintOrder`. Owner deferred this S185.
+7. **TO-DOS #113 — German transactional emails.** Own session; bilingual-vs-German-only undecided.
+8. **Implement `docs/briefs/upload-failure-recovery.md`** — ready and unblocked since S174.
    Piece 0 (Retry) is independent of the scheduled job.
-7. **Packaging, when Xenia replies** — entry point `work/packaging/README.md`.
-8. **Decide the ~14 untracked `qa/` one-offs.** Proposal made S175, not actioned.
-9. **Confirm the venue credit wording against the agreement.**
-10. **Decide whether to delete `pages/spread-preview.html`** — dead prototype carrying HEIC code
+9. **Packaging, when Xenia replies** — entry point `work/packaging/README.md`.
+10. **Decide the ~14 untracked `qa/` one-offs.** Proposal made S175, not actioned.
+11. **Confirm the venue credit wording against the agreement.**
+12. **Decide whether to delete `pages/spread-preview.html`** — dead prototype carrying HEIC code
     and the last `NT Somic` reference in the repo.
 11. **Owner review of the Laguna page copy** (EN + DE) — TO-DOS #110.
 12. **Downscale Clémence's portrait** — 3.48 MB against 86 KB for Kevin's.
@@ -120,6 +203,18 @@ the restored authored text, the new 132×140mm box, the Onest swap, and that ß 
 17. **Customer-preview must record caption line breaks** (open since S159).
 
 ## Open questions
+- **What actually causes the upload stall?** Still unknown after four sessions. S187 captured
+  the first real failure and it **killed the duplicate-`File` hypothesis** (55 distinct
+  originals, the failing file used once; Chrome/Windows, not Safari) without replacing it.
+  ⚠ The "identical 371,712 bytes" is **not** proof the file was unreadable — `bytesTransferred`
+  is only set inside the progress handler and **we never record how many events fired**, so one
+  buffer flush then a wedged connection fits the same data. ⚠ The OneDrive placeholder theory
+  weakened: "Free up space" is greyed out on those files, so they are not placeholders.
+  A third candidate survives: OneDrive rewrites files during sync and Chrome's `File` is a
+  snapshot tied to modification time. **Next move is instrumentation, not a fix** —
+  `work/upload-file-read/brief.md` is PROVISIONAL and its prevention scope is unjustified.
+- **Is the +6mm nudge right, given it prints as +1mm more on six templates?** Needs two
+  templates from different spine families compared on paper.
 - **Has any native speaker read ANY of the German?** Still no. **The single largest unverified
   surface in the project**, and it now includes the AI captions.
 - **Does the German intro want the tighter spacing Xenia wrote?** Both German `.txt` files put
@@ -135,7 +230,8 @@ the restored authored text, the new 132×140mm box, the Onest swap, and that ß 
   was "Everything new in this quiet moment" — the same weakness. Left alone on purpose.
 - **Is the language selector acceptable live before Stage 6?** A DE pick now gives German artwork,
   a German form and German captions, but English mockups. Production is waitlist-gated.
-- **Which templates go to Printsmarter as samples**, and does the `v2` signed URL actually work?
+- **Which templates go to Printsmarter as samples?** Signed URLs are v4/7-day; whether their
+  fetcher accepts them is **untested** — the first submission proves it.
 - **Does a repositioned full-bleed photo now print off-centre?** Never eyeballed.
 - **Does the PDF renderer spill over-long story-panel text the way the engine does?** Never
   rendered — and now more relevant, since Tender's intro box grew.
@@ -149,7 +245,8 @@ the restored authored text, the new 132×140mm box, the Onest swap, and that ß 
 - **Should existing derivatives be regenerated?** Costs egress; default is to leave them.
 - **`wander-data.js` placeholders still quote the artwork's old wording** ("Dolomites, 2026").
 - **Intro letter colour assumed `#7c746e`** — resolved for Beige; confirm with Xenia.
-- **The Printsmarter button is visible on the staff dashboard** but cannot fire (no `product_id`).
+- **`functions/index.js:1513` claims the dispatch email is "NOT yet wired". It IS wired** and
+  emails the customer on any postback that reaches a real order. Stale comment, not fixed.
 - **Pre-13-July Papercut orders have `name`/`year` swapped in Firestore.**
 - **Approval overwrites staff edits blindly.**
 - **Prices live in THREE places** — Stripe, `assets/js/prices.js`, `PRICE_BY_PAGE_COUNT`.

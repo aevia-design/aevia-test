@@ -36,6 +36,16 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   Keep it that way: numbers are stable and referenced across the repo, so never renumber.
 - Codified insights from past sessions (read before repeating an old mistake): `LEARNINGS.md`
 - Captured ideas / future directions: `ideas.md`
+- **Legal pages (Impressum, Datenschutz, AGB): `work/legal-pages/` — read `plan_v1.md` FIRST.**
+  Drafted S183, benchmarked and parked S186. **English markdown only: no HTML, not linked, no DE.**
+  `plan_v1.md` is the resume point (settled decisions, open owner questions, five ordered steps);
+  `benchmark_v1.md` is the comparison against Journi GmbH; `decision-liability.md` settles AGB §8;
+  `drafts_en_v1.md` is the current text. Published business facts: `docs/business-legal-facts.md`.
+  ⚠ Three things not to re-derive: the **EU ODR platform shut down 20 July 2025** so its absence is
+  correct (competitors' pages are stale); we are **exempt from the accessibility statement** as a
+  microenterprise; and **liability keeps the order-value cap** — do not re-raise excluding slight
+  negligence. ⚠ The Datenschutz page **must not publish before the GCS photo-retention lifecycle
+  rule exists** — nothing deletes photos today.
 - Design principles: `context/design-principles.md` (website + staff engine)
 - Customer engine design spec: `.interface-design/system.md`
 - Style guide: `context/style-guide.md`
@@ -113,9 +123,16 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     the primary target; **journalism caption guidance must not govern this genre** (informing vs
     evoking); and Xenia's authored `*_DE.txt` files are the **in-genre evidence that outranks
     external sources**.
-  - `upload-failures.md` — **CLOSED S150** (owner's call; root cause never proven). Instrumentation
-    is deployed and untriggered. Read it before touching the upload path or re-diagnosing a stall:
-    it records what was ruled out, and the one variable never tested.
+  - `upload-failures.md` — **CLOSED S150** (owner's call; root cause never proven). Read it before
+    touching the upload path or re-diagnosing a stall. ⚠ **S187 finally captured a failure
+    (AEV-096) and it KILLED the brief's duplicate-`File` hypothesis** — the failing photo was
+    used once in the order, on Chrome/Windows not Safari. **Do not re-open that theory.** It did
+    **not** establish a replacement: the identical 371,712-byte stop reads like a file fault, but
+    the progress-event count is never recorded, so a wedged connection after one buffer flush
+    fits equally. The OneDrive placeholder theory did not survive checking either. **Next move is
+    instrumentation, not a fix** (TO-DOS #116); `work/upload-file-read/brief.md` is
+    **PROVISIONAL** and its prevention scope is unjustified. The *cascade* IS fixed (S173/S174) —
+    one bad photo now costs one photo, not the order.
   - `upload-failure-recovery.md` — the stranded-upload lifecycle (`upload_failed` status, a
     detection job, a Retry button, staff-email timing). **READY TO IMPLEMENT as of S174**, after
     every claim in two reviews was checked against the code. **Nothing in it is built yet.**
@@ -127,8 +144,14 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     2026-08-05 call ruled out. Its replacement is `printsmarter-api.md` (the print house's real
     API contract), with the integration brief in `work/print-api/brief.md`. **Merged to `main` in
     S156** along with `functions/printsmarter.js` and its tests — no branch or worktree needed.
-    The integration is deployed nowhere and cannot fire: it needs `PRINTSMARTER_PRODUCT_ID` set,
-    `PRINTSMARTER_LIVE=true`, functions deployed, and the postback URL sent to them.
+    ⚠ **Updated S185:** `PRINTSMARTER_PRODUCT_ID` is set (`aevia_hardcover`) and
+    `printsmarterPostback` is **deployed and verified live**. Still required before a first order:
+    `PRINTSMARTER_LIVE=true`, `submitPrintOrder` deployed, and per-order `status: 'paid'` +
+    print-mode PDFs + `shippingAddress` (the last has no dashboard control). **§5 of the brief was
+    rewritten S185 — four questions are CLOSED, do not re-ask them**: `price` is the RETAIL sales
+    price (never our cost), `shipping_code` is `Standard`/`Express`, there is no sandbox but our
+    account does not currently forward orders to production (**their setting, not a test mode**),
+    and `product_id` is issued by email.
 - Cover geometry is page-count dependent: `work/spine-geometry/brief.md` is the authority for the
   numbers (40pp → 10mm spine, 80pp → 14mm). **A cover SVG's viewBox must frame the TRIM
   (409×200mm) with bleed outside it** — a full-bleed viewBox renders 8% small with a blank band
@@ -137,8 +160,17 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   positions, not whether the artwork landed). **The 409mm trim assumes a 9mm reference spine —
   Heirloom's covers are authored at 10mm (410mm) and declare `referenceSpineMm: 10`.**
   ⚠ **A Xenia drop is an input to VALIDATE, not a spec to implement** — filled photo windows,
-  mixed bleed conventions and stray viewBoxes have each cost a session. See LEARNINGS (S157)
+  mixed bleed conventions and stray viewBoxes have each cost a session. See LEARNINGS (S157, S187)
   for the pre-flight checks, and re-apply any in-repo SVG patch after a re-export.
+  **`tests/cover-photo-window.test.js` (S187) now guards the filled-window trap**: an opaque
+  placeholder inside the photo window paints OVER the customer's photo in both engines AND in
+  print (`export-pdf.js:1259`), and a re-export re-fills it every time. ⚠ **For a CLIPPED
+  template the ARTWORK wins over the CSV** — Heirloom's slot is 332.63 because that is the
+  opening centre; the CSV says 333.00, and 0.37mm shows background down one edge.
+  ⚠ **`tests/cover-svg-viewbox.test.js` resolves Blue/Brown/Green to BEIGE's file** and has never
+  actually checked them (TO-DOS #109).
+  ⚠ `node qa/probe-cover-svg-text.mjs` prints "no SVG" for all ten templates when the dev server
+  is down — it reads as a missing-file error, not a missing-server one. Start `http-server` first.
   ⚠ **Artwork can carry text the code knows nothing about.** Wander's cover shipped with the
   album name outlined into it, under the customer's caption, and it would have printed (S165).
   **Outlined text is invisible to `grep` and to a DOM query** — the SVG loads as an `<img>`.
