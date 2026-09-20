@@ -92,7 +92,14 @@ function splitName(name) {
 // NOTE: no return_address is sent. Their docs example uses an Elanders address;
 // where OUR failed deliveries go is an open contract question (brief §Context).
 function buildOrderPayload(order, files, config) {
-  const price = PRICE_BY_PAGE_COUNT[order.pageCount];
+  // Orders store pageCount as a STRING — the order form reads it from a URL
+  // param and never coerces. Their documented example sends `"pages": 40`
+  // unquoted while `"price"` IS a string, so they distinguish the two types and
+  // we must send a number. Coerce here rather than at the source: this is the
+  // only place the value crosses into their contract. (The price lookup below
+  // hid this for a whole session — PRICE_BY_PAGE_COUNT["40"] resolves happily.)
+  const pages = Number(order.pageCount);
+  const price = PRICE_BY_PAGE_COUNT[pages];
   if (price === undefined) {
     throw new Error(`pageCount ${order.pageCount} has no price — we sell ${Object.keys(PRICE_BY_PAGE_COUNT).join('/')}pp only`);
   }
@@ -126,7 +133,7 @@ function buildOrderPayload(order, files, config) {
       product_id_client: `${order.orderNumber}-1`,
       product_id: productIdFor(order.templateName, config),
       price: price.toFixed(2),
-      pages: order.pageCount,
+      pages,
       file_cover: files.cover,
       file_content: files.content,
     }],

@@ -171,6 +171,26 @@ describe('buildOrderPayload — maps an Aevia order onto add_Order', () => {
     expect(p.products).toHaveLength(1);
   });
 
+  test('pages is sent as a NUMBER even though orders store it as a string', () => {
+    // Real orders carry pageCount: "40" — the order form reads it from a URL
+    // param. Their example sends `"pages": 40` unquoted, so a string is wrong.
+    const [book] = buildOrderPayload(paidOrder({ pageCount: '40' }), files, cfg).products;
+    expect(book.pages).toBe(40);
+    expect(typeof book.pages).toBe('number');
+    expect(book.price).toBe('70.00');
+  });
+
+  test('an 80pp string order prices and pages correctly too', () => {
+    const [book] = buildOrderPayload(paidOrder({ pageCount: '80' }), files, cfg).products;
+    expect(book.pages).toBe(80);
+    expect(book.price).toBe('100.00');
+  });
+
+  test('a page count we do not sell still throws, string or number', () => {
+    expect(() => buildOrderPayload(paidOrder({ pageCount: '60' }), files, cfg)).toThrow(/has no price/);
+    expect(() => buildOrderPayload(paidOrder({ pageCount: 60 }), files, cfg)).toThrow(/has no price/);
+  });
+
   test('book product carries pages, both file URLs and our product id', () => {
     const [book] = buildOrderPayload(paidOrder(), files, cfg).products;
     expect(book.product_id).toBe('aevia_hardcover_matte');
