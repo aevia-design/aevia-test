@@ -1416,6 +1416,12 @@ exports.getPdfUrl = functions
 //   3. Kill-switch: submitOrder() itself refuses unless PRINTSMARTER_LIVE=true —
 //      lives inside the client so no caller can forget it.
 // Vendor contract lives entirely in ./printsmarter.js.
+//
+// dryRun (S188): pass { dryRun: true } to run every guard, resolve the address
+// and build the exact payload, then return it WITHOUT submitting. Deliberately
+// the same code path rather than a parallel preview — a preview that re-derives
+// the payload can drift from the real one and show you a book you are not
+// actually ordering (the `npm test` vs order.html trap, LEARNINGS S156).
 exports.submitPrintOrder = functions
   .region('europe-west1')
   .runWith({ timeoutSeconds: 60, memory: '256MB' })
@@ -1434,7 +1440,9 @@ exports.submitPrintOrder = functions
     if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
 
     try {
-      const { printsmarterConfig, buildOrderPayload, submitOrder } = require('./printsmarter');
+      const { printsmarterConfig, buildOrderPayload, submitOrder,
+              resolveShippingAddress } = require('./printsmarter');
+      const dryRun = req.body.dryRun === true;
       // Throws if any PRINTSMARTER_* env is missing (incl. the product id we
       // are still waiting on) — better a clear 500 here than a bad payload out.
       const config = printsmarterConfig(process.env);
@@ -1451,6 +1459,32 @@ exports.submitPrintOrder = functions
       }
       if (order.status !== 'paid') {
         return res.status(409).json({ error: `Order status '${order.status}' — only paid orders can be sent to print` });
+      }
+
+      // Address fallback (S188). Only two code paths ever stamp shippingAddress
+      // onto an order and both live in the payment flow: the saved-address copy
+      // in createCheckoutSession and the Stripe webhook. So an order that was
+      // never paid through Stripe (a staff test order) has none — and a real
+      // paid order can lose it too, because that copy sits in a try/catch that
+      // only warns, and the saved-address path skips Stripe's address
+      // collection so the webhook has nothing to fall back on.
+      //
+      // In every one of those cases the customer record holds the address we
+      // want: it is where the checkout copy was reading FROM. This can only
+      // fill an absent field, never override one, so it cannot redirect a book
+      // that already has a confirmed destination.
+      let savedAddress = null;
+      const custEmail = order.shippingAddress ? null : normalizeEmail(order.email);
+      if (custEmail) {
+        const custDoc = await db.collection('customers').doc(custEmail).get();
+        savedAddress = custDoc.exists ? (custDoc.data().shippingAddress || null) : null;
+      }
+      const { address, source: addressSource } = resolveShippingAddress(order, savedAddress);
+      order.shippingAddress = address;
+      if (addressSource === 'customer account') {
+        // Logged, not silent: staff should be able to see in the function logs
+        // that a book shipped to an address the order itself never had.
+        console.log(`submitPrintOrder: ${orderNumber} has no shippingAddress — using the one saved on ${custEmail}`);
       }
 
       // The print PDFs must have been rendered (dashboard: Generate PDF → print
@@ -1478,12 +1512,23 @@ exports.submitPrintOrder = functions
       const files = { cover: await sign(coverPath), content: await sign(insidePath) };
 
       const payload = buildOrderPayload(order, files, config);
+
+      // Everything above ran for real — guards, address resolution, PDF checks,
+      // signed URLs. Stop here and hand the payload back for inspection.
+      if (dryRun) {
+        return res.status(200).json({ dryRun: true, addressSource, payload });
+      }
+
       const { printsmarterOrderId } = await submitOrder(payload, config);
 
       // NOTE (S11 invariant): Timestamp.now() inside arrayUnion, not serverTimestamp()
       await doc.ref.update({
         status: 'sent_to_print',
         printsmarterOrderId,
+        // Record where the book actually went. If the address came from the
+        // customer record, the order doc had none — write it on now so the
+        // order is a truthful account of what was shipped.
+        ...(addressSource === 'customer account' ? { shippingAddress: order.shippingAddress } : {}),
         sentToPrintAt: admin.firestore.FieldValue.serverTimestamp(),
         statusHistory: admin.firestore.FieldValue.arrayUnion({
           status: 'sent_to_print',

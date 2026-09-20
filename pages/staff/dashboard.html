@@ -214,6 +214,17 @@
 
     /* ── Empty / Loading ── */
     .state-msg { text-align: center; padding: 80px 24px; color: var(--muted); font-family: var(--serif); font-style: italic; font-size: 17px; }
+    /* Printsmarter dry-run preview (S188) — a plain overlay, no library. */
+    #ps-preview {
+      display: none; position: fixed; inset: 0; z-index: 90;
+      background: rgba(0,0,0,0.45); align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .ps-preview-card {
+      background: var(--white); border-radius: 6px; padding: 24px;
+      max-width: 480px; width: 100%; max-height: 88vh; overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+    }
   </style>
 </head>
 <body>
@@ -561,6 +572,7 @@
           <div class="print-action-row" id="print-action-${esc(o.orderNumber)}" style="margin-top:8px;">
             ${o.status === 'paid'
               ? `<button class="pdf-link-btn" onclick="markSentToPrint('${esc(o.orderNumber)}')">Mark approved for print</button>
+                 <button class="pdf-link-btn" onclick="previewPrintsmarter('${esc(o.orderNumber)}')">Preview submission</button>
                  <button class="pdf-link-btn" onclick="sendToPrintsmarter('${esc(o.orderNumber)}')">Send to Printsmarter</button>`
               : (o.status === 'sent_to_print'
                   ? `<span style="font-size:10px;color:var(--muted);">Sent to print${o.printsmarterOrderId ? ' · PS #' + esc(String(o.printsmarterOrderId)) : ''}</span>`
@@ -919,6 +931,98 @@
     }
   };
 
+  // ── Dry run: show exactly what would be submitted (S188) ──────────────────
+  // Calls the REAL submitPrintOrder with dryRun, so every guard, the address
+  // fallback, the PDF checks and the payload build are the ones that will run
+  // for the live submission — this cannot show you a payload that differs from
+  // what gets sent. Nothing is submitted and no status changes.
+  window.previewPrintsmarter = async function(orderNumber) {
+    try {
+      const res = await fetch(SUBMIT_PRINT_ORDER_ENDPOINT, {
+        method: 'POST',
+        headers: await staffHeaders(),
+        body: JSON.stringify({ orderNumber, dryRun: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`Cannot submit this order yet:
+
+${data.error || res.status}`);
+        return;
+      }
+      showPrintsmarterPreview(orderNumber, data);
+    } catch (err) {
+      alert('Could not build the preview: ' + err.message);
+    }
+  };
+
+  // Renders the dry-run result. The address and its source come first because
+  // that is the field with no dashboard control and the one most likely wrong.
+  function showPrintsmarterPreview(orderNumber, data) {
+    const book = (data.payload && data.payload.products && data.payload.products[0]) || {};
+    const ship = (data.payload && data.payload.shipping_address) || {};
+    const src = data.addressSource;
+    const srcLabel = src === 'order'
+      ? 'from the order (Stripe checkout)'
+      : (src === 'customer account' ? '⚠ from the customer’s saved account address — the order itself has none' : '⚠ NONE');
+    const srcColour = src === 'order' ? '#166534' : (src === 'customer account' ? '#92400e' : '#b91c1c');
+
+    const addrLines = [
+      [ship.first_name, ship.last_name].filter(Boolean).join(' '),
+      ship.address1, ship.address2,
+      [ship.zip, ship.city].filter(Boolean).join(' '),
+      ship.country_code,
+    ].filter(Boolean);
+
+    // Flex rows, not a <table>: the dashboard sets a global `table { min-width:
+    // 900px }` for the order list, which drags any table inside this card far
+    // off its right edge and hides the values entirely.
+    const rows = [
+      ['Order',      data.payload && data.payload.order_id_client],
+      ['Product id', book.product_id],
+      ['Pages',      book.pages],
+      ['Quantity',   book.quantity],
+      ['Price sent', book.price ? '€' + book.price : ''],
+      ['Email',      ship.email],
+    ];
+
+    const el = document.getElementById('ps-preview');
+    el.innerHTML = `
+      <div class="ps-preview-card">
+        <h3 style="margin:0 0 4px;font-size:15px;">Printsmarter submission preview</h3>
+        <p style="margin:0 0 16px;font-size:11px;color:var(--muted);">Nothing has been submitted. This is the exact payload the Send button would post.</p>
+        <div style="border:1px solid var(--border);border-radius:4px;padding:12px;margin-bottom:14px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;">Ships to</div>
+          <div style="font-size:13px;line-height:1.5;">${addrLines.length ? addrLines.map(esc).join('<br>') : '<em>no address</em>'}</div>
+          <div style="font-size:11px;margin-top:8px;color:${srcColour};">${esc(srcLabel)}</div>
+        </div>
+        <div style="font-size:12px;">
+          ${rows.map(([k, v]) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:4px 0;">
+            <span style="color:var(--muted);">${esc(k)}</span>
+            <span style="font-family:ui-monospace,monospace;text-align:right;word-break:break-all;">${esc(v == null ? '' : String(v))}</span>
+          </div>`).join('')}
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:12px;">
+          Cover PDF: ${book.file_cover ? 'found in storage ✓' : '—'}<br>
+          Inside PDF: ${book.file_content ? 'found in storage ✓' : '—'}
+        </div>
+        <details style="margin-top:14px;">
+          <summary style="font-size:11px;cursor:pointer;color:var(--muted);">Raw payload</summary>
+          <pre style="font-size:10px;overflow:auto;max-height:260px;background:var(--surface);padding:10px;border-radius:4px;white-space:pre-wrap;word-break:break-all;">${esc(JSON.stringify(data.payload, null, 2))}</pre>
+        </details>
+        <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
+          <button class="pdf-link-btn" onclick="closePrintsmarterPreview()">Close</button>
+        </div>
+      </div>`;
+    el.style.display = 'flex';
+  }
+
+  window.closePrintsmarterPreview = function() {
+    const el = document.getElementById('ps-preview');
+    el.style.display = 'none';
+    el.innerHTML = '';
+  };
+
   // ── Send order to Printsmarter via API (S155) ─────────────────────────────
   // Unlike markSentToPrint (a status flip for the manual flow), this actually
   // submits the order to production. The confirm shows exactly what is about to
@@ -1044,5 +1148,6 @@
 
 </script>
 
+  <div id="ps-preview" onclick="if(event.target===this)closePrintsmarterPreview()"></div>
 </body>
 </html>

@@ -57,6 +57,25 @@ function productIdFor(templateName, config) {
   return key.startsWith('heirloom') ? config.productIds.heirloom : config.productIds.default;
 }
 
+// Decides which address a book ships to, and says where it came from (S188).
+//
+// Only two code paths ever stamp shippingAddress onto an order and both live in
+// the payment flow (createCheckoutSession's saved-address copy, and the Stripe
+// webhook). So a staff test order that was never paid through Stripe has none —
+// and a real paid order can lose it too: that copy sits in a try/catch that only
+// warns, and the saved-address path skips Stripe's address collection, so the
+// webhook has nothing to fall back on.
+//
+// The customer record is the right fallback because it is what the checkout copy
+// reads FROM. Pure so the precedence is testable: the order's own address always
+// wins, so this can only fill an absent field, never redirect a book that already
+// has a confirmed destination.
+function resolveShippingAddress(order, savedAddress) {
+  if (order && order.shippingAddress) return { address: order.shippingAddress, source: 'order' };
+  if (savedAddress) return { address: savedAddress, source: 'customer account' };
+  return { address: null, source: 'none' };
+}
+
 // "Max Mustermann" → { first: 'Max', last: 'Mustermann' }. A single word goes
 // to last_name — matching how their example treats the surname as primary.
 function splitName(name) {
@@ -167,6 +186,7 @@ function parseShippingPostback(json) {
 module.exports = {
   printsmarterConfig,
   productIdFor,
+  resolveShippingAddress,
   buildOrderPayload,
   parseAddOrderResponse,
   parseShippingPostback,

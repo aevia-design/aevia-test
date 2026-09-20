@@ -7,6 +7,7 @@
 const {
   printsmarterConfig,
   productIdFor,
+  resolveShippingAddress,
   buildOrderPayload,
   parseAddOrderResponse,
   submitOrder,
@@ -85,6 +86,46 @@ describe('printsmarterConfig — env validation', () => {
     const env = fullEnv();
     delete env.PRINTSMARTER_LIVE;
     expect(printsmarterConfig(env).live).toBe(false);
+  });
+});
+
+describe('resolveShippingAddress — where the book ships, and from where (S188)', () => {
+  const saved = { line1: 'Kontoweg 9', city: 'Wien', postal_code: '1020', country: 'AT' };
+
+  test("the order's own address always wins, even when a saved one exists", () => {
+    const order = paidOrder();
+    const r = resolveShippingAddress(order, saved);
+    expect(r.address).toBe(order.shippingAddress);
+    expect(r.source).toBe('order');
+  });
+
+  test('falls back to the customer account when the order has none', () => {
+    const r = resolveShippingAddress(paidOrder({ shippingAddress: null }), saved);
+    expect(r.address).toBe(saved);
+    expect(r.source).toBe('customer account');
+  });
+
+  test('reports none when neither has an address — never invents one', () => {
+    const r = resolveShippingAddress(paidOrder({ shippingAddress: null }), null);
+    expect(r.address).toBeNull();
+    expect(r.source).toBe('none');
+  });
+
+  test('CANNOT redirect a book that already has a destination — the safety property', () => {
+    const order = paidOrder();
+    const elsewhere = { line1: 'Somewhere else 1', city: 'Graz', postal_code: '8010', country: 'AT' };
+    expect(resolveShippingAddress(order, elsewhere).address).toBe(order.shippingAddress);
+  });
+
+  test('a resolved account address builds a valid payload — same shape as Stripe gives', () => {
+    const cfg = printsmarterConfig(fullEnv());
+    const order = paidOrder({ shippingAddress: null });
+    order.shippingAddress = resolveShippingAddress(order, saved).address;
+    const p = buildOrderPayload(order, files, cfg);
+    expect(p.shipping_address.address1).toBe('Kontoweg 9');
+    expect(p.shipping_address.zip).toBe('1020');
+    expect(p.shipping_address.country_code).toBe('AT');
+    expect(p.shipping_address.country).toBe('Austria');
   });
 });
 
