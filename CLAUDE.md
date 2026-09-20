@@ -144,14 +144,32 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     2026-08-05 call ruled out. Its replacement is `printsmarter-api.md` (the print house's real
     API contract), with the integration brief in `work/print-api/brief.md`. **Merged to `main` in
     S156** along with `functions/printsmarter.js` and its tests — no branch or worktree needed.
-    ⚠ **Updated S185:** `PRINTSMARTER_PRODUCT_ID` is set (`aevia_hardcover`) and
-    `printsmarterPostback` is **deployed and verified live**. Still required before a first order:
-    `PRINTSMARTER_LIVE=true`, `submitPrintOrder` deployed, and per-order `status: 'paid'` +
-    print-mode PDFs + `shippingAddress` (the last has no dashboard control). **§5 of the brief was
-    rewritten S185 — four questions are CLOSED, do not re-ask them**: `price` is the RETAIL sales
-    price (never our cost), `shipping_code` is `Standard`/`Express`, there is no sandbox but our
-    account does not currently forward orders to production (**their setting, not a test mode**),
-    and `product_id` is issued by email.
+    ⚠ **Updated S188 — the path is COMPLETE and ARMED.** `submitPrintOrder` is deployed,
+    `PRINTSMARTER_LIVE=true`, `printsmarterPostback` verified live (S185). Per order you still
+    need `status: 'paid'` + print-mode PDFs. **Sending is once-only** (`printsmarterOrderId`
+    guard); a problem found afterwards is a `cancel_order` with them, not a resend.
+    **Two product ids, one per paper stock (S188):** Heirloom → `aevia_hardcover_offset`,
+    everything else → `aevia_hardcover_matte`, chosen by `productIdFor()` off the lowercased
+    `heirloom` prefix of `templateName`. Both env vars are **required**; a missing `templateName`
+    throws rather than defaulting to matte.
+    **`shippingAddress` no longer needs a Firestore hand-edit (S188):** it falls back to
+    `customers/{email}.shippingAddress`, which staff set once in `pages/account.html` (gated on
+    `email_verified`). The fallback can only fill an absent field, never override one — the
+    precedence is pure and tested in `resolveShippingAddress()`; **do not let it override.**
+    **`{ dryRun: true }` returns the exact payload without submitting** — dashboard "Preview
+    submission". It shares the real code path on purpose; **never replace it with a parallel
+    preview**, which can drift and show a book you are not ordering.
+    ⚠ **`pages` must be sent as a NUMBER** — orders store `pageCount` as a string and
+    `PRICE_BY_PAGE_COUNT["40"]` resolves happily, so the coercion in `buildOrderPayload` is the
+    only thing catching it. Do not "simplify" it away.
+    **§5 of the brief: six questions are CLOSED, do not re-ask them**: `price` is the RETAIL sales
+    price (never our cost), `shipping_code` is `Standard`/`Express` (**and we now send
+    `Standard`**), there is no sandbox but our account does not currently forward orders to
+    production (**their setting, not a test mode**), and `product_id` is issued by email.
+    Still open and deliberately absent from the payload: **`shipping_price`** (we charge none;
+    inventing one misstates a customs field) and **`return_address`**.
+    ⚠ **A 190 MB inside PDF is the first suspect if a submission succeeds and nothing
+    produces** — the signed URLs are proven fetchable from outside Google, the size is not.
 - Cover geometry is page-count dependent: `work/spine-geometry/brief.md` is the authority for the
   numbers (40pp → 10mm spine, 80pp → 14mm). **A cover SVG's viewBox must frame the TRIM
   (409×200mm) with bleed outside it** — a full-bleed viewBox renders 8% small with a blank band

@@ -1,45 +1,65 @@
 # Session Status
-_Last updated: 2026-09-20 (session 187)_
-_Context at save: **Xenia's third cover drop is validated, synced and PUSHED** — two commits,
-`6604dd5` (coordinate sync) and `cf3d9b3` (photo-window fix). Owner has confirmed all three
-broken covers render correctly in the engine and has **redeployed the Cloud Run renderer**.
-`git status` otherwise unchanged from S186, plus one new untracked folder:
-`work/upload-file-read/` (a PROVISIONAL brief — see below)._
+_Last updated: 2026-09-20 (session 188)_
+_Context at save: **Printsmarter is wired and armed.** Four commits pushed (`2a74e4d`,
+`db5fe2f`, `7a8db71`, `e9c3fec`). Owner deployed `submitPrintOrder`, ran live dry runs on
+AEV-098, and will submit the first real API orders after this session — results land in S189._
 
 ## Status
-**🖼 Session 187 — the cover drop landed, was validated, and broke the cover photo on three
-templates until it was fixed.**
+**📦 Session 188 — the print path is complete and live. Nothing has been submitted yet.**
 
-Full detail: **`sessions/2026-09-20-s187.md`**.
+Full detail: **`sessions/2026-09-20-s188.md`**.
 
-Front-panel content now sits at **trim X 315mm** on every template (Papercut at 314, owner's
-deliberate choice). All four clipped templates had their clip shapes re-derived from the new
-artwork. Tender was re-authored at 410mm and now declares `referenceSpineMm: 10`. Laguna's
-cover came back at 36.5 MB and was re-optimised to 3.56 MB. `npm test` 614/614.
+Two product ids (Heirloom → offset, everything else → matte), an address fallback that removes
+the Firestore hand-edit, and a dry run that shows the exact payload before anything prints. The
+first live dry run immediately found a real defect (`"pages"` sent as a string) and a missing
+field (`shipping_code`). `npm test` 628/628, `qa:order` 19/19.
 
-## ⚠ Do this first — generate the PDFs
+## ⚠ Do this first — the two test orders
+Owner is submitting **Heirloom Beige** (offset) and **Tender** (matte) via the API. Tender
+carries the riskiest S187 geometry (409 → 410mm sheet) and Heirloom Beige the new cover
+coordinates. **Do NOT use Heirloom Blue (AEV-091)** — its coordinates are still the old
+off-centre ones, so it would test nothing.
 
-The renderer is redeployed and the engine is verified. **Nothing has been printed yet.**
-Generate PDFs from the dashboard and look at them:
+Per order: set the account address once → generate **print** PDFs → look at them → status to
+`paid` → **Preview submission** (check address + source, `product_id`, `pages`) → Send.
 
-1. **Heirloom Beige, Tender, Newborn** — the cover photo must be visible, not a coloured shape.
-   ⚠ **The print path had the identical bug** (`export-pdf.js:1259`, `:1387`), so this is a real
-   check, not a formality.
-2. **Tender's spine** — the only template whose sheet width changed (409 → 410mm).
-3. **Scribble's captions** — still the outstanding S182 item; the Onest swap has never been
-   PDF'd. ⚠ **The font miss is silent**: `embedAllFonts` logs `Font file missing:` and carries
-   on, so a clean log is not proof. Look at the captions.
-4. **Is the front-panel content where the owner wants it?** Print is the only place to judge the
-   centring the whole drop was correcting.
+⚠ **`PRINTSMARTER_LIVE` is `true` and `submitPrintOrder` is deployed**, so "Send to
+Printsmarter" is armed and sits **beside** "Preview submission" in the same row. A misclick is a
+real book and a real invoice; the confirm dialog is the only thing between them. Set it back to
+`false` and redeploy between print runs if that is not wanted — the dry run works with it off.
+
+⚠ **Sending is once-only.** After success the order carries `printsmarterOrderId` and any
+retry is refused by design. A problem found afterwards is a `cancel_order` with them, not a
+resend.
+
+⚠ **Their "orders are not forwarded to production" is an account setting, not a test mode.**
+A successful submission today may produce **no book**, which defeats the point of printing these
+two. Email them to produce these specifically — or, if they have already flipped it, these are
+real books at the retail `price` we send.
+
+### What the first PDFs still have to prove (carried from S187, still unclosed)
+1. **Heirloom Beige, Tender, Newborn** — cover photo visible, not a coloured shape
+   (`export-pdf.js:1259`, `:1387` had the identical bug).
+2. **Tender's spine** — the only template whose sheet width changed.
+3. **Scribble's captions** — the Onest swap has never been PDF'd. ⚠ The font miss is
+   **silent**: `embedAllFonts` logs `Font file missing:` and carries on. Look at the captions.
+4. **Front-panel centring** — print is the only place to judge it.
 
 ⚠ **The +6mm nudge is NOT uniform in print.** The engine shifts front-panel items by
-`actualSpine − referenceSpineMm`, which at 40pp is **+1mm for the six 9mm-authored templates
-and 0 for Heirloom, Laguna and Tender.** The same CSV number prints at 316 on
+`actualSpine − referenceSpineMm`: at 40pp that is **+1mm for the six 9mm-authored templates and
+0 for Heirloom, Laguna and Tender.** The same CSV number prints at 316 on
 Joyride/Scribble/Newborn/Papercut/Wander and 315 on the other three. Compare two templates from
 different families before nudging again.
 
 ```powershell
 gcloud run deploy aevia-pdf-renderer --source C:/Users/evgmy/aevia-test --region europe-west1 --memory 8Gi --cpu 4 --timeout 900 --allow-unauthenticated --project aevia-uploads --quiet
+```
+(Redeploy the renderer BEFORE generating PDFs if template data or SVGs changed, or you bake
+stale artwork.)
+
+Functions deploy runs from the **project root**, not `functions/`:
+```powershell
+npx firebase deploy --only functions:submitPrintOrder
 ```
 
 ## ⚠ Carried into the next Heirloom drop
@@ -81,22 +101,47 @@ Owner will apply Beige's coordinates to **Blue, Brown and Green** next.
 ## Where Printsmarter stands
 | Piece | State |
 |---|---|
-| `product_id` = `aevia_hardcover` | ✅ set in `functions/.env` (S185) |
+| `product_id` × 2 — offset (Heirloom) / matte (rest) | ✅ S188, both in `functions/.env`, both required |
 | Token / customer id 3983 / base URL | ✅ set since S155 |
 | `printsmarterPostback` | ✅ **deployed + verified live** (S185), 5 cases green |
-| Postback URL registered with them | ⏳ emailed to them, awaiting confirmation |
-| `submitPrintOrder` | ❌ **not deployed** |
-| `PRINTSMARTER_LIVE` | ❌ `false` — deliberate kill-switch |
-| A first live order | ❌ deferred by owner |
+| `submitPrintOrder` | ✅ **deployed S188** |
+| `PRINTSMARTER_LIVE` | ✅ **`true`** — the send button is armed |
+| Address fallback + dry run | ✅ S188 |
+| Postback URL registered with them | ⏳ emailed, awaiting confirmation |
+| A first live order | ⏳ **owner submitting after S188** |
 
-**To send a first order:** the order needs `status: 'paid'` (dashboard dropdown), **print-mode**
-PDFs in GCS, and a `shippingAddress` (no dashboard control — needs a hand-edit). AEV-095 (Laguna)
-and AEV-091 (Heirloom Blue) are prepared except for the PDFs. Then set `PRINTSMARTER_LIVE=true`
-and deploy `submitPrintOrder`.
-⚠ **Their "orders are not forwarded to production" is an account setting, not a test mode** — when
-they flip it, submissions become real books with no change on our side.
+**Deliberately absent from the payload, both still open in the brief:**
+- **`shipping_price`** — we charge no shipping, and their docs describe `price` as feeding
+  customs/proforma documents, so inventing a figure would misstate one.
+- **`return_address`** — asked S185, unanswered. A failed delivery must not route to a private
+  Vienna address, so we send none rather than guess.
+
+**Ask them in the same email as Heirloom's paper spec:** produce these two orders; is
+`return_address` required; are `product_id_client` / `project_name` free-form on our side; and
+**can their fetcher handle a 190 MB PDF** (see below).
+
+⚠ **190 MB is the first suspect if a submission succeeds and nothing produces.** AEV-098's
+inside PDF is 190.65 MB, cover 9.68 MB. Both signed URLs were verified fetchable from outside
+Google (`200 OK`, `application/pdf`, no auth) — so the **URLs are proven and the size is not.**
+AEV-095's *preview* alone was 231 MB.
 
 ## Recent decisions
+- **Two Printsmarter products, one per paper stock (S188, owner)** — Heirloom
+  `aevia_hardcover_offset`, everything else `aevia_hardcover_matte`. Matching is on the
+  lowercased `heirloom` **prefix**, so a fifth colourway needs no code change. A missing
+  `templateName` **throws** rather than defaulting to matte.
+- **The account address is the fallback, not a Firestore hand-edit (S188)** — owner and Xenia
+  set an address once in `pages/account.html`; `submitPrintOrder` reads
+  `customers/{email}.shippingAddress` only when the order has none. It can fill an absent field,
+  never override one. ⚠ That form is gated on `email_verified`.
+- **Dry run shares the real code path, never a parallel preview (S188)** — a preview that
+  re-derives the payload can drift and show a book you are not ordering.
+- **`pages` is sent as a NUMBER (S188)** — orders store `pageCount` as a string; their example
+  distinguishes it from `price`, which IS a string. **Do not "simplify" the coercion away.**
+- **`shipping_code: 'Standard'` is sent explicitly (S188)** — omitting it risks an Express
+  default we would pay for, or rejection if required.
+- **Multiple copies deferred to TO-DOS #117 (S188)** — copies are `quantity: 2` on ONE line
+  item, not a second `-2` line item. Blocked on an owner pricing decision.
 - **Cover coordinates land at trim X 315mm everywhere; Papercut at 314 is deliberate (S187,
   owner)** — to be judged in print, not on screen.
 - **For a CLIPPED template the ARTWORK wins over the CSV (S187)** — Heirloom's slot is 332.63
@@ -164,15 +209,17 @@ they flip it, submissions become real books with no change on our side.
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **Generate the PDFs** — see "Do this first". The renderer is redeployed; nothing is printed.
-   This closes both the cover drop AND the two S182 verification PDFs (Tender + Scribble) in one
-   pass, since Tender now also carries the 410mm spine change.
-2. **Apply Beige's coordinates to Heirloom Blue, Brown and Green** — see "Carried into the next
-   Heirloom drop". Their front-panel coordinates are still the old, off-centre ones.
-3. **Ask Printsmarter for Heirloom's second `product_id`** — and in the same email: exact paper
-   spec per product, written confirmation that `pages: 40|80` at `quantity: 1` is accepted, whether
-   the cover board differs, the cost impact, and the **geometry in writing** now that they have
-   printed samples (§5 item 10). Then build the per-template lookup.
+1. **Submit Heirloom Beige + Tender and read the result** — the whole point of S188. Generate
+   print PDFs, look at them, dry run, send. This closes the S187 cover drop AND the two S182
+   verification PDFs (Tender + Scribble) in one pass. **Report back what their API said and, if
+   they produce them, what the books look like.**
+2. **Email Printsmarter** — produce these two orders; Heirloom's paper spec; is `return_address`
+   required; are `product_id_client` / `project_name` free-form; **can their fetcher handle a
+   190 MB PDF**; written confirmation that `pages: 40|80` at `quantity: 1` is accepted; whether
+   the cover board differs and the cost impact; and the **geometry in writing** (§5 item 10).
+3. **Apply Beige's coordinates to Heirloom Blue, Brown and Green** — see "Carried into the next
+   Heirloom drop". Their front-panel coordinates are still the old, off-centre ones. Xenia is
+   re-doing their SVG geometry.
 4. **Get ONE native German read of everything at once** — the `/de/` pages, the order form, the
    per-template copy, and now the captions. **Nothing German has ever been read by a native
    speaker.** Highest-leverage item left: one pass covers every surface, and doing it late means
@@ -183,8 +230,8 @@ they flip it, submissions become real books with no change on our side.
    need special pages filled but not full photo sets; Heirloom's four colourways are four orders.
    ⚠ When building the add-on names, key the map off the English **`name`**, NOT the `slug` —
    slugs are positional (`fp1` is "Travel map" on Joyride but "Birthday spread" on Papercut).
-6. **Print the first Printsmarter order when ready** — no longer blocked. Generate print-mode
-   PDFs, then `PRINTSMARTER_LIVE=true` + deploy `submitPrintOrder`. Owner deferred this S185.
+6. **TO-DOS #117 — multiple copies per order.** Blocked on an owner pricing decision: is copy
+   two full price or discounted? Cost is €8.47 at 40pp against €70 retail.
 7. **TO-DOS #113 — German transactional emails.** Own session; bilingual-vs-German-only undecided.
 8. **Implement `docs/briefs/upload-failure-recovery.md`** — ready and unblocked since S174.
    Piece 0 (Retry) is independent of the scheduled job.
@@ -203,6 +250,12 @@ they flip it, submissions become real books with no change on our side.
 17. **Customer-preview must record caption line breaks** (open since S159).
 
 ## Open questions
+- **Does their fetcher accept a 190 MB PDF over a 7-day signed URL?** The URLs are proven
+  (`200 OK` from outside Google, no auth); the size is not. First suspect if a submission
+  succeeds and nothing produces.
+- **Are `product_id_client` (`AEV-098-1`) and `project_name` free-form on our side?** Both are
+  our invention from S155 and have never been sent to them for real.
+- **Is copy two of the same book full price or discounted?** Blocks TO-DOS #117.
 - **What actually causes the upload stall?** Still unknown after four sessions. S187 captured
   the first real failure and it **killed the duplicate-`File` hypothesis** (55 distinct
   originals, the failing file used once; Chrome/Windows, not Safari) without replacing it.

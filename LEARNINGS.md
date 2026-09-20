@@ -1,3 +1,42 @@
+## 2026-09-20 — A lenient lookup can hide a type error from every test you have (S188)
+
+The first live dry run against Printsmarter showed `"pages": "40"` — a string where their
+documented example sends a number. 625 tests were green. Two things conspired.
+
+Orders store `pageCount` as a **string** (the order form reads it from a URL param and never
+coerces), and `buildOrderPayload` passed it through. The one piece of code that touches the
+value, `PRICE_BY_PAGE_COUNT[order.pageCount]`, is an **object lookup — so it coerces the key
+and resolves `["40"]` exactly as happily as `[40]`.** The one operation that could have
+revealed the type was structurally incapable of caring about it.
+
+And the test fixture used `pageCount: 40`, a number — **written from how the field is spelled
+in the docs, not from what Firestore actually holds.** So the suite proved the code correct for
+data that never occurs in production.
+
+**The rule: a fixture must be built from a real record, not from the schema as you imagine it.**
+Where the value crosses into someone else's contract, coerce at that boundary and assert the
+type, not just the value. `expect(book.pages).toBe(40)` passes on `"40"` under `==` thinking;
+`expect(typeof book.pages).toBe('number')` is the assertion that bites.
+
+⚠ The same shape exists elsewhere: any Firestore field read straight into an outbound payload
+is worth checking against a real document rather than a fixture.
+
+## 2026-09-20 — innerText said the panel was fine; the screenshot showed it empty (S188)
+
+The new Printsmarter preview modal rendered its payload rows in a `<table>`. Reading the
+modal's `innerText` back through Playwright returned every label and every value, correctly
+paired. The screenshot showed the labels alone: **every value was invisible.**
+
+`dashboard.html` sets a global `table { min-width: 900px }` for the order list. The payload
+table inherited it inside a 480px card, so the right-aligned value column sat hundreds of pixels
+outside the card. The text was in the DOM — `innerText` reads the DOM, not the viewport — and
+on screen there was nothing.
+
+**The rule: a text assertion cannot verify a layout.** For any new UI inside an existing page,
+look at a screenshot before claiming it works; global CSS written for one component reaches
+every later one. Rendering payload rows as flex divs rather than a `<table>` sidesteps the
+inherited rule entirely, and the code now says why so nobody "tidies" it back.
+
 ## 2026-09-20 — A patch inside a supplier's file is a patch that will be lost (S187)
 
 Xenia's third cover drop re-filled the photo windows on Heirloom Roots/Birds, Tender and
