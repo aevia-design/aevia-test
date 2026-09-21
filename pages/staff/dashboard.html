@@ -571,8 +571,7 @@
           </div>
           <div class="print-action-row" id="print-action-${esc(o.orderNumber)}" style="margin-top:8px;">
             ${o.status === 'paid'
-              ? `<button class="pdf-link-btn" onclick="markSentToPrint('${esc(o.orderNumber)}')">Mark approved for print</button>
-                 <button class="pdf-link-btn" onclick="previewPrintsmarter('${esc(o.orderNumber)}')">Preview submission</button>
+              ? `<button class="pdf-link-btn" onclick="previewPrintsmarter('${esc(o.orderNumber)}')">Preview submission</button>
                  <button class="pdf-link-btn" onclick="sendToPrintsmarter('${esc(o.orderNumber)}')">Send to Printsmarter</button>`
               : (o.status === 'sent_to_print'
                   ? `<span style="font-size:10px;color:var(--muted);">Sent to print${o.printsmarterOrderId ? ' · PS #' + esc(String(o.printsmarterOrderId)) : ''}</span>`
@@ -891,6 +890,12 @@
   };
 
   // ── Mark order as sent to print (staff approval before hand-off) ──────────
+  // UNREFERENCED since S189: its button sat beside "Send to Printsmarter",
+  // read as if it submitted the order, and — because the action row only
+  // renders while status is 'paid' — flipping the status HID the button that
+  // actually submits. submitPrintOrder writes 'sent_to_print' itself on
+  // success, so nothing needs this. Kept only as the manual-handoff escape
+  // hatch (call it from the console); the endpoint stays deployed.
   window.markSentToPrint = async function(orderNumber) {
     const confirmed = confirm(`Mark order ${orderNumber} as approved for print? This cannot be undone.`);
     if (!confirmed) return;
