@@ -60,6 +60,11 @@
     .panel h2{font-family:var(--serif);font-weight:400;font-size:28px;margin-bottom:20px;}
     .info-row{display:flex;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:1px solid var(--border);font-size:15px;}
     .info-row .lbl{color:var(--muted);}.info-row .val{text-align:right;word-break:break-word;}
+    .edit-link{font-size:13px;color:var(--accent-dk);border-bottom:1px solid var(--accent-dk);padding-bottom:1px;margin-left:14px;}
+    #name-form{padding:20px 0 4px;max-width:360px;}
+    .name-actions{display:flex;align-items:center;gap:18px;}
+    .name-actions .btn-primary{width:auto;}
+    .name-actions .btn-cancel{font-size:13px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:1px;}
 
     .order{border:1px solid var(--border);border-radius:6px;padding:22px 24px;margin-bottom:16px;background:var(--white);}
     .order-top{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;}
@@ -220,7 +225,15 @@
           </section>
           <section class="panel" id="panel-info">
             <h2>Personal info</h2>
-            <div class="info-row"><span class="lbl">Name</span><span class="val" id="info-name">—</span></div>
+            <div class="info-row"><span class="lbl">Name</span><span class="val"><span id="info-name">—</span><button type="button" class="edit-link" id="name-edit">Edit</button></span></div>
+            <form id="name-form" novalidate style="display:none;">
+              <div class="field"><label for="name-input">Full name</label><input type="text" id="name-input" autocomplete="name" maxlength="80" /></div>
+              <div class="name-actions">
+                <button class="btn-primary" id="name-submit" type="submit">Save name</button>
+                <button class="btn-cancel" id="name-cancel" type="button">Cancel</button>
+              </div>
+              <div class="auth-msg" id="name-msg"></div>
+            </form>
             <div class="info-row"><span class="lbl">Email</span><span class="val" id="info-email">—</span></div>
           </section>
           <section class="panel" id="panel-address">
@@ -453,6 +466,55 @@
       document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('active', p.id === 'panel-' + target));
     });
   });
+
+  // ── Personal info: change the account name ──
+  // The name lives on the Firebase Auth profile (displayName) — the same field
+  // signup sets and the rail, this panel and order.html's prefill all read. The
+  // address book keeps its own "Full name" deliberately: a book can be addressed
+  // to someone other than the account holder, so the two must not be merged.
+  $('name-edit').addEventListener('click', openNameForm);
+  $('name-cancel').addEventListener('click', closeNameForm);
+  $('name-form').addEventListener('submit', (e) => { e.preventDefault(); saveName(); });
+
+  function openNameForm() {
+    const user = auth.currentUser;
+    $('name-input').value = (user && user.displayName) || '';
+    $('name-msg').textContent = ''; $('name-msg').className = 'auth-msg';
+    $('name-form').style.display = 'block';
+    $('name-edit').style.display = 'none';
+    $('name-input').focus();
+  }
+
+  function closeNameForm() {
+    $('name-form').style.display = 'none';
+    $('name-edit').style.display = '';
+  }
+
+  async function saveName() {
+    const user = auth.currentUser;
+    if (!user) return;
+    const msg = $('name-msg'), btn = $('name-submit');
+    const name = $('name-input').value.trim().replace(/\s+/g, ' ');
+    if (!name) {
+      msg.textContent = 'Please enter your name.';
+      msg.className = 'auth-msg show error';
+      return;
+    }
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Saving…';
+    try {
+      await updateProfile(user, { displayName: name });
+      fillInfo(user);
+      closeNameForm();
+    } catch (e) {
+      msg.textContent = 'Could not save your name. Please try again.';
+      msg.className = 'auth-msg show error';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
 
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
   function fmtDate(ms) {
