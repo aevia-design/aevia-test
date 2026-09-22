@@ -74,19 +74,18 @@ describe('Chunk 4 — createUploadSession re-sequencing (Part A)', () => {
       token: 'abc123def456',
     });
 
-    // 2. Then staff email
-    await mockTransporter.sendMail({
-      from: 'orders@aevia.at',
-      to: 'staff@aevia.at',
-      subject: '[AEV-001] New Order',
-      html: '<p>Order received</p>',
-    });
-
-    // 3. NO customer email here (that goes to confirmUpload)
+    // ⚠ SUPERSEDED (TO-DOS #89, S190): createUploadSession now sends NO email at
+    // all. The staff "New Order" mail moved to confirmUpload, so staff hear about
+    // an order once it exists rather than when someone starts one.
+    //
+    // ⚠ And note what this test really is: it calls its own mocks and asserts on
+    // its own calls — it never imports functions/upload.js, so it stays green
+    // whatever the handler does. It is kept only as a record of the Chunk 4
+    // sequencing decision. The real behaviour is tested against the shipped
+    // handler in tests/confirm-upload-emails.test.js.
 
     expect(callOrder[0]).toBe('firestore-write');
-    expect(callOrder[1]).toBe('email-staff');
-    expect(callOrder.length).toBe(2); // Only 2 calls: Firestore, staff email
+    expect(callOrder.length).toBe(1); // Firestore only — no email from this function
   });
 
   test('createUploadSession returns token in response', () => {
@@ -108,10 +107,14 @@ describe('Chunk 4 — createUploadSession re-sequencing (Part A)', () => {
     expect(responseData.token).toMatch(/^[a-f0-9]{64}$/); // 32 bytes hex = 64 chars
   });
 
-  test('createUploadSession does NOT send customer confirmation email', () => {
-    // The customer email template (currently at :190-247) is removed from createUploadSession.
-    // It will move to confirmUpload (Part B).
-    // This test verifies only the staff email is sent.
+  test('createUploadSession sends NO email at all', () => {
+    // Chunk 4 moved the CUSTOMER email to confirmUpload. TO-DOS #89 (S190) then
+    // moved the STAFF email there too, so this function now mails nobody — which
+    // also removed a live failure mode: an SMTP throw here used to strand a new
+    // order before the browser ever received its signed URLs.
+    //
+    // Simulated, like the rest of this file. Enforced for real against the
+    // shipped handler in tests/confirm-upload-emails.test.js.
 
     const emailsSent = [];
 
@@ -120,16 +123,7 @@ describe('Chunk 4 — createUploadSession re-sequencing (Part A)', () => {
       return Promise.resolve();
     });
 
-    // Simulate sending only staff email
-    mockTransporter.sendMail({
-      from: 'orders@aevia.at',
-      to: 'staff@aevia.at',
-      subject: '[AEV-001] New Order',
-      html: '<p>Order received</p>',
-    });
-
-    expect(emailsSent).toEqual(['staff@aevia.at']);
-    expect(emailsSent).not.toContain('anna@test.com');
+    expect(emailsSent).toEqual([]);
   });
 
   test('Firestore order doc includes uploadComplete=false initially', () => {

@@ -23,8 +23,10 @@ function normalizeEmail(email) {
  * "Under review".
  *
  * Status vocabulary (from order-flow-hardening + dashboard.html):
- *   uploading, new, issue, review_sent, approved,
+ *   uploading, upload_failed, new, issue, review_sent, approved,
  *   paid, sent_to_print, printing, in_delivery, delivered
+ *
+ * upload_failed and issue are SIDE-STATES, not steps in the sequence.
  *
  * @param {string} status
  * @returns {string}
@@ -32,6 +34,9 @@ function normalizeEmail(email) {
 function customerStatusLabel(status) {
   const labels = {
     uploading:     'Uploading photos',
+    upload_failed: 'Upload incomplete',  // TO-DOS #89 — without this the fallback
+                                         // reassures the customer with "In progress"
+                                         // for an order that is actually dead
     new:           'Received',
     issue:         'Under review',       // customer reported a problem → staff are on it
     review_sent:   'Ready for preview',

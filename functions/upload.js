@@ -17,6 +17,7 @@ const cors = require('cors')({
 });
 const admin = require('firebase-admin');
 const { createTransporter, FROM, renderEmail } = require('./email');
+const { normalizeEmail } = require('./account-utils');
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const BUCKET_NAME = 'aevia-uploads-eu';
@@ -78,6 +79,44 @@ function emailRow(label, value, shaded) {
     <td style="padding:10px 14px;font-weight:bold;width:160px;vertical-align:top">${label}</td>
     <td style="padding:10px 14px">${value}</td>
   </tr>`;
+}
+
+/** Staff "New Order" notification (TO-DOS #89, piece 2).
+ *  Built from the stored order doc rather than the request body, because it is
+ *  now sent from confirmUpload — once the photos are actually in GCS. Staff-only
+ *  surface, so exempt from the /stop-slop copy pass. */
+function buildStaffNewOrderEmail(order) {
+  return {
+    subject: `[${order.orderNumber}] New Order — ${order.customerName} (${order.templateName})`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;color:#333">
+        <h2 style="border-bottom:2px solid #eee;padding-bottom:12px">
+          New Aevia Photo Book Order
+        </h2>
+        <table style="width:100%;border-collapse:collapse;margin-top:16px">
+          ${emailRow('Order Number', `<strong>${order.orderNumber}</strong>`, true)}
+          ${emailRow('Customer', order.customerName, false)}
+          ${emailRow('Email', `<a href="mailto:${order.email}">${order.email}</a>`, true)}
+          ${emailRow('Template', order.templateName, false)}
+          ${emailRow('Page Count', order.pageCount, true)}
+          ${emailRow('Photos', order.fileCount, false)}
+          ${emailRow('Storage Folder', `<span style="font-family:monospace">${order.folderName}</span>`, true)}
+          ${order.specialRequests ? emailRow('Special Requests', order.specialRequests, false) : ''}
+          ${order.photoNotes      ? emailRow('Photo Notes',      order.photoNotes,      true)  : ''}
+        </table>
+        <div style="margin-top:24px">
+          <a href="${order.folderLink}"
+             style="background:#4285f4;color:#fff;padding:12px 20px;
+                    text-decoration:none;border-radius:4px;display:inline-block">
+            Open in Google Cloud Console
+          </a>
+        </div>
+        <p style="color:#999;font-size:12px;margin-top:24px">
+          Uploads confirmed ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}
+        </p>
+      </div>
+    `,
+  };
 }
 
 // ─── Handler ─────────────────────────────────────────────────────────────────
@@ -185,12 +224,17 @@ async function handler(req, res) {
 
     // ─ CHUNK 4 PART A: Write Firestore order doc FIRST (before any emails) ─
     // Status is 'uploading' until confirmUpload is called; uploadComplete flag
-    // prevents double-emails on retry. Store the normalised email (Chunk 1 sends it trimmed+lowercased).
+    // prevents double-emails on retry.
+    //
+    // TO-DOS #89: normalise the email HERE rather than trusting the caller. The
+    // browser already lowercases it (order.html), so this is not a live bug —
+    // but the stranded-upload job matches orders by address, and that matching
+    // must not depend on every client having been well-behaved.
     const db = admin.firestore();
     await db.collection('orders').doc(orderNumber).set({
       orderNumber,
       customerName,
-      email,
+      email: normalizeEmail(email) || email,
       templateName,
       // Book language from the product-page selector; only 'de' is meaningful,
       // anything else (or absent, e.g. every pre-Stage-1 order) reads as 'en'.
@@ -215,42 +259,15 @@ async function handler(req, res) {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    // ─ Send ONLY the STAFF email (customer email moves to confirmUpload) ─
-    const transporter = createTransporter();
-
-    await transporter.sendMail({
-      ...FROM.orders,
-      to:      process.env.EMAIL_NOTIFY,
-      subject: `[${orderNumber}] New Order — ${customerName} (${templateName})`,
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:600px;color:#333">
-          <h2 style="border-bottom:2px solid #eee;padding-bottom:12px">
-            New Aevia Photo Book Order
-          </h2>
-          <table style="width:100%;border-collapse:collapse;margin-top:16px">
-            ${emailRow('Order Number', `<strong>${orderNumber}</strong>`, true)}
-            ${emailRow('Customer', customerName, false)}
-            ${emailRow('Email', `<a href="mailto:${email}">${email}</a>`, true)}
-            ${emailRow('Template', templateName, false)}
-            ${emailRow('Page Count', pageCount, true)}
-            ${emailRow('Photos', fileList.length, false)}
-            ${emailRow('Storage Folder', `<span style="font-family:monospace">${folderName}</span>`, true)}
-            ${specialRequests ? emailRow('Special Requests', specialRequests, false) : ''}
-            ${photoNotes      ? emailRow('Photo Notes',      photoNotes,      true)  : ''}
-          </table>
-          <div style="margin-top:24px">
-            <a href="${folderLink}"
-               style="background:#4285f4;color:#fff;padding:12px 20px;
-                      text-decoration:none;border-radius:4px;display:inline-block">
-              Open in Google Cloud Console
-            </a>
-          </div>
-          <p style="color:#999;font-size:12px;margin-top:24px">
-            Submitted ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}
-          </p>
-        </div>
-      `,
-    });
+    // ─ No email here (TO-DOS #89, piece 2) ─────────────────────────────────
+    // The staff "New Order" email moved to confirmUpload, so staff are told
+    // about an order once it EXISTS rather than when someone starts one. Five
+    // orders stranded before their photos arrived (AEV-067/073/074/079/096) and
+    // each generated a "New Order" email for a book that never existed.
+    //
+    // This also removes a live failure mode: an SMTP error here used to strand a
+    // newly created order BEFORE the browser ever received its signed URLs.
+    // In-progress orders stay visible on the dashboard for anyone who looks.
 
     // Save order-details.txt to GCS so staff can read it in the bucket browser
     const detailLines = [
@@ -348,13 +365,40 @@ async function confirmUploadHandler(req, res) {
       return res.status(200).json({ success: true });
     }
 
-    // Update order: status → 'new', uploadComplete → true
-    await db.collection('orders').doc(orderNumber).update({
-      status: 'new',
-      uploadComplete: true,
+    // ─ Claim the confirmation in a TRANSACTION (TO-DOS #89, piece 2) ────────
+    // This used to be a read followed by an update, which is not atomic. Two
+    // concurrent calls — a Retry racing a slow first call — could both read
+    // uploadComplete:false and both send mail. Exactly one caller now wins;
+    // the loser returns 200 and sends nothing.
+    //
+    // Note the flip also covers the recovery path upload_failed → new: the
+    // scheduled job may have already flipped this order, and confirming it is
+    // the one legitimate way back.
+    const ref = db.collection('orders').doc(orderNumber);
+    const claimed = await db.runTransaction(async (tx) => {
+      const fresh = await tx.get(ref);
+      if (!fresh.exists) return false;
+      if (fresh.data().uploadComplete === true) return false;   // someone else won
+      tx.update(ref, {
+        status: 'new',
+        uploadComplete: true,
+        uploadConfirmedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      return true;
     });
 
-    // Send customer confirmation email (template moved from createUploadSession)
+    if (!claimed) {
+      return res.status(200).json({ success: true });
+    }
+
+    // ─ Both emails, independently (TO-DOS #89, piece 2) ─────────────────────
+    // allSettled, not await-in-sequence: one SMTP failure must not suppress the
+    // other email. Staff being silently un-notified is the failure this avoids —
+    // with the "New Order" mail moved here, a throw on the customer send used to
+    // mean nobody heard anything at all.
+    //
+    // The guarantee is AT MOST ONCE, stated honestly: Firestore and SMTP cannot
+    // be made atomic, and a lost email is preferred to a duplicate.
     const transporter = createTransporter();
     const customerName = order.customerName;
     const customerEmail = order.email;
@@ -362,7 +406,7 @@ async function confirmUploadHandler(req, res) {
     const pageCount = order.pageCount;
     const price = order.price;
 
-    await transporter.sendMail({
+    const customerSend = transporter.sendMail({
       ...FROM.customer,
       to:       customerEmail,
       subject:  `Your Aevia order ${orderNumber} is confirmed`,
@@ -393,6 +437,42 @@ async function confirmUploadHandler(req, res) {
       `, { support: true }),
     });
 
+    const staffMail = buildStaffNewOrderEmail(order);
+    const staffSend = transporter.sendMail({
+      ...FROM.orders,
+      to: process.env.EMAIL_NOTIFY,
+      subject: staffMail.subject,
+      html: staffMail.html,
+    });
+
+    const [customerResult, staffResult] = await Promise.allSettled([customerSend, staffSend]);
+
+    // Per-channel result timestamps, for audit. Deliberately NOT a "sent" flag:
+    // the status transition is the guard (piece 5), and a boolean written around
+    // an SMTP call records "sent" for mail that may have failed.
+    const stamp = admin.firestore.FieldValue.serverTimestamp();
+    const mailAudit = {
+      customerEmailAt: stamp,
+      customerEmailError: customerResult.status === 'rejected'
+        ? String(customerResult.reason && customerResult.reason.message || customerResult.reason).slice(0, 300)
+        : null,
+      staffEmailAt: stamp,
+      staffEmailError: staffResult.status === 'rejected'
+        ? String(staffResult.reason && staffResult.reason.message || staffResult.reason).slice(0, 300)
+        : null,
+    };
+    await ref.update(mailAudit).catch(e => console.error('[confirmUpload] audit write failed:', e.message));
+
+    if (customerResult.status === 'rejected') {
+      console.error(`[confirmUpload] ${orderNumber} customer email failed:`, customerResult.reason);
+    }
+    if (staffResult.status === 'rejected') {
+      console.error(`[confirmUpload] ${orderNumber} STAFF email failed:`, staffResult.reason);
+    }
+
+    // The order IS confirmed either way — the photos are in GCS and the status
+    // is flipped. Returning 500 here would make the browser retry a completed
+    // confirmation, so an email failure is logged, recorded, and not surfaced.
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error('[confirmUpload] Error:', err);

@@ -2437,3 +2437,138 @@ exports.sendPasswordChangedEmail = functions
       return res.status(500).json({ error: 'Could not send confirmation.' });
     }
   });
+
+// ─── TO-DOS #89: detect stranded uploads ─────────────────────────────────────
+// Aevia creates the order BEFORE any photo moves, so an upload that dies leaves
+// the order at 'uploading' forever — indistinguishable on the dashboard from one
+// running right now, invisible to the customer, and silent on both sides. Five
+// orders stranded this way (AEV-067/073/074/079/096).
+//
+// This job makes the state self-detecting: past the threshold, 'uploading'
+// becomes the real side-state 'upload_failed', with a disposition saying what
+// kind of failure it was and whether the customer was told.
+//
+// Detection is automated; RECOVERY IS HUMAN, by design (owner, S173/S174). A
+// person following up is the product — Aevia is done-for-you, not a DIY project
+// tool — so no self-service resume is built here.
+//
+// Decisions live in functions/upload-failure-utils.js and are unit-tested there
+// against the same module this calls.
+const {
+  isStrandedUpload,
+  decideUploadFailureAction,
+} = require('./upload-failure-utils');
+
+// One hour clears the longest legitimate upload by a wide margin: 1.12 GB took
+// 5+ minutes (TO-DOS #53), 110 files ~3 minutes (#62). If this ever starts
+// flipping live uploads, RAISE the threshold — do not remove the job.
+const STRANDED_THRESHOLD_MS = 60 * 60 * 1000;
+
+// Orders created before this are left alone: the five known strandings are QA
+// orders and must never be emailed about. A DATE is self-maintaining; a list of
+// order numbers is one forgotten entry away from mailing a test address.
+const STRANDED_CUTOFF = Date.parse('2026-09-22T00:00:00Z');
+
+exports.detectStrandedUploads = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 300, memory: '256MB' })
+  .pubsub.schedule('every 60 minutes')
+  .timeZone('Europe/Vienna')
+  .onRun(async () => {
+    const db = admin.firestore();
+    const nowMs = Date.now();
+
+    const snap = await db.collection('orders').where('status', '==', 'uploading').get();
+    const candidates = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(o => isStrandedUpload(o, {
+        nowMs,
+        thresholdMs: STRANDED_THRESHOLD_MS,
+        cutoffMs: STRANDED_CUTOFF,
+      }));
+
+    if (!candidates.length) {
+      console.log('[detectStrandedUploads] nothing stranded');
+      return null;
+    }
+
+    for (const order of candidates) {
+      try {
+        // Same-address history, queried the way the repo already does it
+        // (see getMyOrders): match on the normalised email, filter in code.
+        // No composite index.
+        const email = normalizeEmail(order.email);
+        let sameEmailOrders = [];
+        if (email) {
+          const peers = await db.collection('orders').where('email', '==', email).get();
+          sameEmailOrders = peers.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        const { disposition, notifyCustomer } = decideUploadFailureAction(order, sameEmailOrders);
+
+        // ─ The transition IS the guard (piece 5) ───────────────────────────
+        // Conditional inside a transaction, so a tab that successfully retries
+        // right on the boundary cannot also be told its upload failed. This does
+        // not make Firestore and SMTP atomic — nothing can — but it closes the
+        // ordinary race.
+        const ref = db.collection('orders').doc(order.orderNumber);
+        const flipped = await db.runTransaction(async (tx) => {
+          const fresh = await tx.get(ref);
+          if (!fresh.exists) return false;
+          const data = fresh.data();
+          if (data.status !== 'uploading' || data.uploadComplete === true) return false;
+          tx.update(ref, {
+            status: 'upload_failed',
+            uploadFailedAt: admin.firestore.FieldValue.serverTimestamp(),
+            uploadFailureDisposition: disposition,
+            statusHistory: admin.firestore.FieldValue.arrayUnion({
+              status: 'upload_failed',
+              timestamp: admin.firestore.Timestamp.now(),
+            }),
+          });
+          return true;
+        });
+
+        if (!flipped) {
+          console.log(`[detectStrandedUploads] ${order.orderNumber} recovered before the flip`);
+          continue;
+        }
+
+        console.log(`[detectStrandedUploads] ${order.orderNumber} → upload_failed (${disposition})`);
+        if (!notifyCustomer) continue;
+
+        // Re-read immediately before mailing: the window between the flip and
+        // the send is small but real, and a customer must never receive a
+        // confirmation and a failure notice that contradict each other.
+        const recheck = await ref.get();
+        if (recheck.data().uploadComplete === true) {
+          console.log(`[detectStrandedUploads] ${order.orderNumber} completed after the flip — no email`);
+          continue;
+        }
+
+        try {
+          await createTransporter().sendMail({
+            ...FROM.customer,
+            to: order.email,
+            subject: `Your Aevia order ${order.orderNumber} did not finish uploading`,
+            html: renderEmail(`
+              <p style="margin:0 0 18px">Hi ${order.customerName},</p>
+              <p style="margin:0 0 22px">Your photos did not finish uploading, so your order <strong>${order.orderNumber}</strong> is not with us yet.</p>
+              <p style="margin:0 0 22px">If you have already placed it again, you can ignore this. Otherwise, reply to this email and we will get your book started.</p>
+            `, { support: true }),
+          });
+          await ref.update({ uploadFailedEmailAt: admin.firestore.FieldValue.serverTimestamp() });
+        } catch (mailErr) {
+          console.error(`[detectStrandedUploads] ${order.orderNumber} email failed:`, mailErr.message);
+          await ref.update({
+            uploadFailedEmailError: String(mailErr.message).slice(0, 300),
+          }).catch(() => {});
+        }
+      } catch (err) {
+        // One bad order must not stop the sweep.
+        console.error(`[detectStrandedUploads] ${order.orderNumber} failed:`, err.message);
+      }
+    }
+
+    return null;
+  });

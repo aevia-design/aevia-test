@@ -294,6 +294,7 @@
   <div class="filters">
     <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
     <button class="filter-btn" onclick="setFilter('uploading', this)">Uploading</button>
+    <button class="filter-btn" onclick="setFilter('upload_failed', this)">Upload failed</button>
     <button class="filter-btn" onclick="setFilter('new', this)">New</button>
     <button class="filter-btn" onclick="setFilter('issue', this)">Issues</button>
     <button class="filter-btn" onclick="setFilter('review_sent', this)">Review sent</button>
@@ -465,11 +466,23 @@
   // ── Stats ─────────────────────────────────────────────────────────────────
   const IN_PROGRESS = ['review_sent', 'approved', 'paid', 'sent_to_print', 'printing', 'in_delivery'];
 
+  // TO-DOS #89: why an upload failed and what to do about it. Every stranded
+  // order otherwise arrives at the same status with no indication of either.
+  const DISPOSITION_LABEL = {
+    customer_notified:     'Photos failed · customer emailed — follow up',
+    later_order_succeeded: 'Suppressed · a newer order from this address completed — check it is not a genuine second book, then delete this one',
+    no_client_error:       'Nothing reported · tab likely closed — do not chase',
+    finalization_failed:   'All photos present, confirm failed · staff fix — the customer thinks it worked',
+  };
+
   function updateStats() {
     let newCount = 0, activeCount = 0, issuesCount = 0, doneCount = 0;
     allOrders.forEach(o => {
       if (o.status === 'new')           newCount++;
       else if (o.status === 'uploading') activeCount++;
+      // TO-DOS #89: a stranded upload is a problem needing a human, so it counts
+      // as an Issue — NOT as In progress, where it would read as work in flight.
+      else if (o.status === 'upload_failed') issuesCount++;
       else if (o.status === 'issue') issuesCount++;
       else if (IN_PROGRESS.includes(o.status)) activeCount++;
       else if (o.status === 'delivered') doneCount++;
@@ -509,7 +522,10 @@
         return `<span>${statusLabel(h.status)}${ts ? ' · ' + ts : ''}</span>`;
       }).join('');
 
-      const allStatuses = ['uploading','new','review_sent','issue','approved','paid','sent_to_print','printing','in_delivery','delivered'];
+      // TO-DOS #89: upload_failed must be listed here. A status absent from this
+      // array has NO matching <option>, so the <select> falls back to showing the
+      // first one ("Uploading") — staff read the wrong status and can act on it.
+      const allStatuses = ['uploading','upload_failed','new','review_sent','issue','approved','paid','sent_to_print','printing','in_delivery','delivered'];
 
       const previewUrl = o.previewToken
         ? `${location.origin}/pages/customer-preview.html?token=${esc(o.previewToken)}`
@@ -585,6 +601,9 @@
               `<option value="${s}" ${o.status === s ? 'selected' : ''}>${statusLabel(s)}</option>`
             ).join('')}
           </select>
+          ${o.status === 'upload_failed' && o.uploadFailureDisposition
+            ? `<div class="status-history" style="color:#b91c1c">${esc(DISPOSITION_LABEL[o.uploadFailureDisposition] || o.uploadFailureDisposition)}</div>`
+            : ''}
           ${recentLog ? `<div class="status-history">${recentLog}</div>` : ''}
         </td>
         <td>
@@ -1081,16 +1100,32 @@ ${data.error || res.status}`);
   // ── Update status + log event ─────────────────────────────────────────────
   // Linear workflow order for the progression guard. 'issue' is intentionally
   // omitted — it's a triage side-state you toggle in/out of at any point.
+  // TO-DOS #89: upload_failed is deliberately NOT here. It is a side-state like
+  // `issue`, not a step — listing it would make a failed upload read as a normal
+  // mandatory stage between 'uploading' and 'new'.
+  //
+  // ⚠ But indexOf returns -1 for anything absent, and the old guard skipped
+  // itself whenever either index was -1, silently permitting ANY jump. So the
+  // side-states are now handled explicitly below rather than falling through.
   const STATUS_SEQUENCE = ['uploading','new','review_sent','approved','paid','sent_to_print','printing','in_delivery','delivered'];
+  const SIDE_STATES = ['issue', 'upload_failed'];
 
   window.updateStatus = async function(orderNumber, newStatus) {
     // Guard against accidental out-of-sequence jumps (a stray scroll on the <select>
     // landing on a far-ahead or earlier status). Adjacent forward steps pass silently.
     const current = allOrders.find(o => o.orderNumber === orderNumber)?.status;
-    if (current && current !== newStatus && current !== 'issue' && newStatus !== 'issue') {
+    if (current && current !== newStatus
+        && !SIDE_STATES.includes(current) && !SIDE_STATES.includes(newStatus)) {
       const fi = STATUS_SEQUENCE.indexOf(current);
       const ti = STATUS_SEQUENCE.indexOf(newStatus);
-      if (fi !== -1 && ti !== -1 && (ti < fi || ti > fi + 1)) {
+      // An unrecognised status on either end is NOT a free pass. Confirm it
+      // rather than letting the -1 fall through the comparison below.
+      if (fi === -1 || ti === -1) {
+        if (!confirm(`Move ${orderNumber} to “${statusLabel(newStatus)}”?\nOne of these is not a known workflow step.`)) {
+          renderTable();
+          return;
+        }
+      } else if (ti < fi || ti > fi + 1) {
         const dir = ti < fi ? 'back to' : 'ahead to';
         if (!confirm(`Move ${orderNumber} ${dir} “${statusLabel(newStatus)}”?\nThat skips the normal order (currently “${statusLabel(current)}”).`)) {
           renderTable(); // revert the dropdown to the stored status
@@ -1128,6 +1163,7 @@ ${data.error || res.status}`);
   function statusLabel(s) {
     const labels = {
       uploading:     'Uploading…',
+      upload_failed: 'Upload failed',
       new:           'New',
       issue:         'Issue raised',
       review_sent:   'Review sent',
