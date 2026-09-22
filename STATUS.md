@@ -1,32 +1,49 @@
 # Session Status
-_Last updated: 2026-09-20 (session 188)_
-_Context at save: **Printsmarter is wired and armed.** Four commits pushed (`2a74e4d`,
-`db5fe2f`, `7a8db71`, `e9c3fec`). Owner deployed `submitPrintOrder`, ran live dry runs on
-AEV-098, and will submit the first real API orders after this session — results land in S189._
+_Last updated: 2026-09-21 (session 189)_
+_Context at save: **The first live submission was attempted and REJECTED by Printsmarter** —
+`400 "Product not found. aevia_hardcover_matte"`. Blocked on them, not on us; owner emailed them
+2026-09-21. Three commits pushed (`c65adf9`, `4c67f71`, plus the doc corrections). Nothing was
+consumed: both test orders are still resubmittable unchanged._
 
 ## Status
-**📦 Session 188 — the print path is complete and live. Nothing has been submitted yet.**
+**⏳ Session 189 — the print path works end to end up to their product lookup, and stops there.**
 
-Full detail: **`sessions/2026-09-20-s188.md`**.
+Full detail: **`sessions/2026-09-21-s189.md`**.
 
-Two product ids (Heirloom → offset, everything else → matte), an address fallback that removes
-the Firestore hand-edit, and a dry run that shows the exact payload before anything prints. The
-first live dry run immediately found a real defect (`"pages"` sent as a string) and a missing
-field (`shipping_code`). `npm test` 628/628, `qa:order` 19/19.
+`add_Order` authenticated, reached them, was parsed and triggered a real product lookup that
+echoed our string back. **Token, customer id 3983, base URL, payload shape, JSON and the signed
+URLs are all proven.** The only unresolved value is the `product_id`, which their side cannot
+find.
 
-## ⚠ Do this first — the two test orders
-Owner is submitting **Heirloom Beige** (offset) and **Tender** (matte) via the API. Tender
-carries the riskiest S187 geometry (409 → 410mm sheet) and Heirloom Beige the new cover
-coordinates. **Do NOT use Heirloom Blue (AEV-091)** — its coordinates are still the old
-off-centre ones, so it would test nothing.
+## ⚠ Do this first — chase the product ids, then resubmit
+**Waiting on Printsmarter's reply.** Owner asked them (2026-09-21) to confirm
+`aevia_hardcover_matte` and `aevia_hardcover_offset` are set up and assigned to account 3983,
+and to confirm the exact strings.
 
-Per order: set the account address once → generate **print** PDFs → look at them → status to
-`paid` → **Preview submission** (check address + source, `product_id`, `pages`) → Send.
+⚠ **Both ids were ISSUED BY THEM and `aevia_hardcover` is RETIRED.** Do **not** "fix" this by
+restoring the old id, and do **not** edit `functions/.env` — it was verified this session as
+holding the exact strings with no stray whitespace. S188's log says *"Decided (owner)"*, which
+reads as if we invented them; we did not. This mis-derivation already cost one session.
+
+When they reply, resubmit unchanged: **AEV-071** (40pp) and **AEV-100** (80pp). Both are still
+`paid` with no `printsmarterOrderId`, so the once-only guard is intact.
+
+⚠ **Neither test order is Heirloom** — both resolve to the matte product, so the two-product
+split and the offset stock remain completely unexercised. The S188 plan (Heirloom Beige + Tender)
+would have covered that; these two do not. **Do NOT use Heirloom Blue (AEV-091)** if you swap one
+in — its coordinates are still the old off-centre ones.
+
+⚠ **AEV-100's inside PDF is 403.91 MB** (cover 6.77); AEV-071's is 176.03 MB (cover 9.15). All
+four URLs verified `200 OK` / `application/pdf`, signed 7 days, **expiring 28 Sep** — regenerate
+after that. 403 MB is more than double the 190 MB already flagged as the first suspect if a
+submission succeeds and nothing produces.
 
 ⚠ **`PRINTSMARTER_LIVE` is `true` and `submitPrintOrder` is deployed**, so "Send to
-Printsmarter" is armed and sits **beside** "Preview submission" in the same row. A misclick is a
-real book and a real invoice; the confirm dialog is the only thing between them. Set it back to
-`false` and redeploy between print runs if that is not wanted — the dry run works with it off.
+Printsmarter" is armed and sits **beside** "Preview submission". A misclick is a real book and a
+real invoice; the confirm dialog is the only thing between them. Set it back to `false` and
+redeploy between print runs if that is not wanted — the dry run works with it off.
+⚠ **The confirm dialog lies about the address** — see "Recent decisions". Read "Preview
+submission", not the dialog.
 
 ⚠ **Sending is once-only.** After success the order carries `printsmarterOrderId` and any
 retry is refused by design. A problem found afterwards is a `cancel_order` with them, not a
@@ -108,7 +125,8 @@ Owner will apply Beige's coordinates to **Blue, Brown and Green** next.
 | `PRINTSMARTER_LIVE` | ✅ **`true`** — the send button is armed |
 | Address fallback + dry run | ✅ S188 |
 | Postback URL registered with them | ⏳ emailed, awaiting confirmation |
-| A first live order | ⏳ **owner submitting after S188** |
+| **Their product setup** | 🔴 **BLOCKER — neither id resolves on their side (S189)** |
+| A first live order | 🔴 **attempted S189, rejected `400 Product not found`** |
 
 **Deliberately absent from the payload, both still open in the brief:**
 - **`shipping_price`** — we charge no shipping, and their docs describe `price` as feeding
@@ -126,10 +144,37 @@ Google (`200 OK`, `application/pdf`, no auth) — so the **URLs are proven and t
 AEV-095's *preview* alone was 231 MB.
 
 ## Recent decisions
-- **Two Printsmarter products, one per paper stock (S188, owner)** — Heirloom
-  `aevia_hardcover_offset`, everything else `aevia_hardcover_matte`. Matching is on the
-  lowercased `heirloom` **prefix**, so a fifth colourway needs no code change. A missing
-  `templateName` **throws** rather than defaulting to matte.
+- **The product-id 400 is THEIR setup, not our config (S189)** — verified `functions/.env` holds
+  the exact issued strings, no whitespace, and their error echoed ours back. **Do not restore
+  `aevia_hardcover`** (retired) and **do not edit the env**. ⚠ **No test can catch a wrong
+  product id** — `tests/printsmarter.test.js` feeds a fixture string and asserts it arrives
+  intact, so any value passes. Only a live call proves one, exactly like S188's `"pages": "40"`.
+- **"Mark approved for print" removed from the dashboard (S189)** — it made no API call, but
+  flipping the status **hid the button that actually submits** and left the row reading "Sent to
+  print" for an order never sent. A real submission shows **"Sent to print · PS #<id>"**; plain
+  "Sent to print" means it never went. Recovery is to set the status back to `paid` — the
+  once-only guard is on `printsmarterOrderId`, not on status. `markSentToPrint` survives as a
+  console-only escape hatch.
+- **The send confirm dialog misreports the address — FOUND, NOT FIXED (S189)** — it reads the
+  locally loaded `order.shippingAddress` and shows "⚠ NO SHIPPING ADDRESS ON ORDER" precisely
+  when S188's account fallback is doing its job. **Trust "Preview submission", not the dialog.**
+  The fix is to have the confirm call `dryRun` and show the **resolved** address and its source.
+- **An account rename does NOT touch existing orders (S189, by design)** — the print recipient is
+  `order.customerName`, frozen at order time; `displayName` only ever prefilled it. A fallback may
+  fill an absent field, never override a present one (the S188 rule). Correct a wrong name in
+  `orders/{orderNumber}` — the doc id **is** the order number.
+- **`buildOrderPayload` ignores `customers/{email}.shippingName` — FOUND, NOT FIXED (S189)** — so
+  when the address fallback fires we ship to the **account's address** under the **order's name**.
+  Two halves of one address from two sources. Nothing has gone out wrong yet.
+- **The account name is editable, and deliberately separate from the shipping name (S189)** —
+  `pages/account.html` writes Firebase Auth `displayName` only. A book can be addressed to
+  someone other than the account holder, so renaming must never redirect a delivery.
+- **Two Printsmarter products, one per paper stock (S188)** — Heirloom
+  `aevia_hardcover_offset`, everything else `aevia_hardcover_matte`. **Both strings were ISSUED
+  BY PRINTSMARTER by email** (confirmed S189 — S188 recorded them as an owner decision, which
+  reads as if we invented them; we did not). **`aevia_hardcover` is RETIRED, they removed it —
+  do not restore it.** Matching is on the lowercased `heirloom` **prefix**, so a fifth colourway
+  needs no code change. A missing `templateName` **throws** rather than defaulting to matte.
 - **The account address is the fallback, not a Firestore hand-edit (S188)** — owner and Xenia
   set an address once in `pages/account.html`; `submitPrintOrder` reads
   `customers/{email}.shippingAddress` only when the order has none. It can fill an absent field,
@@ -209,14 +254,24 @@ AEV-095's *preview* alone was 231 MB.
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
 ## Next steps (priority order)
-1. **Submit Heirloom Beige + Tender and read the result** — the whole point of S188. Generate
-   print PDFs, look at them, dry run, send. This closes the S187 cover drop AND the two S182
-   verification PDFs (Tender + Scribble) in one pass. **Report back what their API said and, if
-   they produce them, what the books look like.**
-2. **Email Printsmarter** — produce these two orders; Heirloom's paper spec; is `return_address`
-   required; are `product_id_client` / `project_name` free-form; **can their fetcher handle a
-   190 MB PDF**; written confirmation that `pages: 40|80` at `quantity: 1` is accepted; whether
-   the cover board differs and the cost impact; and the **geometry in writing** (§5 item 10).
+1. **Chase their reply on the product ids, then resubmit AEV-071 + AEV-100.** Nothing else in the
+   print path can move until their lookup resolves. Both orders are resubmittable unchanged;
+   regenerate the PDFs if the reply lands after **28 Sep** (signed URLs expire).
+2. **Then get a Heirloom order through** — neither test order exercises the offset product, so
+   the two-product split is still unproven. This also still owes the S187/S182 print checks:
+   cover photo visible on Heirloom/Tender/Newborn, Tender's spine at 410mm, Scribble's captions
+   after the Onest swap, and front-panel centring.
+3. **Fix the send confirm dialog** — have it call `dryRun` and show the resolved address and its
+   source, so it can never contradict "Preview submission". ~10 lines. Do it before the next
+   send, not after.
+4. **Email Printsmarter (the rest, once unblocked)** — produce these orders; Heirloom's paper
+   spec; is `return_address` required; are `product_id_client` / `project_name` free-form;
+   **can their fetcher handle a 400 MB PDF**; written confirmation that `pages: 40|80` at
+   `quantity: 1` is accepted; whether the cover board differs and the cost impact; and the
+   **geometry in writing** (§5 item 10).
+5. **Decide whether 400 MB is acceptable at all** — AEV-100's interior is double the size already
+   flagged as a risk. Likely full-resolution images far beyond 300 dpi at book size. Own session,
+   not a quick compression hack.
 3. **Apply Beige's coordinates to Heirloom Blue, Brown and Green** — see "Carried into the next
    Heirloom drop". Their front-panel coordinates are still the old, off-centre ones. Xenia is
    re-doing their SVG geometry.
@@ -250,9 +305,14 @@ AEV-095's *preview* alone was 231 MB.
 17. **Customer-preview must record caption line breaks** (open since S159).
 
 ## Open questions
-- **Does their fetcher accept a 190 MB PDF over a 7-day signed URL?** The URLs are proven
-  (`200 OK` from outside Google, no auth); the size is not. First suspect if a submission
-  succeeds and nothing produces.
+- **Why can't Printsmarter resolve their own product ids?** Asked 2026-09-21. Everything on our
+  side is proven; this is the only blocker to a first book.
+- **Does their fetcher accept a 403 MB PDF over a 7-day signed URL?** The URLs are proven
+  (`200 OK` from outside Google, no auth); the size is not. AEV-100 is 403.91 MB, AEV-071
+  176.03 MB. First suspect if a submission succeeds and nothing produces.
+- **Should an order's recipient name follow `customers/{email}.shippingName` when the address
+  fallback fires?** Today it does not, so a fallback ships to the account's address under the
+  order's name. Nothing has gone out wrong yet.
 - **Are `product_id_client` (`AEV-098-1`) and `project_name` free-form on our side?** Both are
   our invention from S155 and have never been sent to them for real.
 - **Is copy two of the same book full price or discounted?** Blocks TO-DOS #117.

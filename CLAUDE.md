@@ -151,7 +151,12 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     **Two product ids, one per paper stock (S188):** Heirloom → `aevia_hardcover_offset`,
     everything else → `aevia_hardcover_matte`, chosen by `productIdFor()` off the lowercased
     `heirloom` prefix of `templateName`. Both env vars are **required**; a missing `templateName`
-    throws rather than defaulting to matte.
+    throws rather than defaulting to matte. ⚠ **Both strings were ISSUED BY PRINTSMARTER by
+    email and `aevia_hardcover` is RETIRED** — do not "restore" the old id, and do not read
+    S188's "decided (owner)" as meaning we invented them (S189 mistake). ⚠ **Their side has not
+    resolved either id yet**: the first live submission returned `400 "Product not found.
+    aevia_hardcover_matte"`. Blocked on them, not on us. **No test can catch a wrong product
+    id** — the suite feeds a fixture string and asserts it arrives intact.
     **`shippingAddress` no longer needs a Firestore hand-edit (S188):** it falls back to
     `customers/{email}.shippingAddress`, which staff set once in `pages/account.html` (gated on
     `email_verified`). The fallback can only fill an absent field, never override one — the

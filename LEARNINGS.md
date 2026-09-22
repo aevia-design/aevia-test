@@ -1,3 +1,37 @@
+## 2026-09-21 (S189) — A record that can't tell "they told us" from "we decided" will be re-derived wrongly
+
+Printsmarter rejected our first live order: `400 "Product not found. aevia_hardcover_matte"`.
+Asked to be certain the fault was not ours, I verified against the repo and reached a confident,
+well-evidenced, **wrong** conclusion: that S188 had invented the two product ids and overwritten
+a working one.
+
+The trail genuinely reads that way. S185: *"Printsmarter confirmed it by email; set
+`PRINTSMARTER_PRODUCT_ID=aevia_hardcover`"* — an explicit attribution. S186: the second id *"means
+asking them for a second id"*, marked **Not built**. S188: *"**Decided (owner):** Heirloom prints
+on offset…"*. Three entries, and the only one carrying a vendor attribution is the id that was
+later replaced. The owner's email — which had issued both new strings and retired the old one —
+existed nowhere in the repo.
+
+- **Attribute every external fact at the point of record.** "Decided (owner)" is the right label
+  for the *routing* decision (Heirloom on offset) and the wrong one for the *values*, which came
+  from the vendor. One clause would have prevented this.
+- **A brief's "✅ Closed" list must not mix our decisions with their answers.** §5 of
+  `printsmarter-api.md` had both under the same tick. A later reader cannot tell which ones are
+  safe to revisit.
+- **Repo evidence loses to the primary source, and the repo cannot tell you it is incomplete.**
+  The verification was sound over the evidence it had; the failure was not noticing that the
+  decisive evidence (an email) was outside it. When a conclusion says *we* broke something that
+  used to work, ask the human before asserting it.
+- The same shape as S185 and S186's lessons: **trusting a secondhand snapshot instead of the
+  primary source.** There our own brief, then a competitor's page, now our own session log.
+
+**And a second-order one:** no test could have caught a wrong product id. The suite feeds a
+fixture string and asserts it arrives intact, so **every** value passes. That is the S188 lesson
+generalised — **for any value that is opaque to us and meaningful only to a vendor, the test can
+only prove transport, never correctness.** Only a live call proves it. Budget for the first live
+call being the real test, and make it cheap to repeat: ours was, because `submitOrder` throws
+before the Firestore write, so nothing was consumed and both orders stayed resubmittable.
+
 ## 2026-09-20 — A lenient lookup can hide a type error from every test you have (S188)
 
 The first live dry run against Printsmarter showed `"pages": "40"` — a string where their

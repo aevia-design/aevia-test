@@ -134,12 +134,20 @@ source and Printsmarter answered by email. **Do not re-ask the closed ones.**_
 
 ### Closed
 
-1. ✅ **Two product codes, one per paper stock** (owner, S188): Heirloom prints on offset
+1. ✅ **Two product codes, one per paper stock** — **both strings ISSUED BY PRINTSMARTER by
+   email**, not chosen by us (confirmed S189). Heirloom prints on offset
    (`aevia_hardcover_offset`, `PRINTSMARTER_PRODUCT_ID_HEIRLOOM`), every other template on
    matte (`aevia_hardcover_matte`, `PRINTSMARTER_PRODUCT_ID`). Both in `functions/.env`; both
    required, so a half-set env refuses to build a client. `productIdFor()` picks between them
    off the order's `templateName`, matching all four Heirloom colourways on the prefix.
-   This supersedes the single `aevia_hardcover` code of S185. Their shop configurator defaults to 28 pages / quantity 10; the owner
+   ⚠ **`aevia_hardcover` (S185) is RETIRED — they removed it.** Do not "restore" it as a fix.
+   ⚠ **Neither new id resolved on their side as of S189**: the first live `add_Order` returned
+   `HTTP 400 "Product not found. aevia_hardcover_matte"`, with our env holding that exact string
+   and no stray whitespace. **The ids are right and their product setup is incomplete** — owner
+   emailed them 2026-09-21. Nothing to change in our code or config.
+   ⚠ **No test can catch a wrong product id** — `tests/printsmarter.test.js` feeds a fixture
+   string and asserts it arrives intact, so any value passes. Only a live call proves one.
+   Their shop configurator defaults to 28 pages / quantity 10; the owner
    confirmed 40pp and quantity 1 are selectable, but **their written confirmation that the API
    accepts `pages: 40|80` at `quantity: 1` is still outstanding.**
 2. ✅ **No sandbox** — but "your orders are not automatically forwarded to production by now, so
