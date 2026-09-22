@@ -10,12 +10,20 @@ Premium photo book service (Vienna). Customers order, upload photos; staff desig
 ---
 
 ## Session start
+`/prime` is the session-start routine, and **this section is what it reads in this repo.**
+It is `disable-model-invocation`, so only the owner can trigger it — do the same reading
+yourself at the start of a session whether or not he typed it. Don't treat the two as
+alternatives: one routine, one list.
+
 Read these in order before doing anything:
 1. `STATUS.md` — current build state and immediate next steps
 2. `PRD.md` — product requirements (MoSCoW, acceptance criteria)
 3. `ARCHITECTURE.md` — system design, codemap, invariants, data flow
-4. `sessions/<latest>.md` — recent decisions and watch-outs
+4. `sessions/<latest>.md` + the one before it — recent decisions and watch-outs
 5. `docs/decisions/` — ADRs for key architectural choices
+
+Then **summarise the position and confirm what to tackle first — don't start on the next
+steps unprompted.**
 
 ## Session end
 Whenever you run **checkpoint** or **handover**, end your reply by telling the user
