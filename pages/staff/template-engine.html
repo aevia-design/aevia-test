@@ -1490,7 +1490,9 @@
         setTimeout(() => {
           console.warn('Orientation read timed out for blob — dimensions unknown');
           resolve({ orientation: 'horizontal', w: 0, h: 0, timedOut: true });
-        }, 10000)
+        // 60s, not 10s (S192, #111): a timeout means guessing, and a slow-but-good photo
+        // should get its real answer. The bound only stops one stuck photo hanging the load.
+        }, 60000)
       ),
     ]);
   }
@@ -1563,13 +1565,13 @@
     // image. Seating it would fill a slot with something that can never appear, which is
     // the AEV-094 failure mode arriving by a different route. Reject it so the caller
     // reports it (S164). A TIMEOUT is not the same thing: the photo may be perfectly good
-    // and merely slow, so it is warned about and kept.
+    // and merely slow, so it is kept — but flagged, never silently guessed (S192, #111).
     if (decodeFailed) {
       dbLog('✗ Browser cannot decode: ' + file.name + ' (unsupported format or corrupt file)', 'error');
       return null;
     }
     if (timedOut) {
-      dbLog('⚠ Dimensions unknown (decode timed out): ' + file.name + ' — kept, check it manually', 'warn');
+      dbLog('⚠ Orientation unknown (decode timed out): ' + file.name + ' — kept, flagged for staff', 'warn');
     }
 
     const objectURL = URL.createObjectURL(displayBlob);
@@ -1580,7 +1582,8 @@
     // name = stable internal key (storedName basename, e.g. photo_001) used for save/load.
     // displayName = what staff see + sort by; defaults to the file's own name (correct for
     // local uploads), overridden with the customer's original filename on order load.
-    return { file, url: objectURL, date, name: file.name, displayName: file.name, w, h, orientation, lowRes };
+    return { file, url: objectURL, date, name: file.name, displayName: file.name, w, h, orientation, lowRes,
+      orientationUnknown: !!timedOut };
   }
 
 
@@ -1806,6 +1809,16 @@
     // ~1600px web derivative (egress optimisation), not the full-res original, so this
     // would false-flag every real-order photo. The genuine print-quality warning lives
     // at order-form upload time (checks originals); the PDF always renders from originals.
+
+    // The decode never finished, so this photo's orientation was not read, only assumed
+    // (S192, #111). Flag it where staff actually look, not just in the debug log.
+    if (photo.orientationUnknown) {
+      const badge = document.createElement('div');
+      badge.className = 'warn-badge';
+      badge.textContent = 'Check orientation';
+      thumb.appendChild(badge);
+      thumb.title = label + ' — orientation could not be read, check its placement';
+    }
 
     if (photo.duplicate) {
       const badge = document.createElement('div');
