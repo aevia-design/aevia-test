@@ -26,6 +26,14 @@ const STRINGS = loadStrings();
 const DYNAMIC_KEYS = [
   'addon.word.ex1', 'addon.word.ex2', 'addon.word.ex3',
   'compose.introBoy', 'compose.introGirl',
+  // S191: plural pairs chosen by count (key + '1' / 'N'), and the region names.
+  'photos.selected1', 'photos.selectedN', 'photos.add1', 'photos.addN',
+  'photos.remove1', 'photos.removeN', 'photos.lowRes1', 'photos.lowResN',
+  'issue.lowRes1', 'issue.lowResN',
+  'region.EU', 'region.Asia', 'region.Africa', 'region.N.America', 'region.S.America', 'region.Oceania',
+  // Passed by key to photoRejection() in assets/js/photo-utils.js.
+  'reject.raw', 'reject.format', 'reject.size',
+  'reject.sentence1', 'reject.sentenceN',
 ];
 
 function keysUsedInPage() {
@@ -109,5 +117,19 @@ describe('order form string table', () => {
       strays.push(m[1].slice(0, 60));
     }
     expect(strays).toEqual([]);
+  });
+
+  // S191: the two sweeps above read markup and single-quoted literals. Every
+  // sentence below was built in a template literal, slipped past both, and showed
+  // English on the German form — upload errors, photo refusals, the photo count.
+  // A pattern cannot find them (nested backticks defeat it), so they are named.
+  test('no English sentence is built in JavaScript either (S191)', () => {
+    const FORMER_STRAYS = [
+      'We could not upload', 'Your connection stopped', "Couldn't use",
+      'One region per map', 'Sign-in was cancelled', 'Server error (',
+      "smaller than we'd like", ' selected`', 'Add ${diff} more', 'Remove ${Math.abs',
+      "': 'Europe'", "'North America'",
+    ];
+    expect(FORMER_STRAYS.filter(s => ORDER_HTML.includes(s))).toEqual([]);
   });
 });

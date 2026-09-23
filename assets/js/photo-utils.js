@@ -70,16 +70,22 @@ function isRaw(file) {
 // The single gate. Returns null when the file is acceptable, otherwise a customer-facing
 // reason. Deciding and explaining are the same operation — that is what stops a file being
 // accepted here and failing silently three steps later.
-function photoRejection(file) {
+//
+// `t` is the order form's string lookup (assets/js/order-strings.js), so a German order
+// is refused in German (S191). Without it the English here is used, and it must stay
+// identical to the table's `en` — tests/format-policy.test.js checks both copies agree.
+function photoRejection(file, t) {
+  const say = (key, en, vars) => (t ? t(key, vars) : en);
   if (isRaw(file)) {
-    return `RAW files can't be printed from directly — please export it as a JPEG first.`;
+    return say('reject.raw', `RAW files can't be printed from directly — please export it as a JPEG first.`);
   }
   if (!effectiveExtension(file)) {
-    return `we can only use ${PHOTO_FORMATS.label} photos.`;
+    return say('reject.format', `we can only use ${PHOTO_FORMATS.label} photos.`, { formats: PHOTO_FORMATS.label });
   }
   if (typeof file.size === 'number' && file.size > PHOTO_FORMATS.maxBytes) {
     const mb = Math.round(file.size / 1024 / 1024);
-    return `it's ${mb} MB — please keep photos under ${PHOTO_FORMATS.maxBytes / 1024 / 1024} MB.`;
+    const max = PHOTO_FORMATS.maxBytes / 1024 / 1024;
+    return say('reject.size', `it's ${mb} MB — please keep photos under ${max} MB.`, { mb, max });
   }
   return null;
 }

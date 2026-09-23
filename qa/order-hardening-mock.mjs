@@ -144,8 +144,8 @@ const ORDER_URL = `${BASE}/order.html?template=scribble&pages=40&price=70`;
 const CONTINUE = (stepSel) => `${stepSel} button.btn-primary:visible`;
 
 // Open a fresh order form and fill the details step. Stops there.
-async function openStep1(page, { name = 'QA Tester', email = 'valid@example.com' } = {}) {
-  await page.goto(ORDER_URL, { waitUntil: 'domcontentloaded' });
+async function openStep1(page, { name = 'QA Tester', email = 'valid@example.com', lang } = {}) {
+  await page.goto(ORDER_URL + (lang ? `&lang=${lang}` : ''), { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#step1', { state: 'visible' });
   await page.fill('#inp-name', name);
   await page.fill('#inp-email', email);
@@ -447,6 +447,36 @@ try {
     reportedSlots.length === 1 && reportedSlots[0] === 4
       ? pass('#89: the second report names only the photo still missing')
       : fail('#89 second report', `reported slots: ${JSON.stringify(reportedSlots)}`);
+    await page.close();
+  }
+
+  // ── S191 — a German order fails in German ──────────────────────────────────
+  // The upload errors, the photo count and the Retry label were English on the German
+  // form. The static test in tests/order-strings.test.js names the old literals; this
+  // proves what a German customer actually reads.
+  head('S191 — the German form reports a failed upload in German');
+  {
+    const page = await ctx.newPage();
+    const st = installMocks(page, { failPutSlots: [3] });
+    const t = await openPhotos(page, { cover, lang: 'de' });
+    await fillPhotos(page, t, mainPool);
+    const count = (await page.textContent('#photo-count')) || '';
+    /Fotos ausgewählt/.test(count) && !/selected/.test(count)
+      ? pass('S191: the photo count is German')
+      : fail('S191 count', `count reads: ${count.slice(0, 80)}`);
+    await page.click('#submit-btn');
+    await page.waitForSelector('#retry-btn', { state: 'visible', timeout: 60000 });
+    const msg = (await page.textContent('#err-step2')) || '';
+    /hochladen/.test(msg) && /support@aevia.at/.test(msg) && !/We could not|connection/i.test(msg)
+      ? pass('S191: the upload error is German and still names support')
+      : fail('S191 error', `customer saw: ${msg.slice(0, 120)}`);
+    const label = ((await page.textContent('#retry-btn')) || '').trim();
+    label === 'Upload erneut versuchen' ? pass('S191: the Retry button is German')
+                                        : fail('S191 retry label', `label reads: ${label}`);
+    st.doomed = [];
+    await page.click('#retry-btn');
+    await waitForSuccess(page, 60000);
+    pass('S191: a German Retry still completes the order');
     await page.close();
   }
 

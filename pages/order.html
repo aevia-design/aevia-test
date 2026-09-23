@@ -608,6 +608,12 @@ function t(key, vars) {
   return out;
 }
 
+// Plural pairs live in the table as key + '1' / key + 'N'. German and English both
+// switch at exactly one, so a count decides the whole sentence (S191).
+function tn(key, count, vars) {
+  return t(key + (count === 1 ? '1' : 'N'), { n: count, ...vars });
+}
+
 // Swaps the static markup's text in one pass on load. Elements opt in with
 // `data-i18n` (text) or `data-i18n-ph` (placeholder). Strings carrying markup
 // (e.g. the cover hint's <strong>) are built by JS through `t()` instead.
@@ -1318,7 +1324,7 @@ function initFPSections() {
 // renderRegionMap() draws the real region map + pins (chunk-022) via map-render.js.
 // ─────────────────────────────────────────────────────────────────
 window._fpCountries = window._fpCountries || {};
-const REGION_LABELS = { 'EU': 'Europe', 'Asia': 'Asia', 'Africa': 'Africa', 'N.America': 'North America', 'S.America': 'South America', 'Oceania': 'Oceania' };
+const REGION_LABELS = { 'EU': t('region.EU'), 'Asia': t('region.Asia'), 'Africa': t('region.Africa'), 'N.America': t('region.N.America'), 'S.America': t('region.S.America'), 'Oceania': t('region.Oceania') };
 
 // ─────────────────────────────────────────────────────────────────
 // Intro fields (Newborn FPintro): labelled inputs (name/DOB/time/weight/length)
@@ -1482,7 +1488,7 @@ function addCountry(slug, name) {
   if (state.countries.includes(name)) return;
   if (state.region && region !== state.region) {
     if (errEl) {
-      errEl.textContent = `${name} is in ${REGION_LABELS[region] || region}, but your trip is in ${REGION_LABELS[state.region] || state.region}. One region per map — remove the current countries first to switch regions.`;
+      errEl.textContent = t('map.regionMismatch', { country: name, region: REGION_LABELS[region] || region, trip: REGION_LABELS[state.region] || state.region });
       errEl.style.display = 'block';
     }
     return;
@@ -1871,7 +1877,7 @@ async function renderCoverUpload(file, opts) {
   // Refuse before anything is shown or kept (S164). A drag-and-drop bypasses the picker's
   // accept filter, and this path used to render an unusable file as a generic file-icon
   // tile and upload it anyway — the customer only found out when their cover was blank.
-  const reason = photoRejection(file);
+  const reason = photoRejection(file, t);
   if (reason) {
     opts.onClear();
     if (dz) dz.style.display = '';
@@ -1979,7 +1985,7 @@ async function handleSpecialFile(slug, file) {
   if (!file) return;
 
   // Refuse before the file is stored or shown (S164) — same reasoning as renderCoverUpload.
-  const reason = photoRejection(file);
+  const reason = photoRejection(file, t);
   if (reason) {
     delete specialFiles[slug];
     // 'special', NOT 'step2' — err-step2 belongs to the later main-photo step, so the
@@ -2084,9 +2090,9 @@ function rejectMainFiles(names, reason) {
 
 function rejectionSentence(names, reason) {
   const list = names.length > 3
-    ? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more`
+    ? t('list.more', { names: names.slice(0, 3).join(', '), n: names.length - 3 })
     : names.join(', ');
-  return `Couldn't use ${list} — ${reason}`;
+  return tn('reject.sentence', names.length, { list, reason });
 }
 
 // showStepError REPLACES the message rather than appending, so several refusals have to be
@@ -2105,7 +2111,7 @@ function handleMainFiles(fileList) {
   const byReason = new Map();
   const newFiles = Array.from(fileList).filter(f => {
     if (existingNames.has(f.name)) return false;
-    const reason = photoRejection(f);
+    const reason = photoRejection(f, t);
     if (reason) {
       if (!byReason.has(reason)) byReason.set(reason, []);
       byReason.get(reason).push(f.name);
@@ -2366,19 +2372,19 @@ function updatePhotoStatusBar() {
   const n = mainFiles.length;
   if (n > 0) {
     const lowResCount = mainFiles.filter(f => f._lowRes).length;
-    const target = window._photoCountTarget ? ` of ${window._photoCountTarget}` : '';
-    let countText = `${n}${target} photo${n !== 1 ? 's' : ''} selected`;
+    const target = window._photoCountTarget ? t('photos.of', { target: window._photoCountTarget }) : '';
+    let countText = tn('photos.selected', n, { n: `${n}${target}` });
     const loadingDone = _uploadQueue.length === 0 && !_uploadBusy;
     if (window._photoCountTarget && loadingDone) {
       const diff = window._photoCountTarget - n;
-      if (diff > 0) countText += ` · Add ${diff} more photo${diff !== 1 ? 's' : ''}`;
-      else if (diff < 0) countText += ` · Remove ${Math.abs(diff)} photo${Math.abs(diff) !== 1 ? 's' : ''}`;
+      if (diff > 0) countText += ` · ${tn('photos.add', diff)}`;
+      else if (diff < 0) countText += ` · ${tn('photos.remove', Math.abs(diff))}`;
     }
     // Name the cause and the fix, not the print risk: the customer cannot know how large
     // staff will place a photo, so "may print soft if used large" gave them nothing to act
     // on. Messaging apps and iCloud Shared Albums are the two causes that actually produce
     // sub-1575px files from good cameras, and re-uploading the original fixes both.
-    if (lowResCount > 0) countText += ` · ${lowResCount} photo${lowResCount !== 1 ? 's are' : ' is'} smaller than we'd like. Messaging apps like WhatsApp shrink photos when they send them, and so do iCloud Shared Albums. Upload the originals from your camera roll and they'll be bigger.`;
+    if (lowResCount > 0) countText += ` · ${tn('photos.lowRes', lowResCount)}`;
     countEl.textContent = countText;
     countEl.className = 'photo-count' + (lowResCount > 0 ? ' low-res-note' : '');
     countEl.style.display = 'block';
@@ -2423,6 +2429,14 @@ function initDragDrop() {
 // ─────────────────────────────────────────────────────────────────
 // Submit
 // ─────────────────────────────────────────────────────────────────
+// An Error whose message was written for the customer, in their language (S191).
+// submitOrder shows only these; any other error shows the generic message.
+function customerError(message) {
+  const e = new Error(message);
+  e.forCustomer = true;
+  return e;
+}
+
 async function submitOrder() {
   const errEl  = document.getElementById('err-step2');
   const btn    = document.getElementById('submit-btn');
@@ -2669,7 +2683,8 @@ async function submitOrder() {
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `Server error (${res.status})`);
+      console.error('[createUploadSession]', res.status, body.error);
+      throw customerError(t('err.generic'));
     }
 
     const data = await res.json();
@@ -2985,22 +3000,23 @@ async function submitOrder() {
       // happened to fail first. The per-attempt detail is already in `uploadFailures`,
       // which the catch below posts to the order for the dashboard.
       if (uploadFailures.length) {
-        const names = uploadFailures.map(f => `"${f.originalName || `photo ${f.slot}`}"`);
-        const shown = names.slice(0, 3).join(', ');
-        const more  = names.length > 3 ? ` and ${names.length - 3} more` : '';
+        const names = uploadFailures.map(f => `"${f.originalName || t('list.photo', { n: f.slot })}"`);
+        const list  = names.length > 3
+          ? t('list.more', { names: names.slice(0, 3).join(', '), n: names.length - 3 })
+          : names.join(', ');
         // The "connection stopped" wording is a claim about what went wrong, so judge it
         // only on slots we actually tried. A never-attempted slot is evidence of nothing.
         const attempted = uploadFailures.filter(f => !f.neverAttempted);
-        throw new Error(
+        throw customerError(
           attempted.length && attempted.every(f => f.timedOut)
-            ? `Your connection stopped while we were uploading ${shown}${more}. Check your connection and press Retry upload, or email support@aevia.at and we will finish it for you.`
-            : `We could not upload ${shown}${more}. Press Retry upload or email support@aevia.at and we will finish it for you.`
+            ? t('err.uploadStalled', { list })
+            : t('err.uploadFailed', { list })
         );
       }
 
       // Confirm only when the set is closed — every slot in storage across all runs,
       // not merely "this run had no errors". A gap here is a bug, never a success.
-      if (uploaded.size !== total) throw new Error(t('err.generic'));
+      if (uploaded.size !== total) throw customerError(t('err.generic'));
 
       // Disarm upload in-flight flag on success (Chunk 3: beforeunload guard)
       uploadInFlight = false;
@@ -3103,7 +3119,8 @@ async function submitOrder() {
     retryBtn.disabled = false;
     retryBtn.onclick = canRetry ? retryUpload : null;   // assign, never add: no stacked handlers
     overlay.classList.remove('active');
-    errEl.textContent = err.message || t('err.generic');
+    errEl.textContent = err.forCustomer ? err.message : t('err.generic');
+    if (!err.forCustomer) console.error('[submitOrder]', err);
     errEl.style.display = 'block';
 
     // S147 diagnostics: send whatever we learned to the order doc so a failure is
@@ -3308,7 +3325,7 @@ function collectSubmitWarnings() {
   Object.values(specialFiles || {}).forEach(f => { if (f && f._lowRes) lowRes++; });
   (mainFiles || []).forEach(f => { if (f && f._lowRes) lowRes++; });
   if (lowRes > 0)
-    issues.push(`${lowRes} photo${lowRes === 1 ? ' is' : 's are'} smaller than we'd like. Messaging apps and iCloud Shared Albums shrink photos, so the originals in your camera roll will be bigger.`);
+    issues.push(tn('issue.lowRes', lowRes));
 
   return issues;
 }
@@ -3428,7 +3445,7 @@ function preSubmitConfirm() {
       'auth/wrong-password': t('auth.badCredential'),
       'auth/user-not-found': t('auth.noUser'),
       'auth/too-many-requests': t('auth.tooMany'),
-      'auth/popup-closed-by-user': 'Sign-in was cancelled.',
+      'auth/popup-closed-by-user': t('auth.cancelled'),
     };
     return map[code] || t('auth.generic');
   }

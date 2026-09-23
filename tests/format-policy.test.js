@@ -81,6 +81,34 @@ describe('photoRejection — refuse at the door, and say why', () => {
   });
 });
 
+// S191: the order form passes its t() so a German order is refused in German.
+// Without a translator (these tests, any other caller) the English literals in
+// photo-utils.js are the fallback — so they must stay identical to the table's
+// English, or the two copies drift and English customers see a different sentence.
+describe('photoRejection — speaks the order form language (S191)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../assets/js/order-strings.js'), 'utf8');
+  const sandbox = { window: {} };
+  new Function('window', src).call(sandbox, sandbox.window);
+  const STRINGS = sandbox.window.ORDER_STRINGS;
+  const translator = lang => (key, vars) => {
+    let out = STRINGS[key][lang];
+    for (const k in vars || {}) out = out.split('{' + k + '}').join(vars[k]);
+    return out;
+  };
+  const CASES = { raw: file('DSC_0001.cr2'), format: file('thing.bmp'), size: file('scan.jpg', 60 * 1024 * 1024) };
+
+  test.each(Object.keys(CASES))('%s: the English fallback matches the string table', k => {
+    expect(photoRejection(CASES[k], translator('en'))).toBe(photoRejection(CASES[k]));
+  });
+
+  test.each(Object.keys(CASES))('%s: a German order gets the German reason', k => {
+    const de = photoRejection(CASES[k], translator('de'));
+    // Unused vars are harmless: each key substitutes only its own placeholders.
+    expect(de).toBe(translator('de')('reject.' + k, { mb: 60, max: 40, formats: PHOTO_FORMATS.label }));
+    expect(de).not.toBe(photoRejection(CASES[k]));
+  });
+});
+
 // Android hands Chrome the content provider's DISPLAY_NAME, which carries no guarantee of
 // an extension — a Drive/cloud pick can arrive as name "image", type "image/jpeg". Judging
 // on the filename alone would refuse a real photo and block the order, which is worse than
