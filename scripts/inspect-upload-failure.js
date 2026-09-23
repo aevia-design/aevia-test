@@ -65,6 +65,12 @@ function expectedPaths(manifest) {
         for (const a of f.attempts || []) {
           const what = a.status ? `HTTP ${a.status} ${a.statusText}` : a.error;
           console.log(`    attempt ${a.attempt}: ${what}  (${a.ms} ms)`);
+          // S192/#116: progress-event count + timing distinguishes a file-read fault
+          // (identical bytesTransferred, few/no events, across every attempt) from a
+          // transport wedge (varies attempt to attempt). See upload-failures.md.
+          if (a.progressEvents !== undefined) {
+            console.log(`      progress: ${a.progressEvents} event(s), first=${a.firstProgressMs}ms last=${a.lastProgressMs}ms, ${a.bytesTransferred}/${a.totalBytes} bytes`);
+          }
           if (a.body) console.log(`      body: ${a.body.replace(/\s+/g, ' ').slice(0, 200)}`);
         }
       }

@@ -282,6 +282,17 @@ try {
     /support@aevia\.at/.test(msg) && !/AbortError|HTTP \d|Error:/.test(msg)
       ? pass('#112: the error names the photo and points at support, not an internal reason')
       : fail('#112 error copy', `customer saw: ${msg}`);
+
+    // S192/#116: an attempted (not never-attempted) failed slot must carry the new
+    // progress-event instrumentation on every attempt — this is the record that has to
+    // answer "file fault or transport wedge" the next time a real upload stalls.
+    const reportedFailure = (st.reported && st.reported.failures || [])[0];
+    const attempts = (reportedFailure && reportedFailure.attempts) || [];
+    const hasProgressFields = attempts.length > 0 && attempts.every((a) =>
+      typeof a.progressEvents === 'number' && 'firstProgressMs' in a && 'lastProgressMs' in a);
+    hasProgressFields
+      ? pass(`S192: every attempt on the failed slot carries progressEvents/firstProgressMs/lastProgressMs`)
+      : fail('S192 instrumentation', `attempts=${JSON.stringify(attempts)}`);
     await page.close();
   }
 

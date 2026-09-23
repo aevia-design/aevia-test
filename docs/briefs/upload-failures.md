@@ -201,3 +201,13 @@ screenshot anyway.
   invisible.
 - TO-DOS #89 — `uploading` status is ambiguous; planned `upload_failed` state.
 - TO-DOS #90 — AEV-067/073/074/075 stranded with no resume path.
+
+## S192 — instrumentation for the next stall (#116)
+
+Every failed upload attempt now records `progressEvents`, `firstProgressMs` and `lastProgressMs`
+(ms since the attempt started) beside `bytesTransferred` / `totalBytes`, in
+`uploadErrors[].attempts[]`. `node scripts/inspect-upload-failure.js <order>` prints them.
+How to read the next one: **0 events** = nothing left the browser (file never read, or the
+connection never opened). **Few events, then silence, with the same byte count on every
+attempt** = the file stops reading at that point (a file fault). **Events that stop at a
+different point each attempt** = the connection wedged (a transport fault).

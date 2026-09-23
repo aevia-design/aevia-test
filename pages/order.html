@@ -2794,6 +2794,13 @@ async function submitOrder() {
           let stallDetected = false;
           let maxAttemptExceeded = false;
           let bytesTransferred = 0;
+          // S192/#116: distinguish "file could not be read" from "transport wedged" —
+          // AEV-096 stopped at the identical byte on all 3 attempts but we never recorded
+          // how many progress events led up to that, so both faults looked the same.
+          // See docs/briefs/upload-failures.md.
+          let progressEvents = 0;
+          let firstProgressMs = null;
+          let lastProgressMs = null;
           workerInFlightBytes[i] = 0;  // Reset in-flight bytes at start of each attempt
 
           try {
@@ -2815,6 +2822,12 @@ async function submitOrder() {
                 if (progressTimer) clearTimeout(progressTimer);
                 bytesTransferred = e.loaded || 0;
                 workerInFlightBytes[i] = bytesTransferred;
+                // S192/#116: count and time-stamp progress events (ms since this attempt
+                // started), so a stall with 0-1 events reads differently from one with many.
+                progressEvents++;
+                const sinceAttemptStart = Date.now() - attemptStartedAt;
+                if (firstProgressMs === null) firstProgressMs = sinceAttemptStart;
+                lastProgressMs = sinceAttemptStart;
                 updateProgress();
                 // Only reschedule stall timer while the body is still being sent.
                 // If body is complete, do not reschedule — we're now awaiting response.
@@ -2867,6 +2880,9 @@ async function submitOrder() {
                 ms: Date.now() - attemptStartedAt,
                 bytesTransferred,
                 totalBytes: fileObjects[i].size || 0,
+                progressEvents,
+                firstProgressMs,
+                lastProgressMs,
                 body: body.slice(0, 400),
               });
               if (attempt < maxRetries) {
@@ -2904,6 +2920,9 @@ async function submitOrder() {
               ms: Date.now() - attemptStartedAt,
               bytesTransferred,
               totalBytes: fileObjects[i].size || 0,
+              progressEvents,
+              firstProgressMs,
+              lastProgressMs,
             });
             if (attempt === maxRetries) {
               const failure = {
