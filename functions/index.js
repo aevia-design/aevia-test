@@ -2546,6 +2546,14 @@ exports.detectStrandedUploads = functions
           continue;
         }
 
+        // The photos never reached us, so the only fix is ordering again: link to the
+        // template's product page, on the site half the order came from.
+        // "heirloom-beige" → heirloom; no template → the collections page.
+        const slug = String(order.templateName || '').split(/[-\s]/)[0].toLowerCase();
+        const dir = order.language === 'de' ? 'pages/de' : 'pages';
+        const reorderUrl = `${siteOrigin()}/${dir}/${slug || 'collections'}`;
+        const bookName = slug ? `${slug[0].toUpperCase()}${slug.slice(1)} book` : 'book';
+
         try {
           await createTransporter().sendMail({
             ...FROM.customer,
@@ -2553,8 +2561,10 @@ exports.detectStrandedUploads = functions
             subject: `Your Aevia order ${order.orderNumber} did not finish uploading`,
             html: renderEmail(`
               <p style="margin:0 0 18px">Hi ${order.customerName},</p>
-              <p style="margin:0 0 22px">Your photos did not finish uploading, so your order <strong>${order.orderNumber}</strong> is not with us yet.</p>
-              <p style="margin:0 0 22px">If you have already placed it again, you can ignore this. Otherwise, reply to this email and we will get your book started.</p>
+              <p style="margin:0 0 22px">Your photos did not finish uploading, so we did not receive your order <strong>${order.orderNumber}</strong>.</p>
+              <p style="margin:0 0 22px">To get your book started, please place the order again. It takes a few minutes on a stable connection.</p>
+              ${emailButton(reorderUrl, `Order your ${bookName}`)}
+              <p style="margin:22px 0 22px">If you have already done this, you can ignore this email. If the upload fails again, reply here and we will help.</p>
             `, { support: true }),
           });
           await ref.update({ uploadFailedEmailAt: admin.firestore.FieldValue.serverTimestamp() });
