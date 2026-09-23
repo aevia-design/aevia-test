@@ -64,7 +64,10 @@ function installMocks(page, opts = {}) {
   // where a failed photo used to kill its worker and leave the queue behind it untouched.
   // `reported` captures what the page posts to reportUploadFailure — the only place the
   // never-attempted slots become observable, and what the dashboard would actually show.
-  const state = { createCalled: false, confirmCalled: false, createBody: null, confirmBody: null, puts: 0, uploaded: new Set(), reported: null };
+  // `doomed` is mutable so a Retry test can heal the failing slots between the first
+  // run and the retry. The counts prove Retry reuses the order instead of creating one.
+  const state = { createCalled: false, confirmCalled: false, createBody: null, confirmBody: null, puts: 0, uploaded: new Set(), reported: null,
+    doomed: opts.failPutSlots || (opts.failPutSlot !== undefined ? [opts.failPutSlot] : []), createCount: 0, confirmCount: 0 };
 
   page.on('pageerror', (err) => pageErrors.push(err.message));
 
@@ -79,6 +82,7 @@ function installMocks(page, opts = {}) {
     const req = route.request();
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS, body: '' });
     state.createCalled = true;
+    state.createCount++;
     let body = {}; try { body = JSON.parse(req.postData() || '{}'); } catch { /* ignore */ }
     state.createBody = body;
     const files = Array.isArray(body.files) ? body.files : [];
@@ -103,8 +107,7 @@ function installMocks(page, opts = {}) {
     if (opts.putDelayMs) await new Promise((r) => setTimeout(r, opts.putDelayMs));
     state.puts++;
     const slot = Number((req.url().match(/\/slot\/(\d+)/) || [])[1]);
-    const doomed = opts.failPutSlots || (opts.failPutSlot !== undefined ? [opts.failPutSlot] : []);
-    if (doomed.includes(slot)) {
+    if (state.doomed.includes(slot)) {
       return route.fulfill({ status: 403, headers: CORS, body: 'denied' });
     }
     if (Number.isFinite(slot)) state.uploaded.add(slot);
@@ -115,6 +118,7 @@ function installMocks(page, opts = {}) {
     const req = route.request();
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS, body: '' });
     state.confirmCalled = true;
+    state.confirmCount++;
     try { state.confirmBody = JSON.parse(req.postData() || '{}'); } catch { /* ignore */ }
     return route.fulfill({ status: 200, headers: { ...CORS, 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true }) });
   });
@@ -349,6 +353,100 @@ try {
 
     !st.confirmCalled ? pass('S174: a breaker-stopped order still does not confirm')
                       : fail('S174 confirm gate', 'confirmUpload fired after the breaker tripped');
+    await page.close();
+  }
+
+  // ── #89 piece 0 — Retry re-sends the missing photos on the SAME order ───────
+  // The customer is still on the page with every File in memory and signed URLs valid
+  // for 24h, so Retry must reuse them: no second createUploadSession (that strands the
+  // first order), only the missing slots re-sent, and confirmUpload exactly once — and
+  // only when every slot is in storage.
+  async function failThenRetry(page, st, { heal = true } = {}) {
+    await page.click('#submit-btn');
+    await page.waitForSelector('#retry-btn', { state: 'visible', timeout: 60000 });
+    const submitDisabled = await page.isDisabled('#submit-btn');
+    if (heal) st.doomed = [];
+    const putsBefore = st.puts;
+    const missingBefore = (st.reported && st.reported.failures || []).length;
+    return { submitDisabled, putsBefore, missingBefore };
+  }
+
+  head('#89 — Retry recovers one failed photo on the same order');
+  {
+    const page = await ctx.newPage();
+    const st = installMocks(page, { failPutSlots: [3] });
+    const t = await openPhotos(page, { cover });
+    await fillPhotos(page, t, mainPool);
+    const { submitDisabled, putsBefore } = await failThenRetry(page, st);
+    submitDisabled ? pass('#89: Submit stays disabled while Retry is offered (no second order)')
+                   : fail('#89 submit', 'Submit re-enabled beside Retry — a click creates a duplicate order');
+    await page.click('#retry-btn');
+    await waitForSuccess(page, 60000);
+    st.puts - putsBefore === 1 ? pass('#89: Retry re-sent only the one missing photo')
+                               : fail('#89 retry scope', `Retry sent ${st.puts - putsBefore} PUTs, expected 1`);
+    st.createCount === 1 ? pass('#89: Retry reused the order — createUploadSession called once')
+                         : fail('#89 reuse', `createUploadSession called ${st.createCount} times`);
+    st.confirmCount === 1 ? pass('#89: confirmUpload fired exactly once, after the retry')
+                          : fail('#89 confirm once', `confirmUpload called ${st.confirmCount} times`);
+    await page.close();
+  }
+
+  head('#89 — Retry after a tripped breaker sends the never-attempted slots too');
+  {
+    const page = await ctx.newPage();
+    const st = installMocks(page, { failPutSlots: [0, 1, 2, 3, 4] });
+    const t = await openPhotos(page, { cover });
+    await fillPhotos(page, t, mainPool);
+    const expected = t + 1;
+    await failThenRetry(page, st);
+    const neverAttempted = (st.reported.failures || []).filter((f) => f.neverAttempted).length;
+    neverAttempted > 0 ? pass(`#89: precondition — breaker left ${neverAttempted} slots never attempted`)
+                       : fail('#89 breaker precondition', 'breaker did not trip; this case proves nothing');
+    await page.click('#retry-btn');
+    await waitForSuccess(page, 90000);
+    st.uploaded.size === expected ? pass(`#89: every one of ${expected} slots is in storage before confirming`)
+                                  : fail('#89 never-attempted', `only ${st.uploaded.size} of ${expected} slots uploaded — Retry skipped never-attempted slots`);
+    st.confirmCount === 1 ? pass('#89: breaker-tripped order confirmed exactly once')
+                          : fail('#89 breaker confirm', `confirmUpload called ${st.confirmCount} times`);
+    await page.close();
+  }
+
+  head('#89 — a double-click on Retry starts only one run');
+  {
+    const page = await ctx.newPage();
+    const st = installMocks(page, { failPutSlots: [3], putDelayMs: 800 });
+    const t = await openPhotos(page, { cover });
+    await fillPhotos(page, t, mainPool);
+    const { putsBefore } = await failThenRetry(page, st);
+    // Two clicks in the same task, before any await can run — the tightest race possible.
+    await page.evaluate(() => { const b = document.getElementById('retry-btn'); b.click(); b.click(); });
+    await waitForSuccess(page, 60000);
+    st.puts - putsBefore === 1 ? pass('#89: double-click sent the missing photo once')
+                               : fail('#89 double-click', `${st.puts - putsBefore} PUTs — two concurrent retry runs`);
+    st.confirmCount === 1 ? pass('#89: double-click confirmed once')
+                          : fail('#89 double-click confirm', `confirmUpload called ${st.confirmCount} times`);
+    await page.close();
+  }
+
+  head('#89 — a Retry that still fails does not confirm and offers Retry again');
+  {
+    const page = await ctx.newPage();
+    const st = installMocks(page, { failPutSlots: [3] });
+    const t = await openPhotos(page, { cover });
+    await fillPhotos(page, t, mainPool);
+    await failThenRetry(page, st, { heal: false });
+    await page.click('#retry-btn');
+    await page.waitForSelector('#err-step2', { state: 'hidden', timeout: 5000 });
+    await page.waitForSelector('#err-step2', { state: 'visible', timeout: 60000 });
+    const retryAgain = await page.isVisible('#retry-btn') && !(await page.isDisabled('#retry-btn'));
+    retryAgain ? pass('#89: still-failing Retry shows the error and an enabled Retry again')
+               : fail('#89 retry again', 'no usable Retry button after a second failure');
+    st.confirmCount === 0 ? pass('#89: still-failing Retry did not confirm')
+                          : fail('#89 partial confirm', 'confirmUpload fired with a photo still missing');
+    const reportedSlots = (st.reported && st.reported.failures || []).map((f) => f.slot);
+    reportedSlots.length === 1 && reportedSlots[0] === 4
+      ? pass('#89: the second report names only the photo still missing')
+      : fail('#89 second report', `reported slots: ${JSON.stringify(reportedSlots)}`);
     await page.close();
   }
 

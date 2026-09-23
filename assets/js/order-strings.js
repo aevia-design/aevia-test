@@ -102,6 +102,7 @@ window.ORDER_STRINGS = {
 
   // ── Submit ──
   'submit.btn':        { en: 'Submit your order',          de: 'Bestellung abschicken' },
+  'submit.retry':      { en: 'Retry upload',               de: 'Upload erneut versuchen' },
   'submit.note1':      { en: 'No payment until you approve the design.',
                          de: 'Keine Zahlung, bevor Sie die Gestaltung freigeben.' },
   'submit.note2':      { en: 'Preview within 48 hours.',   de: 'Vorschau innerhalb von 48 Stunden.' },

@@ -464,6 +464,7 @@
     <!-- Submit -->
     <div class="submit-section">
       <div class="error-msg" id="err-step2"></div>
+      <button class="btn-primary" id="retry-btn" style="display:none; margin-bottom:12px" data-i18n="submit.retry">Retry upload</button>
       <button class="btn-primary" id="submit-btn" onclick="submitOrder()" data-i18n="submit.btn">Submit your order</button>
       <p class="submit-note"><span data-i18n="submit.note1">No payment until you approve the design.</span><br><span data-i18n="submit.note2">Preview within 48 hours.</span></p>
       <div class="step-nav" style="justify-content:center;margin-top:18px;">
@@ -2425,6 +2426,7 @@ function initDragDrop() {
 async function submitOrder() {
   const errEl  = document.getElementById('err-step2');
   const btn    = document.getElementById('submit-btn');
+  const retryBtn = document.getElementById('retry-btn');
 
   // Final guard — re-run each step's validator before submitting. Each step was
   // validated on advance, but the customer can free-navigate back and edit, so
@@ -2638,6 +2640,9 @@ async function submitOrder() {
   const uploadFailures = [];
   let reportOrderNumber = null;
   let reportToken       = null;
+  // #89 piece 0: set once the order exists, so a failure can offer Retry on the SAME
+  // order instead of "submit again", which created a second order and stranded the first.
+  let retryUpload = null;
 
   try {
     // Step 1: call Firebase function to create order + get signed URLs
@@ -2739,6 +2744,8 @@ async function submitOrder() {
     const STALL_TIMEOUT_MS = 30000;
     const MAX_ATTEMPT_MS = 900000; // 15 min — absolute ceiling, pathological case guard
     let nextIndex = 0;
+    let queue = [];                // #89: this run's slots — all of them first, only the missing on Retry
+    const uploaded = new Set();    // every slot confirmed in storage, across all runs
 
     // #112 (S173): a photo that gives up used to throw out of its worker's loop, so
     // that worker stopped pulling work for good. The pool bled 5 → 0 and the rest of
@@ -2755,8 +2762,8 @@ async function submitOrder() {
     let circuitTripped = false;
 
     async function worker() {
-      while (nextIndex < total && !circuitTripped) {
-        const i = nextIndex++;
+      while (nextIndex < queue.length && !circuitTripped) {
+        const i = queue[nextIndex++];
         let success = false;
         const maxRetries = 3;
         // S147 diagnostics: record what each attempt actually did, so a failure
@@ -2910,6 +2917,7 @@ async function submitOrder() {
         }
 
         if (success) {
+          uploaded.add(i);
           uploadedBytes += fileObjects[i].size || 0;
           workerInFlightBytes[i] = 0; // Clear in-flight bytes once committed
           uploadedCount++;
@@ -2924,131 +2932,176 @@ async function submitOrder() {
         }
       }
     }
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, total) }, worker));
+    // #89 piece 0: the pool must be callable twice — every slot on the first run, only
+    // the missing ones on Retry. Per-run state resets here; the first run is unchanged.
+    async function uploadSlots(indices) {
+      queue = indices;
+      nextIndex = 0;
+      consecutiveFailures = 0;
+      circuitTripped = false;
+      // Every slot outside `indices` is already in storage, so clearing and re-filling
+      // keeps `uploadFailures` meaning exactly "not in GCS" after every run.
+      uploadFailures.length = 0;
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, worker));
 
-    // S174: the circuit breaker stops the queue, so the slots after it are NEVER
-    // ATTEMPTED — they fail nothing, so nothing records them. `uploadFailures` then
-    // under-reports the damage: AEV-096 named slot 29 and stayed silent about slots
-    // 30–56, which were equally absent from GCS. The customer was told one photo was
-    // missing when 28 were.
-    //
-    // Every worker has settled by now, and each claimed its slot with `nextIndex++`,
-    // so any index at or above the final `nextIndex` was never claimed by anybody.
-    // Recording them here makes `uploadFailures` mean exactly "not in GCS" — the
-    // invariant any future Retry has to be able to trust.
-    if (circuitTripped) {
-      for (let i = nextIndex; i < total; i++) {
-        uploadFailures.push({
-          slot:           i + 1,
-          storedName:     uploadUrls[i] ? uploadUrls[i].storedName : null,
-          originalName:   filesMeta[i] ? filesMeta[i].name : null,
-          fileType:       filesMeta[i] ? filesMeta[i].fileType : null,
-          declaredType:   filesMeta[i] ? filesMeta[i].type : null,
-          signedType:     uploadUrls[i] ? uploadUrls[i].contentType : null,
-          sizeBytes:      fileObjects[i] ? fileObjects[i].size : null,
-          bytesTransferred: 0,
-          totalBytes:     fileObjects[i] ? fileObjects[i].size || 0 : 0,
-          totalMs:        0,
-          timedOut:       false,
-          neverAttempted: true,
-          attempts:       [],
-        });
+      // S174: the circuit breaker stops the queue, so the slots after it are NEVER
+      // ATTEMPTED — they fail nothing, so nothing records them. `uploadFailures` then
+      // under-reports the damage: AEV-096 named slot 29 and stayed silent about slots
+      // 30–56, which were equally absent from GCS. The customer was told one photo was
+      // missing when 28 were.
+      //
+      // Every worker has settled by now, and each claimed its slot with `nextIndex++`,
+      // so any queue position at or above the final `nextIndex` was never claimed by anybody.
+      // Recording them here makes `uploadFailures` mean exactly "not in GCS" — the
+      // invariant any future Retry has to be able to trust.
+      if (circuitTripped) {
+        for (let k = nextIndex; k < queue.length; k++) {
+          const i = queue[k];
+          uploadFailures.push({
+            slot:           i + 1,
+            storedName:     uploadUrls[i] ? uploadUrls[i].storedName : null,
+            originalName:   filesMeta[i] ? filesMeta[i].name : null,
+            fileType:       filesMeta[i] ? filesMeta[i].fileType : null,
+            declaredType:   filesMeta[i] ? filesMeta[i].type : null,
+            signedType:     uploadUrls[i] ? uploadUrls[i].contentType : null,
+            sizeBytes:      fileObjects[i] ? fileObjects[i].size : null,
+            bytesTransferred: 0,
+            totalBytes:     fileObjects[i] ? fileObjects[i].size || 0 : 0,
+            totalMs:        0,
+            timedOut:       false,
+            neverAttempted: true,
+            attempts:       [],
+          });
+        }
+        console.error(`[upload] ${queue.length - nextIndex} slots never attempted after the breaker tripped`);
       }
-      console.error(`[upload] ${total - nextIndex} slots never attempted after the breaker tripped`);
+    }
+    await uploadSlots(Array.from({ length: total }, (_, i) => i));
+
+    // #89 piece 0: shared by the first run and every Retry.
+    async function finish() {
+      // #112 (S173): every worker has now settled, so nothing is still uploading in the
+      // background when we report. Fail ONCE, naming the whole list — not whichever photo
+      // happened to fail first. The per-attempt detail is already in `uploadFailures`,
+      // which the catch below posts to the order for the dashboard.
+      if (uploadFailures.length) {
+        const names = uploadFailures.map(f => `"${f.originalName || `photo ${f.slot}`}"`);
+        const shown = names.slice(0, 3).join(', ');
+        const more  = names.length > 3 ? ` and ${names.length - 3} more` : '';
+        // The "connection stopped" wording is a claim about what went wrong, so judge it
+        // only on slots we actually tried. A never-attempted slot is evidence of nothing.
+        const attempted = uploadFailures.filter(f => !f.neverAttempted);
+        throw new Error(
+          attempted.length && attempted.every(f => f.timedOut)
+            ? `Your connection stopped while we were uploading ${shown}${more}. Check your connection and press Retry upload, or email support@aevia.at and we will finish it for you.`
+            : `We could not upload ${shown}${more}. Press Retry upload or email support@aevia.at and we will finish it for you.`
+        );
+      }
+
+      // Confirm only when the set is closed — every slot in storage across all runs,
+      // not merely "this run had no errors". A gap here is a bug, never a success.
+      if (uploaded.size !== total) throw new Error(t('err.generic'));
+
+      // Disarm upload in-flight flag on success (Chunk 3: beforeunload guard)
+      uploadInFlight = false;
+
+      // Chunk 5: call confirmUpload to finalize the order and trigger customer email.
+      // It does two things server-side: flips the order to status 'new' / uploadComplete,
+      // THEN sends the customer email. So a 500 means one of two very different things —
+      // an SMTP failure (order is fine, email missing) or a Firestore/auth failure (order
+      // stranded at 'uploading' with every photo already in GCS).
+      //
+      // S150 (#92): `fetch` only rejects on network failure — a 403 or 500 resolves
+      // normally, so the old unchecked call reported a stranded order as success. Check
+      // res.ok. confirmUpload is idempotent (200 straight back when uploadComplete is
+      // already true), so retrying is safe.
+      let confirmed = false;
+      let confirmDetail = '';
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const res = await fetch(CONFIRM_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderNumber, token }),
+          });
+          if (res.ok) { confirmed = true; break; }
+          const body = await res.text().catch(() => '');
+          confirmDetail = `HTTP ${res.status} ${body.slice(0, 200)}`;
+        } catch (err) {
+          confirmDetail = `${err.name}: ${err.message}`;
+        }
+        // Real backoff, unlike the per-photo retry (#88): 1s then 3s. A cold start or a
+        // brief SMTP hiccup can actually recover inside that.
+        if (attempt < 3) await new Promise(r => setTimeout(r, attempt === 1 ? 1000 : 3000));
+      }
+
+      if (!confirmed) {
+        // Still show success: every photo is in GCS and there is nothing useful the
+        // customer can do with this error. Leave staff a trail instead —
+        // reportUploadFailure writes to uploadErrors without changing status or emailing.
+        console.warn('[confirmUpload] gave up after 3 attempts:', confirmDetail);
+        try {
+          await fetch(REPORT_UPLOAD_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderNumber,
+              token,
+              failures: [{
+                stage:  'confirmUpload',
+                detail: confirmDetail,
+                at:     new Date().toISOString(),
+              }],
+              userAgent: navigator.userAgent,
+            }),
+          });
+        } catch (reportErr) {
+          console.warn('[confirmUpload] could not report:', reportErr);
+        }
+      }
+
+      clearInterval(humourTimer);
+      overlayFill.style.width = '100%';
+      overlaySub.textContent = t('overlay.done');
+      overlayCount.textContent = '';
+
+      // Show success — remove overlay first so it doesn't cover the success screen
+      setTimeout(() => {
+        overlay.classList.remove('active');
+        showSuccess(orderNumber, email);
+      }, 800);
     }
 
-    // #112 (S173): every worker has now settled, so nothing is still uploading in the
-    // background when we report. Fail ONCE, naming the whole list — not whichever photo
-    // happened to fail first. The per-attempt detail is already in `uploadFailures`,
-    // which the catch below posts to the order for the dashboard.
-    if (uploadFailures.length) {
-      const names = uploadFailures.map(f => `"${f.originalName || `photo ${f.slot}`}"`);
-      const shown = names.slice(0, 3).join(', ');
-      const more  = names.length > 3 ? ` and ${names.length - 3} more` : '';
-      // The "connection stopped" wording is a claim about what went wrong, so judge it
-      // only on slots we actually tried. A never-attempted slot is evidence of nothing.
-      const attempted = uploadFailures.filter(f => !f.neverAttempted);
-      throw new Error(
-        attempted.length && attempted.every(f => f.timedOut)
-          ? `Your connection stopped while we were uploading ${shown}${more}. Check your connection and submit again, or email support@aevia.at and we will finish it for you.`
-          : `We could not upload ${shown}${more}. Please submit again, or email support@aevia.at and we will finish it for you.`
-      );
-    }
-
-    // Disarm upload in-flight flag on success (Chunk 3: beforeunload guard)
-    uploadInFlight = false;
-
-    // Chunk 5: call confirmUpload to finalize the order and trigger customer email.
-    // It does two things server-side: flips the order to status 'new' / uploadComplete,
-    // THEN sends the customer email. So a 500 means one of two very different things —
-    // an SMTP failure (order is fine, email missing) or a Firestore/auth failure (order
-    // stranded at 'uploading' with every photo already in GCS).
-    //
-    // S150 (#92): `fetch` only rejects on network failure — a 403 or 500 resolves
-    // normally, so the old unchecked call reported a stranded order as success. Check
-    // res.ok. confirmUpload is idempotent (200 straight back when uploadComplete is
-    // already true), so retrying is safe.
-    let confirmed = false;
-    let confirmDetail = '';
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    retryUpload = async () => {
+      retryBtn.disabled = true;   // synchronous: a second click in the same task is ignored
+      errEl.style.display = 'none';
+      overlay.classList.add('active');
+      uploadInFlight = true;
       try {
-        const res = await fetch(CONFIRM_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderNumber, token }),
-        });
-        if (res.ok) { confirmed = true; break; }
-        const body = await res.text().catch(() => '');
-        confirmDetail = `HTTP ${res.status} ${body.slice(0, 200)}`;
+        await uploadSlots(uploadFailures.map(f => f.slot - 1));
+        await finish();
       } catch (err) {
-        confirmDetail = `${err.name}: ${err.message}`;
+        await handleFailure(err);
       }
-      // Real backoff, unlike the per-photo retry (#88): 1s then 3s. A cold start or a
-      // brief SMTP hiccup can actually recover inside that.
-      if (attempt < 3) await new Promise(r => setTimeout(r, attempt === 1 ? 1000 : 3000));
-    }
+    };
 
-    if (!confirmed) {
-      // Still show success: every photo is in GCS and there is nothing useful the
-      // customer can do with this error. Leave staff a trail instead —
-      // reportUploadFailure writes to uploadErrors without changing status or emailing.
-      console.warn('[confirmUpload] gave up after 3 attempts:', confirmDetail);
-      try {
-        await fetch(REPORT_UPLOAD_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderNumber,
-            token,
-            failures: [{
-              stage:  'confirmUpload',
-              detail: confirmDetail,
-              at:     new Date().toISOString(),
-            }],
-            userAgent: navigator.userAgent,
-          }),
-        });
-      } catch (reportErr) {
-        console.warn('[confirmUpload] could not report:', reportErr);
-      }
-    }
-
-    clearInterval(humourTimer);
-    overlayFill.style.width = '100%';
-    overlaySub.textContent = t('overlay.done');
-    overlayCount.textContent = '';
-
-    // Show success — remove overlay first so it doesn't cover the success screen
-    setTimeout(() => {
-      overlay.classList.remove('active');
-      showSuccess(orderNumber, email);
-    }, 800);
+    await finish();
 
   } catch (err) {
+    await handleFailure(err);
+  }
+
+  async function handleFailure(err) {
     clearInterval(humourTimer);
     // Disarm upload in-flight flag on error (Chunk 3: beforeunload guard)
     uploadInFlight = false;
-    btn.disabled = false;
+    // #89: with photos missing from an order that exists, offer Retry on it and keep
+    // Submit disabled — Submit would create a second order and strand this one.
+    const canRetry = !!retryUpload && uploadFailures.length > 0;
+    btn.disabled = canRetry;
+    retryBtn.style.display = canRetry ? '' : 'none';
+    retryBtn.disabled = false;
+    retryBtn.onclick = canRetry ? retryUpload : null;   // assign, never add: no stacked handlers
     overlay.classList.remove('active');
     errEl.textContent = err.message || t('err.generic');
     errEl.style.display = 'block';
