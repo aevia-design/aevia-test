@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About photos — round 2</title>
+<style>
+  :root {
+    --bg:#fafaf8; --surface:#f3efe9; --border:#e4dfd8; --text:#1a1a1a;
+    --muted:#7d7570; --accent-dk:#a8895f;
+    --serif:Georgia,'Times New Roman',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  img { display:block; max-width:100%; }
+
+  .opt-head { max-width:1160px; margin:0 auto; padding:96px 56px 30px; }
+  .opt-tag { display:inline-block; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--accent-dk); margin-bottom:14px; }
+  .opt-title { font-family:var(--serif); font-size:34px; font-weight:400; letter-spacing:-.015em; }
+  .opt-note { font-size:14px; color:var(--muted); max-width:62ch; margin-top:12px; }
+  .break-caption { max-width:1160px; margin:0 auto; padding:16px 56px 0; font-size:11px; color:var(--muted); text-align:right; }
+
+  .story { max-width:1160px; margin:0 auto; padding:70px 56px; display:grid; grid-template-columns:1fr 1.8fr; gap:80px; align-items:start; }
+  .story-label { font-family:var(--serif); font-size:28px; line-height:1.25; letter-spacing:-.015em; }
+  .story-body p { font-family:var(--serif); font-size:19px; line-height:1.75; margin-bottom:28px; }
+  .story-body p.closing { font-style:italic; color:var(--accent-dk); font-size:20px; margin-bottom:0; }
+
+  /* ── F · tight quartet ─────────────────────────────────────────
+     Uniform 2×2. Same 2px gap the page already uses elsewhere, so the
+     four read as one object rather than four pictures. */
+  .f-wrap { background:var(--surface); padding:0; }
+  .f-grid { max-width:1160px; margin:0 auto; padding:0 56px; display:grid; grid-template-columns:1fr 1fr; gap:2px; }
+  .f-grid img { width:100%; height:auto; }
+
+  /* ── G · quartet with air ──────────────────────────────────────
+     Same grid, generous gutter. Each photo stands as its own frame. */
+  .g-wrap { background:var(--surface); padding:72px 0 88px; }
+  .g-grid { max-width:1160px; margin:0 auto; padding:0 56px; display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .g-grid img { width:100%; height:auto; }
+
+  /* ── H · offset drift ──────────────────────────────────────────
+     Uniform size, but each row steps right — a slow diagonal down the
+     page. Editorial rather than grid-like. */
+  .h-wrap { background:var(--surface); padding:72px 0 96px; }
+  .h-inner { max-width:1160px; margin:0 auto; padding:0 56px; display:flex; flex-direction:column; gap:22px; }
+  .h-row { display:grid; grid-template-columns:1fr 1fr; gap:22px; width:78%; }
+  .h-row-2 { margin-left:auto; }
+  .h-row img { width:100%; height:auto; }
+
+  @media (max-width:900px) {
+    .story { grid-template-columns:1fr; gap:28px; padding:48px 24px; }
+    .opt-head { padding:64px 24px 22px; }
+    /* One per row on a phone. At 2×2 the faces shrink to nothing —
+       these are environmental shots and they need the full width. */
+    .f-grid { padding:0 24px; grid-template-columns:1fr; gap:2px; }
+    .g-grid { grid-template-columns:1fr; }
+    .g-grid, .h-inner { padding:0 24px; gap:12px; }
+    .h-row { width:100%; gap:12px; }
+    .break-caption { padding:14px 24px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="story">
+  <div class="story-label">Aevum. In Latin,<br>a lifetime.<br>An age.</div>
+  <div class="story-body">
+    <p>So we built the opposite of a blank screen: a small studio in Vienna, a few templates, each designed with artists and illustrators we work with directly. You choose the one that fits your occasion, send your photos, and we compose the book by hand.</p>
+    <p class="closing">Fewer choices. A book worth keeping.</p>
+  </div>
+</div>
+
+<div class="opt-head">
+  <span class="opt-tag">Option F</span>
+  <h2 class="opt-title">Tight quartet</h2>
+  <p class="opt-note">All four, one shared ratio, 2px gaps — the same seam the page already uses. Nobody is cut; only empty ceiling was trimmed.</p>
+</div>
+<div class="f-wrap">
+  <div class="f-grid">
+    <img src="pair-t.webp" alt="Evgeny and Xenia">
+    <img src="desk-t.webp" alt="At the desk">
+    <img src="evgenii-t.webp" alt="Evgeny">
+    <img src="xenia-t.webp" alt="Xenia">
+  </div>
+  <p class="break-caption">The studio, most days.</p>
+</div>
+
+<div class="opt-head">
+  <span class="opt-tag">Option G</span>
+  <h2 class="opt-title">Quartet with air</h2>
+  <p class="opt-note">Same four, same sizes, generous gutter. Each photo stands alone instead of merging into a block.</p>
+</div>
+<div class="g-wrap">
+  <div class="g-grid">
+    <img src="pair-t.webp" alt="Evgeny and Xenia">
+    <img src="desk-t.webp" alt="At the desk">
+    <img src="evgenii-t.webp" alt="Evgeny">
+    <img src="xenia-t.webp" alt="Xenia">
+  </div>
+  <p class="break-caption">The studio, most days.</p>
+</div>
+
+<div class="opt-head">
+  <span class="opt-tag">Option H</span>
+  <h2 class="opt-title">Offset drift</h2>
+  <p class="opt-note">Uniform photos, but the second row steps right — a slow diagonal instead of a grid.</p>
+</div>
+<div class="h-wrap">
+  <div class="h-inner">
+    <div class="h-row">
+      <img src="pair-t.webp" alt="Evgeny and Xenia">
+      <img src="desk-t.webp" alt="At the desk">
+    </div>
+    <div class="h-row h-row-2">
+      <img src="evgenii-t.webp" alt="Evgeny">
+      <img src="xenia-t.webp" alt="Xenia">
+    </div>
+  </div>
+  <p class="break-caption">The studio, most days.</p>
+</div>
+
+<div style="height:120px"></div>
+</body>
+</html>

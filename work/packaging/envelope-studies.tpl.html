@@ -1,0 +1,312 @@
+<title>Aevia Envelope Studies</title>
+<style>
+  :root{
+    --ground:#efe9e1;
+    --panel:#f7f3ed;
+    --ink:#1e1a18;
+    --muted:#7b6f66;
+    --hair:#ded5c9;
+    --gold:#9c7b4e;
+    --stock:#c8a3a1;
+    --stock-dk:#b7908e;
+    --stock-lt:#d4b3b1;
+    --mm: min(1.75px, (100vw - 72px) / 232);
+    --serif: Georgia, 'Times New Roman', serif;
+    --sans: ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:var(--serif);
+    font-size:17px;
+    line-height:1.55;
+    margin:0;
+    padding:0 24px 96px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;}
+
+  /* ---------- masthead ---------- */
+  header.mast{padding:72px 0 48px;border-bottom:1px solid var(--hair);}
+  .eyebrow{
+    font-family:var(--sans);font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 18px;
+  }
+  h1{font-size:clamp(34px,5vw,52px);line-height:1.06;margin:0 0 20px;font-weight:400;text-wrap:balance;letter-spacing:-.01em;}
+  .lede{max-width:60ch;margin:0;color:#3d3733;}
+  .lede + .lede{margin-top:14px;}
+
+  /* ---------- option block ---------- */
+  .option{
+    display:grid;grid-template-columns:minmax(0,auto) minmax(280px,1fr);
+    gap:44px;align-items:start;
+    padding:56px 0;border-bottom:1px solid var(--hair);
+  }
+  @media (max-width:900px){ .option{grid-template-columns:1fr;gap:28px;} }
+  .letter{
+    font-family:var(--sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--muted);display:block;margin-bottom:8px;
+  }
+  h2{font-size:27px;font-weight:400;margin:0 0 12px;letter-spacing:-.01em;}
+  .rationale{margin:0 0 22px;color:#3d3733;max-width:52ch;}
+
+  dl.spec{margin:0;border-top:1px solid var(--hair);}
+  dl.spec > div{
+    display:grid;grid-template-columns:112px 1fr;gap:16px;
+    padding:9px 0;border-bottom:1px solid var(--hair);
+  }
+  dl.spec dt{font-family:var(--sans);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0;padding-top:2px;}
+  dl.spec dd{margin:0;font-size:15.5px;font-variant-numeric:tabular-nums;}
+  .risk{
+    margin:20px 0 0;padding:13px 15px;background:var(--panel);
+    border-left:2px solid var(--gold);font-size:15px;color:#3d3733;
+  }
+  .risk b{font-family:var(--sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:5px;font-weight:600;}
+
+  /* ---------- the envelope ---------- */
+  .stage{
+    width:calc(232 * var(--mm));padding:6px;
+  }
+  .env{
+    position:relative;width:calc(220 * var(--mm));height:calc(220 * var(--mm));
+    background:var(--stock);border-radius:calc(1.5 * var(--mm));
+    box-shadow:0 calc(2*var(--mm)) calc(9*var(--mm)) rgba(70,45,45,.18),
+               0 calc(.5*var(--mm)) 0 rgba(255,255,255,.25) inset;
+    overflow:hidden;
+    font-family:var(--serif);
+  }
+  /* paper grain */
+  .env::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:radial-gradient(rgba(255,255,255,.16) .5px, transparent .5px),
+                     radial-gradient(rgba(120,80,80,.10) .5px, transparent .5px);
+    background-size:4px 4px, 5px 5px;background-position:0 0, 2px 3px;
+    mix-blend-mode:overlay;opacity:.7;
+  }
+  /* the flap: top band, its lower edge is the fold */
+  .flap{
+    position:absolute;left:0;right:0;top:0;height:calc(76 * var(--mm));
+    background:linear-gradient(180deg,var(--stock-lt) 0%, var(--stock) 60%);
+    border-bottom-left-radius:calc(9*var(--mm));border-bottom-right-radius:calc(9*var(--mm));
+    box-shadow:0 calc(.9*var(--mm)) calc(2.5*var(--mm)) rgba(90,55,55,.22);
+  }
+  .washer{
+    position:absolute;left:50%;transform:translateX(-50%);
+    width:calc(19*var(--mm));height:calc(19*var(--mm));border-radius:50%;
+    background:radial-gradient(circle at 38% 32%, var(--stock-lt), var(--stock-dk));
+    box-shadow:0 calc(.6*var(--mm)) calc(1.6*var(--mm)) rgba(90,55,55,.3);
+    display:grid;place-items:center;
+  }
+  .washer i{
+    width:calc(4.4*var(--mm));height:calc(4.4*var(--mm));border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #d8b878, #7a5a24);
+    box-shadow:0 0 0 calc(.35*var(--mm)) rgba(255,255,255,.3) inset;
+  }
+  .w-top{top:calc(66.5*var(--mm));}
+  .w-bot{top:calc(96*var(--mm));}
+  .string{
+    position:absolute;left:50%;top:calc(76*var(--mm));width:calc(1*var(--mm));
+    height:calc(38*var(--mm));background:#f0e7da;
+    box-shadow:0 0 calc(.6*var(--mm)) rgba(120,90,70,.4);
+    transform:translateX(calc(-3*var(--mm)));
+  }
+  .string.b{transform:translateX(calc(2*var(--mm)));}
+
+  /* ---------- treatments ---------- */
+  .deb{
+    color:transparent;
+    text-shadow:0 calc(.55*var(--mm)) 0 rgba(255,255,255,.60),
+                0 calc(-.4*var(--mm)) calc(.4*var(--mm)) rgba(96,58,58,.55);
+  }
+  .gold{color:var(--gold);text-shadow:none;}
+  /* filter must sit on the PARENT: CSS applies filter before mask, so a
+     drop-shadow on the masked element itself is clipped away to nothing. */
+  .emb{
+    filter:drop-shadow(0 calc(.5*var(--mm)) 0 rgba(255,255,255,.65))
+           drop-shadow(0 calc(-.4*var(--mm)) calc(.35*var(--mm)) rgba(96,58,58,.6));
+  }
+  .mark, .wordmark{
+    display:block;width:100%;height:100%;
+    background:var(--stock);
+  }
+  .wordmark{
+    -webkit-mask:url("data:image/png;base64,{{LOGO}}") center/contain no-repeat;
+            mask:url("data:image/png;base64,{{LOGO}}") center/contain no-repeat;
+  }
+  .mark{
+    -webkit-mask:url("data:image/png;base64,{{MARK}}") center/contain no-repeat;
+            mask:url("data:image/png;base64,{{MARK}}") center/contain no-repeat;
+  }
+  .at{position:absolute;}
+  .caps{
+    font-family:var(--sans);text-transform:uppercase;letter-spacing:.22em;
+    line-height:1.9;
+  }
+  .quiet{font-size:calc(3.1*var(--mm));}
+
+  footer.close{padding:56px 0 0;}
+  footer.close h2{font-size:24px;margin-bottom:16px;}
+  ol.asks{max-width:62ch;padding-left:1.15em;margin:0;}
+  ol.asks li{margin-bottom:13px;}
+  ol.asks b{font-weight:400;border-bottom:1px solid var(--gold);}
+  .note{max-width:62ch;color:var(--muted);font-size:15px;margin-top:30px;padding-top:18px;border-top:1px solid var(--hair);}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <p class="eyebrow">Aevia · Packaging · 220 × 220 mm string-and-washer envelope</p>
+  <h1>Five ways to put Aevia on the envelope</h1>
+  <p class="lede">Same stock, same format, same fastening. What changes in each study is <em>how much is said and how loudly</em> — from a single blind-debossed mark to a printed letter across the flap.</p>
+  <p class="lede">One rule runs through all five: <strong>deboss carries the large forms, print carries the small text.</strong> A die pressed into coloured stock loses fine detail, so the logo is debossed and every line below roughly 12 pt is printed instead — which the supplier can do in any colour on any of their stocks.</p>
+  <p class="lede">Everything is drawn at true scale: 1 mm on your screen is 1 mm on the envelope. Every element carries its real millimetre size, so a chosen study can go straight into Illustrator without re-guessing anything.</p>
+</header>
+
+<!-- ============ A ============ -->
+<section class="option">
+  <div class="stage">
+    <div class="env">
+      <div class="flap"></div>
+      <div class="string"></div><div class="string b"></div>
+      <div class="washer w-top"><i></i></div>
+      <div class="washer w-bot"><i></i></div>
+      <div class="at emb" style="left:calc(75*var(--mm));top:calc(146*var(--mm));width:calc(70*var(--mm));height:calc(17.3*var(--mm));"><span class="wordmark"></span></div>
+      <div class="at caps gold quiet" style="right:calc(18*var(--mm));top:calc(22*var(--mm));text-align:right;">aevia.at<br>Wien</div>
+    </div>
+  </div>
+  <div>
+    <span class="letter">Study A</span>
+    <h2>Quiet Mark</h2>
+    <p class="rationale">The rumi reference, read literally. One blind-debossed lockup low on the face, one small printed line high on the flap, and nothing else. The envelope stays an object; the brand is something you notice on the second look rather than the first.</p>
+    <dl class="spec">
+      <div><dt>Lockup</dt><dd>70 mm wide, centred, 146 mm from top</dd></div>
+      <div><dt>Treatment</dt><dd>Blind deboss, no ink</dd></div>
+      <div><dt>Flap line</dt><dd>7 pt caps, 0.22 em tracking, gold foil or flat print</dd></div>
+      <div><dt>Colours</dt><dd>Stock + one print colour</dd></div>
+    </dl>
+    <p class="risk"><b>Where this breaks</b>The mark's thin book outline is roughly 0.4 mm of stroke at this size. If your supplier's minimum is 0.5 mm, the frame fills in and reads as a blob. Test the mark alone before committing.</p>
+  </div>
+</section>
+
+<!-- ============ B ============ -->
+<section class="option">
+  <div class="stage">
+    <div class="env">
+      <div class="flap"></div>
+      <div class="string"></div><div class="string b"></div>
+      <div class="washer w-top"><i></i></div>
+      <div class="washer w-bot"><i></i></div>
+      <div class="at caps gold" style="left:0;right:0;top:calc(150*var(--mm));text-align:center;font-size:calc(3.4*var(--mm));">Keep your memories beautifully</div>
+      <div class="at emb" style="left:calc(20*var(--mm));top:calc(168*var(--mm));width:calc(180*var(--mm));height:calc(44.5*var(--mm));"><span class="wordmark"></span></div>
+    </div>
+  </div>
+  <div>
+    <span class="letter">Study B</span>
+    <h2>Full Measure</h2>
+    <p class="rationale">The Midge Maisel move: the wordmark goes nearly edge to edge along the bottom, big enough that the deboss becomes the surface rather than a detail in it. Confident, and the safest of the five in production — large forms hold a clean edge on textured stock where small ones don't.</p>
+    <dl class="spec">
+      <div><dt>Lockup</dt><dd>180 mm wide, 20 mm side margins</dd></div>
+      <div><dt>Baseline</dt><dd>Sits 8 mm above the bottom edge</dd></div>
+      <div><dt>Tagline</dt><dd>7.5 pt caps above, printed</dd></div>
+      <div><dt>Colours</dt><dd>Stock + one print colour for the tagline</dd></div>
+    </dl>
+    <p class="risk"><b>Where this breaks</b>At 180 mm the lockup is bigger than most deboss dies. Ask for the maximum die size before you fall in love with it; above roughly 150 mm this often becomes a two-hit job or a price jump. This is the one study where the size limit, not legibility, is the risk.</p>
+  </div>
+</section>
+
+<!-- ============ C ============ -->
+<section class="option">
+  <div class="stage">
+    <div class="env">
+      <div class="flap"></div>
+      <div class="string"></div><div class="string b"></div>
+      <div class="washer w-top"><i></i></div>
+      <div class="washer w-bot"><i></i></div>
+      <div class="at gold" style="left:calc(38*var(--mm));width:calc(144*var(--mm));top:calc(20*var(--mm));text-align:center;font-size:calc(3.5*var(--mm));line-height:1.75;">
+        Inside is a year you already lived,<br>set down so it stops slipping away.<br>Open it slowly. It was made by hand<br>in Vienna, for you.
+      </div>
+      <div class="at emb" style="left:calc(102*var(--mm));top:calc(160*var(--mm));width:calc(16*var(--mm));height:calc(15*var(--mm));"><span class="mark"></span></div>
+    </div>
+  </div>
+  <div>
+    <span class="letter">Study C</span>
+    <h2>The Letter</h2>
+    <p class="rationale">Reference 1, where the flap carries a short piece of writing and the brand barely signs it. This is the only study that says something to the customer instead of naming itself, which suits a product whose whole promise is words and pictures kept properly. The mark alone sits low, like a maker's stamp.</p>
+    <dl class="spec">
+      <div><dt>Text block</dt><dd>144 mm wide, centred, 4 lines</dd></div>
+      <div><dt>Type</dt><dd>7.5 pt serif, 1.75 line-height</dd></div>
+      <div><dt>Treatment</dt><dd>Printed, as reference 1 does it</dd></div>
+      <div><dt>Mark</dt><dd>16 mm, debossed, centred, 160 mm from top</dd></div>
+    </dl>
+    <p class="risk"><b>Where this breaks</b>Printing solves the legibility, so the remaining risk is the writing. Four lines on a flap have to survive being read hundreds of times, in two languages, by people in very different moods — the copy shown is a placeholder to judge the shape of the block, not a proposal.</p>
+  </div>
+</section>
+
+<!-- ============ D ============ -->
+<section class="option">
+  <div class="stage">
+    <div class="env">
+      <div class="flap"></div>
+      <div class="string"></div><div class="string b"></div>
+      <div class="washer w-top"><i></i></div>
+      <div class="washer w-bot"><i></i></div>
+      <div class="at emb" style="left:calc(88*var(--mm));top:calc(140*var(--mm));width:calc(44*var(--mm));height:calc(41*var(--mm));"><span class="mark"></span></div>
+    </div>
+  </div>
+  <div>
+    <span class="letter">Study D</span>
+    <h2>The Mark</h2>
+    <p class="rationale">No name, no address, no tagline. One 44 mm book glyph debossed into the lower face and the stock left to do everything else. The most disciplined option and the cheapest to make — a single small die, one hit, no print run. It also asks the most of the mark, which has to carry recognition alone.</p>
+    <dl class="spec">
+      <div><dt>Mark</dt><dd>44 mm wide, centred, 140 mm from top</dd></div>
+      <div><dt>Stroke</dt><dd>≈ 1.6 mm at this size — comfortably above any minimum</dd></div>
+      <div><dt>Treatment</dt><dd>Blind deboss, single die</dd></div>
+      <div><dt>Colours</dt><dd>Stock only</dd></div>
+    </dl>
+    <p class="risk"><b>Where this breaks</b>Nothing on the envelope says Aevia to someone who has not seen the mark before — including the postman. If these ever ship unboxed rather than inside an outer carton, you need the name somewhere.</p>
+  </div>
+</section>
+
+<!-- ============ E ============ -->
+<section class="option">
+  <div class="stage">
+    <div class="env">
+      <div class="flap"></div>
+      <div class="string"></div><div class="string b"></div>
+      <div class="washer w-top"><i></i></div>
+      <div class="washer w-bot"><i></i></div>
+      <div class="at emb" style="left:calc(22*var(--mm));top:calc(24*var(--mm));width:calc(52*var(--mm));height:calc(12.8*var(--mm));"><span class="wordmark"></span></div>
+      <div class="at" style="left:calc(22*var(--mm));top:calc(45*var(--mm));width:calc(176*var(--mm));height:calc(.35*var(--mm));background:var(--gold);"></div>
+      <div class="at caps gold" style="left:calc(22*var(--mm));top:calc(196*var(--mm));font-size:calc(3.2*var(--mm));">Gegründet in Wien · MMXXVI</div>
+      <div class="at caps gold quiet" style="right:calc(22*var(--mm));top:calc(196*var(--mm));">aevia.at</div>
+    </div>
+  </div>
+  <div>
+    <span class="letter">Study E</span>
+    <h2>Ledger</h2>
+    <p class="rationale">The editorial option, and the only one that uses the envelope's full height. Wordmark and a hairline rule sit at the top like a masthead; the founding line and the URL anchor the bottom corners. It reads as a document rather than a package, which is closer to how the books themselves are set.</p>
+    <dl class="spec">
+      <div><dt>Lockup</dt><dd>52 mm wide, 22 mm from left and top</dd></div>
+      <div><dt>Rule</dt><dd>176 mm × 0.35 mm, printed, 45 mm from top</dd></div>
+      <div><dt>Footline</dt><dd>7 pt caps printed, both corners, 196 mm from top</dd></div>
+      <div><dt>Colours</dt><dd>Debossed logo + one print colour</dd></div>
+    </dl>
+    <p class="risk"><b>Where this breaks</b>Printing the rule removes the production problem and leaves a compositional one: a line that long only works if it is dead parallel to the top edge and the flap fold. Any drift in trimming shows up as a rule that looks crooked even when it is straight.</p>
+  </div>
+</section>
+
+<footer class="close">
+  <h2>What I need from you before this becomes artwork</h2>
+  <ol class="asks">
+    <li><b>A vector logo.</b> The only Aevia logo in the repo is a 409 × 101 px PNG. A deboss die is cut from vector outlines, so the supplier cannot use it. Everything above is that PNG masked into shape — good enough to judge a layout, not good enough to make one. This is the hard blocker.</li>
+    <li><b>The supplier's deboss minimums</b> — smallest stroke width, smallest type size, and maximum die dimensions. Those three numbers decide between A, B and D on their own.</li>
+    <li><b>Which print colour, and on which stock.</b> Printing in any colour is confirmed available, so this becomes a taste decision rather than a constraint. Shown here in the brand's warm gold (#9C7B4E) on mauve; a tone-on-tone ink a few shades darker than the stock would read quieter, and white would read sharper. Worth printing all three on paper before choosing.</li>
+    <li><b>The real envelope size and flap depth.</b> Drawn here at 220 × 220 mm with a 76 mm flap, taken from the template proportions. If it turns out to be 225 mm, every coordinate shifts.</li>
+    <li><b>The stock colours actually on offer.</b> One mauve is shown; the layouts do not change with colour, but your choice of which studies to test might.</li>
+    <li><b>A decision on the tagline.</b> Studies B and C use "Keep your memories beautifully" from the style guide rather than the "a life in pages" idea, which is not settled. Whichever wins needs a German version, since the books now ship in both languages.</li>
+  </ol>
+  <p class="note">Rendered in Georgia because the artifact viewer blocks external font loading; the real artwork uses Lora, as the site does. The stock colour, string and eyelets are simulated from your template photograph and will not match a physical sample exactly. Judge placement, scale and how much is said — not colour.</p>
+</footer>
+
+</div>

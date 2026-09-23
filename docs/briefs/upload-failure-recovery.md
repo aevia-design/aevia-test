@@ -5,6 +5,32 @@
 **Audience:** developer-agent (implements), then the owner (Evgeny) who verifies on the live rig.
 **Applicable Standards:** `CLAUDE.md` (global + project), `AGENTS.md`, `rageatc-code-oss:verifying-work`, the customer-facing copy rule (`/stop-slop` pass before shipping)
 
+> ## Status (S190): PIECES 1–7 BUILT AND DEPLOYED · PIECE 0 REMAINS
+>
+> `86d8c7c`, deployed 2026-09-22. `detectStrandedUploads` is live (hourly, `europe-west1`),
+> `confirmUpload` claims its confirmation in a transaction and sends both emails under
+> `allSettled`, the staff "New Order" email moved there, and the dashboard carries the status,
+> the counts, the dropdown and the disposition.
+>
+> **Piece 0 (the Retry button) is NOT built** — it is the only piece touching `pages/order.html`,
+> so it needs the `qa:order` gate and its own session. Everything it requires below still stands,
+> including the warning not to skip `neverAttempted` entries.
+>
+> **Three things the next session must know:**
+> 1. **`STRANDED_CUTOFF` is `2026-09-22T00:00:00Z`** in `functions/index.js`. All five QA
+>    strandings predate it and are safe.
+> 2. **Success criterion 3 is UNPROVEN.** Needs a fresh stranded order created after the cutoff
+>    with an inbox we own. ⚠ AEV-096 cannot serve — see the acceptance-test note in Constraints.
+> 3. **Nothing has been checked against live data.** The Firestore read of what currently sits at
+>    `uploading` was blocked by the sandbox. An order created on/after the cutoff that is stranded
+>    with real photo failures **will be emailed** on the next hourly run.
+>
+> **Two corrections to this brief, found in the code (S190):** its dashboard line numbers are
+> stale; `statusLabel` returns `labels[s] || s` so an unmapped status shows the **raw string** —
+> the "falls back to Uploading" behaviour is in the **dropdown**, a different bug in a different
+> place (both fixed). And `PRE_APPROVAL` / `PRE_APPROVAL_STATUSES`, which this brief never
+> mentions, **already exclude `upload_failed` by omission, which is correct** — do not "fix" them.
+>
 > ## Status (S174): READY TO IMPLEMENT
 >
 > S173 marked this brief do-not-implement after a `critic-agent` review and a harder

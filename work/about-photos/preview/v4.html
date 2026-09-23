@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About photos — round 4</title>
+<style>
+  :root {
+    --bg:#fafaf8; --surface:#f3efe9; --border:#e4dfd8; --text:#1a1a1a;
+    --muted:#7d7570; --accent-dk:#a8895f;
+    --serif:Georgia,'Times New Roman',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  img { display:block; max-width:100%; }
+
+  .opt-head { max-width:1160px; margin:0 auto; padding:80px 56px 26px; }
+  .opt-tag { display:inline-block; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--accent-dk); margin-bottom:14px; }
+  .opt-title { font-family:var(--serif); font-size:32px; font-weight:400; letter-spacing:-.015em; }
+  .opt-note { font-size:14px; color:var(--muted); max-width:62ch; margin-top:12px; }
+
+  .story { max-width:1160px; margin:0 auto; padding:64px 56px; display:grid; grid-template-columns:1fr 1.8fr; gap:80px; align-items:start; }
+  .story-label { font-family:var(--serif); font-size:28px; line-height:1.25; letter-spacing:-.015em; }
+  .story-body p { font-family:var(--serif); font-size:19px; line-height:1.75; margin-bottom:28px; }
+  .story-body p.closing { font-style:italic; color:var(--accent-dk); font-size:20px; margin-bottom:0; }
+
+  /* ══ THE ROLLING ROW ══════════════════════════════════════════
+     Bigger photos than round 3, so roughly four are on screen at a
+     time on a wide monitor instead of six. Heights vary on a shared
+     centre line; widths stay fixed so the loop never jumps. */
+  .roll { background:var(--surface); padding:84px 0 0; overflow:hidden;
+          -webkit-mask-image:linear-gradient(90deg,transparent,#000 11%,#000 89%,transparent);
+                  mask-image:linear-gradient(90deg,transparent,#000 11%,#000 89%,transparent); }
+  .roll-track { display:flex; align-items:center; gap:38px; width:max-content;
+                animation:roll 86s linear infinite; }
+  .roll:hover .roll-track { animation-play-state:paused; }
+  .roll-track img { display:block; width:auto; }
+  .h-a { height:640px; } .h-b { height:480px; } .h-c { height:580px; } .h-d { height:440px; }
+  @keyframes roll { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .roll-track { animation:none; } .roll { overflow-x:auto; } }
+
+  /* ══ CAPTION BLOCK ════════════════════════════════════════════
+     Was a lone right-aligned line floating under the images, which
+     read as orphaned. Now a left-aligned block on the container's
+     own edge, so it lines up with the story text above it.
+     Two tiers: who they are, then the venue credit — present and
+     findable, but clearly secondary. */
+  /* shares the band's surface, so the beige does not stop dead at the
+     photo edge and leave the caption stranded on the page background */
+  .roll-meta-wrap { background:var(--surface); }
+  .roll-meta { max-width:1160px; margin:0 auto; padding:30px 56px 76px;
+               display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  .roll-who { font-size:12.5px; color:var(--text); }
+  .roll-who em { font-style:normal; color:var(--muted); }
+  .roll-venue { font-size:10px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); opacity:.72; }
+  .roll-venue::before { content:"·"; margin-right:14px; opacity:.55; }
+
+  /* alternate credit treatments, for comparison */
+  .alt .roll-meta { display:block; }
+  .alt .roll-venue { display:block; margin-top:7px; text-transform:none; letter-spacing:.02em; font-size:11px; opacity:.75; }
+  .alt .roll-venue::before { content:none; }
+
+  .alt2 .roll-meta { justify-content:space-between; }
+  .alt2 .roll-venue::before { content:none; }
+
+  @media (max-width:900px) {
+    .story { grid-template-columns:1fr; gap:26px; padding:44px 24px; }
+    .opt-head { padding:56px 24px 18px; }
+    .roll { padding:52px 0 0; }
+    .h-a { height:340px; } .h-b { height:262px; } .h-c { height:310px; } .h-d { height:238px; }
+    .roll-meta { padding:20px 24px 56px; display:block; }
+    .roll-venue { display:block; margin-top:7px; }
+    .roll-venue::before { content:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="story">
+  <div class="story-label">Aevum. In Latin,<br>a lifetime.<br>An age.</div>
+  <div class="story-body">
+    <p>So we built the opposite of a blank screen: a small studio in Vienna, a few templates, each designed with artists and illustrators we work with directly. You choose the one that fits your occasion, send your photos, and we compose the book by hand.</p>
+    <p class="closing">Fewer choices. A book worth keeping.</p>
+  </div>
+</div>
+
+<div class="opt-head">
+  <span class="opt-tag">Round 4 · credit A — inline</span>
+  <h2 class="opt-title">Bigger photos, caption on the left edge</h2>
+  <p class="opt-note">Four on screen instead of six, and the caption now aligns with the story text above rather than floating right. Venue credit sits after a separator dot.</p>
+</div>
+<div class="roll">
+  <div class="roll-track">
+    <img class="h-a" src="pair-t.webp"    alt="Eugene and Xenia, founders of Aevia">
+    <img class="h-b" src="evgenii-t.webp" alt="Eugene">
+    <img class="h-c" src="desk-t.webp"    alt="Working in the studio">
+    <img class="h-d" src="xenia-t.webp"   alt="Xenia">
+    <img class="h-a" src="pair-t.webp"    alt="" aria-hidden="true">
+    <img class="h-b" src="evgenii-t.webp" alt="" aria-hidden="true">
+    <img class="h-c" src="desk-t.webp"    alt="" aria-hidden="true">
+    <img class="h-d" src="xenia-t.webp"   alt="" aria-hidden="true">
+  </div>
+</div>
+<div class="roll-meta-wrap"><div class="roll-meta">
+  <p class="roll-who">Founders of Aevia, <em>Eugene and Xenia.</em></p>
+  <p class="roll-venue">Photographed at Spaces Business Centre, Vienna</p>
+</div></div>
+
+<div class="opt-head">
+  <span class="opt-tag">Credit B — stacked</span>
+  <h2 class="opt-title">Venue credit on its own line</h2>
+  <p class="opt-note">Same row. The credit drops below in sentence case rather than small caps — quieter, reads as a photo credit in a magazine.</p>
+</div>
+<div class="alt">
+  <div class="roll">
+    <div class="roll-track">
+      <img class="h-a" src="pair-t.webp"    alt="">
+      <img class="h-b" src="evgenii-t.webp" alt="">
+      <img class="h-c" src="desk-t.webp"    alt="">
+      <img class="h-d" src="xenia-t.webp"   alt="">
+      <img class="h-a" src="pair-t.webp"    alt="" aria-hidden="true">
+      <img class="h-b" src="evgenii-t.webp" alt="" aria-hidden="true">
+      <img class="h-c" src="desk-t.webp"    alt="" aria-hidden="true">
+      <img class="h-d" src="xenia-t.webp"   alt="" aria-hidden="true">
+    </div>
+  </div>
+  <div class="roll-meta-wrap"><div class="roll-meta">
+    <p class="roll-who">Founders of Aevia, <em>Eugene and Xenia.</em></p>
+    <p class="roll-venue">Photographed at Spaces Business Centre, Vienna.</p>
+  </div></div>
+</div>
+
+<div class="opt-head">
+  <span class="opt-tag">Credit C — opposite ends</span>
+  <h2 class="opt-title">Names left, venue right</h2>
+  <p class="opt-note">Names on the left edge, venue pushed to the far right. The most discreet of the three — the credit reads as a footnote to the band rather than part of the sentence.</p>
+</div>
+<div class="alt2">
+  <div class="roll">
+    <div class="roll-track">
+      <img class="h-a" src="pair-t.webp"    alt="">
+      <img class="h-b" src="evgenii-t.webp" alt="">
+      <img class="h-c" src="desk-t.webp"    alt="">
+      <img class="h-d" src="xenia-t.webp"   alt="">
+      <img class="h-a" src="pair-t.webp"    alt="" aria-hidden="true">
+      <img class="h-b" src="evgenii-t.webp" alt="" aria-hidden="true">
+      <img class="h-c" src="desk-t.webp"    alt="" aria-hidden="true">
+      <img class="h-d" src="xenia-t.webp"   alt="" aria-hidden="true">
+    </div>
+  </div>
+  <div class="roll-meta-wrap"><div class="roll-meta">
+    <p class="roll-who">Founders of Aevia, <em>Eugene and Xenia.</em></p>
+    <p class="roll-venue">Spaces Business Centre, Vienna</p>
+  </div></div>
+</div>
+
+<div style="height:100px"></div>
+</body>
+</html>

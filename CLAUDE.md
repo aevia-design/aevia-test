@@ -42,6 +42,8 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   must happen (F&F trial → launch → launch day → after → someday), one to three lines per item.
   Long-form detail lives in `docs/todo-notes.md` or a dedicated brief, **never in the table**.
   Keep it that way: numbers are stable and referenced across the repo, so never renumber.
+  **Since S191 the Trello board is CANONICAL** and `TO-DOS.md` is its snapshot — see
+  "Backlog board" below for the rules.
 - Codified insights from past sessions (read before repeating an old mistake): `LEARNINGS.md`
 - Captured ideas / future directions: `ideas.md`
 - **Legal pages (Impressum, Datenschutz, AGB): `work/legal-pages/` — read `plan_v1.md` FIRST.**
@@ -279,6 +281,27 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
 
 ---
 
+## Backlog board (Trello, since S191)
+https://trello.com/b/HCrNJRN1/aevia — board id `6ab38135b3aee497becc9753` (the API's `idBoard`
+rejects the short link). Lists: Backlog → Next up → In progress → Blocked → Done → Dropped.
+Card title `#NN · name`; label = the "when" section (F&F trial / Before launch / Launch day /
+After launch / Someday). API via `curl` with repo-root `trello.env` — **never move it into
+`functions/`**, which `firebase deploy` uploads wholesale.
+
+- **Owner owns priority; Claude owns status.** The order of *Next up* is the priority. Never
+  reorder, re-label, promote into *Next up*, or move to *Dropped* — suggest it, he moves it.
+- **Session start:** read *In progress*, *Blocked* and the top of *Next up*, plus comments.
+  The owner also moves cards himself and says so mid-session — re-read the card when he does.
+- **Starting work** → *In progress*. No WIP limit, but flag it if cards pile up there.
+- **Waiting on someone** → *Blocked*, with a comment: who, and since when.
+- **Done means verified** — deployed and tested, or checked live; a push alone is not done.
+  Comment the session number and commit hash when moving a card to *Done*.
+- **New tickets:** a card immediately, numbered max + 1 (never reuse a number), always labelled,
+  into *Backlog*. A few lines only — long reasoning goes in `docs/briefs/`, linked from the card.
+- **Handover:** regenerate `TO-DOS.md` from the board; archive *Done* cards older than two weeks.
+
+---
+
 ## Customer-facing copy
 Any new or edited **customer-facing** copy — anything a customer reads: product and
 marketing pages, the order form, `customer-preview`, `help`/FAQ, and transactional
@@ -318,7 +341,7 @@ Engine: `http://localhost:8080/pages/staff/template-engine.html`
 ---
 
 ## Secrets — never commit
-`functions/.env` (Gmail credentials), `functions/serviceAccountKey.json` (GCS), `motif-engine/.env` (Replicate token)
+`functions/.env` (Gmail credentials), `functions/serviceAccountKey.json` (GCS), `motif-engine/.env` (Replicate token), `trello.env` (Trello token — full account access)
 
 ---
 

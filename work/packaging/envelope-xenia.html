@@ -1,0 +1,446 @@
+<title>Aevia Envelope in Two Browns</title>
+<style>
+  :root{
+    --ground:#e4e0da;
+    --panel:#efece7;
+    --ink:#221e1b;
+    --muted:#6e655d;
+    --hair:#d2cbc2;
+    --stockA:#8b6649;
+    --stockB:#654b41;
+    --mm: min(1.7px, (100vw - 148px) / 460);
+    --serif: Georgia, 'Times New Roman', serif;
+    --sans: ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  @media (max-width:980px){ :root{ --mm: min(1.9px, (100vw - 72px) / 232); } }
+  *{box-sizing:border-box;}
+  html{color-scheme:only light;}
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:var(--serif);
+    font-size:17px;
+    line-height:1.55;
+    margin:0;
+    padding:0 24px 96px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;}
+
+  header.mast{padding:64px 0 40px;border-bottom:1px solid var(--hair);}
+  .eyebrow{
+    font-family:var(--sans);font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 16px;
+  }
+  h1{font-size:clamp(32px,4.6vw,48px);line-height:1.06;margin:0 0 18px;font-weight:400;text-wrap:balance;letter-spacing:-.01em;}
+  .lede{max-width:62ch;margin:0;color:#3b3531;}
+  .lede + .lede{margin-top:12px;}
+
+  /* ---------- controls ---------- */
+  .controls{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;padding:24px 0 0;}
+  .controls .lbl{
+    font-family:var(--sans);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);
+  }
+  .seg{display:flex;border:1px solid var(--hair);background:var(--panel);}
+  .seg button{
+    font-family:var(--sans);font-size:12.5px;
+    padding:8px 15px;border:0;background:transparent;color:#3b3531;cursor:pointer;
+  }
+  .seg button + button{border-left:1px solid var(--hair);}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#f3f0ec;}
+  .seg button:focus-visible{outline:2px solid var(--stockA);outline-offset:-2px;}
+
+  /* ---------- the pair ---------- */
+  .pair{display:flex;flex-wrap:wrap;gap:calc(22 * var(--mm));padding:46px 0 8px;}
+  figure{margin:0;}
+  figcaption{
+    display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+    width:calc(220 * var(--mm));margin-top:16px;
+    font-family:var(--sans);font-size:12px;color:var(--muted);
+  }
+  figcaption b{font-size:13px;color:var(--ink);font-weight:600;}
+  figcaption span{font-variant-numeric:tabular-nums;letter-spacing:.06em;}
+
+  .env{
+    position:relative;
+    width:calc(220 * var(--mm));height:calc(220 * var(--mm));
+    background:var(--stock);
+    --print:var(--stock);
+    border-radius:calc(1.5 * var(--mm));
+    box-shadow:0 calc(2.5*var(--mm)) calc(11*var(--mm)) rgba(45,30,22,.30),
+               0 calc(.4*var(--mm)) 0 rgba(255,255,255,.16) inset;
+    overflow:hidden;
+    font-family:var(--serif);
+  }
+  .env::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:radial-gradient(rgba(255,255,255,.12) .5px, transparent .5px),
+                     radial-gradient(rgba(30,15,8,.14) .5px, transparent .5px);
+    background-size:3px 3px, 7px 11px;background-position:0 0, 2px 3px;
+    mix-blend-mode:overlay;opacity:.3;
+  }
+  .flap{
+    position:absolute;left:0;right:0;top:0;height:calc(76 * var(--mm));
+    background:linear-gradient(180deg, rgba(255,255,255,.055) 0%, rgba(255,255,255,0) 62%);
+    border-bottom-left-radius:calc(10*var(--mm));border-bottom-right-radius:calc(10*var(--mm));
+    box-shadow:0 calc(.9*var(--mm)) calc(2.6*var(--mm)) rgba(35,20,12,.30);
+  }
+  .washer{
+    position:absolute;left:50%;transform:translateX(-50%);
+    width:calc(19*var(--mm));height:calc(19*var(--mm));border-radius:50%;
+    background:var(--stock);
+    box-shadow:0 calc(.7*var(--mm)) calc(1.8*var(--mm)) rgba(35,20,12,.40),
+               0 calc(-.3*var(--mm)) 0 rgba(255,255,255,.10) inset;
+    display:grid;place-items:center;
+  }
+  .washer i{
+    width:calc(4.4*var(--mm));height:calc(4.4*var(--mm));border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #e2c184, #6d4e1c);
+    box-shadow:0 0 0 calc(.3*var(--mm)) rgba(0,0,0,.35);
+  }
+  .w-top{top:calc(66.5*var(--mm));}
+  .w-bot{top:calc(96*var(--mm));}
+  .string{
+    position:absolute;left:50%;top:calc(76*var(--mm));width:calc(.9*var(--mm));
+    height:calc(38*var(--mm));background:#efe6d6;opacity:.92;
+    transform:translateX(calc(-3*var(--mm)));
+  }
+  .string.b{transform:translateX(calc(2*var(--mm)));}
+  .tail{
+    position:absolute;left:50%;top:calc(105*var(--mm));width:calc(.9*var(--mm));
+    height:calc(17*var(--mm));background:#efe6d6;opacity:.92;
+    transform:translateX(calc(-.4*var(--mm))) rotate(4deg);transform-origin:top center;
+  }
+
+  /* ---------- treatments ----------
+     Light on this page falls from above, so the two reliefs are mirror images.
+     Deboss, pressed IN: the shadow gathers along the top wall of the impression
+     and the light catches its lower lip.
+     Emboss, raised OUT: the highlight sits on the top of the raised face and the
+     shadow falls below it. An emboss also stands slightly prouder, so it carries
+     a touch more highlight and a softer shadow than the same shape pressed in.
+     Print: flat ink, no relief at all. */
+  /* The relief offsets are FLOORED AT 1px on purpose. Sized in --mm alone they
+     scale with the viewport and fall under a pixel on a phone (0.69px at 390px
+     wide) — the browser then has no pixel to draw the highlight into and the
+     lockup, which is the same colour as the paper, vanishes completely. That is
+     a preview artefact, not a design choice: floor it or the logo disappears for
+     anyone on a small or dim screen. */
+  .deb{
+    color:transparent;
+    text-shadow:0 max(1px, calc(.55*var(--mm))) 0 rgba(255,255,255,.42),
+                0 calc(-1 * max(1px, calc(.45*var(--mm)))) max(1px, calc(.45*var(--mm))) rgba(20,10,5,.70);
+  }
+  .emb{
+    color:transparent;
+    text-shadow:0 calc(-1 * max(1px, calc(.5*var(--mm)))) 0 rgba(255,255,255,.50),
+                0 max(1px, calc(.5*var(--mm))) max(1px, calc(.5*var(--mm))) rgba(20,10,5,.62);
+  }
+  .prn{color:var(--print);text-shadow:none;}
+  /* The filter must sit on the PARENT of the SVG, not the SVG: a drop-shadow on
+     the shape itself is what we want here, so it stays on the wrapper for parity
+     with how the PNG-masked version behaved. */
+  .lock.r-deb{
+    filter:drop-shadow(0 max(1px, calc(.5*var(--mm))) 0 rgba(255,255,255,.46))
+           drop-shadow(0 calc(-1 * max(1px, calc(.42*var(--mm)))) max(1px, calc(.4*var(--mm))) rgba(20,10,5,.74));
+  }
+  .lock.r-emb{
+    filter:drop-shadow(0 calc(-1 * max(1px, calc(.46*var(--mm)))) 0 rgba(255,255,255,.54))
+           drop-shadow(0 max(1px, calc(.46*var(--mm))) max(1px, calc(.45*var(--mm))) rgba(20,10,5,.66));
+  }
+  .lock svg{display:block;width:100%;height:auto;color:var(--stock);}
+
+  /* ---------- placed elements (all mm from the trim) ---------- */
+  .el{position:absolute;}
+  .url   {left:calc(12*var(--mm)); top:calc(10*var(--mm));  font-size:calc(5.6*var(--mm));}
+  .origin{right:calc(12*var(--mm));top:calc(10*var(--mm));  font-size:calc(5.6*var(--mm));
+          text-align:right;line-height:1.42;}
+  .lock  {left:calc(12*var(--mm)); top:calc(163*var(--mm)); width:calc(46*var(--mm));}
+  .para  {left:calc(12*var(--mm)); top:calc(183*var(--mm)); width:calc(196*var(--mm));
+          font-size:calc(4.3*var(--mm));line-height:calc(5.6*var(--mm));}
+  .para p{margin:0;}
+
+  /* ---------- prose ---------- */
+  section{padding:52px 0;border-bottom:1px solid var(--hair);}
+  h2{font-size:25px;font-weight:400;margin:0 0 6px;letter-spacing:-.01em;}
+  .sub{font-family:var(--sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:0 0 22px;}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:32px;}
+  .stack{display:flex;flex-direction:column;gap:14px;}
+  .scroll{overflow-x:auto;}
+  table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px;}
+  th,td{text-align:left;padding:10px 16px 10px 0;border-bottom:1px solid var(--hair);vertical-align:top;}
+  th{font-family:var(--sans);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  td.n{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .note{
+    padding:15px 17px;background:var(--panel);border-left:2px solid var(--stockA);
+    font-size:15.5px;color:#3b3531;
+  }
+  .note b.hd{
+    font-family:var(--sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--stockA);display:block;margin-bottom:6px;font-weight:600;
+  }
+  .note.open{border-left-color:var(--muted);}
+  .note.open b.hd{color:var(--muted);}
+  .note ul{margin:0;padding-left:19px;}
+  .note li{margin-bottom:9px;}
+  .note li:last-child{margin-bottom:0;}
+  footer{padding:40px 0 0;font-size:14.5px;color:var(--muted);max-width:70ch;}
+  code{font-size:13.5px;background:var(--panel);padding:1px 5px;}
+  @media (prefers-reduced-motion:no-preference){
+    .env{transition:background .35s ease;}
+  }
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <p class="eyebrow">Aevia · Packaging · Session 184</p>
+  <h1>Xenia's envelope, in the two brown stocks</h1>
+  <p class="lede">One layout, two candidate paper colours. The design is Xenia's: the wordmark low
+  and left, the five-line paragraph beneath it, the address and the origin holding the top two
+  corners. Everything here is drawn from the real vector lockup and placed in absolute millimetres,
+  so whichever colour wins transcribes into Illustrator without re-measuring.</p>
+  <p class="lede">Judge the colour first and the layout second. The ground behind both envelopes is
+  a fixed neutral stone for exactly that reason.</p>
+
+  <div class="controls">
+    <span class="lbl">Relief</span>
+    <div class="seg" role="group" aria-label="Relief">
+      <button type="button" id="r-deb" aria-pressed="true">Deboss</button>
+      <button type="button" id="r-emb" aria-pressed="false">Emboss</button>
+    </div>
+    <span class="lbl" style="margin-left:10px;">Small text</span>
+    <div class="seg" role="group" aria-label="Small text">
+      <button type="button" id="s-press" aria-pressed="true">Pressed too</button>
+      <button type="button" id="s-print" aria-pressed="false">Printed</button>
+    </div>
+    <span class="lbl" style="margin-left:10px;">Print colour</span>
+    <div class="seg" role="group" aria-label="Print colour">
+      <button type="button" id="p-tone" aria-pressed="true">Tone-on-tone</button>
+      <button type="button" id="p-white" aria-pressed="false">White</button>
+      <button type="button" id="p-gold" aria-pressed="false">Gold</button>
+    </div>
+  </div>
+</header>
+
+<div class="pair" id="pair">
+  <figure>
+    <div class="env" style="--stock:#8b6649">
+      <div class="flap"></div>
+      <div class="string"></div><div class="string b"></div><div class="tail"></div>
+      <div class="washer w-top"><i></i></div>
+      <div class="washer w-bot"><i></i></div>
+
+      <div class="el url small deb">aevia.at</div>
+      <div class="el origin small deb">est. 2026<br>Vienna</div>
+      <div class="el lock r-deb"><svg viewBox="0 0 408 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;">
+    <g transform="matrix(1,0,0,1,-313.34,-284.528)">
+        <g transform="matrix(2.81558,0,0,2.81558,-1378.89,-1628.56)">
+            <path d="M664.706,709.889L665.61,709.889C665.463,712.672 664.096,714.064 661.508,714.064C660.401,714.064 659.527,713.771 658.884,713.185C658.241,712.599 657.822,711.728 657.626,710.573C655.999,711.728 654.514,712.599 653.171,713.185C651.828,713.771 650.628,714.064 649.57,714.064C648.219,714.064 647.055,713.673 646.078,712.892C645.102,712.111 644.614,711.077 644.614,709.791C644.614,708.115 645.431,706.65 647.067,705.397C648.703,704.144 650.961,702.923 653.842,701.735L657.626,700.197L657.626,699.22C657.626,697.837 657.537,696.836 657.358,696.217C657.179,695.599 656.715,695.045 655.966,694.557C655.217,694.069 654.233,693.824 653.012,693.824C650.571,693.824 649.212,694.638 648.935,696.266C648.674,697.926 647.991,698.756 646.884,698.756C645.891,698.756 645.395,698.284 645.395,697.34C645.395,696.412 646.054,695.415 647.372,694.349C648.691,693.283 650.742,692.75 653.525,692.75C655.592,692.75 657.195,693.076 658.334,693.727C659.474,694.378 660.226,695.118 660.593,695.949C660.959,696.779 661.142,698.048 661.142,699.757L661.142,707.838C661.142,709.726 661.24,710.939 661.435,711.476C661.63,712.013 662.053,712.282 662.704,712.282C663.779,712.282 664.446,711.484 664.706,709.889ZM657.626,701.344L654.965,702.418C650.766,704.127 648.666,706.276 648.666,708.864C648.666,709.889 648.935,710.715 649.472,711.342C650.009,711.968 650.709,712.282 651.572,712.282C652.337,712.282 653.224,712.029 654.233,711.525C655.242,711.02 656.373,710.263 657.626,709.254L657.626,701.344Z" style="fill:currentColor;fill-rule:nonzero;"/>
+        </g>
+        <g transform="matrix(2.81558,0,0,2.81558,-1378.89,-1628.56)">
+            <path d="M686.093,700.319L672.153,700.319C672.088,701.279 672.055,701.995 672.055,702.467C672.055,705.983 672.604,708.623 673.703,710.389C674.802,712.155 676.441,713.038 678.622,713.038C681.585,713.038 683.684,711.712 684.921,709.059L686.093,709.059C685.572,710.719 684.539,712.017 682.993,712.953C681.446,713.889 679.762,714.357 677.939,714.357C676.246,714.357 674.647,713.929 673.141,713.075C671.636,712.22 670.403,711.012 669.443,709.449C668.482,707.887 668.002,705.991 668.002,703.761C668.002,700.603 668.93,697.979 670.786,695.887C672.641,693.796 674.96,692.75 677.744,692.75C680.364,692.75 682.39,693.548 683.823,695.143C685.255,696.738 686.012,698.463 686.093,700.319ZM681.821,699.342C681.869,698.968 681.894,698.634 681.894,698.341C681.894,696.909 681.475,695.798 680.637,695.009C679.798,694.219 678.769,693.824 677.548,693.824C674.586,693.824 672.82,695.664 672.25,699.342L681.821,699.342Z" style="fill:currentColor;fill-rule:nonzero;"/>
+        </g>
+        <g transform="matrix(2.81558,0,0,2.81558,-1378.89,-1628.56)">
+            <path d="M699.643,714.357L698.227,714.357L691.122,698.317C690.423,696.77 689.869,695.786 689.462,695.363C689.055,694.939 688.388,694.712 687.46,694.679L687.46,693.556L696.494,693.556L696.494,694.679C695.501,694.679 694.821,694.76 694.455,694.923C694.089,695.086 693.906,695.395 693.906,695.851C693.906,696.209 694.231,697.08 694.882,698.463L700.278,710.597L705.136,699.782C705.901,698.056 706.284,696.933 706.284,696.412C706.284,695.322 705.47,694.744 703.842,694.679L703.842,693.556L710.58,693.556L710.58,694.679C709.75,694.728 709.055,695.074 708.493,695.717C707.931,696.359 707.146,697.804 706.137,700.05L699.643,714.357Z" style="fill:currentColor;fill-rule:nonzero;"/>
+        </g>
+        <g transform="matrix(2.81558,0,0,2.81558,-1378.89,-1628.56)">
+            <path d="M713.779,682.545C713.779,681.845 714.027,681.243 714.523,680.739C715.02,680.234 715.618,679.982 716.318,679.982C717.018,679.982 717.612,680.234 718.1,680.739C718.588,681.243 718.832,681.845 718.832,682.545C718.832,683.261 718.588,683.872 718.1,684.376C717.612,684.881 717.018,685.133 716.318,685.133C715.618,685.133 715.02,684.881 714.523,684.376C714.027,683.872 713.779,683.261 713.779,682.545ZM718.491,692.75L718.491,706.691C718.491,708.823 718.523,710.166 718.588,710.719C718.653,711.272 718.889,711.696 719.296,711.989C719.703,712.282 720.427,712.428 721.469,712.428L721.982,712.428L721.982,713.551L711.215,713.551L711.215,712.428L712.045,712.428C713.201,712.428 713.954,712.261 714.304,711.928C714.654,711.594 714.857,711.195 714.914,710.731C714.971,710.267 714.999,708.921 714.999,706.691L714.999,700.636C714.999,698.292 714.89,696.86 714.67,696.339C714.45,695.818 714.157,695.493 713.791,695.363C713.425,695.232 712.786,695.167 711.874,695.167L711.215,695.167L711.215,694.044C714.112,693.751 716.358,693.32 717.953,692.75L718.491,692.75Z" style="fill:currentColor;fill-rule:nonzero;"/>
+        </g>
+        <g transform="matrix(2.81558,0,0,2.81558,-1378.89,-1628.56)">
+            <path d="M744.955,709.889L745.859,709.889C745.712,712.672 744.345,714.064 741.757,714.064C740.65,714.064 739.776,713.771 739.133,713.185C738.49,712.599 738.071,711.728 737.875,710.573C736.248,711.728 734.763,712.599 733.42,713.185C732.077,713.771 730.877,714.064 729.819,714.064C728.468,714.064 727.304,713.673 726.327,712.892C725.351,712.111 724.863,711.077 724.863,709.791C724.863,708.115 725.681,706.65 727.316,705.397C728.952,704.144 731.21,702.923 734.091,701.735L737.875,700.197L737.875,699.22C737.875,697.837 737.786,696.836 737.607,696.217C737.428,695.599 736.964,695.045 736.215,694.557C735.466,694.069 734.482,693.824 733.261,693.824C730.82,693.824 729.461,694.638 729.184,696.266C728.924,697.926 728.24,698.756 727.133,698.756C726.14,698.756 725.644,698.284 725.644,697.34C725.644,696.412 726.303,695.415 727.621,694.349C728.94,693.283 730.991,692.75 733.774,692.75C735.841,692.75 737.444,693.076 738.583,693.727C739.723,694.378 740.475,695.118 740.842,695.949C741.208,696.779 741.391,698.048 741.391,699.757L741.391,707.838C741.391,709.726 741.489,710.939 741.684,711.476C741.879,712.013 742.302,712.282 742.953,712.282C744.028,712.282 744.695,711.484 744.955,709.889ZM737.875,701.344L735.214,702.418C731.015,704.127 728.915,706.276 728.915,708.864C728.915,709.889 729.184,710.715 729.721,711.342C730.258,711.968 730.958,712.282 731.821,712.282C732.586,712.282 733.473,712.029 734.482,711.525C735.491,711.02 736.622,710.263 737.875,709.254L737.875,701.344Z" style="fill:currentColor;fill-rule:nonzero;"/>
+        </g>
+        <g transform="matrix(0.654987,0,0,0.573455,4.87952,136.497)">
+            <g transform="matrix(0.809512,0,0,1.02351,-1371.2,-104.692)">
+                <path d="M2420.75,482.92L2420.75,521.881L2278.37,521.881L2278.37,379.501L2319.05,379.501" style="fill:none;stroke:currentColor;stroke-width:5.21px;"/>
+            </g>
+        </g>
+        <g transform="matrix(0.57935,0,0,0.507233,54.8791,153.76)">
+            <g transform="matrix(0.809512,0,0,1.02351,-1358.5,-127.741)">
+                <path d="M2278.37,404.96L2278.37,379.501L2420.75,379.501L2420.75,521.881L2393.35,521.881" style="fill:none;stroke:currentColor;stroke-width:5.9px;"/>
+            </g>
+        </g>
+        <g transform="matrix(0.57935,0,0,0.507233,54.8791,153.76)">
+            <g transform="matrix(0.809512,0,0,1.02351,-1358.5,-127.741)">
+                <path d="M2393.35,521.881L2278.37,521.881L2278.37,404.96" style="fill:none;stroke:currentColor;stroke-width:5.9px;"/>
+            </g>
+        </g>
+    </g>
+</svg>
+</div>
+      <div class="el para small deb">
+        <p>In a world made to be scrolled past, we still believe in things worth holding.</p>
+        <p>Inside is a piece of your life, gathered gently into pages.</p>
+        <p>Created with artists. Drawn by hand, not generated.</p>
+        <p>Made with responsibly sourced paper.</p>
+        <p>You bring the memories. We make the book.</p>
+      </div>
+    </div>
+    <figcaption><b>Warm sienna</b><span>#8B6649</span></figcaption>
+    <figcaption style="margin-top:6px;display:block;line-height:1.5;">Lighter, redder. The lockup reads at a glance; the printed lines have room.</figcaption>
+  </figure>
+  <figure>
+    <div class="env" style="--stock:#654b41">
+      <div class="flap"></div>
+      <div class="string"></div><div class="string b"></div><div class="tail"></div>
+      <div class="washer w-top"><i></i></div>
+      <div class="washer w-bot"><i></i></div>
+
+      <div class="el url small deb">aevia.at</div>
+      <div class="el origin small deb">est. 2026<br>Vienna</div>
+      <div class="el lock r-deb"><svg viewBox="0 0 408 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;">
+    <g transform="matrix(1,0,0,1,-313.34,-284.528)">
+        <g transform="matrix(2.81558,0,0,2.81558,-1378.89,-1628.56)">
+            <path d="M664.706,709.889L665.61,709.889C665.463,712.672 664.096,714.064 661.508,714.064C660.401,714.064 659.527,713.771 658.884,713.185C658.241,712.599 657.822,711.728 657.626,710.573C655.999,711.728 654.514,712.599 653.171,713.185C651.828,713.771 650.628,714.064 649.57,714.064C648.219,714.064 647.055,713.673 646.078,712.892C645.102,712.111 644.614,711.077 644.614,709.791C644.614,708.115 645.431,706.65 647.067,705.397C648.703,704.144 650.961,702.923 653.842,701.735L657.626,700.197L657.626,699.22C657.626,697.837 657.537,696.836 657.358,696.217C657.179,695.599 656.715,695.045 655.966,694.557C655.217,694.069 654.233,693.824 653.012,693.824C650.571,693.824 649.212,694.638 648.935,696.266C648.674,697.926 647.991,698.756 646.884,698.756C645.891,698.756 645.395,698.284 645.395,697.34C645.395,696.412 646.054,695.415 647.372,694.349C648.691,693.283 650.742,692.75 653.525,692.75C655.592,692.75 657.195,693.076 658.334,693.727C659.474,694.378 660.226,695.118 660.593,695.949C660.959,696.779 661.142,698.048 661.142,699.757L661.142,707.838C661.142,709.726 661.24,710.939 661.435,711.476C661.63,712.013 662.053,712.282 662.704,712.282C663.779,712.282 664.446,711.484 664.706,709.889ZM657.626,701.344L654.965,702.418C650.766,704.127 648.666,706.276 648.666,708.864C648.666,709.889 648.935,710.715 649.472,711.342C650.009,711.968 650.709,712.282 651.572,712.282C652.337,712.282 653.224,712.029 654.233,711.525C655.242,711.02 656.373,710.263 657.626,709.254L657.626,701.344Z" style="fill:currentColor;fill-rule:nonzero;"/>
+        </g>
+        <g transform="matrix(2.81558,0,0,2.81558,-1378.89,-1628.56)">
+            <path d="M686.093,700.319L672.153,700.319C672.088,701.279 672.055,701.995 672.055,702.467C672.055,705.983 672.604,708.623 673.703,710.389C674.802,712.155 676.441,713.038 678.622,713.038C681.585,713.038 683.684,711.712 684.921,709.059L686.093,709.059C685.572,710.719 684.539,712.017 682.993,712.953C681.446,713.889 679.762,714.357 677.939,714.357C676.246,714.357 674.647,713.929 673.141,713.075C671.636,712.22 670.403,711.012 669.443,709.449C668.482,707.887 668.002,705.991 668.002,703.761C668.002,700.603 668.93,697.979 670.786,695.887C672.641,693.796 674.96,692.75 677.744,692.75C680.364,692.75 682.39,693.548 683.823,695.143C685.255,696.738 686.012,698.463 686.093,700.319ZM681.821,699.342C681.869,698.968 681.894,698.634 681.894,698.341C681.894,696.909 681.475,695.798 680.637,695.009C679.798,694.219 678.769,693.824 677.548,693.824C674.586,693.824 672.82,695.664 672.25,699.342L681.821,699.342Z" style="fill:currentColor;fill-rule:nonzero;"/>
+        </g>
+        <g transform="matrix(2.81558,0,0,2.81558,-1378.89,-1628.56)">
+            <path d="M699.643,714.357L698.227,714.357L691.122,698.317C690.423,696.77 689.869,695.786 689.462,695.363C689.055,694.939 688.388,694.712 687.46,694.679L687.46,693.556L696.494,693.556L696.494,694.679C695.501,694.679 694.821,694.76 694.455,694.923C694.089,695.086 693.906,695.395 693.906,695.851C693.906,696.209 694.231,697.08 694.882,698.463L700.278,710.597L705.136,699.782C705.901,698.056 706.284,696.933 706.284,696.412C706.284,695.322 705.47,694.744 703.842,694.679L703.842,693.556L710.58,693.556L710.58,694.679C709.75,694.728 709.055,695.074 708.493,695.717C707.931,696.359 707.146,697.804 706.137,700.05L699.643,714.357Z" style="fill:currentColor;fill-rule:nonzero;"/>
+        </g>
+        <g transform="matrix(2.81558,0,0,2.81558,-1378.89,-1628.56)">
+            <path d="M713.779,682.545C713.779,681.845 714.027,681.243 714.523,680.739C715.02,680.234 715.618,679.982 716.318,679.982C717.018,679.982 717.612,680.234 718.1,680.739C718.588,681.243 718.832,681.845 718.832,682.545C718.832,683.261 718.588,683.872 718.1,684.376C717.612,684.881 717.018,685.133 716.318,685.133C715.618,685.133 715.02,684.881 714.523,684.376C714.027,683.872 713.779,683.261 713.779,682.545ZM718.491,692.75L718.491,706.691C718.491,708.823 718.523,710.166 718.588,710.719C718.653,711.272 718.889,711.696 719.296,711.989C719.703,712.282 720.427,712.428 721.469,712.428L721.982,712.428L721.982,713.551L711.215,713.551L711.215,712.428L712.045,712.428C713.201,712.428 713.954,712.261 714.304,711.928C714.654,711.594 714.857,711.195 714.914,710.731C714.971,710.267 714.999,708.921 714.999,706.691L714.999,700.636C714.999,698.292 714.89,696.86 714.67,696.339C714.45,695.818 714.157,695.493 713.791,695.363C713.425,695.232 712.786,695.167 711.874,695.167L711.215,695.167L711.215,694.044C714.112,693.751 716.358,693.32 717.953,692.75L718.491,692.75Z" style="fill:currentColor;fill-rule:nonzero;"/>
+        </g>
+        <g transform="matrix(2.81558,0,0,2.81558,-1378.89,-1628.56)">
+            <path d="M744.955,709.889L745.859,709.889C745.712,712.672 744.345,714.064 741.757,714.064C740.65,714.064 739.776,713.771 739.133,713.185C738.49,712.599 738.071,711.728 737.875,710.573C736.248,711.728 734.763,712.599 733.42,713.185C732.077,713.771 730.877,714.064 729.819,714.064C728.468,714.064 727.304,713.673 726.327,712.892C725.351,712.111 724.863,711.077 724.863,709.791C724.863,708.115 725.681,706.65 727.316,705.397C728.952,704.144 731.21,702.923 734.091,701.735L737.875,700.197L737.875,699.22C737.875,697.837 737.786,696.836 737.607,696.217C737.428,695.599 736.964,695.045 736.215,694.557C735.466,694.069 734.482,693.824 733.261,693.824C730.82,693.824 729.461,694.638 729.184,696.266C728.924,697.926 728.24,698.756 727.133,698.756C726.14,698.756 725.644,698.284 725.644,697.34C725.644,696.412 726.303,695.415 727.621,694.349C728.94,693.283 730.991,692.75 733.774,692.75C735.841,692.75 737.444,693.076 738.583,693.727C739.723,694.378 740.475,695.118 740.842,695.949C741.208,696.779 741.391,698.048 741.391,699.757L741.391,707.838C741.391,709.726 741.489,710.939 741.684,711.476C741.879,712.013 742.302,712.282 742.953,712.282C744.028,712.282 744.695,711.484 744.955,709.889ZM737.875,701.344L735.214,702.418C731.015,704.127 728.915,706.276 728.915,708.864C728.915,709.889 729.184,710.715 729.721,711.342C730.258,711.968 730.958,712.282 731.821,712.282C732.586,712.282 733.473,712.029 734.482,711.525C735.491,711.02 736.622,710.263 737.875,709.254L737.875,701.344Z" style="fill:currentColor;fill-rule:nonzero;"/>
+        </g>
+        <g transform="matrix(0.654987,0,0,0.573455,4.87952,136.497)">
+            <g transform="matrix(0.809512,0,0,1.02351,-1371.2,-104.692)">
+                <path d="M2420.75,482.92L2420.75,521.881L2278.37,521.881L2278.37,379.501L2319.05,379.501" style="fill:none;stroke:currentColor;stroke-width:5.21px;"/>
+            </g>
+        </g>
+        <g transform="matrix(0.57935,0,0,0.507233,54.8791,153.76)">
+            <g transform="matrix(0.809512,0,0,1.02351,-1358.5,-127.741)">
+                <path d="M2278.37,404.96L2278.37,379.501L2420.75,379.501L2420.75,521.881L2393.35,521.881" style="fill:none;stroke:currentColor;stroke-width:5.9px;"/>
+            </g>
+        </g>
+        <g transform="matrix(0.57935,0,0,0.507233,54.8791,153.76)">
+            <g transform="matrix(0.809512,0,0,1.02351,-1358.5,-127.741)">
+                <path d="M2393.35,521.881L2278.37,521.881L2278.37,404.96" style="fill:none;stroke:currentColor;stroke-width:5.9px;"/>
+            </g>
+        </g>
+    </g>
+</svg>
+</div>
+      <div class="el para small deb">
+        <p>In a world made to be scrolled past, we still believe in things worth holding.</p>
+        <p>Inside is a piece of your life, gathered gently into pages.</p>
+        <p>Created with artists. Drawn by hand, not generated.</p>
+        <p>Made with responsibly sourced paper.</p>
+        <p>You bring the memories. We make the book.</p>
+      </div>
+    </div>
+    <figcaption><b>Deep umber</b><span>#654B41</span></figcaption>
+    <figcaption style="margin-top:6px;display:block;line-height:1.5;">Darker, cooler. More object than paper, and it swallows tone-on-tone print.</figcaption>
+  </figure>
+</div>
+
+<section>
+  <h2>Where everything sits</h2>
+  <p class="sub">Measured from the trimmed face · 220 × 220 mm · 76 mm flap</p>
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr><th>Element</th><th>Position</th><th>Size</th><th>Treatment</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>aevia.at</td><td class="n">12 mm left · 10 mm top</td><td class="n">16 pt</td><td>Print</td></tr>
+        <tr><td>est. 2026 / Vienna</td><td class="n">12 mm right · 10 mm top</td><td class="n">16 pt, two lines</td><td>Print</td></tr>
+        <tr><td>Lockup, mark and wordmark</td><td class="n">12 mm left · 163 mm top</td><td class="n">46 × 11.3 mm</td><td>Deboss or emboss</td></tr>
+        <tr><td>Paragraph, five lines</td><td class="n">12 mm left · 183 mm top</td><td class="n">12 pt, 5.6 mm leading</td><td>Print</td></tr>
+        <tr><td>String washers</td><td class="n">centred · 66.5 and 96 mm top</td><td class="n">19 mm diameter</td><td>Supplier fitted</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Before this goes to the supplier</h2>
+  <p class="sub">Two findings and four open questions</p>
+  <div class="cols">
+    <div class="stack">
+      <div class="note">
+        <b class="hd">The small text cannot be debossed</b>
+        Xenia's render shows every element tone-on-tone, which reads beautifully on screen. On paper
+        a die pressed into coloured stock loses fine detail, so anything under roughly 12 pt fills in.
+        That is the paragraph and both corner lines. Setting <em>Small text → Printed</em> shows the
+        honest version: the lockup pressed, the small text printed. It is the same split the supplier's
+        own references use — reference 1's paragraph is printed, not pressed.
+      </div>
+      <div class="note">
+        <b class="hd">The lockup is real vector now</b>
+        This page draws <code>logotype 1 - aevia - vector.svg</code> directly rather than masking the
+        old PNG, so the blocker that stopped S179 is gone. One number to carry forward: the mark's
+        inner square is a 5.2 unit stroke on a 408 unit width, which at 46 mm wide comes out near
+        0.6 mm. That is thin for a die and is the first thing to check against the supplier's minimum.
+      </div>
+    </div>
+    <div class="stack">
+      <div class="note open">
+        <b class="hd">Still unanswered</b>
+        <ul>
+          <li><strong>Deboss or emboss.</strong> The <em>Relief</em> toggle shows both. Pressed in reads quieter and is the safer bet on a soft coloured stock; raised out catches more light and shows the lockup off, but it stresses the fibre and can crack on a heavy die. Worth asking the supplier which they would rather run on this paper.</li>
+          <li><strong>Relief minimums.</strong> Smallest stroke, smallest type, maximum die size. The 0.6 mm stroke above rests on all three, and an emboss usually needs a heavier minimum than a deboss.</li>
+          <li><strong>Confirm 220 × 220 mm and the 76 mm flap.</strong> Still read off the template's proportions, never stated by the supplier. At 225 mm every coordinate here shifts.</li>
+          <li><strong>Which print colour.</strong> Tone-on-tone, white and gold are all previewed above, and all three read differently on paper than on a screen.</li>
+          <li><strong>A German twin for the paragraph.</strong> The books ship in both languages now. Five lines of English on the envelope means five lines of German exist, or the envelope is English-only by decision rather than by default.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Layout by Xenia. Drawn to scale from <code>assets/packaging/aevia-envelop.jpg</code> and
+  <code>assets/images/logotype 1 - aevia - vector.svg</code>. Rebuild from
+  <code>work/packaging/envelope-xenia.tpl.html</code> with <code>python build-xenia.py</code>;
+  do not hand-edit the generated file.
+</footer>
+
+</div>
+
+<script>
+  var pair = document.getElementById('pair');
+  var PRINTS = { tone:null, white:'rgba(255,255,255,.85)', gold:'#c9a161' };
+
+  var relief = 'deb';       // 'deb' | 'emb'
+  var smallPrinted = false; // small text printed instead of pressed
+
+  function render(){
+    document.getElementById('r-deb').setAttribute('aria-pressed', String(relief === 'deb'));
+    document.getElementById('r-emb').setAttribute('aria-pressed', String(relief === 'emb'));
+    document.getElementById('s-press').setAttribute('aria-pressed', String(!smallPrinted));
+    document.getElementById('s-print').setAttribute('aria-pressed', String(smallPrinted));
+
+    pair.querySelectorAll('.lock').forEach(function(el){
+      el.classList.toggle('r-deb', relief === 'deb');
+      el.classList.toggle('r-emb', relief === 'emb');
+    });
+    pair.querySelectorAll('.small').forEach(function(el){
+      el.classList.toggle('prn', smallPrinted);
+      el.classList.toggle('deb', !smallPrinted && relief === 'deb');
+      el.classList.toggle('emb', !smallPrinted && relief === 'emb');
+    });
+  }
+  function setPrint(key){
+    ['tone','white','gold'].forEach(function(k){
+      document.getElementById('p-' + k).setAttribute('aria-pressed', String(k === key));
+    });
+    pair.querySelectorAll('.env').forEach(function(env){
+      if (PRINTS[key]) { env.style.setProperty('--print', PRINTS[key]); }
+      else { env.style.removeProperty('--print'); }
+    });
+  }
+
+  document.getElementById('r-deb').onclick   = function(){ relief = 'deb'; render(); };
+  document.getElementById('r-emb').onclick   = function(){ relief = 'emb'; render(); };
+  document.getElementById('s-press').onclick = function(){ smallPrinted = false; render(); };
+  document.getElementById('s-print').onclick = function(){ smallPrinted = true;  render(); };
+  document.getElementById('p-tone').onclick  = function(){ setPrint('tone'); };
+  document.getElementById('p-white').onclick = function(){ setPrint('white'); };
+  document.getElementById('p-gold').onclick  = function(){ setPrint('gold'); };
+
+  render();
+</script>

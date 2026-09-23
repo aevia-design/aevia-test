@@ -17,6 +17,11 @@ Deeper context, read in this order when you need it:
 `PRD.md` (requirements) → `docs/briefs/` (one per feature or open problem) →
 `LEARNINGS.md` (mistakes already made — read before repeating one).
 
+**The backlog is a Trello board, and it is canonical** (since S191); `TO-DOS.md` is only its
+snapshot, so it can lag. Do not read or write the board, and never read `trello.env` — the
+delegating Claude session owns card moves. Report what you finished and what you found, and it
+will update the board.
+
 ## Hard constraints
 
 `ARCHITECTURE.md` § Invariants is authoritative — read it before proposing structural

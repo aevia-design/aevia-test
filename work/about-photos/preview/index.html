@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About photos — layout options (local preview)</title>
+<style>
+  /* Tokens copied verbatim from pages/about.html so this reads in context. */
+  :root {
+    --bg:        #fafaf8;
+    --surface:   #f3efe9;
+    --border:    #e4dfd8;
+    --text:      #1a1a1a;
+    --muted:     #7d7570;
+    --accent-dk: #a8895f;
+    --white:     #ffffff;
+    --serif:     Georgia, 'Times New Roman', serif;
+    --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  img { display:block; max-width:100%; }
+
+  /* ── preview chrome (NOT part of any option) ───────────────────── */
+  .opt-head {
+    max-width:1160px; margin:0 auto; padding:88px 56px 28px;
+    border-top:1px solid var(--border);
+  }
+  .opt-head:first-of-type { border-top:none; }
+  .opt-tag {
+    display:inline-block; font-size:10px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--accent-dk); margin-bottom:14px;
+  }
+  .opt-title { font-family:var(--serif); font-size:34px; font-weight:400; letter-spacing:-.015em; }
+  .opt-note { font-size:14px; color:var(--muted); max-width:60ch; margin-top:12px; }
+
+  /* real story text above the first option, for honest context */
+  .story { max-width:1160px; margin:0 auto; padding:80px 56px; display:grid; grid-template-columns:1fr 1.8fr; gap:80px; align-items:start; }
+  .story-label { font-family:var(--serif); font-size:28px; line-height:1.25; letter-spacing:-.015em; }
+  .story-body p { font-family:var(--serif); font-size:19px; line-height:1.75; margin-bottom:28px; }
+  .story-body p.closing { font-style:italic; color:var(--accent-dk); font-size:20px; margin-bottom:0; }
+
+  .break-caption {
+    max-width:1160px; margin:0 auto; padding:14px 56px 0;
+    font-size:11px; color:var(--muted); text-align:right;
+  }
+
+  /* ── OPTION D — row of four, unequal widths, staggered ─────────── */
+  /* Every frame is the photo's own ratio: nothing is cropped. Rhythm
+     comes from width + vertical offset instead of from cutting. */
+  .d-wrap { background:var(--surface); padding:76px 0 96px; }
+  .d-row {
+    max-width:1160px; margin:0 auto; padding:0 56px;
+    display:grid; grid-template-columns:0.82fr 1.25fr 0.95fr 0.78fr;
+    gap:18px; align-items:start;
+  }
+  .d-row figure:nth-child(1) { margin-top:56px; }
+  .d-row figure:nth-child(3) { margin-top:30px; }
+  .d-row figure:nth-child(4) { margin-top:96px; }
+  .d-row img { width:100%; height:auto; }
+  .cap { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:10px; }
+
+  /* ── OPTION E — two pairs, stacked ─────────────────────────────── */
+  .e-wrap { background:var(--surface); padding:76px 0 96px; }
+  .e-inner { max-width:1160px; margin:0 auto; padding:0 56px; display:flex; flex-direction:column; gap:18px; }
+  .e-row { display:grid; gap:18px; align-items:start; }
+  .e-row-1 { grid-template-columns:1.15fr 1fr; }
+  .e-row-2 { grid-template-columns:1fr 1fr; max-width:66%; }
+  .e-row img { width:100%; height:auto; }
+
+  /* ── OPTION A — the slot already on the page, for comparison ───── */
+  /* This one DOES crop: the right column is square, so a 3:4 photo
+     loses ~25% of its height. Shown so the cost is visible, not argued. */
+  .a-wrap { background:var(--surface); padding:0 0 20px; }
+  .a-inner { max-width:1160px; margin:0 auto; padding:0 56px; display:grid; grid-template-columns:1.2fr 1fr; gap:2px; }
+  .a-inner > img { width:100%; height:100%; object-fit:cover; }
+  .a-col { display:flex; flex-direction:column; gap:2px; }
+  .a-col img { width:100%; aspect-ratio:1; object-fit:cover; }
+
+  @media (max-width: 900px) {
+    .story { grid-template-columns:1fr; gap:32px; padding:56px 24px; }
+    .opt-head { padding:64px 24px 24px; }
+    .d-row { grid-template-columns:1fr 1fr; gap:12px; padding:0 24px; }
+    .d-row figure { margin-top:0 !important; }
+    .e-inner { padding:0 24px; gap:12px; }
+    .e-row-1, .e-row-2 { grid-template-columns:1fr 1fr; max-width:none; }
+    .a-inner { grid-template-columns:1fr; padding:0 24px; }
+    .break-caption { padding:14px 24px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="story">
+  <div class="story-label">Aevum. In Latin,<br>a lifetime.<br>An age.</div>
+  <div class="story-body">
+    <p>So we built the opposite of a blank screen: a small studio in Vienna, a few templates, each designed with artists and illustrators we work with directly. You choose the one that fits your occasion, send your photos, and we compose the book by hand.</p>
+    <p class="closing">Fewer choices. A book worth keeping.</p>
+  </div>
+</div>
+
+<!-- ═══ OPTION D ═══ -->
+<div class="opt-head">
+  <span class="opt-tag">Option D</span>
+  <h2 class="opt-title">A row of four, sized unequally</h2>
+  <p class="opt-note">Nothing cropped. Every frame is the photo's native ratio; the rhythm comes from differing widths and vertical offsets. Collapses to a 2×2 grid on mobile.</p>
+</div>
+<div class="d-wrap">
+  <div class="d-row">
+    <figure><img src="evgenii.webp" alt="Evgeny"></figure>
+    <figure><img src="pair.webp" alt="Evgeny and Xenia"></figure>
+    <figure><img src="xenia.webp" alt="Xenia"></figure>
+    <figure><img src="desk.webp" alt="At the desk"></figure>
+  </div>
+  <p class="break-caption">The studio, most days.</p>
+</div>
+
+<!-- ═══ OPTION E ═══ -->
+<div class="opt-head">
+  <span class="opt-tag">Option E</span>
+  <h2 class="opt-title">Two pairs, stacked</h2>
+  <p class="opt-note">Also uncropped. Calmer and closer to the page's existing restraint — the two "scene" photos lead, the two portraits follow at smaller scale.</p>
+</div>
+<div class="e-wrap">
+  <div class="e-inner">
+    <div class="e-row e-row-1">
+      <img src="pair.webp" alt="Evgeny and Xenia">
+      <img src="desk.webp" alt="At the desk">
+    </div>
+    <div class="e-row e-row-2">
+      <img src="evgenii.webp" alt="Evgeny">
+      <img src="xenia.webp" alt="Xenia">
+    </div>
+  </div>
+  <p class="break-caption">The studio, most days.</p>
+</div>
+
+<!-- ═══ OPTION A ═══ -->
+<div class="opt-head">
+  <span class="opt-tag">Option A — for comparison</span>
+  <h2 class="opt-title">The slot already on the page</h2>
+  <p class="opt-note">This is the layout about.html was built for, filled with three of the four. It <strong>does</strong> crop: the right column is square, so each portrait there loses about a quarter of its height. Shown so you can see the cost rather than take my word for it.</p>
+</div>
+<div class="a-wrap">
+  <div class="a-inner">
+    <img src="pair.webp" alt="Evgeny and Xenia">
+    <div class="a-col">
+      <img src="evgenii.webp" alt="Evgeny">
+      <img src="xenia.webp" alt="Xenia">
+    </div>
+  </div>
+  <p class="break-caption">The studio, most days.</p>
+</div>
+
+<div style="height:120px"></div>
+</body>
+</html>

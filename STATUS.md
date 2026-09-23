@@ -1,72 +1,84 @@
 # Session Status
-_Last updated: 2026-09-21 (session 189)_
-_Context at save: **The first live submission was attempted and REJECTED by Printsmarter** —
-`400 "Product not found. aevia_hardcover_matte"`. Blocked on them, not on us; owner emailed them
-2026-09-21. Three commits pushed (`c65adf9`, `4c67f71`, plus the doc corrections). Nothing was
-consumed: both test orders are still resubmittable unchanged._
+_Last updated: 2026-09-22 (session 190)_
+_Context at save: **TO-DOS #89 pieces 1-7 are built, pushed and DEPLOYED** - a stranded upload
+now detects itself. Printsmarter is unchanged and still blocked on their side. Two commits
+(`86d8c7c`, `09caf1b`); the plugin/skill work lives outside the repo._
 
 ## Status
-**⏳ Session 189 — the print path works end to end up to their product lookup, and stops there.**
+**Session 190 - stranded uploads now flip themselves; the print path is still waiting on them.**
 
-Full detail: **`sessions/2026-09-21-s189.md`**.
+Full detail: **`sessions/2026-09-22-s190.md`**.
 
-`add_Order` authenticated, reached them, was parsed and triggered a real product lookup that
-echoed our string back. **Token, customer id 3983, base URL, payload shape, JSON and the signed
-URLs are all proven.** The only unresolved value is the `product_id`, which their side cannot
-find.
+## Do this first - pick one of two, they are independent
 
-## ⚠ Do this first — chase the product ids, then resubmit
-**Waiting on Printsmarter's reply.** Owner asked them (2026-09-21) to confirm
-`aevia_hardcover_matte` and `aevia_hardcover_offset` are set up and assigned to account 3983,
-and to confirm the exact strings.
+### A. Confirm the new job is not about to email a real customer
+`detectStrandedUploads` is **live and firing hourly**. Nobody has checked what is currently
+sitting at `uploading` - the Firestore read was **blocked by the sandbox classifier**.
 
-⚠ **Both ids were ISSUED BY THEM and `aevia_hardcover` is RETIRED.** Do **not** "fix" this by
-restoring the old id, and do **not** edit `functions/.env` — it was verified this session as
-holding the exact strings with no stray whitespace. S188's log says *"Decided (owner)"*, which
-reads as if we invented them; we did not. This mis-derivation already cost one session.
+Open the dashboard, click the **Uploading** filter, read the **Date** column:
+- Anything dated **before 22 Sep** is protected by `STRANDED_CUTOFF` and will never be touched.
+  The five known QA strandings (AEV-067/073/074/079/096) are all in this group.
+- Anything dated **22 Sep or later** is in scope. If it has real photo failures and no later
+  successful order from that address, **the job will email that customer** on the next run. That
+  is the designed behaviour - it just should not be a surprise.
 
-When they reply, resubmit unchanged: **AEV-071** (40pp) and **AEV-100** (80pp). Both are still
-`paid` with no `printsmarterOrderId`, so the once-only guard is intact.
+Then **prove the flip end to end**: create a fresh stranded order after the cutoff with an inbox
+we own, and watch it become `upload_failed`. ⚠ **AEV-096 cannot serve this** - it is below the
+cutoff by design, and S173's plan to both ignore pre-deploy orders and flip AEV-096 contradicted
+itself. Watch it in Cloud Logging, filter `detectStrandedUploads`.
 
-⚠ **Neither test order is Heirloom** — both resolve to the matte product, so the two-product
-split and the offset stock remain completely unexercised. The S188 plan (Heirloom Beige + Tender)
-would have covered that; these two do not. **Do NOT use Heirloom Blue (AEV-091)** if you swap one
-in — its coordinates are still the old off-centre ones.
+### B. Chase Printsmarter, then resubmit
+**Unchanged since S189 - still waiting on their reply.** Owner asked them (2026-09-21) to confirm
+`aevia_hardcover_matte` and `aevia_hardcover_offset` are set up and assigned to account 3983.
 
-⚠ **AEV-100's inside PDF is 403.91 MB** (cover 6.77); AEV-071's is 176.03 MB (cover 9.15). All
-four URLs verified `200 OK` / `application/pdf`, signed 7 days, **expiring 28 Sep** — regenerate
-after that. 403 MB is more than double the 190 MB already flagged as the first suspect if a
-submission succeeds and nothing produces.
+⚠ **Both ids were ISSUED BY THEM and `aevia_hardcover` is RETIRED.** Do **not** restore the old
+id and do **not** edit `functions/.env` - it was verified S189 as holding the exact strings.
 
-⚠ **`PRINTSMARTER_LIVE` is `true` and `submitPrintOrder` is deployed**, so "Send to
-Printsmarter" is armed and sits **beside** "Preview submission". A misclick is a real book and a
-real invoice; the confirm dialog is the only thing between them. Set it back to `false` and
-redeploy between print runs if that is not wanted — the dry run works with it off.
-⚠ **The confirm dialog lies about the address** — see "Recent decisions". Read "Preview
-submission", not the dialog.
+Resubmit **AEV-071** (40pp) and **AEV-100** (80pp) unchanged; both are still `paid` with no
+`printsmarterOrderId`, so the once-only guard is intact. ⚠ **Their signed PDF URLs expire
+28 Sep** - regenerate if the reply lands after that.
 
-⚠ **Sending is once-only.** After success the order carries `printsmarterOrderId` and any
-retry is refused by design. A problem found afterwards is a `cancel_order` with them, not a
-resend.
+## What shipped in S190 - TO-DOS #89, pieces 1-7
 
-⚠ **Their "orders are not forwarded to production" is an account setting, not a test mode.**
-A successful submission today may produce **no book**, which defeats the point of printing these
-two. Email them to produce these specifically — or, if they have already flipped it, these are
-real books at the retail `price` we send.
+A stranded order used to sit at `uploading` forever: invisible on the dashboard beside one running
+right now, silent to the customer, with staff already emailed about a book that never arrived.
 
-### What the first PDFs still have to prove (carried from S187, still unclosed)
-1. **Heirloom Beige, Tender, Newborn** — cover photo visible, not a coloured shape
-   (`export-pdf.js:1259`, `:1387` had the identical bug).
-2. **Tender's spine** — the only template whose sheet width changed.
-3. **Scribble's captions** — the Onest swap has never been PDF'd. ⚠ The font miss is
-   **silent**: `embedAllFonts` logs `Font file missing:` and carries on. Look at the captions.
-4. **Front-panel centring** — print is the only place to judge it.
+- **`detectStrandedUploads`** - hourly, `europe-west1`, flips `uploading` -> `upload_failed` past
+  one hour with a disposition. The flip is a **conditional transaction** and the customer email
+  **re-reads `uploadComplete` immediately before sending**, so a tab that retries on the boundary
+  cannot also be told it failed.
+- **`confirmUpload` claims the confirmation in a transaction.** Was a read-then-update, so a Retry
+  racing a slow first call could have both sent mail. Both emails now run under `allSettled` with
+  per-channel error fields. ⚠ **The guarantee is AT MOST ONCE, deliberately** - Firestore and SMTP
+  cannot be made atomic; a lost email beats a duplicate.
+- **Staff "New Order" email moved to `confirmUpload`.** `createUploadSession` now emails nobody,
+  which also removed a live failure mode: an SMTP throw there used to strand a new order **before
+  the browser received its signed URLs**.
+- **`upload_failed` is a side-state, NOT in `STATUS_SEQUENCE`.** ⚠ The old guard skipped itself
+  when `indexOf` returned `-1`, **silently permitting any jump**; unrecognised statuses now prompt.
+- Decisions live in **`functions/upload-failure-utils.js`** - pure, and imported by both the job
+  and its tests.
 
-⚠ **The +6mm nudge is NOT uniform in print.** The engine shifts front-panel items by
-`actualSpine − referenceSpineMm`: at 40pp that is **+1mm for the six 9mm-authored templates and
-0 for Heirloom, Laguna and Tender.** The same CSV number prints at 316 on
-Joyride/Scribble/Newborn/Papercut/Wander and 315 on the other three. Compare two templates from
-different families before nudging again.
+**Remaining: piece 0, the Retry button.** The cheapest defence (files still in browser memory,
+typically ONE photo after #112) and the only piece touching `pages/order.html`, so
+**`npm run qa:order` is mandatory**. ⚠ **It must NOT skip `neverAttempted` entries** or it will
+confirm a book with photos missing - that is the bug that blocked the brief until S174.
+
+⚠ **`STRANDED_CUTOFF` is `2026-09-22T00:00:00Z`** (`functions/index.js`). A date, not an ID list,
+because a list is one forgotten entry away from emailing a test address.
+
+⚠ **Two corrections to the brief, found in the code:** its dashboard line numbers are stale;
+`statusLabel` returns `labels[s] || s` so an unmapped status shows the **raw string** - the
+"falls back to Uploading" behaviour is in the **dropdown**, a different bug in a different place.
+And `PRE_APPROVAL` / `PRE_APPROVAL_STATUSES` **already exclude `upload_failed` correctly** - do
+not "fix" them.
+
+```powershell
+npx firebase deploy --only functions      # from the PROJECT ROOT, not functions/
+```
+⚠ **`firebase deploy` can exit 0 with a function that FAILED.** S190's first run printed
+`! failed to update ... getMyAddress` and still exited 0. **The real signal is the
+`Deploy complete!` line** - check for it, not `$?`. See LEARNINGS.
 
 ```powershell
 gcloud run deploy aevia-pdf-renderer --source C:/Users/evgmy/aevia-test --region europe-west1 --memory 8Gi --cpu 4 --timeout 900 --allow-unauthenticated --project aevia-uploads --quiet
@@ -74,19 +86,35 @@ gcloud run deploy aevia-pdf-renderer --source C:/Users/evgmy/aevia-test --region
 (Redeploy the renderer BEFORE generating PDFs if template data or SVGs changed, or you bake
 stale artwork.)
 
-Functions deploy runs from the **project root**, not `functions/`:
-```powershell
-npx firebase deploy --only functions:submitPrintOrder
-```
+## Still open on the print path (unchanged from S189)
+⚠ **`PRINTSMARTER_LIVE` is `true` and `submitPrintOrder` is deployed** - "Send to Printsmarter"
+is armed beside "Preview submission". A misclick is a real book and a real invoice.
+⚠ **The send confirm dialog misreports the address** - it reads the locally loaded
+`order.shippingAddress` and shows "⚠ NO SHIPPING ADDRESS ON ORDER" exactly when S188's account
+fallback is working. **Trust "Preview submission", not the dialog.** Fix is ~10 lines: have the
+confirm call `dryRun` and show the resolved address. **Do it before the next send.**
+⚠ **Sending is once-only.** A problem found afterwards is a `cancel_order`, not a resend.
+⚠ **Neither test order is Heirloom** - the two-product split and the offset stock are unexercised.
+**Do NOT use Heirloom Blue (AEV-091)** - its coordinates are still the old off-centre ones.
+⚠ **AEV-100's inside PDF is 403.91 MB** (AEV-071's is 176.03). First suspect if a submission
+succeeds and nothing produces.
+
+### What the first PDFs still have to prove (carried from S187, still unclosed)
+1. **Heirloom Beige, Tender, Newborn** - cover photo visible, not a coloured shape.
+2. **Tender's spine** - the only template whose sheet width changed.
+3. **Scribble's captions** - the Onest swap has never been PDF'd. ⚠ The font miss is **silent**.
+4. **Front-panel centring** - print is the only place to judge it.
+
+⚠ **The +6mm nudge is NOT uniform in print.** At 40pp it is **+1mm for the six 9mm-authored
+templates and 0 for Heirloom, Laguna and Tender.** Compare two templates from different families
+before nudging again.
 
 ## ⚠ Carried into the next Heirloom drop
 Owner will apply Beige's coordinates to **Blue, Brown and Green** next.
-- Their windows are `fill="none"` today; **expect the re-export to re-fill them** exactly as it
-  did Beige's. `tests/cover-photo-window.test.js` now catches that before the engine does.
-- **Heirloom's slot tracks the ARTWORK opening centre, not the CSV** (332.63 vs 333.00). Do not
-  "fix" it to match the CSV — the file's own comment explains why.
-- ⚠ **Roses' new SVG has no photo opening at all** — no `<defs>`, no clipPath. It reuses Birds'
-  value, as before, but nothing in the artwork confirms it.
+- Their windows are `fill="none"` today; **expect the re-export to re-fill them**.
+  `tests/cover-photo-window.test.js` now catches that.
+- **Heirloom's slot tracks the ARTWORK opening centre, not the CSV** (332.63 vs 333.00).
+- ⚠ **Roses' new SVG has no photo opening at all** - it reuses Birds' value, unconfirmed.
 
 ## Where germanization stands
 | Stage | State |
@@ -114,6 +142,19 @@ Owner will apply Beige's coordinates to **Blue, Brown and Green** next.
    sending it pushed the model wrong.
 5. `functions/caption/caption.js --language de` reproduces engine output locally, no deploy
    needed. It reads `functions/.env` as a fallback — never copy the key to a second file.
+
+## Where TO-DOS #89 stands
+| Piece | State |
+|---|---|
+| 0 · Retry button on the order form | 🔴 **NOT BUILT** — touches `order.html`, needs `qa:order` |
+| 1 · `upload_failed` + scheduled job | ✅ S190, deployed |
+| 2 · Staff email moved to `confirmUpload` + transaction | ✅ S190, deployed |
+| 3 · Customer email, suppressed on a later success | ✅ S190, deployed |
+| 4 · Failure classification (4 dispositions) | ✅ S190, deployed |
+| 5 · Transition IS the guard, no sent-flag | ✅ S190, deployed |
+| 6 · Side-state, not in `STATUS_SEQUENCE` | ✅ S190, deployed |
+| 7 · `uploadFailureDisposition` on the dashboard | ✅ S190, deployed |
+| **Proven against a real stranded order** | 🔴 **NEVER RUN on real data** — see "Do this first" |
 
 ## Where Printsmarter stands
 | Piece | State |
@@ -144,6 +185,25 @@ Google (`200 OK`, `application/pdf`, no auth) — so the **URLs are proven and t
 AEV-095's *preview* alone was 231 MB.
 
 ## Recent decisions
+- **Detection is automated, recovery stays human (S190, implementing S173/S174)** — a person
+  following up IS the product; Aevia is done-for-you, not a DIY project tool. No self-service
+  resume was built, deliberately.
+- **`upload_failed` is a side-state, not a step (S190)** — modelled on `issue`, kept OUT of
+  `STATUS_SEQUENCE`. ⚠ The old guard let an unrecognised status skip itself entirely, silently
+  permitting any jump; unknown statuses now prompt.
+- **`confirmUpload` guarantees AT MOST ONCE, deliberately (S190)** — Firestore and SMTP cannot be
+  made atomic. A lost email is preferred to a duplicate, and the same choice is made in the job.
+- **The stranded-upload cutoff is a DATE, never an ID list (S190)** — a list is one forgotten
+  entry away from emailing a test address.
+- **`PRE_APPROVAL` and `PRE_APPROVAL_STATUSES` already exclude `upload_failed` correctly (S190)**
+  — by omission. **Do not "fix" them.**
+- **Keep the headless `delegating-to-codex`, do NOT install herdr (S190, owner)** — `codex exec`
+  already streams its event log and `resume` steers between turns, so the "blackbox" objection did
+  not survive checking. The npm `herdr` is a 0.0.0 placeholder and the plugin skill needs Claude
+  Code running inside a herdr terminal session. Owner stays in the VS Code extension.
+- **The six `*-agent` skills were the owner's own wrappers, not rageatc artefacts (S190)** —
+  deleted. The agents ship inside the plugins and load from there; **nothing should be copied into
+  `~/.claude/agents/`**, which would shadow them and re-diverge.
 - **The product-id 400 is THEIR setup, not our config (S189)** — verified `functions/.env` holds
   the exact issued strings, no whitespace, and their error echoed ours back. **Do not restore
   `aevia_hardcover`** (retired) and **do not edit the env**. ⚠ **No test can catch a wrong
@@ -253,56 +313,10 @@ AEV-095's *preview* alone was 231 MB.
 - **No price rise at launch (S148, owner).**
 - **The live site stays `noindex` until launch (S144)** — TO-DOS #81.
 
-## Next steps (priority order)
-1. **Chase their reply on the product ids, then resubmit AEV-071 + AEV-100.** Nothing else in the
-   print path can move until their lookup resolves. Both orders are resubmittable unchanged;
-   regenerate the PDFs if the reply lands after **28 Sep** (signed URLs expire).
-2. **Then get a Heirloom order through** — neither test order exercises the offset product, so
-   the two-product split is still unproven. This also still owes the S187/S182 print checks:
-   cover photo visible on Heirloom/Tender/Newborn, Tender's spine at 410mm, Scribble's captions
-   after the Onest swap, and front-panel centring.
-3. **Fix the send confirm dialog** — have it call `dryRun` and show the resolved address and its
-   source, so it can never contradict "Preview submission". ~10 lines. Do it before the next
-   send, not after.
-4. **Email Printsmarter (the rest, once unblocked)** — produce these orders; Heirloom's paper
-   spec; is `return_address` required; are `product_id_client` / `project_name` free-form;
-   **can their fetcher handle a 400 MB PDF**; written confirmation that `pages: 40|80` at
-   `quantity: 1` is accepted; whether the cover board differs and the cost impact; and the
-   **geometry in writing** (§5 item 10).
-5. **Decide whether 400 MB is acceptable at all** — AEV-100's interior is double the size already
-   flagged as a risk. Likely full-resolution images far beyond 300 dpi at book size. Own session,
-   not a quick compression hack.
-3. **Apply Beige's coordinates to Heirloom Blue, Brown and Green** — see "Carried into the next
-   Heirloom drop". Their front-panel coordinates are still the old, off-centre ones. Xenia is
-   re-doing their SVG geometry.
-4. **Get ONE native German read of everything at once** — the `/de/` pages, the order form, the
-   per-template copy, and now the captions. **Nothing German has ever been read by a native
-   speaker.** Highest-leverage item left: one pass covers every surface, and doing it late means
-   rework on stages already marked ✅. It also hands you Stage 6's 11 add-on names for free.
-5. **Stage 6 — DE mockups + gallery swap** (treat as ONE job; each is useless without the other),
-   then the add-on names. ⚠ Capture reads the **deployed** rig — push first (LEARNINGS S172).
-   Owner is creating one German order per template for this. Functional pages only, so the orders
-   need special pages filled but not full photo sets; Heirloom's four colourways are four orders.
-   ⚠ When building the add-on names, key the map off the English **`name`**, NOT the `slug` —
-   slugs are positional (`fp1` is "Travel map" on Joyride but "Birthday spread" on Papercut).
-6. **TO-DOS #117 — multiple copies per order.** Blocked on an owner pricing decision: is copy
-   two full price or discounted? Cost is €8.47 at 40pp against €70 retail.
-7. **TO-DOS #113 — German transactional emails.** Own session; bilingual-vs-German-only undecided.
-8. **Implement `docs/briefs/upload-failure-recovery.md`** — ready and unblocked since S174.
-   Piece 0 (Retry) is independent of the scheduled job.
-9. **Packaging, when Xenia replies** — entry point `work/packaging/README.md`.
-10. **Decide the ~14 untracked `qa/` one-offs.** Proposal made S175, not actioned.
-11. **Confirm the venue credit wording against the agreement.**
-12. **Decide whether to delete `pages/spread-preview.html`** — dead prototype carrying HEIC code
-    and the last `NT Somic` reference in the repo.
-11. **Owner review of the Laguna page copy** (EN + DE) — TO-DOS #110.
-12. **Downscale Clémence's portrait** — 3.48 MB against 86 KB for Kevin's.
-13. **Send Xenia the cover-artwork brief** — no customer-fillable text outlined in, no live
-    `<text>`, artboard = trim with correct bleed.
-14. **Open `help.html` + `de/help.html` in a browser** — the S166 formats FAQ never rendered.
-15. **TO-DOS #109** — extend `cover-svg-viewbox.test.js` to assert bleed coverage.
-16. **Server-side validation in `functions/upload.js`.**
-17. **Customer-preview must record caption line breaks** (open since S159).
+## Next steps
+**The Trello board is the backlog now (S191)** — https://trello.com/b/HCrNJRN1/aevia.
+Read *In progress*, *Blocked* and the top of *Next up*; the owner orders *Next up*.
+The 23-item list that used to live here became cards #118–#132 or was already a ticket.
 
 ## Open questions
 - **Why can't Printsmarter resolve their own product ids?** Asked 2026-09-21. Everything on our

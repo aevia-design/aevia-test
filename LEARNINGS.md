@@ -1,3 +1,30 @@
+## 2026-09-22 (S190) — A pass that cannot fail is not evidence
+
+Two green signals this session meant nothing, in the same way and for the same reason.
+
+**`firebase deploy --only functions` exited 0 with a function that had failed.** The output
+carried `! functions: failed to update function …/getMyAddress`, five more functions never printed
+a success line, and the exit code was **0**. Nothing broke — the function kept serving its previous
+build — but a session that trusted `$?` would have recorded a clean deploy and moved on.
+**The real signal was the MISSING `Deploy complete!` line.** A targeted redeploy of the six ended
+with it. Check for that line, not the exit code.
+
+**`tests/chunk-4-order-flow.test.js` cannot fail.** It calls its own `mockTransporter.sendMail`
+and asserts on its own calls; it never imports `functions/upload.js`. So it stayed green while
+describing a flow that had been wrong since the staff email moved — and it would have stayed green
+if the handler had been deleted. It was not testing the code, it was testing itself.
+
+- **A test that constructs the behaviour it asserts is documentation, not verification.** Import
+  the shipped thing, or extract a pure helper the shipped thing calls. S190 did both: the
+  decisions live in `functions/upload-failure-utils.js` and the handler is driven directly in
+  `tests/confirm-upload-emails.test.js` — the first import-based handler test in the repo.
+- **When a tool reports success, know which token actually carries that claim.** Exit codes,
+  green ticks and test counts are all proxies, and each of these was a proxy that had come loose
+  from the thing it stood for.
+- Same family as S154 (`npm test` does not execute `pages/order.html`, 281 green, a crash on the
+  rig) and as S189's second-order lesson (a fixture string means **every** product id passes).
+  Three sessions, one shape: **the check ran, and it could not have told us.**
+
 ## 2026-09-21 (S189) — A record that can't tell "they told us" from "we decided" will be re-derived wrongly
 
 Printsmarter rejected our first live order: `400 "Product not found. aevia_hardcover_matte"`.

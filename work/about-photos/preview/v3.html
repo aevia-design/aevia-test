@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About photos — round 3, the rolling row</title>
+<style>
+  :root {
+    --bg:#fafaf8; --surface:#f3efe9; --border:#e4dfd8; --text:#1a1a1a;
+    --muted:#7d7570; --accent-dk:#a8895f;
+    --serif:Georgia,'Times New Roman',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  img { display:block; max-width:100%; }
+
+  .opt-head { max-width:1160px; margin:0 auto; padding:90px 56px 30px; }
+  .opt-tag { display:inline-block; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--accent-dk); margin-bottom:14px; }
+  .opt-title { font-family:var(--serif); font-size:34px; font-weight:400; letter-spacing:-.015em; }
+  .opt-note { font-size:14px; color:var(--muted); max-width:62ch; margin-top:12px; }
+  .break-caption { max-width:1160px; margin:0 auto; padding:18px 56px 0; font-size:11px; color:var(--muted); text-align:right; }
+
+  .story { max-width:1160px; margin:0 auto; padding:70px 56px; display:grid; grid-template-columns:1fr 1.8fr; gap:80px; align-items:start; }
+  .story-label { font-family:var(--serif); font-size:28px; line-height:1.25; letter-spacing:-.015em; }
+  .story-body p { font-family:var(--serif); font-size:19px; line-height:1.75; margin-bottom:28px; }
+  .story-body p.closing { font-style:italic; color:var(--accent-dk); font-size:20px; margin-bottom:0; }
+
+  /* ══════════════════════════════════════════════════════════════
+     THE ROLLING ROW
+     Technique per MengTo/Skills `marquee-loop`:
+       · duplicate the sequence so end and beginning meet exactly
+       · animate the TRACK, never the items
+       · linear timing — constant velocity, no easing
+       · translate 0 → -50%, which is one full copy of the sequence
+       · mask the edges so photos enter and leave instead of popping
+       · honour prefers-reduced-motion
+     Deviation, deliberately: the skill says keep item widths stable.
+     We vary HEIGHT on a shared centre line instead. That gives the
+     size variation asked for without the loop ever jumping, because
+     every item's WIDTH is still fixed.
+     ══════════════════════════════════════════════════════════════ */
+  .roll { background:var(--surface); padding:80px 0 84px; overflow:hidden;
+          -webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);
+                  mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent); }
+  .roll-track { display:flex; align-items:center; gap:26px; width:max-content;
+                animation:roll 54s linear infinite; }
+  .roll:hover .roll-track { animation-play-state:paused; }
+  .roll-track img { display:block; width:auto; }
+  /* Varied heights, common centre line. Widths follow from the ratio
+     and stay fixed, so the loop never re-measures. */
+  .h-a { height:460px; }
+  .h-b { height:340px; }
+  .h-c { height:412px; }
+  .h-d { height:300px; }
+  @keyframes roll { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .roll-track { animation:none; }
+    .roll { overflow-x:auto; }
+  }
+
+  /* Variant B — same row, slower and larger, fewer visible at once */
+  .roll-b .roll-track { animation-duration:76s; gap:34px; }
+  .roll-b .h-a { height:560px; } .roll-b .h-b { height:430px; }
+  .roll-b .h-c { height:505px; } .roll-b .h-d { height:390px; }
+
+  /* Variant C — static row, drag/scroll by hand instead of auto-rolling */
+  .roll-c { overflow-x:auto; scroll-snap-type:x proximity; padding-bottom:70px; }
+  .roll-c .roll-track { animation:none; padding:0 56px; }
+  .roll-c .roll-track img { scroll-snap-align:center; }
+
+  @media (max-width:900px) {
+    .story { grid-template-columns:1fr; gap:28px; padding:48px 24px; }
+    .opt-head { padding:60px 24px 20px; }
+    .break-caption { padding:16px 24px 0; }
+    .roll { padding:56px 0 60px; }
+    .h-a { height:300px; } .h-b { height:230px; } .h-c { height:270px; } .h-d { height:206px; }
+    .roll-b .h-a { height:330px; } .roll-b .h-b { height:250px; }
+    .roll-b .h-c { height:296px; } .roll-b .h-d { height:225px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="story">
+  <div class="story-label">Aevum. In Latin,<br>a lifetime.<br>An age.</div>
+  <div class="story-body">
+    <p>So we built the opposite of a blank screen: a small studio in Vienna, a few templates, each designed with artists and illustrators we work with directly. You choose the one that fits your occasion, send your photos, and we compose the book by hand.</p>
+    <p class="closing">Fewer choices. A book worth keeping.</p>
+  </div>
+</div>
+
+<div class="opt-head">
+  <span class="opt-tag">Option J</span>
+  <h2 class="opt-title">The rolling row</h2>
+  <p class="opt-note">One row, four photos at different heights on a shared centre line, drifting slowly left. Edges fade so photos arrive and leave rather than pop. Hover anywhere to pause it.</p>
+</div>
+<div class="roll">
+  <div class="roll-track">
+    <img class="h-a" src="pair-t.webp"    alt="Evgeny and Xenia">
+    <img class="h-b" src="evgenii-t.webp" alt="Evgeny">
+    <img class="h-c" src="desk-t.webp"    alt="At the desk">
+    <img class="h-d" src="xenia-t.webp"   alt="Xenia">
+    <!-- duplicate: end meets beginning -->
+    <img class="h-a" src="pair-t.webp"    alt="" aria-hidden="true">
+    <img class="h-b" src="evgenii-t.webp" alt="" aria-hidden="true">
+    <img class="h-c" src="desk-t.webp"    alt="" aria-hidden="true">
+    <img class="h-d" src="xenia-t.webp"   alt="" aria-hidden="true">
+  </div>
+</div>
+<p class="break-caption">The studio, most days.</p>
+
+<div class="opt-head">
+  <span class="opt-tag">Option K</span>
+  <h2 class="opt-title">Rolling, slower and bigger</h2>
+  <p class="opt-note">Same idea, larger photos and a slower drift — fewer on screen at once, so each one is properly readable as it passes.</p>
+</div>
+<div class="roll roll-b">
+  <div class="roll-track">
+    <img class="h-a" src="pair-t.webp"    alt="Evgeny and Xenia">
+    <img class="h-b" src="evgenii-t.webp" alt="Evgeny">
+    <img class="h-c" src="desk-t.webp"    alt="At the desk">
+    <img class="h-d" src="xenia-t.webp"   alt="Xenia">
+    <img class="h-a" src="pair-t.webp"    alt="" aria-hidden="true">
+    <img class="h-b" src="evgenii-t.webp" alt="" aria-hidden="true">
+    <img class="h-c" src="desk-t.webp"    alt="" aria-hidden="true">
+    <img class="h-d" src="xenia-t.webp"   alt="" aria-hidden="true">
+  </div>
+</div>
+<p class="break-caption">The studio, most days.</p>
+
+<div class="opt-head">
+  <span class="opt-tag">Option L</span>
+  <h2 class="opt-title">The same row, not moving</h2>
+  <p class="opt-note">Identical composition with no animation — it simply runs off the right edge and you scroll or swipe it. Shown so you can judge whether the motion is adding anything.</p>
+</div>
+<div class="roll roll-c">
+  <div class="roll-track">
+    <img class="h-a" src="pair-t.webp"    alt="Evgeny and Xenia">
+    <img class="h-b" src="evgenii-t.webp" alt="Evgeny">
+    <img class="h-c" src="desk-t.webp"    alt="At the desk">
+    <img class="h-d" src="xenia-t.webp"   alt="Xenia">
+  </div>
+</div>
+<p class="break-caption">The studio, most days.</p>
+
+<div style="height:120px"></div>
+</body>
+</html>
