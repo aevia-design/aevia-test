@@ -1,3 +1,22 @@
+## 2026-09-23 (S191) — A sweep certifies only the syntax it reads
+
+`tests/order-strings.test.js` swept the order form for English and was green. It read markup and
+**single-quoted** literals. Every English sentence a German customer actually met — upload errors,
+photo refusals, the photo counter, low-res warnings, region names — was a **template literal**,
+so the sweep never saw one. Extending the pattern to backticks did not help either: a trial scan
+**missed the upload messages**, because a backtick nested inside `${…}` defeats the regex.
+
+- **Name the literals a sweep must never find again**, and prove the customer-facing result in a
+  browser (qa:order now fails an upload on the German form and reads the text). A clever pattern
+  that misses the case it was written for is worse than none: it reports clean.
+- **Mutation-test a guard that matters.** The Retry tests went green first time; only putting the
+  brief's two traps back (skip `neverAttempted`, drop the double-click guard) and watching each
+  turn the suite red proved they test anything.
+- Two small traps from the same session: **`firebase deploy` uploads `functions/` wholesale**, so a
+  credentials file dropped there ships to Google (moved `trello.env` to the root); and
+  **`curl --data-urlencode` to Trello stored text literally encoded** (`%23133 %B7…`) — send
+  JSON bodies via `fetch`.
+
 ## 2026-09-22 (S190) — A pass that cannot fail is not evidence
 
 Two green signals this session meant nothing, in the same way and for the same reason.

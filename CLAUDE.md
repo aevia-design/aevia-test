@@ -298,7 +298,9 @@ After launch / Someday). API via `curl` with repo-root `trello.env` — **never 
   Comment the session number and commit hash when moving a card to *Done*.
 - **New tickets:** a card immediately, numbered max + 1 (never reuse a number), always labelled,
   into *Backlog*. A few lines only — long reasoning goes in `docs/briefs/`, linked from the card.
-- **Handover:** regenerate `TO-DOS.md` from the board; archive *Done* cards older than two weeks.
+- **Handover:** `node scripts/trello-snapshot.mjs` regenerates `TO-DOS.md` from the board; archive
+  *Done* cards older than two weeks. Write to Trello with JSON bodies via `fetch`, never
+  `curl --data-urlencode` (it stored text literally encoded, S191).
 
 ---
 

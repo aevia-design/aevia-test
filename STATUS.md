@@ -1,77 +1,37 @@
 # Session Status
-_Last updated: 2026-09-22 (session 190)_
-_Context at save: **TO-DOS #89 pieces 1-7 are built, pushed and DEPLOYED** - a stranded upload
-now detects itself. Printsmarter is unchanged and still blocked on their side. Two commits
-(`86d8c7c`, `09caf1b`); the plugin/skill work lives outside the repo._
+_Last updated: 2026-09-23 (session 191)_
+_Context at save: **the backlog is now the Trello board**, and TO-DOS #89 is fully built — Retry
+shipped, German messages shipped. #89 waits only on two live checks by the owner._
 
 ## Status
-**Session 190 - stranded uploads now flip themselves; the print path is still waiting on them.**
+**Session 191 — #89 built end to end; backlog moved to Trello.** Full detail:
+**`sessions/2026-09-23-s191.md`**.
 
-Full detail: **`sessions/2026-09-22-s190.md`**.
+## Do this first
+**Read the board** (https://trello.com/b/HCrNJRN1/aevia): *In progress*, *Blocked*, top of
+*Next up*. Rules are in CLAUDE.md "Backlog board". At handover, `node scripts/trello-snapshot.mjs`.
 
-## Do this first - pick one of two, they are independent
+**#89 closes on two live checks, both the owner's** (he reports back):
+1. **The stranded test order flips** (created S191 with storage blocked). Expect: dashboard
+   *Upload failed* filter, red line **"Photos failed · customer emailed — follow up"**; inbox
+   **"Your Aevia order AEV-XXX did not finish uploading"**; **no** staff "New Order" email.
+   ⚠ A later successful order from the same address suppresses the email by design.
+2. **Retry on the rig**: block `*://storage.googleapis.com/*` (Chrome DevTools → Request
+   conditions), submit with a DIFFERENT email, remove the rule, press Retry → success screen,
+   order shows New.
+Both green → move #89 to *Done* with a comment (session + commits `c7aa32a`, `90007f4`).
 
-### A. Confirm the new job is not about to email a real customer
-`detectStrandedUploads` is **live and firing hourly**. Nobody has checked what is currently
-sitting at `uploading` - the Firestore read was **blocked by the sandbox classifier**.
-
-Open the dashboard, click the **Uploading** filter, read the **Date** column:
-- Anything dated **before 22 Sep** is protected by `STRANDED_CUTOFF` and will never be touched.
-  The five known QA strandings (AEV-067/073/074/079/096) are all in this group.
-- Anything dated **22 Sep or later** is in scope. If it has real photo failures and no later
-  successful order from that address, **the job will email that customer** on the next run. That
-  is the designed behaviour - it just should not be a surprise.
-
-Then **prove the flip end to end**: create a fresh stranded order after the cutoff with an inbox
-we own, and watch it become `upload_failed`. ⚠ **AEV-096 cannot serve this** - it is below the
-cutoff by design, and S173's plan to both ignore pre-deploy orders and flip AEV-096 contradicted
-itself. Watch it in Cloud Logging, filter `detectStrandedUploads`.
-
-### B. Chase Printsmarter, then resubmit
-**Unchanged since S189 - still waiting on their reply.** Owner asked them (2026-09-21) to confirm
-`aevia_hardcover_matte` and `aevia_hardcover_offset` are set up and assigned to account 3983.
-
-⚠ **Both ids were ISSUED BY THEM and `aevia_hardcover` is RETIRED.** Do **not** restore the old
-id and do **not** edit `functions/.env` - it was verified S189 as holding the exact strings.
-
-Resubmit **AEV-071** (40pp) and **AEV-100** (80pp) unchanged; both are still `paid` with no
-`printsmarterOrderId`, so the once-only guard is intact. ⚠ **Their signed PDF URLs expire
-28 Sep** - regenerate if the reply lands after that.
-
-## What shipped in S190 - TO-DOS #89, pieces 1-7
-
-A stranded order used to sit at `uploading` forever: invisible on the dashboard beside one running
-right now, silent to the customer, with staff already emailed about a book that never arrived.
-
-- **`detectStrandedUploads`** - hourly, `europe-west1`, flips `uploading` -> `upload_failed` past
-  one hour with a disposition. The flip is a **conditional transaction** and the customer email
-  **re-reads `uploadComplete` immediately before sending**, so a tab that retries on the boundary
-  cannot also be told it failed.
-- **`confirmUpload` claims the confirmation in a transaction.** Was a read-then-update, so a Retry
-  racing a slow first call could have both sent mail. Both emails now run under `allSettled` with
-  per-channel error fields. ⚠ **The guarantee is AT MOST ONCE, deliberately** - Firestore and SMTP
-  cannot be made atomic; a lost email beats a duplicate.
-- **Staff "New Order" email moved to `confirmUpload`.** `createUploadSession` now emails nobody,
-  which also removed a live failure mode: an SMTP throw there used to strand a new order **before
-  the browser received its signed URLs**.
-- **`upload_failed` is a side-state, NOT in `STATUS_SEQUENCE`.** ⚠ The old guard skipped itself
-  when `indexOf` returned `-1`, **silently permitting any jump**; unrecognised statuses now prompt.
-- Decisions live in **`functions/upload-failure-utils.js`** - pure, and imported by both the job
-  and its tests.
-
-**Remaining: piece 0, the Retry button.** The cheapest defence (files still in browser memory,
-typically ONE photo after #112) and the only piece touching `pages/order.html`, so
-**`npm run qa:order` is mandatory**. ⚠ **It must NOT skip `neverAttempted` entries** or it will
-confirm a book with photos missing - that is the bug that blocked the brief until S174.
-
-⚠ **`STRANDED_CUTOFF` is `2026-09-22T00:00:00Z`** (`functions/index.js`). A date, not an ID list,
-because a list is one forgotten entry away from emailing a test address.
-
-⚠ **Two corrections to the brief, found in the code:** its dashboard line numbers are stale;
-`statusLabel` returns `labels[s] || s` so an unmapped status shows the **raw string** - the
-"falls back to Uploading" behaviour is in the **dropdown**, a different bug in a different place.
-And `PRE_APPROVAL` / `PRE_APPROVAL_STATUSES` **already exclude `upload_failed` correctly** - do
-not "fix" them.
+## What shipped in S191
+- **Retry on the same order** (`c7aa32a`). "Submit again" used to create a second order and
+  strand the first. Retry re-sends only missing slots, **including `neverAttempted`**; confirm
+  only when every slot is in storage; double-click safe; Submit disabled while Retry shows.
+  Mutation-tested against both traps in the brief.
+- **German form, German messages** (`90007f4`). Every JS-built sentence (upload errors, photo
+  refusals, photo counter, low-res warnings, region names, sign-in cancelled) now comes from
+  `order-strings.js`. Technical errors show the generic message. ⚠ German written by Claude —
+  on #123 for the native read. Country names still English → #133.
+- **Trello backlog** + `scripts/trello-snapshot.mjs`; STATUS next-steps became cards #118–#132.
+- qa:order is **35 cases** now; npm test **664**.
 
 ```powershell
 npx firebase deploy --only functions      # from the PROJECT ROOT, not functions/
@@ -86,7 +46,7 @@ gcloud run deploy aevia-pdf-renderer --source C:/Users/evgmy/aevia-test --region
 (Redeploy the renderer BEFORE generating PDFs if template data or SVGs changed, or you bake
 stale artwork.)
 
-## Still open on the print path (unchanged from S189)
+## Still open on the print path
 ⚠ **`PRINTSMARTER_LIVE` is `true` and `submitPrintOrder` is deployed** - "Send to Printsmarter"
 is armed beside "Preview submission". A misclick is a real book and a real invoice.
 ⚠ **The send confirm dialog misreports the address** - it reads the locally loaded
@@ -146,7 +106,8 @@ Owner will apply Beige's coordinates to **Blue, Brown and Green** next.
 ## Where TO-DOS #89 stands
 | Piece | State |
 |---|---|
-| 0 · Retry button on the order form | 🔴 **NOT BUILT** — touches `order.html`, needs `qa:order` |
+| 0 · Retry button on the order form | ✅ S191, pushed (`c7aa32a`) — **live check pending** |
+| + German messages on the German form | ✅ S191, pushed (`90007f4`) — owner scope-add |
 | 1 · `upload_failed` + scheduled job | ✅ S190, deployed |
 | 2 · Staff email moved to `confirmUpload` + transaction | ✅ S190, deployed |
 | 3 · Customer email, suppressed on a later success | ✅ S190, deployed |
@@ -154,7 +115,7 @@ Owner will apply Beige's coordinates to **Blue, Brown and Green** next.
 | 5 · Transition IS the guard, no sent-flag | ✅ S190, deployed |
 | 6 · Side-state, not in `STATUS_SEQUENCE` | ✅ S190, deployed |
 | 7 · `uploadFailureDisposition` on the dashboard | ✅ S190, deployed |
-| **Proven against a real stranded order** | 🔴 **NEVER RUN on real data** — see "Do this first" |
+| **Proven against a real stranded order** | ⏳ live data checked S191 (nothing in scope); **test order stranded, flip not yet seen** |
 
 ## Where Printsmarter stands
 | Piece | State |
@@ -165,9 +126,9 @@ Owner will apply Beige's coordinates to **Blue, Brown and Green** next.
 | `submitPrintOrder` | ✅ **deployed S188** |
 | `PRINTSMARTER_LIVE` | ✅ **`true`** — the send button is armed |
 | Address fallback + dry run | ✅ S188 |
-| Postback URL registered with them | ⏳ emailed, awaiting confirmation |
-| **Their product setup** | 🔴 **BLOCKER — neither id resolves on their side (S189)** |
-| A first live order | 🔴 **attempted S189, rejected `400 Product not found`** |
+| Postback URL registered with them | 🔴 **they lost it** — resend is on **#135**, Blocked on the contract + delivery provider |
+| Their product setup | ✅ resolved on their side (S191) |
+| First live orders | ✅ **AEV-071 = #150933, AEV-100 = #150932 — in production** (S191) |
 
 **Deliberately absent from the payload, both still open in the brief:**
 - **`shipping_price`** — we charge no shipping, and their docs describe `price` as feeding
@@ -185,6 +146,17 @@ Google (`200 OK`, `application/pdf`, no auth) — so the **URLs are proven and t
 AEV-095's *preview* alone was 231 MB.
 
 ## Recent decisions
+- **Trello is the canonical backlog (S191, owner)** — TO-DOS.md is a snapshot regenerated at
+  handover. Owner owns priority (order of *Next up*, labels, *Dropped*); Claude owns status.
+  No WIP limit. Credentials in repo-root `trello.env`, **never `functions/`**.
+- **The Printsmarter status-push email waits for the contract (S191, owner)** — delivery
+  postbacks depend on the carrier, not yet agreed. Draft on #135. What matters: every status
+  pushed (delivered most), a timestamp per change, holds reported. Our order number is NOT
+  needed — we store theirs.
+- **On the German form only customer-written sentences reach the screen (S191)** — technical
+  errors show `err.generic`. `customerError()` marks the ones allowed through.
+- **German country names = a display label beside the English key (S191, owner spec, #133)** —
+  the English name keys `mapCoordinates`; never rename it.
 - **Detection is automated, recovery stays human (S190, implementing S173/S174)** — a person
   following up IS the product; Aevia is done-for-you, not a DIY project tool. No self-service
   resume was built, deliberately.
@@ -319,8 +291,6 @@ Read *In progress*, *Blocked* and the top of *Next up*; the owner orders *Next u
 The 23-item list that used to live here became cards #118–#132 or was already a ticket.
 
 ## Open questions
-- **Why can't Printsmarter resolve their own product ids?** Asked 2026-09-21. Everything on our
-  side is proven; this is the only blocker to a first book.
 - **Does their fetcher accept a 403 MB PDF over a 7-day signed URL?** The URLs are proven
   (`200 OK` from outside Google, no auth); the size is not. AEV-100 is 403.91 MB, AEV-071
   176.03 MB. First suspect if a submission succeeds and nothing produces.
