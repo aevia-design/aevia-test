@@ -2505,8 +2505,8 @@ exports.detectStrandedUploads = functions
         // template's product page, on the site half the order came from.
         // "heirloom-beige" → heirloom; no template → the collections page.
         const slug = String(order.templateName || '').split(/[-\s]/)[0].toLowerCase();
-        const dir = order.language === 'de' ? 'pages/de' : 'pages';
-        const reorderUrl = `${siteOrigin()}/${dir}/${slug || 'collections'}`;
+        const dir = order.language === 'de' ? 'de/' : '';
+        const reorderUrl = `${siteOrigin()}/${dir}${slug || 'collections'}`;
         const bookName = slug ? `${slug[0].toUpperCase()}${slug.slice(1)} book` : 'book';
 
         try {

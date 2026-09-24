@@ -291,17 +291,17 @@
 
 <!-- Nav -->
 <nav class="nav">
-  <a href="home.html" class="nav-logo">
+  <a href="/" class="nav-logo">
     <img src="../assets/images/aevia_logo_transparent.png" alt="Aevia"
          onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
     <span class="nav-logo-text" style="display:none;">aevia</span>
   </a>
   <div class="nav-links">
-    <a href="home.html" data-i18n="nav.home">Home</a>
-    <a href="about.html" data-i18n="nav.about">About us</a>
-    <a href="help.html" data-i18n="nav.help">Help</a>
+    <a href="/" data-i18n="nav.home">Home</a>
+    <a href="/about" data-i18n="nav.about">About us</a>
+    <a href="/help" data-i18n="nav.help">Help</a>
   </div>
-  <a href="collections.html" class="nav-cta" data-i18n="nav.cta">Our Collections</a>
+  <a href="/collections" class="nav-cta" data-i18n="nav.cta">Our Collections</a>
 </nav>
 
 <!-- Stepper -->
@@ -316,7 +316,7 @@
   <div class="no-template" id="no-template">
     <h2 data-i18n="noTemplate.title">Choose a template first</h2>
     <p data-i18n="noTemplate.body">You'll need to pick a template and page count before placing an order.</p>
-    <a href="collections.html" data-i18n="noTemplate.link">Browse collections</a>
+    <a href="/collections" data-i18n="noTemplate.link">Browse collections</a>
   </div>
 
   <!-- ═══════════════════════════════════
@@ -386,7 +386,7 @@
           <div class="summary-price-note" data-i18n="summary.priceNote">incl. VAT, excl. shipping</div>
         </div>
 
-        <a class="summary-back" id="back-link" href="collections.html">← <span data-i18n="summary.back">Change template</span></a>
+        <a class="summary-back" id="back-link" href="/collections">← <span data-i18n="summary.back">Change template</span></a>
       </div>
 
     </div>
@@ -512,13 +512,13 @@
       </div>
     </div>
 
-    <a href="home.html" class="success-home"><span data-i18n="success.home">Return to Aevia</span> &rarr;</a>
+    <a href="/" class="success-home"><span data-i18n="success.home">Return to Aevia</span> &rarr;</a>
   </div>
 
 </div><!-- /content -->
 
 <footer class="footer-min">
-  <span data-i18n="footer.rights">© 2026 Aevia. All rights reserved.</span> &nbsp;·&nbsp; <a href="help.html" style="text-decoration:underline;text-underline-offset:3px;" data-i18n="footer.help">Help &amp; FAQ</a>
+  <span data-i18n="footer.rights">© 2026 Aevia. All rights reserved.</span> &nbsp;·&nbsp; <a href="/help" style="text-decoration:underline;text-underline-offset:3px;" data-i18n="footer.help">Help &amp; FAQ</a>
 </footer>
 
 
@@ -587,7 +587,7 @@ const ORDER = {
   category:   params.get('category') || '',
   pages:      params.get('pages')    || '40',
   price:      params.get('price')    || '',
-  backUrl:    params.get('back')     || 'collections.html',
+  backUrl:    params.get('back')     || '/collections',
   // Book language chosen on the product page (germanization Stage 1). Everything
   // downstream (artwork variants, captions) reads the order's stored `language`;
   // absent/anything-else means 'en' so old links and orders behave as before.

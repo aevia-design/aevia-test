@@ -1,1 +1,40 @@
-/ /pages/home.html 301
+# Clean public URLs (TO-DOS #82). Rewrite, don't move: files stay under pages/,
+# these 200 rules serve them at clean addresses. Destination MUST be extension-less
+# (verified S192 on the live rig: a .html destination bounces back via Cloudflare's
+# own clean-URL redirect). See work/url-structure/brief.md.
+#
+# Transactional pages (order, account, customer-preview, spread-preview, staff/**)
+# keep their /pages/ address and are NOT rewritten here.
+#
+# No 301 from the old /pages/<public> address to these clean ones: it loops against
+# the 200 rewrite below. Old addresses keep working; canonical tags carry the SEO signal.
+
+/ /pages/home 200
+/collections /pages/collections 200
+/about /pages/about 200
+/our-artists /pages/our-artists 200
+/help /pages/help 200
+/waitlist /pages/waitlist 200
+/heirloom /pages/heirloom 200
+/joyride /pages/joyride 200
+/laguna /pages/laguna 200
+/newborn /pages/newborn 200
+/papercut /pages/papercut 200
+/scribble /pages/scribble 200
+/tender /pages/tender 200
+/wander /pages/wander 200
+
+/de /pages/de/home 200
+/de/ /pages/de/home 200
+/de/collections /pages/de/collections 200
+/de/about /pages/de/about 200
+/de/our-artists /pages/de/our-artists 200
+/de/help /pages/de/help 200
+/de/heirloom /pages/de/heirloom 200
+/de/joyride /pages/de/joyride 200
+/de/laguna /pages/de/laguna 200
+/de/newborn /pages/de/newborn 200
+/de/papercut /pages/de/papercut 200
+/de/scribble /pages/de/scribble 200
+/de/tender /pages/de/tender 200
+/de/wander /pages/de/wander 200

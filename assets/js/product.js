@@ -3,7 +3,7 @@
 
      window.PRODUCT = {
        base:'../assets/images/mockups/exp2/<template>/',  // image folder
-       template:'Scribble', category:'kids', back:'scribble.html',
+       template:'Scribble', category:'kids', back:'/scribble',
        fp:{ FP1:{name:'…', inputType:'photo', slug:'fp1'}, … }  // special spreads
      };
 
@@ -148,8 +148,8 @@
     // Extra params a page chooses at runtime (Heirloom sends the family monogram, which
     // the order form preselects from). Set last so a page can override nothing by accident.
     Object.keys(cfg.extra || {}).forEach(function (k) { params.set(k, cfg.extra[k]); });
-    // The /de/ pages sit one level deeper and set orderUrl:'../order.html'.
-    window.location.href = (cfg.orderUrl || 'order.html') + '?' + params.toString();
+    // Root-absolute: EN and DE pages both fall through to the transactional order form.
+    window.location.href = (cfg.orderUrl || '/pages/order') + '?' + params.toString();
   };
 
   // ── Nav background on scroll ──

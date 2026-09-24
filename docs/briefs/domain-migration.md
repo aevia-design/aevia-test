@@ -6,6 +6,12 @@
 **Audience:** Claude (implementation) and Evgeny (owns the helloly + Cloudflare + M365 + Brevo dashboards; non-technical — every dashboard step must be explicit).
 
 > **Version note.** The 2026-07-13 first pass of this brief was written without looking at the live DNS. It contained stale line numbers, a proposed mechanism that would have broken the deploy, a claim that the Stripe webhook must move (it must not), and a client-side gate that fails open. All corrected below. Do not work from git history of this file.
+>
+> **Superseded (S192, TO-DOS #82).** The homepage/canonical/hreflang plan below (§ "Homepage URL",
+> "Canonical tags") described `/pages/home` as the clean address. It has since gone one step
+> further: public pages are served at a true clean root address (`/`, `/heirloom`, `/de/heirloom`)
+> via a Cloudflare `_redirects` 200 rewrite, transactional pages keep `/pages/...`. See
+> `work/url-structure/brief.md` and the ADR that supersedes ADR-0009's homepage section.
 
 ---
 

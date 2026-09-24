@@ -3,8 +3,8 @@
 ## What is Aevia
 Premium photo book service (Vienna). Customers order, upload photos; staff design and send a preview; customer approves and pays; book goes to print. Moving from fully manual toward semi-automated with a browser-based staff template engine.
 
-**Live site:** https://aevia.at/pages/home (production, since S144)  
-**Test rig:** https://aevia-test.pages.dev/pages/home — ordering works here; production is gated to a waitlist until launch (ADR-0009)  
+**Live site:** https://aevia.at/ (production, since S144)  
+**Test rig:** https://aevia-test.pages.dev/ — ordering works here; production is gated to a waitlist until launch (ADR-0009)  
 **Brand:** Premium, editorial, art-forward. Serif typography, generous whitespace, off-white/near-black.
 
 ---
@@ -336,6 +336,9 @@ npx http-server . -p 8080 -c-1   # from project root
 ```
 Use `http-server`, **not** `npx serve` — `serve` 404s and strips the `?token=` query locally.
 Always use the `.html` form locally; clean URLs are a Cloudflare feature and 404 on both local servers.
+Since #82 (S192) public pages link to their clean root address (e.g. `/heirloom`, `/de/heirloom`)
+— those root-absolute links do not resolve locally either, since `http-server` has no rewrites;
+open pages directly at `pages/<name>.html` instead.
 
 Pages: `http://localhost:8080/pages/home.html`  
 Engine: `http://localhost:8080/pages/staff/template-engine.html`
