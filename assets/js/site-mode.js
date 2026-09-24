@@ -31,7 +31,7 @@
     // it cannot swallow a future sibling route such as /pages/orders; the trailing
     // match also covers a DE order page if one is ever added.
     if (/\/order(\.html)?$/.test(path)) {
-      location.replace('/pages/waitlist');
+      location.replace('/waitlist');
       return;
     }
 
@@ -42,7 +42,7 @@
     var isDE = path.indexOf('/de/') !== -1;
 
     var bar = document.createElement('a');
-    bar.href = '/pages/waitlist';
+    bar.href = '/waitlist';
     bar.textContent = isDE
       ? 'Unsere Website ist noch im Aufbau. Aevia eröffnet im Herbst 2026. Zur Warteliste →'
       : 'Our website is still being built. Aevia opens autumn 2026. Join the waitlist →';

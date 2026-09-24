@@ -4,7 +4,13 @@ Handy URLs for the website, both staff engines, the dashboard, and the customer 
 
 > **Two hosts since S144** (see ADR-0009). `aevia.at` is **production**; `aevia-test.pages.dev` is the **test rig** and stays that way — QA scripts deliberately point at it.
 >
-> Both serve **clean URLs (no `.html`)** — the `.html` form 308-redirects to the clean form. The redirect **does preserve the query string** (verified S130 and again S144: `?token=…&payment=success` survives), so emailed preview links work either way. Prefer the clean form to save a hop.
+> Since #82 (S192), **public pages** (home, collections, product pages, etc.) are served at a clean
+> root address (`/`, `/heirloom`, `/de/heirloom`) via a Cloudflare `_redirects` rewrite; the old
+> `/pages/<public>` address still works (not redirected — see `work/url-structure/brief.md`), just
+> not the one to share. **Transactional pages** (`order`, `account`, `customer-preview`,
+> `spread-preview`, `staff/**`) keep their `/pages/...` address, unchanged. Both hosts also strip
+> `.html` generally — the `.html` form 308-redirects to the extension-less form, preserving the
+> query string (verified S130/S144: `?token=…&payment=success` survives).
 >
 > **Both deploy from `main`** automatically on push — same build, two hostnames.
 
@@ -14,10 +20,10 @@ Handy URLs for the website, both staff engines, the dashboard, and the customer 
 
 | Page | URL |
 |------|-----|
-| Home | https://aevia.at/pages/home |
-| Collections | https://aevia.at/pages/collections |
-| German home | https://aevia.at/pages/de/home |
-| Waitlist | https://aevia.at/pages/waitlist |
+| Home | https://aevia.at/ |
+| Collections | https://aevia.at/collections |
+| German home | https://aevia.at/de/ |
+| Waitlist | https://aevia.at/waitlist |
 | Customer preview | https://aevia.at/pages/customer-preview?token=XXXX |
 
 **Pre-launch state (until ~Sep 2026):**
@@ -29,7 +35,7 @@ Handy URLs for the website, both staff engines, the dashboard, and the customer 
 
 | Page | URL |
 |------|-----|
-| Home | https://aevia-test.pages.dev/pages/home |
+| Home | https://aevia-test.pages.dev/ |
 | Order form (works here) | https://aevia-test.pages.dev/pages/order |
 | Staff — Dashboard | https://aevia-test.pages.dev/pages/staff/dashboard |
 | Staff — Template engine | https://aevia-test.pages.dev/pages/staff/template-engine |
