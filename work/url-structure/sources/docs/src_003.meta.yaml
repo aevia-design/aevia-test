@@ -1,0 +1,24 @@
+schema_version: "1.0"
+id: src_003
+title: "Cool URIs Don't Change"
+source_type: documentation
+url: "https://www.w3.org/Provider/Style/URI"
+authors: ["Tim Berners-Lee"]
+publisher: "W3C"
+publication_date: "1998"
+file_path: "sources/docs/src_003.md"
+content_hash: "sha256:f809f818a54b6183bbf1e71e5ee3adee3d923f168a8c83082c030180ec142fe4"
+radar:
+  relevance: 5
+  authority: 5
+  date: 3
+  accuracy: 5
+  rationale: 5
+  notes: "The foundational text on URL/URI permanence, directly requested by user brief; author is the inventor of the Web, hosted on W3C; dated 1998 but its principles are explicitly still cited/endorsed by W3C and the field (date score lowered for currency of specific web tech, not validity of principle)."
+reliability_score: 0.92
+provenance:
+  collected_by: source-collector-agent
+  collection_method: WebFetch (summarized extract)
+  collected_at: "2026-09-23"
+  task_id: url-structure
+  notes: "Question 3 core source (cost of URL changes, redirect philosophy)."

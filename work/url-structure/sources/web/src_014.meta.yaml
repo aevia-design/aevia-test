@@ -1,0 +1,24 @@
+schema_version: "1.0"
+id: src_014
+title: "Real-world observation: Journi URL structure"
+source_type: web_page
+url: "https://www.journiapp.com/"
+authors: ["indirect observation via search snippets"]
+publisher: "Journi (own site, observed indirectly)"
+publication_date: "2026-09-23"
+file_path: "sources/web/src_014.md"
+content_hash: "sha256:2d7c0ae377002306b735d2e4242dc0e1300973da1df7e16d327df8eb0b68f01b"
+radar:
+  relevance: 4
+  authority: 2
+  date: 4
+  accuracy: 2
+  rationale: 3
+  notes: "Direct WebFetch failed (TLS certificate mismatch on journiapp.com/journi.com, resolving to a Pantheon hosting cert) — URLs are taken from search-engine-indexed snippets, not verified against live HTML. Kept as a useful counter-example (cryptic short codes vs descriptive slugs) but flagged as lower-confidence; below the 0.6 threshold if scored strictly, retained here for completeness and marked for exclusion from any high-confidence claim without re-verification."
+reliability_score: 0.6
+provenance:
+  collected_by: source-collector-agent
+  collection_method: WebSearch snippets (WebFetch failed — cert error)
+  collected_at: "2026-09-23"
+  task_id: url-structure
+  notes: "Question 6 data point; borderline reliability — flag for review/re-verification before citing as fact."

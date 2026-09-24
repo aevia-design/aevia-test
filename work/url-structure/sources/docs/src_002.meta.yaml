@@ -1,0 +1,24 @@
+schema_version: "1.0"
+id: src_002
+title: "Ecommerce URL Structure Best Practices"
+source_type: documentation
+url: "https://developers.google.com/search/docs/specialty/ecommerce/designing-a-url-structure-for-ecommerce-sites"
+authors: ["Google Search Central"]
+publisher: "Google"
+publication_date: "unavailable"
+file_path: "sources/docs/src_002.md"
+content_hash: "sha256:8c8f3225bffce551d6a843f5393eca01c7fa87c7cea25d1b4e06ee107e5df7e8"
+radar:
+  relevance: 5
+  authority: 5
+  date: 4
+  accuracy: 5
+  rationale: 5
+  notes: "Official Google guidance directly relevant to product-page path segments (Aevia is ecommerce-adjacent); no explicit last-updated date visible in fetch."
+reliability_score: 0.96
+provenance:
+  collected_by: source-collector-agent
+  collection_method: WebFetch (summarized extract)
+  collected_at: "2026-09-23"
+  task_id: url-structure
+  notes: "Question 2 core source, especially re: /pages/ as a meaningless prefix vs descriptive slugs."
