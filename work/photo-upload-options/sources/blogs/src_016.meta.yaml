@@ -1,0 +1,42 @@
+source_id: "src_016"
+title: "Personal Cloud Storage Usage: How Many People Use The Cloud? (2025)"
+url: "https://threadgoldconsulting.com/research/personal-cloud-storage-usage"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Threadgold Consulting"]
+publication_date: "2025"
+source_type: "blog"
+format: "markdown"
+file_path: "sources/blogs/src_016.md"
+content_hash: "sha256:1e6dff69b88f0bd7bc9bdf83651724d3870a6da0d0eb5ff1e839cb7690e94e10"
+metadata_version: "1.0"
+
+blog_name: "Threadgold Consulting Research"
+description: "Market-research roundup on personal cloud storage adoption, multi-service usage patterns, and reasons for storing photos in the cloud."
+topics: ["cloud storage adoption", "Google Photos", "Dropbox", "iCloud", "consumer behaviour"]
+
+radar_assessment:
+  reliability_score: 0.6
+  relevance:
+    score: 5
+    notes: "Directly addresses research question 2 (where customers' photos actually live)"
+  authority:
+    score: 2
+    notes: "Consultancy research roundup, methodology/primary sources not disclosed in the retrieved snippet"
+  date:
+    score: 4
+    notes: "2025 dataset, current"
+  accuracy:
+    score: 2
+    notes: "Figures not independently verified; treat as directional"
+  rationale:
+    score: 2
+    notes: "Consultancy content may have a promotional angle for its own services; no disclosed methodology"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebSearch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Above the 0.6 threshold but only marginally; recommend treating figures as directional/illustrative rather than precise in any synthesis."

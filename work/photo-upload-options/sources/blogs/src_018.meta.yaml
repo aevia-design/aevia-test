@@ -1,0 +1,42 @@
+source_id: "src_018"
+title: "12 File Upload UI Patterns That Actually Improve Completion Rates"
+url: "https://blog.filestack.com/file-upload-ui-patterns-improve-completion-rates/"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Filestack"]
+publication_date: "unknown"
+source_type: "blog"
+format: "markdown"
+file_path: "sources/blogs/src_018.md"
+content_hash: "sha256:ec26d13486757c290399b0b180173a602994b05573256549ebe26b7bd760e4ce"
+metadata_version: "1.0"
+
+blog_name: "Filestack Blog"
+description: "Vendor blog post consolidating file-upload UX best practices and common causes of upload abandonment: progress feedback, retry-ability, drag-and-drop, mobile experience."
+topics: ["file upload UX", "abandonment", "progress indicators", "drag-and-drop"]
+
+radar_assessment:
+  reliability_score: 0.56
+  relevance:
+    score: 5
+    notes: "Directly addresses research question 4 on upload friction and abandonment"
+  authority:
+    score: 2
+    notes: "Vendor content-marketing blog (Filestack sells an upload-widget product), not an independent research body"
+  date:
+    score: 3
+    notes: "No date shown, general best-practice content ages slowly"
+  accuracy:
+    score: 2
+    notes: "No primary data, sample size, or citations given for the abandonment causes named"
+  rationale:
+    score: 2
+    notes: "Vendor content marketing, likely written to promote Filestack's own upload-widget product"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebSearch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "No independent Baymard/NN-g primary research on file-upload-specific friction was found despite multiple targeted searches (Baymard's public content on this exact topic could not be located; NN/g content found was generic heuristics, not upload-specific, and was excluded as too tangential). This vendor blog was the best available substitute and is flagged as the weakest-evidence source in the collection; a synthesis step should treat its claims as plausible but unverified."

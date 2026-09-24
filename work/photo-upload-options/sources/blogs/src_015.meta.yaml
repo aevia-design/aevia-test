@@ -1,0 +1,42 @@
+source_id: "src_015"
+title: "Instagram API Deprecation: Manual Content Import Ending Dec 4 [2024]"
+url: "https://memorykpr.com/blog/instagram-api-deprecation-manual-import-ending-dec-4-2024/"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["memoryKPR"]
+publication_date: "2024-12"
+source_type: "blog"
+format: "markdown"
+file_path: "sources/blogs/src_015.md"
+content_hash: "sha256:c22baca0bc974957146697e99e99e1bff40df30d9fb0589556c0ea03a7d8c62d"
+metadata_version: "1.0"
+
+blog_name: "memoryKPR Blog"
+description: "Report on the 4 December 2024 end-of-life of the Instagram Basic Display API, ending personal-account Instagram photo import for third-party apps, with a named casualty (Day One app)."
+topics: ["Instagram Basic Display API", "Meta API deprecation", "third-party import", "December 2024"]
+
+radar_assessment:
+  reliability_score: 0.76
+  relevance:
+    score: 5
+    notes: "Directly and precisely dates the Instagram import shutdown central to research questions 1 and 3"
+  authority:
+    score: 3
+    notes: "Independent industry blog, not an official Meta source, but content is specific and verifiable"
+  date:
+    score: 5
+    notes: "Directly dated to the event (December 2024)"
+  accuracy:
+    score: 4
+    notes: "Corroborates and is corroborated by src_006 (Chatbooks), independent convergence increases confidence"
+  rationale:
+    score: 4
+    notes: "Informational blog post, no commercial stake evident"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebSearch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Corroborates src_006 from an independent source; both describe the same Dec 2024 Meta API shutdown."

@@ -1,0 +1,42 @@
+source_id: "src_004"
+title: "Abschaltung von Google Fotos (CEWE Community forum thread)"
+url: "https://www.cewe-community.com/forum/fb/viewtopic.php?f=55&t=16635"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["CEWE Community (forum moderator/staff post)"]
+publication_date: "2025-04-04"
+source_type: "web_page"
+format: "markdown"
+file_path: "sources/web/src_004.md"
+content_hash: "sha256:80b3f9223dfdd3978db2dff705ba2c2b7714330306f5e86ad918a2e1244cfec0"
+metadata_version: "1.0"
+
+description: "CEWE community forum announcement that Google Photos could no longer be directly integrated into CEWE's ordering systems as of 1 April 2025, due to Google API/security changes."
+site_name: "CEWE Community Forum"
+topics: ["Google Photos API removal", "CEWE", "cloud integration breakage", "April 2025"]
+
+radar_assessment:
+  reliability_score: 0.8
+  relevance:
+    score: 5
+    notes: "Direct, dated evidence of a competitor's cloud integration breaking due to a platform API change"
+  authority:
+    score: 3
+    notes: "Community/support forum post rather than an official press release, but content is corroborated by Google's own official changelog (src_011)"
+  date:
+    score: 5
+    notes: "Dated 2025-04-04, directly aligned with the 31 March 2025 Google API cutover"
+  accuracy:
+    score: 4
+    notes: "Specific dates and platform-by-platform impact described; consistent with independently-sourced Google documentation"
+  rationale:
+    score: 4
+    notes: "Informational customer-service announcement, minimal spin"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebFetch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Direct WebFetch succeeded. Cross-check against src_011 (Google's official changelog) confirms the underlying platform change."

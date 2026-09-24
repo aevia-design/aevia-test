@@ -1,0 +1,42 @@
+source_id: "src_014"
+title: "Overview of the Google Picker"
+url: "https://developers.google.com/workspace/drive/picker/guides/overview"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Google"]
+publication_date: "unknown"
+source_type: "documentation"
+format: "markdown"
+file_path: "sources/docs/src_014.md"
+content_hash: "sha256:907486c64c6585287d2d608171122e3cf3dca621f7265897e2ba69cf229ae11b"
+metadata_version: "1.0"
+
+product_name: "Google Picker API (Drive)"
+doc_version: "current"
+topics: ["Google Drive Picker", "OAuth", "web component", "file selection"]
+
+radar_assessment:
+  reliability_score: 0.76
+  relevance:
+    score: 5
+    notes: "Directly answers Google Drive integration technical/cost facts for comparison against Dropbox Chooser"
+  authority:
+    score: 5
+    notes: "Official first-party Google developer documentation"
+  date:
+    score: 4
+    notes: "Current documentation, no specific date shown"
+  accuracy:
+    score: 3
+    notes: "Retrieved via WebSearch snippet synthesis rather than raw WebFetch"
+  rationale:
+    score: 4
+    notes: "Neutral technical documentation"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebSearch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Content synthesized from WebSearch results across multiple related Google Picker doc pages, not a single raw fetch."

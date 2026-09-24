@@ -1,0 +1,42 @@
+source_id: "src_009"
+title: "Select photos from other apps (Popsa photo sources)"
+url: "https://support.popsa.com/hc/en-gb/articles/360014472298-Select-photos-from-other-apps"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Popsa (help center)"]
+publication_date: "unknown"
+source_type: "web_page"
+format: "markdown"
+file_path: "sources/web/src_009.md"
+content_hash: "sha256:cfa561b91bb43daece6fb1f90a780f49a7c60be39cd05f99ec1601f463d6ca9a"
+metadata_version: "1.0"
+
+description: "Popsa app documentation indicating direct integration with Google Photos, Dropbox, and Facebook/Instagram as photo sources within its native mobile app."
+site_name: "Popsa Help Centre"
+topics: ["Popsa", "Dropbox integration", "Google Photos", "app-first photo picker"]
+
+radar_assessment:
+  reliability_score: 0.6
+  relevance:
+    score: 5
+    notes: "The only source found where a named competitor explicitly integrates Dropbox as a working source"
+  authority:
+    score: 4
+    notes: "Official vendor help center"
+  date:
+    score: 3
+    notes: "No date shown"
+  accuracy:
+    score: 2
+    notes: "Direct WebFetch returned HTTP 403; content is a WebSearch synthesis, unverified against raw page"
+  rationale:
+    score: 4
+    notes: "Descriptive support/marketing content"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebSearch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Direct WebFetch returned HTTP 403 Forbidden. Important caveat noted in source content: Popsa is a native app, which has OS-level access unavailable to a pure web order form, limiting direct comparability to Aevia's flow."

@@ -1,0 +1,42 @@
+source_id: "src_012"
+title: "Updates to the Google Photos APIs: Picker API launch and Library API changes"
+url: "https://developers.googleblog.com/en/google-photos-picker-api-launch-and-library-api-updates/"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Google Developers Blog"]
+publication_date: "2025"
+source_type: "blog"
+format: "markdown"
+file_path: "sources/docs/src_012.md"
+content_hash: "sha256:b96c8a0ace1ed8bc7986361e2829d1cb77beb6acb4c07aee93057b53edc9a128"
+metadata_version: "1.0"
+
+blog_name: "Google Developers Blog"
+description: "Official Google announcement of the Photos Picker API launch alongside Library API scope removals."
+topics: ["Google Photos Picker API", "Library API", "developer announcement"]
+
+radar_assessment:
+  reliability_score: 0.84
+  relevance:
+    score: 5
+    notes: "Corroborates and contextualizes the core technical fact for research question 3"
+  authority:
+    score: 5
+    notes: "Official Google Developers Blog"
+  date:
+    score: 4
+    notes: "2025 announcement, current"
+  accuracy:
+    score: 3
+    notes: "Retrieved via WebSearch snippet rather than raw WebFetch"
+  rationale:
+    score: 4
+    notes: "Official announcement, mild framing toward privacy/security rationale"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebSearch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Corroborates src_011 (official reference docs) from a second official Google channel."

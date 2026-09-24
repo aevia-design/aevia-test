@@ -1,0 +1,42 @@
+source_id: "src_003"
+title: "Aus der Cloud ins CEWE FOTOBUCH"
+url: "https://www.cewe.de/inspiration/tutorial-aus-der-cloud-ins-cewe-fotobuch.html"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["CEWE"]
+publication_date: "unknown"
+source_type: "web_page"
+format: "markdown"
+file_path: "sources/web/src_003.md"
+content_hash: "sha256:92c49088c29be60bb909100150633ca8ab2273a764fd263f9530def36d66174e"
+metadata_version: "1.0"
+
+description: "CEWE tutorial on importing photos from cloud sources (Dropbox, CEWE myPhotos, formerly Google Photos) into the CEWE Fotowelt desktop software."
+site_name: "CEWE"
+topics: ["CEWE Fotobuch", "cloud photo import", "Dropbox", "desktop software", "Austria Germany market leader"]
+
+radar_assessment:
+  reliability_score: 0.68
+  relevance:
+    score: 5
+    notes: "Directly documents CEWE's cloud source integrations, a named required competitor"
+  authority:
+    score: 4
+    notes: "Official CEWE marketing/inspiration page"
+  date:
+    score: 2
+    notes: "No date shown; likely predates the April 2025 Google Photos breakage documented in src_004, so partially superseded"
+  accuracy:
+    score: 3
+    notes: "Retrieved via search snippet synthesis rather than raw fetch"
+  rationale:
+    score: 4
+    notes: "Marketing/how-to content with mild promotional framing but factual on mechanics"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebSearch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Content is a WebSearch snippet synthesis, not a raw page fetch. Read alongside src_004 for the 2025 update that superseded the Google Photos portion of this tutorial."

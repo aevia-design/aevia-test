@@ -1,0 +1,42 @@
+source_id: "src_017"
+title: "121 iPhone Storage & Photo Statistics (2026)"
+url: "https://dblabsapps.com/statistics/iphone-storage-photos-statistics/"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["DB Labs"]
+publication_date: "2026"
+source_type: "blog"
+format: "markdown"
+file_path: "sources/blogs/src_017.md"
+content_hash: "sha256:e25024b6c750abbcfea44ea7cad611751e27110043e9f1797ab92b15a70740f2"
+metadata_version: "1.0"
+
+blog_name: "DB Labs"
+description: "Statistics roundup on iPhone storage habits and photo volume, including the finding that ~75% of iPhone owners never back up photos beyond iCloud/on-device storage."
+topics: ["iCloud Photos", "iPhone", "camera roll", "photo volume statistics"]
+
+radar_assessment:
+  reliability_score: 0.52
+  relevance:
+    score: 5
+    notes: "Directly addresses research question 2 for the iPhone segment of customers"
+  authority:
+    score: 2
+    notes: "Statistics-aggregator/app-marketing site, not a primary research body; compiled from unnamed sources"
+  date:
+    score: 4
+    notes: "2026-dated roundup, current"
+  accuracy:
+    score: 1
+    notes: "No disclosed methodology or citations for the specific figures reported; aggregator format increases risk of stale or miscited numbers"
+  rationale:
+    score: 1
+    notes: "Likely produced to drive traffic/app installs; treat headline figures skeptically"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebSearch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Just above the 0.5 minimum; flagged for review per skill guidance. Included only because it corroborates (directionally) the more general finding in src_016. If a stronger primary study on iPhone/iCloud photo habits is found later, prefer that source over this one."

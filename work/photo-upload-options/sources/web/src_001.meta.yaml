@@ -1,0 +1,42 @@
+source_id: "src_001"
+title: "How can I upload from 3rd party sites such as Google Photos, Facebook, Instagram and SmugMug?"
+url: "https://help.mixbook.com/how-can-i-upload-from-3rd-party-sites-such-as-google-photos-facebook-instagram-and-smugmug-H1hMtMiVB"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Mixbook (help center)"]
+publication_date: "unknown"
+source_type: "web_page"
+format: "markdown"
+file_path: "sources/web/src_001.md"
+content_hash: "sha256:c60b3597b6bd2bb538f35bcb60056fd8dbbfb0ff9dc51559c8132d546c88cf86"
+metadata_version: "1.0"
+
+description: "Mixbook help-center article listing supported third-party photo upload sources: Google Photos, Facebook, Instagram, SmugMug."
+site_name: "Mixbook Help Center"
+topics: ["photo book upload", "third-party photo sources", "Google Photos", "Facebook", "Instagram", "SmugMug"]
+
+radar_assessment:
+  reliability_score: 0.68
+  relevance:
+    score: 5
+    notes: "Directly answers which cloud/social sources a competitor offers"
+  authority:
+    score: 4
+    notes: "Official vendor help center, but content reconstructed from search snippets not a raw fetch"
+  date:
+    score: 3
+    notes: "No publication date shown; content could be from any recent year"
+  accuracy:
+    score: 3
+    notes: "Not independently verified against raw page; corroborated in part by related Mixbook articles surfaced in same search"
+  rationale:
+    score: 5
+    notes: "Vendor support documentation, purely descriptive, no persuasive intent"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebSearch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Direct WebFetch not attempted for this URL; content is WebSearch's synthesized snippet of the help-center page and related articles in the same category."

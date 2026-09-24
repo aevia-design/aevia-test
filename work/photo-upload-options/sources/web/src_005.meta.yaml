@@ -1,0 +1,42 @@
+source_id: "src_005"
+title: "Uploading Images / Uploading Photos with Google Photos"
+url: "https://help.artifactuprising.com/hc/en-us/articles/360000290332-Uploading-Images"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Artifact Uprising (help center)"]
+publication_date: "unknown"
+source_type: "web_page"
+format: "markdown"
+file_path: "sources/web/src_005.md"
+content_hash: "sha256:801734cc1bac7b7512f5d3d65ed3fad585b625590ca09df0ed10be131658e48d"
+metadata_version: "1.0"
+
+description: "Artifact Uprising help-center content on supported upload sources (device, Google Photos, QR mobile handoff) and explicit non-support of direct Instagram import."
+site_name: "Artifact Uprising Help Center"
+topics: ["photo upload", "Google Photos", "Instagram not supported", "file formats", "40MB limit"]
+
+radar_assessment:
+  reliability_score: 0.64
+  relevance:
+    score: 5
+    notes: "Directly relevant; Artifact Uprising is Aevia's own stated design/positioning reference"
+  authority:
+    score: 4
+    notes: "Official vendor help center"
+  date:
+    score: 3
+    notes: "No date shown"
+  accuracy:
+    score: 2
+    notes: "Direct WebFetch returned HTTP 403; content reconstructed entirely from WebSearch snippet synthesis, unverified against raw page"
+  rationale:
+    score: 5
+    notes: "Purely descriptive vendor support content"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebSearch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Direct WebFetch attempted twice (both articles), both returned HTTP 403 Forbidden. Retained at reduced accuracy score because content is a search-engine synthesis, not independently confirmed."

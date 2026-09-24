@@ -1,0 +1,42 @@
+source_id: "src_007"
+title: "Why has adding Google Photos Changed?"
+url: "https://help.chatbooks.com/en/articles/10760721-why-has-adding-google-photos-changed"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Chatbooks (help center)"]
+publication_date: "unknown"
+source_type: "web_page"
+format: "markdown"
+file_path: "sources/web/src_007.md"
+content_hash: "sha256:a8be30ea22aa0bcaea446664c5a93c672184ae25588219934886b04418b6d21b"
+metadata_version: "1.0"
+
+description: "Chatbooks help article detailing real UX friction in its Google Photos integration: one-hour session limits, no in-app warning, no cross-session memory, 60-photo caps."
+site_name: "Chatbooks Help Center"
+topics: ["Google Photos", "session timeout", "upload friction", "UX limitations"]
+
+radar_assessment:
+  reliability_score: 0.88
+  relevance:
+    score: 5
+    notes: "Highly specific, directly usable evidence of cloud-picker friction, central to research question 4"
+  authority:
+    score: 4
+    notes: "Official vendor help center"
+  date:
+    score: 4
+    notes: "References a mid-2025 interface change, current"
+  accuracy:
+    score: 5
+    notes: "Retrieved via direct WebFetch, specific quoted details captured"
+  rationale:
+    score: 4
+    notes: "Descriptive support content explaining a real limitation to customers"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebFetch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Direct WebFetch succeeded."

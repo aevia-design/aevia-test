@@ -1,0 +1,42 @@
+source_id: "src_002"
+title: "Uploading Photos Guide & Resolution Recommendations"
+url: "https://support.shutterfly.com/s/article/uploading-photos-guide"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Shutterfly (support)"]
+publication_date: "unknown"
+source_type: "web_page"
+format: "markdown"
+file_path: "sources/web/src_002.md"
+content_hash: "sha256:33b19c1f9b52966f8936754ca27172ee74cec13d8074f51c923b0ed537d296c9"
+metadata_version: "1.0"
+
+description: "Official Shutterfly support article stating supported upload sources (device, Google Photos, Amazon Photos, Facebook) and explicitly excluding Dropbox and Google Drive."
+site_name: "Shutterfly Support"
+topics: ["photo upload", "Dropbox not supported", "Google Drive not supported", "Google Photos", "Facebook", "file formats"]
+
+radar_assessment:
+  reliability_score: 0.92
+  relevance:
+    score: 5
+    notes: "Directly and explicitly answers whether a major competitor supports Dropbox/Drive"
+  authority:
+    score: 5
+    notes: "Official vendor support documentation, primary source"
+  date:
+    score: 4
+    notes: "Current live support article, no reason to suspect staleness though exact revision date not shown"
+  accuracy:
+    score: 5
+    notes: "Fetched directly via WebFetch, direct quote captured"
+  rationale:
+    score: 5
+    notes: "Purely descriptive support content, no persuasive intent"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebFetch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Direct WebFetch succeeded; content captures a direct quote on Dropbox/Drive exclusion."

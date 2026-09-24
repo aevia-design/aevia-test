@@ -1,0 +1,42 @@
+source_id: "src_013"
+title: "Chooser (Dropbox pre-built component documentation)"
+url: "https://docs.dropboxapi.com/dropbox-api/docs/pre-built-components/chooser"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Dropbox"]
+publication_date: "unknown"
+source_type: "documentation"
+format: "markdown"
+file_path: "sources/docs/src_013.md"
+content_hash: "sha256:006eff5790874c71c6f907dbbc1e7665f2ee457309d519c450b56dc3818fde95"
+metadata_version: "1.0"
+
+product_name: "Dropbox Chooser"
+doc_version: "current"
+topics: ["Dropbox Chooser", "no OAuth", "file picker", "web integration"]
+
+radar_assessment:
+  reliability_score: 1.0
+  relevance:
+    score: 5
+    notes: "Directly answers research question 3's Dropbox technical/cost facts"
+  authority:
+    score: 5
+    notes: "Official first-party Dropbox API documentation"
+  date:
+    score: 5
+    notes: "Current live documentation page"
+  accuracy:
+    score: 5
+    notes: "Primary source, retrieved via direct WebFetch with redirect followed"
+  rationale:
+    score: 5
+    notes: "Neutral technical documentation"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebFetch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "www.dropbox.com/developers/chooser issued a 301 redirect to docs.dropboxapi.com; redirected URL fetched directly."

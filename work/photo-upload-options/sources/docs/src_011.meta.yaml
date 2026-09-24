@@ -1,0 +1,42 @@
+source_id: "src_011"
+title: "Updates to the Google Photos APIs"
+url: "https://developers.google.com/photos/support/updates"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Google"]
+publication_date: "2025"
+source_type: "documentation"
+format: "markdown"
+file_path: "sources/docs/src_011.md"
+content_hash: "sha256:a8f3e713f512775e43d28c58c56180993593d12e9d477c3262dfa148574917b7"
+metadata_version: "1.0"
+
+product_name: "Google Photos APIs (Library API, Picker API)"
+doc_version: "post-2025-03-31 changes"
+topics: ["Google Photos Picker API", "Library API deprecation", "OAuth scopes", "photo picker"]
+
+radar_assessment:
+  reliability_score: 1.0
+  relevance:
+    score: 5
+    notes: "Directly and comprehensively answers research question 3's core technical fact about Google Photos API restrictions"
+  authority:
+    score: 5
+    notes: "Official first-party Google developer documentation"
+  date:
+    score: 5
+    notes: "Current, describes the live post-March-2025 state of the API"
+  accuracy:
+    score: 5
+    notes: "Primary source, retrieved via direct WebFetch"
+  rationale:
+    score: 5
+    notes: "Neutral technical documentation"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebFetch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Direct WebFetch succeeded; highest-authority source in the collection. Underlies the CEWE breakage (src_004) and Chatbooks friction (src_006, src_007)."

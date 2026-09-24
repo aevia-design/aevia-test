@@ -1,0 +1,42 @@
+source_id: "src_006"
+title: "Instagram as a Photo Source"
+url: "https://help.chatbooks.com/en/articles/10139802-instagram-as-a-photo-source"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Chatbooks (help center)"]
+publication_date: "unknown"
+source_type: "web_page"
+format: "markdown"
+file_path: "sources/web/src_006.md"
+content_hash: "sha256:3ee66c529e849b972f202b5b88faee7a0c6dd8e47e73f650937b85b8f30db334"
+metadata_version: "1.0"
+
+description: "Chatbooks help-center confirmation that Meta removed third-party Instagram API access in late 2024, killing direct Instagram photo import."
+site_name: "Chatbooks Help Center"
+topics: ["Instagram API removal", "Meta", "photo book upload sources", "Dropbox", "Flickr"]
+
+radar_assessment:
+  reliability_score: 0.76
+  relevance:
+    score: 5
+    notes: "Direct, named evidence of an Instagram integration removal at a competitor"
+  authority:
+    score: 4
+    notes: "Official vendor help center"
+  date:
+    score: 4
+    notes: "Describes a late-2024 event; corroborated independently by src_015 (Dec 2024 Instagram Basic Display API shutdown)"
+  accuracy:
+    score: 3
+    notes: "Content is a WebSearch snippet synthesis of the help page, not a raw fetch, but corroborated by an independent source"
+  rationale:
+    score: 4
+    notes: "Descriptive vendor support content"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebSearch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Corroborated by src_015 (memoryKPR, independent source on the same Dec 2024 Instagram API shutdown)."

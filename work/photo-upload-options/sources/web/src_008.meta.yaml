@@ -1,0 +1,42 @@
+source_id: "src_008"
+title: "Uploading photos from Facebook or Google Photos / Managing Photo Sources"
+url: "https://support.snapfish.com/hc/en-us/articles/900001965086-Uploading-photos-from-Facebook-or-Google-Photos"
+fetch_date: "2026-09-24T00:00:00Z"
+authors: ["Snapfish (support)"]
+publication_date: "unknown"
+source_type: "web_page"
+format: "markdown"
+file_path: "sources/web/src_008.md"
+content_hash: "sha256:223c9c488e6bee86af1e471840da5883a523d4f7b63301ab14907d5cbdee9d46"
+metadata_version: "1.0"
+
+description: "Snapfish support content confirming device, Facebook, and Google Photos as supported upload sources; no evidence of Dropbox/Drive support."
+site_name: "Snapfish Support"
+topics: ["photo upload", "Google Photos", "Facebook", "Dropbox not found"]
+
+radar_assessment:
+  reliability_score: 0.6
+  relevance:
+    score: 5
+    notes: "Directly relevant, named required competitor"
+  authority:
+    score: 4
+    notes: "Official vendor support content"
+  date:
+    score: 3
+    notes: "No date shown"
+  accuracy:
+    score: 2
+    notes: "Direct WebFetch of the Managing-Photo-Sources page returned HTTP 403; content is a WebSearch synthesis of two articles, unverified against raw page"
+  rationale:
+    score: 4
+    notes: "Descriptive support content"
+  assessed_at: "2026-09-24T00:00:00Z"
+  assessed_by: "source-collector-agent-v1.0"
+
+provenance:
+  collected_by: "source-collector-agent-v1.0"
+  collection_method: "WebSearch"
+  collected_at: "2026-09-24T00:00:00Z"
+  task_id: "photo-upload-options"
+  notes: "Direct WebFetch of the Managing-Photo-Sources article returned HTTP 403 Forbidden; retained at reduced accuracy given indirect retrieval, but corroborates the consistent Google Photos + Facebook, no-Dropbox/Drive pattern seen at Shutterfly and Artifact Uprising."
