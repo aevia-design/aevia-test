@@ -1,6 +1,7 @@
 # Cloud Build uploads the whole context; the Dockerfile only needs
 # services/pdf-renderer/, scripts/export-pdf.js, and assets/. Exclude the rest
-# to keep uploads small and builds fast.
+# to keep uploads small and builds fast. functions/pdf-render-utils.js is the one
+# exception: the renderer requires it (#138).
 .git
 **/node_modules
 sessions
@@ -10,6 +11,7 @@ tests
 motif-engine
 pages
 functions
+!functions/pdf-render-utils.js
 pdf-out
 *.md
 assets/mockup example
