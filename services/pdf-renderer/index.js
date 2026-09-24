@@ -260,9 +260,9 @@ async function handleGenerate(body) {
   // 4. Render PDF (uses the ported export-pdf.js logic). Throttle progress writes
   //    to ~1 per 1.5s so we don't hammer Firestore on fast spreads.
   // Cancel checkpoint 2/3: piggybacked on the same throttle as the progress write
-  // (not a read per spread) — export-pdf.js swallows a thrown progressCb error, so
-  // this can only flag the render for the final checkpoint below, not abort the
-  // in-flight render loop early.
+  // (not a read per spread). Throws an error marked renderCancelled, which
+  // export-pdf.js lets through (every other progress error it swallows), so the
+  // render stops within ~1.5s instead of finishing and being discarded.
   let lastWrite = 0;
   let cancelledDuringRender = false;
   const progressCb = async (done, tot) => {
@@ -271,18 +271,23 @@ async function handleGenerate(body) {
     lastWrite = now;
     if (await checkCancelled(orderNumber)) {
       cancelledDuringRender = true;
-      return;
+      throw Object.assign(new Error('render cancelled'), { renderCancelled: true });
     }
     await writeStatus(orderNumber, { status: 'rendering', done, total: tot, pageCount: state.pageCount });
   };
-  const result = await generatePdfFromFirestore({
-    ordNum:    orderNumber,
-    stateData: state,
-    bufferMap,
-    fName:     folderName,
-    progressCb,
-    pdfMode,
-  });
+  let result;
+  try {
+    result = await generatePdfFromFirestore({
+      ordNum:    orderNumber,
+      stateData: state,
+      bufferMap,
+      fName:     folderName,
+      progressCb,
+      pdfMode,
+    });
+  } catch (err) {
+    if (!err || !err.renderCancelled) throw err;
+  }
 
   // Cancel checkpoint 3/3: immediately before uploadPdf. This is the property that
   // matters — nothing is uploaded, so the previous PDF survives a cancelled
