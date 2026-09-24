@@ -44,10 +44,16 @@ npx firebase deploy --only functions      # from the PROJECT ROOT, not functions
 `Deploy complete!` line** - check for it, not `$?`. See LEARNINGS.
 
 ```powershell
-gcloud run deploy aevia-pdf-renderer --source C:/Users/evgmy/aevia-test --region europe-west1 --memory 8Gi --cpu 4 --timeout 900 --allow-unauthenticated --project aevia-uploads --quiet
+gcloud run deploy aevia-pdf-renderer --source C:/Users/evgmy/aevia-test --region europe-west1 --memory 8Gi --cpu 4 --timeout 900 --concurrency 1 --allow-unauthenticated --project aevia-uploads --quiet
 ```
 (Redeploy the renderer BEFORE generating PDFs if template data or SVGs changed, or you bake
 stale artwork.)
+⚠ **`--concurrency 1` added S193 (#138) — NOT YET DEPLOYED.** The service currently runs at the
+default `containerConcurrency: 160`, so several renders could share one instance's 8 GiB even
+though a book is 1-4 GB of photos (unconfirmed whether this has ever caused an OOM). No idle
+cost either way (billing is per request); 3 parallel orders just use 3 of the 10 max instances
+instead of possibly 1. Run the command above (with the flag) next time the renderer is
+redeployed for any reason.
 
 ## Still open on the print path
 ⚠ **`PRINTSMARTER_LIVE` is `true` and `submitPrintOrder` is deployed** - "Send to Printsmarter"
