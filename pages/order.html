@@ -1428,6 +1428,16 @@ function renderLabourFields(slug, meta, fpData) {
   return html;
 }
 
+// The stored value (and the mapCoordinates key) is always the English country
+// name — engines, customer-preview and export-pdf.js all read it, and it is
+// what lands in fpTexts.fp1.countries. `de` on the mapCoordinates entry is a
+// display-only label; a country without one falls back to English, same rule
+// as tdText(). Never blank.
+function countryLabel(name) {
+  const coords = templateData()?.mapCoordinates || {};
+  return (ORDER.language === 'de' && coords[name]?.de) || name;
+}
+
 function renderCountrySelect(slug, meta) {
   const coords = templateData()?.mapCoordinates || {};
   const byRegion = {};
@@ -1438,7 +1448,10 @@ function renderCountrySelect(slug, meta) {
   let opts = `<option value="">${t('map.addCountry')}</option>`;
   Object.keys(byRegion).forEach(r => {
     opts += `<optgroup label="${REGION_LABELS[r] || r}">`;
-    byRegion[r].sort().forEach(name => { opts += `<option value="${name}">${name}</option>`; });
+    byRegion[r]
+      .slice()
+      .sort((a, b) => countryLabel(a).localeCompare(countryLabel(b), ORDER.language === 'de' ? 'de' : 'en'))
+      .forEach(name => { opts += `<option value="${name}">${countryLabel(name)}</option>`; });
     opts += `</optgroup>`;
   });
   const inputStyle = 'background:var(--white);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;';
@@ -1488,7 +1501,7 @@ function addCountry(slug, name) {
   if (state.countries.includes(name)) return;
   if (state.region && region !== state.region) {
     if (errEl) {
-      errEl.textContent = t('map.regionMismatch', { country: name, region: REGION_LABELS[region] || region, trip: REGION_LABELS[state.region] || state.region });
+      errEl.textContent = t('map.regionMismatch', { country: countryLabel(name), region: REGION_LABELS[region] || region, trip: REGION_LABELS[state.region] || state.region });
       errEl.style.display = 'block';
     }
     return;
@@ -1519,7 +1532,7 @@ function renderCountryTags(slug) {
   if (!el) return;
   el.innerHTML = state.countries.map(name => `
     <span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:13px;color:var(--text);">
-      ${name}
+      ${countryLabel(name)}
       <button type="button" onclick="removeCountry('${slug}','${name.replace(/'/g, "\\'")}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;padding:0;">×</button>
     </span>`).join('');
 }
