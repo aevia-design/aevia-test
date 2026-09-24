@@ -1,0 +1,24 @@
+schema_version: "1.0"
+id: src_011
+title: "Google Revises URL Parameter Best Practices"
+source_type: blog
+url: "https://www.searchenginejournal.com/google-revises-url-parameter-best-practices/530814/"
+authors: ["Matt G. Southern"]
+publisher: "Search Engine Journal"
+publication_date: "2024-10-24"
+file_path: "sources/blogs/src_011.md"
+content_hash: "sha256:f497a4e9a86def409401c5bad37f54d3ef3893671b8f882fc35281100934b69b"
+radar:
+  relevance: 3
+  authority: 4
+  date: 4
+  accuracy: 4
+  rationale: 4
+  notes: "Search Engine Journal is a recognised trade-press authority named in the brief, with a named, credentialed staff author and clear date. Relevance to Aevia is lower (parameter formatting is not central to Aevia's static-URL decision) but provides useful corroboration that Google actively maintains and revises this documentation."
+reliability_score: 0.76
+provenance:
+  collected_by: source-collector-agent
+  collection_method: WebFetch (summarized extract)
+  collected_at: "2026-09-23"
+  task_id: url-structure
+  notes: "Minor/contextual source for question 2."

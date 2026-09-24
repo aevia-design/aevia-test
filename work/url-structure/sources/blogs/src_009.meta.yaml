@@ -1,0 +1,24 @@
+schema_version: "1.0"
+id: src_009
+title: "Subdomains vs Subfolders (Subdirectories) for SEO"
+source_type: blog
+url: "https://ahrefs.com/blog/subdomain-vs-subfolder/"
+authors: ["Ahrefs"]
+publisher: "Ahrefs"
+publication_date: "unavailable"
+file_path: "sources/blogs/src_009.md"
+content_hash: "sha256:efda731acc81e4863175176da11de7c9641c53a04249f7e694a509d3ef71b5a0"
+radar:
+  relevance: 4
+  authority: 4
+  date: 4
+  accuracy: 5
+  rationale: 4
+  notes: "Recognised SEO industry authority named in the brief; cites primary Google statements (Cutts, Mueller) and real case studies; some inherent promotional angle (drives traffic to Ahrefs tools) but content itself is even-handed and non-partisan on the actual question."
+reliability_score: 0.84
+provenance:
+  collected_by: source-collector-agent
+  collection_method: WebFetch (summarized extract)
+  collected_at: "2026-09-23"
+  task_id: url-structure
+  notes: "Background for question 2/4 (structural authority consolidation, relevant if /de/ or other subpaths are reconsidered)."

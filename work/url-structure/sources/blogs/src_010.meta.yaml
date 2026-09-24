@@ -1,0 +1,24 @@
+schema_version: "1.0"
+id: src_010
+title: "Trailing Slash / Canonical URL Best Practices (aggregated)"
+source_type: blog
+url: "https://developers.google.com/search/blog/2010/04/to-slash-or-not-to-slash"
+authors: ["Google Search Central Blog; aggregated with Positional, Productive Shop, CSS-Tricks, Ahrefs commentary"]
+publisher: "Mixed (Google primary + secondary SEO blogs)"
+publication_date: "unavailable"
+file_path: "sources/blogs/src_010.md"
+content_hash: "sha256:2d9f32aae3652a697ac1fa3f03e06903f8bf9baf2023d50394f7c1efa245a35e"
+radar:
+  relevance: 4
+  authority: 3
+  date: 3
+  accuracy: 4
+  rationale: 4
+  notes: "Not individually WebFetched — a WebSearch-synthesized aggregation across the Google blog and several secondary SEO sites, so authority/date/accuracy are marked down for lack of a single verifiable primary text. The homepage-trailing-slash-equivalence claim is corroborated across sources and consistent with known Google behaviour. Flagged for review; retained because it directly answers question 5's clean-URL/trailing-slash sub-question and no single higher-quality source fully covered it."
+reliability_score: 0.72
+provenance:
+  collected_by: source-collector-agent
+  collection_method: WebSearch (aggregated summary, not individually fetched)
+  collected_at: "2026-09-23"
+  task_id: url-structure
+  notes: "Lower-confidence source — treat homepage/trailing-slash claim as needing verification in Phase 3 if load-bearing for a launch decision."
