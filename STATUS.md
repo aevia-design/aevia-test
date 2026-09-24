@@ -1,37 +1,40 @@
 # Session Status
-_Last updated: 2026-09-23 (session 191)_
-_Context at save: **the backlog is now the Trello board**, and TO-DOS #89 is fully built — Retry
-shipped, German messages shipped. #89 waits only on two live checks by the owner._
+_Last updated: 2026-09-24 (session 192)_
+_Context at save: **12 cards closed in one session**, most built by developer agents and verified
+by Claude on the live rig. **Clean public URLs are live** (`aevia.at/heirloom`, `/de/heirloom`)._
 
 ## Status
-**Session 191 — #89 built end to end; backlog moved to Trello.** Full detail:
-**`sessions/2026-09-23-s191.md`**.
+**Session 192 — backlog sweep.** Full detail: **`sessions/2026-09-24-s192.md`**.
 
 ## Do this first
 **Read the board** (https://trello.com/b/HCrNJRN1/aevia): *In progress*, *Blocked*, top of
 *Next up*. Rules are in CLAUDE.md "Backlog board". At handover, `node scripts/trello-snapshot.mjs`.
 
-**#89 closes on two live checks, both the owner's** (he reports back):
-1. **The stranded test order flips** (created S191 with storage blocked). Expect: dashboard
-   *Upload failed* filter, red line **"Photos failed · customer emailed — follow up"**; inbox
-   **"Your Aevia order AEV-XXX did not finish uploading"**; **no** staff "New Order" email.
-   ⚠ A later successful order from the same address suppresses the email by design.
-2. **Retry on the rig**: block `*://storage.googleapis.com/*` (Chrome DevTools → Request
-   conditions), submit with a DIFFERENT email, remove the rule, press Retry → success screen,
-   order shows New.
-Both green → move #89 to *Done* with a comment (session + commits `c7aa32a`, `90007f4`).
+**Waiting on the owner (he reports back):**
+- **#102 + #67 in one test** — a Scribble order (full-bleed FP2) or Heirloom (FPhim): drag a
+  portrait photo up/down, Ctrl+B one caption word, Save book state, Generate PDF, compare.
+  Crop matches → close #102. Bold on screen but plain in the PDF → Claude blocks Ctrl+B/Ctrl+I.
+- **#124** — owner is creating one German order per template for the DE mockups.
+- **#99** — parked for a proper brief + /solutioning (customer journey). Direction and the open
+  re-send question are on the card.
 
-## What shipped in S191
-- **Retry on the same order** (`c7aa32a`). "Submit again" used to create a second order and
-  strand the first. Retry re-sends only missing slots, **including `neverAttempted`**; confirm
-  only when every slot is in storage; double-click safe; Submit disabled while Retry shows.
-  Mutation-tested against both traps in the brief.
-- **German form, German messages** (`90007f4`). Every JS-built sentence (upload errors, photo
-  refusals, photo counter, low-res warnings, region names, sign-in cancelled) now comes from
-  `order-strings.js`. Technical errors show the generic message. ⚠ German written by Claude —
-  on #123 for the native read. Country names still English → #133.
-- **Trello backlog** + `scripts/trello-snapshot.mjs`; STATUS next-steps became cards #118–#132.
-- qa:order is **35 cases** now; npm test **664**.
+## What shipped in S192
+- **#89 closed** — both live checks green (AEV-101 flipped + emailed; Retry on AEV-102).
+  Upload-failed email now tells the customer to order again and links to the template's product
+  page (`e4e7cdc`).
+- **#111** — a slow photo decode is flagged "Check orientation", never silently guessed; wait
+  60s not 10s (`b3c05d1`).
+- **#116** — failed upload attempts record progress-event count + first/last times (`46028cb`);
+  how to read them: `docs/briefs/upload-failures.md` S192 section.
+- **#84** — "Export book state (JSON)" button + `saveBookState` Cloud Function removed (`b994b27`).
+- **#82 clean public URLs** (`94f5843`, ADR-0010) — 27 `_redirects` 200 rules; EN at root, DE
+  under `/de/`; transactional pages keep `/pages/`. Brief + research: `work/url-structure/`.
+- **#133** — German country names on the DE travel-map form, display-only (`53901e0`).
+- **#78** — Drive/Dropbox + "upload link" promises removed from 16 product pages; build
+  nothing (`c558f15`). Research: `work/photo-upload-options/research_v1.md`.
+- Closed with evidence, no code: #92, #95, #98, #101. New cards: #136 (email design + raw
+  `heirloom-green` in emails), #137 (missing artist portrait).
+- npm test **668**, qa:order **36**.
 
 ```powershell
 npx firebase deploy --only functions      # from the PROJECT ROOT, not functions/
@@ -103,20 +106,6 @@ Owner will apply Beige's coordinates to **Blue, Brown and Green** next.
 5. `functions/caption/caption.js --language de` reproduces engine output locally, no deploy
    needed. It reads `functions/.env` as a fallback — never copy the key to a second file.
 
-## Where TO-DOS #89 stands
-| Piece | State |
-|---|---|
-| 0 · Retry button on the order form | ✅ S191, pushed (`c7aa32a`) — **live check pending** |
-| + German messages on the German form | ✅ S191, pushed (`90007f4`) — owner scope-add |
-| 1 · `upload_failed` + scheduled job | ✅ S190, deployed |
-| 2 · Staff email moved to `confirmUpload` + transaction | ✅ S190, deployed |
-| 3 · Customer email, suppressed on a later success | ✅ S190, deployed |
-| 4 · Failure classification (4 dispositions) | ✅ S190, deployed |
-| 5 · Transition IS the guard, no sent-flag | ✅ S190, deployed |
-| 6 · Side-state, not in `STATUS_SEQUENCE` | ✅ S190, deployed |
-| 7 · `uploadFailureDisposition` on the dashboard | ✅ S190, deployed |
-| **Proven against a real stranded order** | ⏳ live data checked S191 (nothing in scope); **test order stranded, flip not yet seen** |
-
 ## Where Printsmarter stands
 | Piece | State |
 |---|---|
@@ -146,6 +135,18 @@ Google (`200 OK`, `application/pdf`, no auth) — so the **URLs are proven and t
 AEV-095's *preview* alone was 231 MB.
 
 ## Recent decisions
+- **Clean public URLs via rewrite, not a move (S192, owner, ADR-0010)** — `_redirects` 200 rules
+  whose destination has **no `.html`** (with `.html` Cloudflare 308-bounces back to `/pages/`).
+  **No 301 from old `/pages/<public>` addresses** (loops); canonical tags carry SEO. EN at the
+  root, no `/en/`. Internal links are root-absolute, so **local http-server cannot navigate
+  between public pages** (open `/pages/x.html` directly). ⚠ **`wrangler pages dev` is not a
+  faithful test of `_redirects`** — test rewrites on the rig.
+- **Cloud photo sources: build nothing (S192, owner, #78)** — no mainstream competitor offers
+  Drive/Dropbox on a web form; Google Photos is the only plausible one and Google restricted its
+  API in March 2025. Revisit only with evidence of upload abandonment.
+- **#99 direction (S192, owner, NOT built)** — staff cannot edit once the preview link is sent;
+  unlock only on a customer-reported issue. Open: what re-send does to the customer's draft.
+  ⚠ `approveOrder` currently lets a customer approve while the order is in `issue`.
 - **Trello is the canonical backlog (S191, owner)** — TO-DOS.md is a snapshot regenerated at
   handover. Owner owns priority (order of *Next up*, labels, *Dropped*); Claude owns status.
   No WIP limit. Credentials in repo-root `trello.env`, **never `functions/`**.
@@ -308,8 +309,8 @@ The 23-item list that used to live here became cards #118–#132 or was already 
   buffer flush then a wedged connection fits the same data. ⚠ The OneDrive placeholder theory
   weakened: "Free up space" is greyed out on those files, so they are not placeholders.
   A third candidate survives: OneDrive rewrites files during sync and Chrome's `File` is a
-  snapshot tied to modification time. **Next move is instrumentation, not a fix** —
-  `work/upload-file-read/brief.md` is PROVISIONAL and its prevention scope is unjustified.
+  snapshot tied to modification time. **Instrumentation shipped S192 (#116)** — the next real stall answers it; read
+  `docs/briefs/upload-failures.md` S192 section. `work/upload-file-read/brief.md` stays PROVISIONAL.
 - **Is the +6mm nudge right, given it prints as +1mm more on six templates?** Needs two
   templates from different spine families compared on paper.
 - **Has any native speaker read ANY of the German?** Still no. **The single largest unverified
@@ -344,7 +345,6 @@ The 23-item list that used to live here became cards #118–#132 or was already 
 - **Intro letter colour assumed `#7c746e`** — resolved for Beige; confirm with Xenia.
 - **`functions/index.js:1513` claims the dispatch email is "NOT yet wired". It IS wired** and
   emails the customer on any postback that reaches a real order. Stale comment, not fixed.
-- **Pre-13-July Papercut orders have `name`/`year` swapped in Firestore.**
 - **Approval overwrites staff edits blindly.**
 - **Prices live in THREE places** — Stripe, `assets/js/prices.js`, `PRICE_BY_PAGE_COUNT`.
 - **Android is entirely untested on real hardware.**

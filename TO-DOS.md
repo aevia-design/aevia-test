@@ -14,20 +14,11 @@ _Real people place real orders. Anything that strands or silently corrupts an or
 
 | # | Item | Notes |
 |---|------|-------|
-| 89 | Stranded uploads: detect, flip, Retry — all built; two live checks left | **[In progress]** `detectStrandedUploads` is live (hourly, `europe-west1`): `uploading` → **`upload_failed` after 1h**, with a disposition. `confirmUpload` is transactional, the staff "New Order" email moved there, and `createUploadSession` now emails nobody. **Remaining: piece 0, the Retry button** — the cheapest defence (files still in browser memory, typically ONE photo after #112) and the one piece touching `pages/order.html`, so **`npm run qa:order` is mandatory**. ⚠ **Retry must NOT skip `neverAttempted` entries** or it confirms a book with photos missing. ⚠ **`STRANDED_CUTOFF` = 2026-09-22** protects the five QA strandings. ⚠ **The flip is still unproven end-to-end** — needs a fresh stranded order after the cutoff with an inbox we own; **AEV-096 cannot serve**. → `docs/briefs/upload-failure-recovery.md` |
-| 111 | Slow photo decode silently guesses orientation | **[Next up]** `template-engine.html:1473` races a 10s timeout; on timeout it assumes **horizontal**, w=0/h=0. A vertical photo guessed horizontal seats into the wrong slot. Fired once on 51 photos in the S172 E2E run. |
-| 116 | Upload stall: record enough to tell a file fault from a transport fault | **[Next up]** S187 captured the first real failure and **killed the duplicate-`File` hypothesis** without replacing it. `bytesTransferred` is only set inside the progress handler and the count of progress events is never recorded, so "one buffer flush then a wedged connection" and "the file stopped reading" are indistinguishable. Record progress-event count + timestamps and separate the two failure classes. ⚠ `work/upload-file-read/brief.md` is PROVISIONAL — its prevention scope is unjustified; instrumentation is the defensible part. Resumable uploads deliberately excluded (owner). |
-| 90 | Stranded orders have no resume path | **[Next up]** AEV-067/073/074/079, AEV-096. **Partly answered S173** — the Retry button and the detection job are in `docs/briefs/upload-failure-recovery.md`. What stays open is only **self-service resume after the tab has closed** (an emailed link that reopens the order with just the missing slots), deliberately deferred until that brief ships and produces real numbers. Competitors solve this with saved projects, but they are DIY tools and Aevia is done-for-you → [notes](docs/todo-notes.md#90) |
-| 92 | Verify the `confirmUpload` retry fix live | **[Next up]** Fixed S150 (`769b47e`), never tested on the rig. Place a test order; the happy path is what the retry could break → [notes](docs/todo-notes.md#92) |
 | 99 | Approval overwrites staff edits blindly | **[Next up]** No staleness check between `customerUpdatedAt` and the last staff save. Either side can silently discard the other → [notes](docs/todo-notes.md#99) |
-| 95 | Spine geometry for Papercut, Newborn, Wander | **[Next up]** Small per template — **but audit `sections.spine.bgColor` first**, it is now the only source of the spine colour and Tender's was wrong → `work/spine-geometry/brief.md` |
 | 102 | Verify the full-bleed reposition fix in print | **[Next up]** Do at the Printsmarter samples run: reposition on the *overflowing* axis, one order per template → [notes](docs/todo-notes.md#102) |
-| 60 | Clean up QA test orders | **[Next up]** AEV-023, 024, 025, 078, 079, **096** (S173 stall test, stranded at `uploading`). ⚠ Never demo AEV-078 — it carries deliberate injection payloads. |
-| 98 | Papercut orders before 13 July have `name`/`year` swapped | **[Next up]** Likely zero real orders affected. Check, then swap the two Firestore fields → [notes](docs/todo-notes.md#98) |
+| 60 | Clean up QA test orders | AEV-023, 024, 025, 078, 079, **096** (S173 stall test, stranded at `uploading`). ⚠ Never demo AEV-078 — it carries deliberate injection payloads. |
 | 118 | Get a Heirloom order through Printsmarter | Neither test order is Heirloom, so the offset product (`aevia_hardcover_offset`) and the two-product split are unproven. Also owes the S187 print checks: cover photo visible on Heirloom/Tender/Newborn, Tender's spine at 410mm, Scribble captions after the Onest swap, front-panel centring. ⚠ Do NOT use Heirloom Blue (AEV-091) — old off-centre coordinates. |
 | 119 | Send confirm dialog misreports the shipping address | Reads the locally loaded `order.shippingAddress`, so it shows "⚠ NO SHIPPING ADDRESS ON ORDER" exactly when the S188 account fallback is working. Fix (~10 lines): have the confirm call `dryRun` and show the resolved address and its source. Do before the next send. |
-| 120 | Email Printsmarter the remaining open questions | Heirloom paper spec; is `return_address` required; are `product_id_client` / `project_name` free-form; can their fetcher handle a 400 MB PDF; written confirmation of `pages: 40\|80` at `quantity: 1`; cover board and cost impact; geometry in writing (brief §5 item 10). |
-| 121 | Decide whether a 400 MB print PDF is acceptable | AEV-100 inside PDF is 403.91 MB (AEV-071: 176.03). Likely full-res images far beyond 300 dpi at book size. First suspect if a submission succeeds and nothing produces. Own session, not a quick compression hack. Related: #65 (preview PDF size). |
 
 ---
 
@@ -36,26 +27,26 @@ _Customer-visible untruths, legal exposure, and anything that makes the site loo
 
 | # | Item | Notes |
 |---|------|-------|
+| 124 | Germanization Stage 6: DE mockups + gallery swap | **[In progress]** One job — each half is useless without the other. Then the add-on names (key the map off the English `name`, NOT the positional `slug`). Capture reads the DEPLOYED rig: push first. Owner creating one German order per template. → `docs/briefs/germanization.md` |
 | 25 | Terms & Conditions page | **[Blocked]** Minimum: refund/returns. Something must exist before taking payments. EN drafts of all three pages (Impressum, Datenschutz, AGB) written S183 → `work/legal-pages/drafts_en_v1.md`. **Still markdown only: no HTML, not linked from any footer, no DE.** **Resume from `work/legal-pages/plan_v1.md`** (parked S186) — it carries the benchmark findings, the settled decisions and the 5 open owner questions. ⚠ Its Cookies section is only true until #9/#10 ship. |
 | 135 | Ask Printsmarter to push every order status to our API | **[Blocked]** Goal (owner, S191): every order's phases on the dashboard — in production → shipped → delivered — with the time of each change, for analytics and delay reminders ("production delayed", "delivery delayed"). |
-| 110 | Laguna product-page copy has not been owner-reviewed | EN + DE first draft written S171, mirrored into both copy masters. DE also still unread by a native speaker. |
-| 80 | 🔴 Print specs on product pages are invented | Cover, paper, binding, FSC, "Printed in the EU" — all placeholder, on 6 pages × 2 languages. Real specs come from the Aug print visit. |
-| 78 | 🔴 Copy promises Google Drive / Dropbox upload; neither exists | Either ship Dropbox Chooser (days, no OAuth) or change the copy → [notes](docs/todo-notes.md#78) |
+| 80 | 🔴 Print specs on product pages are invented | **[Blocked]** Cover, paper, binding, FSC, "Printed in the EU" — all placeholder, on 6 pages × 2 languages. Real specs come from the Aug print visit. |
+| 12 | SEO: meta descriptions, schema, sitemap.xml | **[Blocked]** Canonicals, hreflang and robots.txt shipped S144. The rest describes content, so it waits on copy + photography. |
+| 129 | Customer preview must record caption line breaks | **[Next up]** Open since S159. |
 | 91 | CDN libraries are unpinned with no SRI | 6 tags, zero `integrity=`. Not card skimming (Stripe hosts checkout) but auth tokens and link rewriting are exposed. Fix = vendor into `assets/js/` → [notes](docs/todo-notes.md#91) |
 | 11 | OG image tags | Zero pages have them today. Shared links look blank on WhatsApp/iMessage. |
-| 12 | SEO: meta descriptions, schema, sitemap.xml | Canonicals, hreflang and robots.txt shipped S144. The rest describes content, so it waits on copy + photography. |
 | 9 | Google Analytics | Nothing tracked today. Needed before spending on ads. ⚠ Shipping this **requires a consent banner AND a rewrite of the Cookies section** of the privacy page, which today truthfully says we run no analytics. Do #9, #10 and that revision as ONE job. |
 | 10 | Meta Pixel | Required for Instagram ads + conversion measurement. ⚠ Same consent-banner + privacy-page dependency as #9 — see there. |
 | 21 | Instagram page creation | Core channel per the concept test. |
+| 1 | Review the order-page link in the confirmation email | Token generation timing and email structure may be suboptimal. `functions/upload.js:130–226` |
+| 26 | Quality promise page | Needs a real photoshoot of printed books. |
 | 122 | Apply Beige coordinates to Heirloom Blue, Brown, Green | Their front-panel coordinates are still the old off-centre ones; Xenia is redoing their SVG geometry. Expect the re-export to re-fill the photo windows (`tests/cover-photo-window.test.js` catches it). Slot tracks the ARTWORK opening centre, not the CSV (332.63 vs 333.00). → `docs/briefs/heirloom-build.md` |
 | 123 | One native-speaker read of all German | Nothing German has ever been read by a native speaker: `/de/` pages, order form, per-template copy, AI captions. One pass covers every surface; doing it late means rework on stages marked done. Also yields Stage 6's 11 add-on names. → `docs/briefs/germanization.md` |
-| 124 | Germanization Stage 6: DE mockups + gallery swap | One job — each half is useless without the other. Then the add-on names (key the map off the English `name`, NOT the positional `slug`). Capture reads the DEPLOYED rig: push first. Owner creating one German order per template. → `docs/briefs/germanization.md` |
 | 125 | Confirm venue credit wording against the agreement | Open since S175; no detail recorded beyond this. |
 | 126 | Downscale Clémence's portrait | 3.48 MB against 86 KB for Kevin's. |
-| 127 | Send Xenia the cover-artwork brief | No customer-fillable text outlined into artwork, no live `<text>`, artboard = trim (409×200mm) with 18mm bleed in Document Setup. Every drop so far has cost a session in validation. |
 | 128 | Render help.html + de/help.html in a browser | The S166 photo-formats FAQ has never actually been rendered and looked at. |
-| 129 | Customer preview must record caption line breaks | Open since S159. |
-| 133 | German country names on the travel map (DE form) | A German customer picks countries in German (Österreich, not Austria), and every message naming a country uses the German name. |
+| 136 | Customer emails look wrong on desktop | In Gmail on a desktop browser the emails sit as a narrow centred column with a lot of white space around them. They look fine in iPhone Mail. Redesign the shared shell (renderEmail in functions/email.js) so the desktop view looks deliberate. |
+| 137 | Artist portrait missing on Our Artists (EN + DE) | Found S192 by the #82 live link crawl, pre-existing. our-artists.html asks for assets/artists/dorottya-juhasz/dorottya-juhasz-portrait.jpg (404). Locally the folder is named `dorottya-juhász` (accented) and is UNCOMMITTED. Fix: rename the folder to the unaccented name (URLs with accents are fragile) and commit the image, then check both pages. |
 
 ---
 
@@ -73,37 +64,24 @@ _Real improvements, but nothing breaks if they wait._
 
 | # | Item | Notes |
 |---|------|-------|
+| 108 | Book language option (EN / DE) | **[In progress]** **Stages 0–5 DONE** — selector + Firestore `language` + DE artwork in both engines and the PDF (S177), order-form chrome (S178), per-template copy for all eleven templates (S180), **German AI captions deployed and verified (S182)**. **Remaining: Stage 6 only** — DE mockups (functional pages only), product-page gallery swap, add-on names. Separately open: a **native-speaker read of any of the German** (nothing has had one), and #113 emails. → `docs/briefs/germanization.md` |
+| 17 | Customer delivery tracking | **[Blocked]** Send the tracking number when status → `in_delivery`; show it in `my-order.html`. |
+| 67 | Rich-text caption editor: partial styling | **[Next up]** Ctrl+B on a selection behaves unpredictably. Needs a decided model + parity across all 3 surfaces → [notes](docs/todo-notes.md#67) |
 | 117 | Let a customer order more than one copy | 1`, and the line item stays `-1`: copies are quantity, not extra line items). **Blocked on a pricing decision (owner): is copy two full price or discounted?** Then order form, Stripe line-item quantity, the three price locations, dashboard + emails, and the shipping weight band (bears on their contract). Their configurator defaults to quantity 10, so their side is almost certainly fine. Raised S188. |
 | 112 | Golden set for the caption AI | Ten sample inputs + the output the owner accepts, checked in, re-run after any prompt change. Voice drift is invisible — a tweak for one page quietly degrades captions elsewhere with every test still green. **Deferred S175 (owner): only test orders exist, too early to pick real samples.** → `docs/briefs/caption-ai-modes.md` |
-| 1 | Review the order-page link in the confirmation email | Token generation timing and email structure may be suboptimal. `functions/upload.js:130–226` |
 | 13 | Dashboard: overdue order tracking | Highlight orders that haven't moved status in X days. |
 | 44 | Prune the dashboard status bar | Unclear what it shows; may hold stale or redundant states. `pages/staff/dashboard.html` |
 | 30 | Dashboard: internal notes per order | Free-text staff field, e.g. "customer requested warmer tones". |
-| 101 | German order flow — the form is still English | **Germanization Stage 4.** Brief written and approach settled S177: a **string table in `order.html` keyed off `?lang=`**, NOT a `de/order.html` fork. The `lang` param already arrives. → `docs/briefs/germanization.md` |
-| 108 | Book language option (EN / DE) | **Stages 0–5 DONE** — selector + Firestore `language` + DE artwork in both engines and the PDF (S177), order-form chrome (S178), per-template copy for all eleven templates (S180), **German AI captions deployed and verified (S182)**. **Remaining: Stage 6 only** — DE mockups (functional pages only), product-page gallery swap, add-on names. Separately open: a **native-speaker read of any of the German** (nothing has had one), and #113 emails. → `docs/briefs/germanization.md` |
 | 113 | German transactional emails | Order confirmation, preview-ready, approval. Scoped OUT of the germanization brief; a DE customer gets German artwork, a German form and an English email. **Own session (owner, S178).** First decision is bilingual-in-one-email vs German-only off the order's `language` — not yet made. |
-| 114 | Envelope packaging design | Five studies produced S179 and **paused pending Xenia's view**. → `work/packaging/README.md`. ⚠ Blocked on a **vector logo** (only a PNG exists; a deboss die needs outlines) and on the supplier's **deboss minimums + max die size**. Rule: deboss the large forms, print the small text. |
-| 17 | Customer delivery tracking | Send the tracking number when status → `in_delivery`; show it in `my-order.html`. |
 | 18 | Post-delivery review collection | Automated email after delivery. Concept-test leads are the first targets. |
 | 19 | Repeat-order prompt | "Make another book?" via email or `my-order.html`. |
-| 20 | Artist profile pages | Bio, style, which templates. Key differentiator. Do when 3+ templates are live. |
-| 84 | Decide the fate of "Export book state (JSON)" | It is NOT what feeds the PDF and it looks like it is. Recommended: hide in Order mode, keep in Local → [notes](docs/todo-notes.md#84) |
 | 64 | Staff Save vs Export are two separate clicks | Same root confusion as #84. You find out when a PDF fails with "No such object: book-state.json". |
 | 73 | Data-driven cover photo shape (clipShape) + orientation | Enables non-rectangular cutouts without per-template engine code. Blocked on Xenia's "Little Annette" assets → [notes](docs/todo-notes.md#73) |
-| 67 | Rich-text caption editor: partial styling | Ctrl+B on a selection behaves unpredictably. Needs a decided model + parity across all 3 surfaces → [notes](docs/todo-notes.md#67) |
 | 107 | `capture-cover-wrap.mjs` bakes UI chrome into the texture | Worked around at consumption time, not fixed. Bundle the re-capture with the next mockup run (egress) → [notes](docs/todo-notes.md#107) |
-| 82 | Serve the homepage at `aevia.at/` not `/pages/home` | A 200 rewrite breaks bare relative links; the real fix conflicts with the CLAUDE.md path convention. Needs a decision → ADR-0009 |
-| 53 | Improve upload speed on the order form | 1.12 GB took 5+ min. Parallelise further, consider client-side resize. |
-| 62 | 80-page uploads take ~3 min | 110 files at ~1.7s each. Mostly a reassurance/progress-feedback problem. |
-| 66 | Customer book load is slow for large books | AEV-026 took ~95s to fetch+render. Sequential fetches in `loadPhotos`. |
-| 51 | Customer preview loads photos as blobs | Use the signed URL as `img.src` directly — saves ~150 MB through JS memory. |
 | 65 | Preview PDF is ~383 MB | Full-res originals, no downscale. Fine for staff, unwieldy to share. |
-| 43 | Template engine scroll performance | Stalls 10–15s after alt-tab and return. |
-| 77 | Papercut cover year prints regular instead of bold | `weight: 'bold'` as a string fails a numeric `>= 700` compare. Cosmetic. Fix by mapping string weights, which guards the next template too. |
 | 93 | Photos dedupe on filename alone | Two distinct `IMG_0001.JPG` → one silently dropped, count comes up short → [notes](docs/todo-notes.md#93) |
 | 50 | Sent-snapshot visual view (`?view=sent`) | Renders `sentSnapshot` instead of live state. Visual audit of sent vs approved. |
 | 59 | Server-side hardening for incomplete-book approve | Approve-gate is client-side only. Only hurts the customer's own order. |
-| 26 | Quality promise page | Needs a real photoshoot of printed books. |
 | 28 | Press / "as seen in" section | Placeholder space on the homepage. |
 | 130 | Server-side validation in functions/upload.js | Carried in STATUS next steps; no brief yet. |
 | 134 | One folder structure for every template | Every assets/Template_* folder gets the same layout: where the SVGs sit, where fonts sit, where the sizing CSVs and data file sit, where DE artwork and authored .txt copy sit. Needs its own session (owner, S191). |
@@ -116,7 +94,6 @@ _Deliberately not now. Several were investigated and declined — read the note 
 | # | Item | Notes |
 |---|------|-------|
 | 100 | "Generate with AI" on engine text panels | Needs a brief first: model, where it runs, cost, voice spec, the fixed 110×110mm overflow constraint → [notes](docs/todo-notes.md#100) |
-| 96 | Spine formula unconfirmed | 10mm/14mm fit `6 + 0.1 × pages` exactly. Ask Printsmarter for the formula on the next call. Low risk — two constants either way. |
 | 83 | Drop `captions_position` from the sizing CSVs | Safe in principle, **not a quick win** — the 6 CSVs disagree on delimiter, title row and column count → [notes](docs/todo-notes.md#83) |
 | 105 | 40 MB cap may refuse a professional's max-quality JPEG | Money is not the blocker, compute is. **Raise `generateDerivative` to 2 GB and prove one large file FIRST — never the cap alone** → `docs/briefs/photo-formats.md` |
 | 85 | Update documented `gsutil` commands to `gcloud storage` | No production code affected. Risk is copying a dead command from `LEARNINGS.md` during an emergency → [notes](docs/todo-notes.md#85) |
@@ -137,6 +114,31 @@ _Deliberately not now. Several were investigated and declined — read the note 
 ## Closed on the board (not yet archived)
 
 - **Done** — #115 · ✅ DONE S182 — Scribble's NT Somic replaced with Onest
+- **Done** — #111 · Slow photo decode silently guesses orientation
+- **Done** — #89 · Stranded uploads: detect, flip, Retry — all built; two live checks left
+- **Done** — #116 · Upload stall: record enough to tell a file fault from a transport fault
+- **Done** — #92 · Verify the `confirmUpload` retry fix live
+- **Done** — #95 · Spine geometry for Papercut, Newborn, Wander
+- **Done** — #98 · Papercut orders before 13 July have `name`/`year` swapped
+- **Done** — #78 · 🔴 Copy promises Google Drive / Dropbox upload; neither exists
+- **Done** — #110 · Laguna product-page copy has not been owner-reviewed
+- **Done** — #101 · German order flow — the form is still English
+- **Done** — #114 · Envelope packaging design
+- **Done** — #20 · Artist profile pages
+- **Done** — #84 · Decide the fate of "Export book state (JSON)"
+- **Done** — #82 · Serve the homepage at `aevia.at/` not `/pages/home`
+- **Done** — #43 · Template engine scroll performance
+- **Done** — #77 · Papercut cover year prints regular instead of bold
+- **Done** — #121 · Decide whether a 400 MB print PDF is acceptable
+- **Done** — #133 · German country names on the travel map (DE form)
+- **Dropped** — #62 · 80-page uploads take ~3 min
+- **Dropped** — #53 · Improve upload speed on the order form
+- **Dropped** — #66 · Customer book load is slow for large books
+- **Dropped** — #51 · Customer preview loads photos as blobs
+- **Dropped** — #96 · Spine formula unconfirmed
+- **Dropped** — #120 · Email Printsmarter the remaining open questions
+- **Dropped** — #127 · Send Xenia the cover-artwork brief
+- **Dropped** — #90 · Stranded orders have no resume path
 
 ---
 

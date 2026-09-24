@@ -69,6 +69,10 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
   Tabs: Business case - Quarterly view, Marketing (drives orders + spend), Assumptions, Tax & Founder income.
   Assumptions challenged + sourced in `docs/briefs/marketing-assumptions-research.md`.
 - ADRs: `docs/decisions/`
+- **Clean public URLs (S192, ADR-0010)**: `_redirects` 200 rules, destination WITHOUT `.html`;
+  transactional pages keep `/pages/`. Brief + research: `work/url-structure/`. Test rewrites on
+  the rig with a throwaway path, never with `wrangler pages dev` (not faithful).
+- **Photo upload sources (S192)**: device only, by decision; `work/photo-upload-options/research_v1.md`.
 - Guidance for **non-Claude agents** (Codex etc.): `AGENTS.md` — invariants, settled decisions
   that must not be re-raised, and a reviewer protocol. Keep it in step with this file.
 - Investigation briefs: `docs/briefs/` — one per feature or problem, incl. deferred decisions

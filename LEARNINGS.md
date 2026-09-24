@@ -1,3 +1,19 @@
+## 2026-09-24 (S192) — An agent's verdict is a hypothesis until the real system agrees
+
+Three agent results were wrong in S192, each plausible and well-evidenced on its own terms:
+the #82 spike declared clean URLs impossible because it tested with `wrangler pages dev`, which
+does not honour `_redirects` the way Cloudflare Pages does (a throwaway rule on the rig proved the
+opposite in five minutes); the #111 fix read photo sizes from EXIF headers that 288 of 291 real
+photos lacked or had stale; the #78 synthesis turned Chatbooks' own 60-photo product limit into a
+Google API cap.
+
+- **Re-run the claim on the real target** (the rig, real photos, the source text) before merging
+  or reporting. A local emulator, a stub, or a summary of a summary is where these went wrong.
+- **Worktree agents see only committed files and run a partial test suite** (jest ignores
+  `.claude/`; PDF suites lack `sharp`). Commit the brief first; re-run `npm test` in the main
+  checkout after merge.
+- **Test `_redirects` changes on the rig with a throwaway path** (`/spike-x`), never on `/`.
+
 ## 2026-09-23 (S191) — A sweep certifies only the syntax it reads
 
 `tests/order-strings.test.js` swept the order form for English and was green. It read markup and
