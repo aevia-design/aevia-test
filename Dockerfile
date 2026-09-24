@@ -21,6 +21,9 @@ COPY services/pdf-renderer/index.js ./services/pdf-renderer/index.js
 # Core PDF rendering logic (imported by the entrypoint)
 COPY scripts/export-pdf.js ./scripts/export-pdf.js
 
+# Pure cancel/in-flight helpers shared with the Cloud Functions (#138)
+COPY functions/pdf-render-utils.js ./functions/pdf-render-utils.js
+
 # Template assets — SVGs, fonts, and the *-data.js files export-pdf.js requires at load
 COPY assets/ ./assets/
 
