@@ -2646,6 +2646,9 @@
           const captionEl = document.createElement('div');
           captionEl.className = 'slot-caption';
           captionEl.contentEditable = 'true';
+          captionEl.dataset.spreadIndex = spreadIndex;
+          captionEl.dataset.side = side;
+          captionEl.dataset.slotIdx = slotIdx;
           captionEl.spellcheck = false;
           captionEl.style.left = capLeft + 'px';
           captionEl.style.width = capWidth + 'px';
@@ -2728,6 +2731,9 @@
         const titleEl = document.createElement('div');
         titleEl.className = 'slot-caption fp-text-panel';
         titleEl.contentEditable = 'true';
+        titleEl.dataset.spreadIndex = spreadIndex;
+        titleEl.dataset.side        = side;
+        titleEl.dataset.panelKey    = 'textPanelTitle';
         titleEl.spellcheck = false;
         titleEl.style.left  = titleLeft  + 'px';
         titleEl.style.width = titleWidth + 'px';
@@ -2854,6 +2860,9 @@
         const panelEl = document.createElement('div');
         panelEl.className = 'slot-caption fp-text-panel';
         panelEl.contentEditable = 'true';
+        panelEl.dataset.spreadIndex = spreadIndex;
+        panelEl.dataset.side        = side;
+        panelEl.dataset.panelKey    = 'textPanel';
         panelEl.spellcheck = false;
         panelEl.style.left      = panelLeft   + 'px';
         panelEl.style.width     = panelWidth  + 'px';
@@ -3286,6 +3295,108 @@
     requestAnimationFrame(fitBook);
   });
 
+  // ── Caption line-break recording (TO-DOS #129) ──
+  // Ported verbatim from template-engine.html (S159/S181) — see LEARNINGS.md and
+  // work/caption-line-integrity/decision.md. Engine parity: this must stay in step
+  // with the staff copy. Records where each caption actually broke on screen, so the
+  // PDF draws those lines instead of re-wrapping and can never disagree with what the
+  // customer approved.
+  //
+  // Reads VISUAL lines (where the text really broke on screen), not the source text:
+  // a character's client rect jumping to a new top means the browser wrapped there.
+  // <br> is an explicit break; two in a row give the blank line that spaces paragraphs,
+  // which the PDF already preserves as one line-height.
+  function captionVisualLines(el) {
+    if (!el) return null;
+    // What we MEASURE has to be what gets SAVED. The save path normalises non-breaking
+    // spaces away; contentEditable inserts them on its own when you type or paste.
+    // Normalise first, so the recorded lines and the saved text can never describe
+    // different strings (S181, AEV-099).
+    const html = el.innerHTML;
+    const clean = html.replace(/&nbsp;/gi, ' ').replace(/ /g, ' ');
+    if (clean !== html) el.innerHTML = clean;
+    // Which screen axis a NEW LINE advances along. Normally lines stack downward, so a
+    // jump in rect.top means a wrap. Spine captions are rotate(270deg): their text runs
+    // vertically, so lines stack along X instead.
+    const tf = getComputedStyle(el).transform;
+    let axis = 'top';
+    if (tf && tf !== 'none') {
+      const m = new DOMMatrixReadOnly(tf);
+      const deg = Math.atan2(m.b, m.a) * 180 / Math.PI;
+      if (Math.abs(Math.abs(deg) - 90) < 5) axis = 'left';
+    }
+    const lines = [];
+    const range = document.createRange();
+    let cur = '', prevTop = null;
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    let node;
+    while ((node = walk.nextNode())) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if (node.tagName === 'BR' || node.tagName === 'DIV') {
+          lines.push(cur); cur = ''; prevTop = null;
+        }
+        continue;
+      }
+      const text = node.data;
+      for (let i = 0; i < text.length; i++) {
+        range.setStart(node, i); range.setEnd(node, i + 1);
+        const rect = range.getClientRects()[0];
+        if (!rect) { cur += text[i]; continue; }   // collapsed wrap space at a line end
+        if (prevTop !== null && Math.abs(rect[axis] - prevTop) > 1) { lines.push(cur); cur = ''; }
+        cur += text[i];
+        prevTop = rect[axis];
+      }
+    }
+    lines.push(cur);
+    return lines.map(l => l.replace(/\s+$/, ''));
+  }
+
+  // Walk every laid-out caption in the book and record where it broke.
+  // Shape mirrors bookCaptions exactly, so the PDF's lookup lines up with the same keys.
+  //
+  // Unlike the staff engine, this surface has a "preview" mode that hides every spread
+  // but the current one (display:none) so it can flip through one at a time. A hidden
+  // caption has no client rects, so captionVisualLines would see zero wrap points and
+  // wrongly record the whole caption as one line. offsetParent is null for any
+  // display:none ancestor, so skip those elements — their real lines, if unchanged,
+  // are still whatever was last recorded (or absent, falling back to PDF wrapping).
+  function collectCaptionLines() {
+    const out = {};
+    const put = (si, side, key, lines) => {
+      if (!lines || !lines.length) return;
+      if (!out[si]) out[si] = {};
+      if (!out[si][side]) out[si][side] = {};
+      out[si][side][key] = lines;
+    };
+    document.querySelectorAll('.slot-caption[data-spread-index]').forEach(el => {
+      if (el.offsetParent === null) return;  // hidden by preview-mode's spread flip
+      const { spreadIndex, side, slotIdx, panelKey } = el.dataset;
+      if (!el.textContent.trim()) return;
+      put(spreadIndex, side, panelKey || Number(slotIdx), captionVisualLines(el));
+    });
+    document.querySelectorAll('.cover-caption[data-cover-caption-key]').forEach(el => {
+      if (el.offsetParent === null) return;
+      if (!el.textContent.trim()) return;
+      if (!out.cover) out.cover = {};
+      out.cover[el.dataset.coverCaptionKey] = captionVisualLines(el);
+    });
+    return out;
+  }
+
+  // Preview mode hides every spread but the current one (display:none) so it can flip
+  // through one at a time — collectCaptionLines skips those (no client rects to read),
+  // and saveOrderState REPLACES customerCaptionLines wholesale, so saving mid-flip would
+  // silently drop every other spread's recorded lines. Reveal everything just long enough
+  // to measure, then restore — box widths are identical in both modes (fitBook only
+  // applies a CSS zoom transform on top), so this doesn't change what gets recorded.
+  function collectCaptionLinesFully() {
+    const hiddenRows = Array.from(document.querySelectorAll('.spread-row.preview-hidden'));
+    hiddenRows.forEach(r => r.classList.remove('preview-hidden'));
+    const lines = collectCaptionLines();
+    hiddenRows.forEach(r => r.classList.add('preview-hidden'));
+    return lines;
+  }
+
   // ── Save helper ──
   async function saveBookState() {
     if (window._readOnly) return;  // approved/paid — never persist edits
@@ -3297,6 +3408,9 @@
       fpSelections: window.orderData?.fpSelections || [],
       bookAssignments: assignments,
       captions: window.bookCaptions || {},
+      // Where each caption actually broke on screen — the PDF draws these verbatim
+      // instead of re-wrapping. See captionVisualLines() above (TO-DOS #129).
+      captionLines: collectCaptionLinesFully(),
       spreadCaptionStyles: window.spreadCaptionStyles || {},
       coverCaptionStyles: window.coverCaptionStyles || {},
       heartCrop: window.heartCrop || {},

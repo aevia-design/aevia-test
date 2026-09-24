@@ -5,6 +5,7 @@ const { createUploadSessionHandler, confirmUploadHandler, reportUploadFailureHan
 const { normalizeEmail, projectOrderForCustomer, sortOrdersNewestFirst } = require('./account-utils');
 const { generateReferralCode, extractPromotionCodeId, referrerRewardDecision } = require('./referral-utils');
 const { normalizePromoCode, promoValidationDecision, describeDiscount } = require('./promo-utils');
+const { resolveApprovedCaptionLines } = require('./caption-line-utils');
 const { createTransporter, FROM, renderEmail, emailButton } = require('./email');
 
 // ── Customer-facing link origins (ADR-0009) ────────────────────────────────
@@ -296,6 +297,7 @@ exports.getOrder = functions
         // Customer's own saved edits — replayed on reopen so a closed tab loses nothing.
         customerBookAssignments:    order.customerBookAssignments    || null,
         customerCaptions:           order.customerCaptions           || null,
+        customerCaptionLines:       order.customerCaptionLines       || null,
         customerCaptionStyles:      order.customerCaptionStyles      || null,
         customerCoverCaptionStyles: order.customerCoverCaptionStyles || null,
         customerHeartCrop:          order.customerHeartCrop          || null,
@@ -326,7 +328,7 @@ exports.saveOrderState = functions
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    const { token, bookAssignments, captions, spreadCaptionStyles, coverCaptionStyles, heartCrop } = req.body;
+    const { token, bookAssignments, captions, captionLines, spreadCaptionStyles, coverCaptionStyles, heartCrop } = req.body;
     if (!token) return res.status(403).json({ error: 'Token required' });
 
     try {
@@ -341,6 +343,9 @@ exports.saveOrderState = functions
       await snapshot.docs[0].ref.update({
         customerBookAssignments: bookAssignments || null,
         customerCaptions:        captions        || null,
+        // Where each caption actually broke on screen — mirrors staffBookCaptionLines
+        // (TO-DOS #129). See captionVisualLines()/collectCaptionLines() in customer-preview.html.
+        customerCaptionLines:    captionLines    || null,
         customerCaptionStyles:   spreadCaptionStyles || null,
         customerCoverCaptionStyles: coverCaptionStyles || null,
         customerHeartCrop:       heartCrop || null,
@@ -401,11 +406,11 @@ exports.approveOrder = functions
       }
       if (orderData.customerCaptions != null) {
         updates.staffBookCaptions = orderData.customerCaptions;
-        // The customer surface does not record line breaks yet (S159), so the staff-
-        // recorded ones now describe superseded text. Drop them rather than let the PDF
-        // draw lines that no longer match — it falls back to word-wrapping, which is the
-        // pre-S159 behaviour. Remove this once customer-preview records lines of its own.
-        updates.staffBookCaptionLines = null;
+        // The staff-recorded lines describe pre-approval text and must not survive
+        // (captionLinesFor's staleness guard would reject them anyway). Since #129 the
+        // customer surface records its own line breaks, so those are promoted instead —
+        // null for any order saved before this change, since the field won't exist.
+        updates.staffBookCaptionLines = resolveApprovedCaptionLines(orderData);
       }
       if (orderData.customerCaptionStyles != null) {
         updates.staffSpreadCaptionStyles = orderData.customerCaptionStyles;
