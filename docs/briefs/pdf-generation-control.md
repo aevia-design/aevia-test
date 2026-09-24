@@ -1,77 +1,90 @@
-# Brief: PDF generation you can walk away from: shared status, one render per order, confirm, cancel
+# Brief: PDF generation you can walk away from
 
 **Created:** 2026-09-24 (Session 193) · **Card:** Trello #138
-**Objective:** Make a running PDF render visible from any dashboard tab, impossible to start twice
-for the same order, hard to start by accident, and stoppable, without adding cloud cost.
-**Audience:** developer-agent (implements), then the owner (Evgeny), who verifies on the live rig.
-**Applicable standards:** `CLAUDE.md` (global + project), `AGENTS.md`, `LEARNINGS.md`,
-`rageatc-code-oss:verifying-work`. Staff-only screens, so no `/stop-slop` pass is needed.
+**Objective:** Any dashboard tab shows a running PDF render, the same order cannot render twice,
+a render cannot start by accident, and a started render can be cancelled without losing the
+previous PDF, all at negligible added cloud cost.
+**Audience:** developer-agent (implements), then the owner (Evgeny) and Xenia, who use the staff
+dashboard daily and verify on the live rig.
+**Applicable Standards:** `CLAUDE.md` (global + project), `AGENTS.md`, `LEARNINGS.md`,
+`rageatc-code-oss:test-driven-development`, `rageatc-code-oss:verifying-work`
 
-## The problem (owner, S193)
-The progress bar lives only in the tab that pressed the button. Refresh the dashboard, open a second
-tab, or let Xenia look, and a running render is invisible. A second tab can start the same order
-again. A fresh "Generate" has no confirmation (only "Regenerate" does), and nothing can stop a render.
+## Why
 
-## How it works today (verified from code, S193)
-- `pages/staff/dashboard.html` `generatePdfFromDashboard` (~line 686) POSTs `generatePdf`, then polls
-  `getPdfStatus` from THAT tab only (~16 min ceiling). `dashboard.html` never reads `pdfRender` on load.
-- `functions/index.js` `generatePdf` (~line 575) writes `pdfRender: {status:'starting', mode}`,
-  fires the renderer without awaiting, and waits for `rendering` (45s) → 202.
-- `services/pdf-renderer/index.js` writes `pdfRender` via a status helper (~line 173); photo
-  download (~line 132), then render with a throttled `progressCb(done, tot)` per spread (~line 240),
-  then **uploads only at the end** (`uploadPdf`, ~lines 266/283). So a render stopped before
-  upload leaves the previous PDF untouched.
-- Statuses seen: `starting`, `rendering`, `done`, `error`.
+A render takes 3–13 minutes, and its progress bar lives only in the tab that pressed the button.
+Refresh the page, open a second tab, or let Xenia look, and a running render is invisible, so it can
+be started twice. A fresh "Generate" has no confirmation (only "Regenerate" does), and nothing can
+stop a misclick. The owner wants to start renders for up to 3 orders and walk away with confidence.
 
-## Scope: four pieces
-1. **Shared status.** On dashboard load (and on Refresh), every order whose `pdfRender.status` is
-   `starting` or `rendering` shows the progress bar and resumes polling `getPdfStatus`. Check
-   whether the order list the dashboard loads already carries `pdfRender`; if a function whitelists
-   fields, add it there.
-2. **One render per order.** While an order's render is in flight, its Generate/Regenerate buttons
-   are disabled in the UI **and** `generatePdf` refuses (409) server-side, since the UI alone cannot
-   stop a second tab. **Stale guard:** treat a `starting`/`rendering` status whose `updatedAt` is
-   older than ~20 min as dead (the renderer's hard timeout is 15 min), so a crashed render cannot
-   lock an order forever. Use a Firestore transaction for the check-and-set.
-3. **Confirm a fresh Generate** as well as Regenerate: one `confirm()` naming the order and mode.
-4. **Cancel (×)** beside the progress bar:
-   - The dashboard asks a function to set `pdfRender.cancelRequested = true` (staff-auth, same as
-     `generatePdf`; new small function or an action on an existing one, whichever is simpler).
-   - The renderer checks the flag **at its existing checkpoints**: before/while downloading photos,
-     in `progressCb`, and immediately before `uploadPdf`. On seeing it, it stops, uploads nothing
-     and writes `pdfRender.status = 'cancelled'`. Keep the Firestore reads cheap: piggyback on the
-     already-throttled progress write cadence, not a read per spread if that is more frequent.
-   - The dashboard shows "Cancelled" and re-enables the buttons.
-   - The previous PDF must survive a cancelled Regenerate. This is the property that matters.
+## Requirements Extracted from Standards
 
-## Out of scope
-Notifications (e.g. email when ready), batch generation, a job queue, and any change to how PDFs are rendered.
+**From CLAUDE.md (global + project):**
+- [ ] Every changed line traces to one of the four pieces below; no unrelated edits or reformatting
+- [ ] No new dependencies, frameworks or build steps (the dashboard stays plain HTML/JS)
+- [ ] Cost stated before it is incurred: the report gives the number of Firestore reads/writes added per render
+- [ ] Root-cause fixes only: a crashed render must not lock an order forever (stale guard, below)
+- [ ] Nothing claimed as verified that was not run; unverified items marked as such
 
-## Also: the Cloud Run concurrency setting (one-line config, owner deploys)
-The renderer runs with `containerConcurrency: 160` (4 CPU / 8 GiB, maxScale 10, timeout 900s).
-Several renders can therefore share one instance's 8 GiB; a book is 1–4 GB of photos. **Unconfirmed**
-whether it has ever caused an out-of-memory failure. Recommend `--concurrency 1` so each render gets its own instance.
-There is no idle cost (billing is per request), and 3 parallel orders need 3 of the 10 instances. Add
-the flag to the documented redeploy command in `STATUS.md`. Do NOT deploy.
+**From AGENTS.md / LEARNINGS.md:**
+- [ ] Server-side guards, not just UI: a second tab can bypass any client-only check
+- [ ] Follow the existing `pdfRender` write pattern in `services/pdf-renderer/index.js`; no parallel status mechanism
+
+**From test-driven-development:**
+- [ ] Pure decisions (is this render in flight or stale? should the renderer stop?) extracted into small
+      helpers in `functions/` (pattern: `functions/caption-line-utils.js`), with tests written first in `tests/`
+
+**From verifying-work:**
+- [ ] Test counts reported from a fresh run, including any suites that failed for environmental reasons
+- [ ] Local UI check with mocked status data: an in-flight order shows the bar and a cancel ×, with zero console errors
+
+## Scope: the four pieces
+
+1. **Shared status.** On load and on Refresh, the dashboard shows the progress bar for every order whose
+   `pdfRender.status` is `starting` or `rendering`, and resumes polling `getPdfStatus`.
+2. **One render per order.** Buttons disabled in the UI **and** `generatePdf` returns 409 in a Firestore
+   transaction when a render is in flight. A status older than ~20 min counts as dead (the renderer's
+   hard timeout is 15 min).
+3. **Confirm a fresh Generate**, naming the order and mode, as Regenerate already does.
+4. **Cancel ×.** It sets `pdfRender.cancelRequested`, and the renderer checks that flag at its existing
+   checkpoints (photo download, `progressCb`, just before `uploadPdf`). It then stops, uploads nothing
+   and writes `status: 'cancelled'`. The dashboard shows "Cancelled" and re-enables the buttons.
+
+Plus a config change: set Cloud Run **`--concurrency 1`** so parallel renders never share one
+instance's 8 GiB. Add the flag to the redeploy command in `STATUS.md`.
 
 ## Constraints
-- Surgical edits; no new dependencies; follow LEARNINGS.
-- **Do not deploy** functions or Cloud Run, **do not push**, **do not render PDFs** (GCS egress on
-  the owner's bill; see memory "No local PDF render"). Work in the worktree; commit there.
-- Cost: added Firestore reads must be negligible (a few per render). State the number in the report.
-- `npm test` from a worktree finds 0 tests because jest ignores `.claude/`. Pass an inline
-  `--testPathIgnorePatterns` override on the CLI; do not change `package.json`.
 
-## Success criteria
-1. Refresh or open a second tab mid-render: the bar appears with live progress.
-2. Second tab presses Generate on the same order: blocked in the UI; a forced POST gets 409.
-3. Fresh Generate asks for confirmation.
-4. Cancel mid-render: status becomes `cancelled` within seconds, no new PDF is written, and the old PDF
-   still opens.
-5. A render whose status is stuck for more than 20 min no longer blocks Generate.
-6. `npm test` green, with unit tests for the pure parts (in-flight/stale decision, cancel decision).
+- **Do not deploy** functions or Cloud Run, **do not push**, **do not render PDFs** or read GCS/Firestore
+  (egress lands on the owner's bill). Commit on the worktree branch.
+- Staff screens only: `pages/staff/dashboard.html`, `functions/`, `services/pdf-renderer/`, `tests/`, `STATUS.md`.
+- Jest in a worktree: pass `--testPathIgnorePatterns=node_modules` on the CLI; do not edit `package.json`.
+- Out of scope: notifications (email when ready), batch generation, a job queue, any change to rendering itself.
 
-## Verification split
-The agent verifies 6, plus whatever the UI shows with mocked status data locally. Criteria 1–5 need
-the deployed functions and renderer and are verified by the owner on the live rig: one render,
-two tabs, one cancel on a Regenerate.
+## Success Criteria
+
+The work is complete when:
+1. Mid-render, a refreshed or second dashboard tab shows the bar with live progress (owner, live).
+2. Generate on an in-flight order is blocked in the UI, and a forced POST gets 409. A status stuck for more than 20 min no longer blocks (owner, live, plus unit tests).
+3. Cancelling a Regenerate mid-render ends as `cancelled` within seconds, and the **previous PDF still opens** (owner, live).
+4. All requirements from standards are met.
+
+## References
+
+**Skills:** `rageatc-code-oss:test-driven-development`, `rageatc-code-oss:verifying-work`
+**Code (verified S193):** `pages/staff/dashboard.html` `generatePdfFromDashboard` (~686, polls from
+its own tab only; never reads `pdfRender` on load); `functions/index.js` `generatePdf` (~575) and
+`getPdfStatus`; `services/pdf-renderer/index.js` status helper (~173), photo download (~132),
+`progressCb` (~240), `uploadPdf` (~266/283)
+**Previous work:** `docs/briefs/chunk-024-server-side-pdf.md` (how the render pipeline was built)
+
+## Context
+
+**Background decisions:**
+- Cancel is cooperative ("please stop" read at checkpoints), not a hard kill. The owner agreed to this in S193.
+- The renderer uploads **only at the end**, so a render stopped before upload leaves the previous PDF untouched. This is the property cancel relies on.
+- Realistic parallelism is at most 3 orders (owner).
+
+**Known risks:**
+- Live Cloud Run config (S193): `containerConcurrency: 160`, 4 CPU / 8 GiB, maxScale 10, timeout 900s. Renders can share an instance today, and a book is 1–4 GB of photos. **Unconfirmed** whether this has ever caused an out-of-memory failure.
+- An 80-page render takes up to ~13 min against the 15-min timeout. Don't add work to the render path.
+- Firestore reads for cancel checks must ride the existing throttled progress cadence, not one read per spread.
