@@ -15,3 +15,9 @@ functions
 pdf-out
 *.md
 assets/mockup example
+# Website-only images the renderer never reads.
+# Excluding these three fixed "Container import failed" in S193. The likely culprit is
+# the non-ASCII folder name (dorottya-juhász); not confirmed which of the three it was.
+assets/artists
+assets/about us photos
+assets/packaging
