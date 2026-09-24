@@ -2042,3 +2042,16 @@ to copy:
   worse than none: it survives review, and it loses to the next contradicting observation.
 - Related to S185's lesson: the failure mode is the same shape — **trusting a secondhand snapshot
   instead of the primary source.** There it was our own brief; here it was a competitor's page.
+
+## S193 — Heirloom monogram previews are cropped from the cover SVG at a fixed position
+
+The product page's monogram cards (`pages/heirloom.html` + `pages/de/heirloom.html`) show a crop of
+the real cover SVG, positioned by `background-position`. When Beige's coordinates changed, its
+monogram moved ~6mm left in the artwork and the fixed 19% crop cut it off on the left.
+
+- **Fix: a per-colourway x in `MONO_X`** (`beige: '17.6%'`, others default to `19%`).
+- ⚠ **Whenever Blue, Brown or Green get Beige's coordinates, add them to `MONO_X` with Beige's
+  value** (in BOTH pages) and check the three cards by eye. Once all four match, collapse it back
+  to one value in `product.css`.
+- To measure: render each `Cover_40_<Monogram>.svg` and compare the monogram's horizontal centre.
+  S193: Beige 0.309 vs 0.322–0.326 for the rest (viewport fraction).

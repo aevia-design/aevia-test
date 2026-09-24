@@ -172,7 +172,7 @@
    never nudges the price and CTA below it up or down.
    text-wrap:balance evens the line lengths instead of filling each line and dropping a
    lone word onto the last one — the same treatment home, about and help already use. */
-.mono-desc{font-size:13px;color:var(--muted);line-height:1.55;margin-top:11px;min-height:60px;text-wrap:balance;}
+.mono-desc{font-size:13px;color:var(--muted);line-height:1.55;margin-top:11px;min-height:40px;text-wrap:balance;}
 .mono-desc b{color:var(--text);font-weight:600;}
 
 /* Placeholder banner — delete this rule and its markup once real mockups land. */

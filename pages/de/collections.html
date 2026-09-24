@@ -496,5 +496,12 @@
   });
 </script>
 
+<script>
+/* Count each collection's cards, so the header never goes stale when a template is added. */
+document.querySelectorAll('.collection-section').forEach(function (s) {
+  var n = s.querySelectorAll('.template-card').length, el = s.querySelector('.collection-count');
+  if (el) el.textContent = n + ' ' + (n === 1 ? 'Vorlage' : 'Vorlagen');
+});
+</script>
 </body>
 </html>

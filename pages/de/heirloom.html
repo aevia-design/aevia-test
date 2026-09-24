@@ -75,9 +75,9 @@
     <div class="mono-block">
       <div class="section-label">Familienmonogramm</div>
       <div class="mono-row" id="mono-row">
-        <button class="mono-card on" data-mono="roots"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Roots</span></span></button>
-        <button class="mono-card"    data-mono="birds"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Birds</span></span></button>
-        <button class="mono-card"    data-mono="roses"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Roses</span></span></button>
+        <button class="mono-card on" data-mono="roots"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Bond</span></span></button>
+        <button class="mono-card"    data-mono="birds"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Harmony</span></span></button>
+        <button class="mono-card"    data-mono="roses"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Devotion</span></span></button>
       </div>
       <p class="mono-desc" id="mono-desc"></p>
     </div>
@@ -146,10 +146,11 @@
    Spiegel von pages/heirloom.html: jede Änderung gehört in beide Dateien. */
 (function () {
   var MONO_COPY = {
-    roots: '<b>Bond.</b> Steht für die bleibende Verbindung zwischen zwei Leben und zwei Familien.',
-    birds: '<b>Harmony.</b> Symbolisiert eine gleichberechtigte Partnerschaft aus Vertrauen, Balance und einem gemeinsamen Weg.',
-    roses: '<b>Devotion.</b> Feiert Liebe, Leidenschaft und zwei Leben, die sich miteinander verweben.'
+    roots: 'Steht für die bleibende Verbindung zwischen zwei Leben und zwei Familien.',
+    birds: 'Symbolisiert eine gleichberechtigte Partnerschaft aus Vertrauen, Balance und einem gemeinsamen Weg.',
+    roses: 'Feiert Liebe, Leidenschaft und zwei Leben, die sich miteinander verweben.'
   };
+  var MONO_X = { beige: '17.6%' };
   var COLOUR_NAME = { beige:'Beige', brown:'Braun', green:'Grün', blue:'Blau' };
 
   var colour = 'beige', mono = 'roots';
@@ -182,6 +183,10 @@
     document.querySelectorAll('.mono-card').forEach(function (card) {
       var art = card.querySelector('.mono-art');
       if (art) art.style.backgroundImage = 'url("' + coverArt(colour, card.dataset.mono) + '")';
+      // Beige's monogram sits ~6mm further left in its artwork than the other colourways'
+      // (its coordinates were moved first), so its crop needs its own x. When the
+      // other colourways get the same coordinates, give them the same value. See LEARNINGS.
+      if (art) art.style.backgroundPosition = (MONO_X[colour] || '19%') + ' 50%';
     });
 
     /* Behalte die Seite, die gerade angesehen wird: ein Wechsel der Farbwelt ändert die

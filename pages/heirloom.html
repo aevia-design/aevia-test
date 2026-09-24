@@ -77,9 +77,9 @@
     <div class="mono-block">
       <div class="section-label">Family monogram</div>
       <div class="mono-row" id="mono-row">
-        <button class="mono-card on" data-mono="roots"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Roots</span></span></button>
-        <button class="mono-card"    data-mono="birds"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Birds</span></span></button>
-        <button class="mono-card"    data-mono="roses"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Roses</span></span></button>
+        <button class="mono-card on" data-mono="roots"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Bond</span></span></button>
+        <button class="mono-card"    data-mono="birds"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Harmony</span></span></button>
+        <button class="mono-card"    data-mono="roses"><span class="mono-art"></span><span class="mono-meta"><span class="mono-title">Devotion</span></span></button>
       </div>
       <p class="mono-desc" id="mono-desc"></p>
     </div>
@@ -145,10 +145,11 @@
 /* Heirloom's two selectors. Everything else on this page is the shared product.js. */
 (function () {
   var MONO_COPY = {
-    roots: '<b>Bond.</b> Represents the lasting bond between two lives and two families.',
-    birds: '<b>Harmony.</b> Symbolises an equal partnership built on trust, balance and a shared path.',
-    roses: '<b>Devotion.</b> Celebrates love, passion and two lives beautifully intertwined.'
+    roots: 'Represents the lasting bond between two lives and two families.',
+    birds: 'Symbolises an equal partnership built on trust, balance and a shared path.',
+    roses: 'Celebrates love, passion and two lives beautifully intertwined.'
   };
+  var MONO_X = { beige: '17.6%' };
   var COLOUR_NAME = { beige:'Beige', brown:'Brown', green:'Green', blue:'Blue' };
 
   var colour = 'beige', mono = 'roots';
@@ -192,6 +193,10 @@
     document.querySelectorAll('.mono-card').forEach(function (card) {
       var art = card.querySelector('.mono-art');
       if (art) art.style.backgroundImage = 'url("' + coverArt(colour, card.dataset.mono) + '")';
+      // Beige's monogram sits ~6mm further left in its artwork than the other colourways'
+      // (its coordinates were moved first), so its crop needs its own x. When the
+      // other colourways get the same coordinates, give them the same value. See LEARNINGS.
+      if (art) art.style.backgroundPosition = (MONO_X[colour] || '19%') + ' 50%';
     });
 
     // Keep whichever slot the customer is currently looking at, rather than snapping back
