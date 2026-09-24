@@ -2055,3 +2055,18 @@ monogram moved ~6mm left in the artwork and the fixed 19% crop cut it off on the
   to one value in `product.css`.
 - To measure: render each `Cover_40_<Monogram>.svg` and compare the monogram's horizontal centre.
   S193: Beige 0.309 vs 0.322–0.326 for the rest (viewport fraction).
+
+## S193 — The renderer image is built from the WORKING FOLDER, including untracked files
+
+`gcloud run deploy --source` uploads the local folder, not git. So untracked website images in
+`assets/` went into the image, and Cloud Run rejected it with **"Container import failed"**. The
+build itself succeeded, which makes it look like a Google-side glitch. Redeploying the previous
+image worked; excluding `assets/artists`, `assets/about us photos` and `assets/packaging` in
+`.dockerignore` fixed it. Most likely cause: the non-ASCII folder name `dorottya-juhász` (not
+proven which of the three).
+
+- **A new file the renderer `require`s needs BOTH a `COPY` in `Dockerfile` AND an exception in
+  `.dockerignore`**, which excludes `functions/` wholesale. #138's `functions/pdf-render-utils.js`
+  hit both, one after the other.
+- Diagnose "Container import failed" by redeploying the last good image with `--image <digest>`:
+  if that works, the new image's CONTENTS are the problem, not Google.
