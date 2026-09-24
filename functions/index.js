@@ -6,6 +6,7 @@ const { normalizeEmail, projectOrderForCustomer, sortOrdersNewestFirst } = requi
 const { generateReferralCode, extractPromotionCodeId, referrerRewardDecision } = require('./referral-utils');
 const { normalizePromoCode, promoValidationDecision, describeDiscount } = require('./promo-utils');
 const { resolveApprovedCaptionLines } = require('./caption-line-utils');
+const { isRenderInFlight } = require('./pdf-render-utils');
 const { createTransporter, FROM, renderEmail, emailButton } = require('./email');
 
 // ── Customer-facing link origins (ADR-0009) ────────────────────────────────
@@ -614,9 +615,27 @@ exports.generatePdf = functions
         });
       }
 
-      // Mark queued so the dashboard sees movement instantly, even before Cloud Run
-      // (possibly cold-starting) writes its first 'rendering' status.
-      await docRef.update({ pdfRender: { status: 'starting', mode: pdfMode, updatedAt: new Date() } });
+      // One render per order (TO-DOS #138): a UI-disabled button can't stop a second
+      // tab, so check-and-set inside a transaction. A stale in-flight render (no
+      // update in ~20 min — the renderer's hard timeout is 15 min) is treated as
+      // dead rather than a permanent lock (isRenderInFlight covers both rules).
+      // Also marks queued so the dashboard sees movement instantly, even before
+      // Cloud Run (possibly cold-starting) writes its first 'rendering' status.
+      try {
+        await db.runTransaction(async (tx) => {
+          const snap = await tx.get(docRef);
+          const current = snap.exists ? snap.data() : {};
+          if (isRenderInFlight(current.pdfRender, Date.now())) {
+            const err = new Error('A render is already in progress for this order');
+            err.statusCode = 409;
+            throw err;
+          }
+          tx.update(docRef, { pdfRender: { status: 'starting', mode: pdfMode, updatedAt: new Date() } });
+        });
+      } catch (err) {
+        if (err.statusCode === 409) return res.status(409).json({ error: err.message });
+        throw err;
+      }
 
       // Fire the renderer. We deliberately do NOT await it to completion — Cloud Run
       // continues server-side after we disconnect. .catch swallows the expected
@@ -709,6 +728,46 @@ exports.getPdfStatus = functions
       return res.status(200).json(out);
     } catch (err) {
       console.error('getPdfStatus error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+// ── Cancel a running PDF render (TO-DOS #138) ────────────────────────────────
+// Sets pdfRender.cancelRequested so the renderer stops at its next checkpoint
+// (before download, during throttled progress, before upload) and uploads
+// nothing — the previous PDF must survive a cancelled Regenerate. A no-op 400
+// if nothing is actually in flight (isRenderInFlight is the same stale-aware
+// rule generatePdf uses, so a dead render can't be "cancelled" into looking done).
+exports.cancelPdfRender = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (!(await isStaff(req))) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+
+    try {
+      const db = admin.firestore();
+      const docRef = db.collection('orders').doc(orderNumber);
+      const snap = await docRef.get();
+      if (!snap.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+      const order = snap.data();
+      if (!isRenderInFlight(order.pdfRender, Date.now())) {
+        return res.status(400).json({ error: 'No render in progress for this order' });
+      }
+      await docRef.update({ 'pdfRender.cancelRequested': true });
+      return res.status(200).json({ cancelRequested: true });
+    } catch (err) {
+      console.error('cancelPdfRender error:', err);
       return res.status(500).json({ error: err.message });
     }
   });

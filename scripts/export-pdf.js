@@ -1774,8 +1774,9 @@ async function main() {
 
   for (let si = 0; si < state.sequence.length; si++) {
     // Report progress before each spread (server mode only). Best-effort: a failed
-    // progress write must never abort the render.
-    if (onProgress) { try { await onProgress(si, state.sequence.length); } catch (_) {} }
+    // progress write must never abort the render. The one exception is a staff cancel
+    // (#138): the renderer throws an error marked renderCancelled to stop early.
+    if (onProgress) { try { await onProgress(si, state.sequence.length); } catch (err) { if (err && err.renderCancelled) throw err; } }
     const spreadId  = state.sequence[si];
     const spreadDef = DATA.spreads[spreadId];
     if (!spreadDef) { console.warn(`Unknown spread: ${spreadId}`); continue; }

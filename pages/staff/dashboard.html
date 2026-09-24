@@ -359,6 +359,7 @@
   const GET_PDF_URL_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getPdfUrl';
   const GENERATE_PDF_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/generatePdf';
   const GET_PDF_STATUS_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/getPdfStatus';
+  const CANCEL_PDF_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/cancelPdfRender';
   const MARK_SENT_TO_PRINT_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/markSentToPrint';
   const SUBMIT_PRINT_ORDER_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/submitPrintOrder';
   const SEND_PREVIEW_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/sendPreviewEmail';
@@ -581,8 +582,8 @@
           ${nudge}
           <div class="pdf-links-row" id="pdf-row-${esc(o.orderNumber)}" style="display:flex;margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center;">
             ${['new','approved','paid'].includes(o.status)
-              ? `<button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(o.orderNumber)}', this)">Generate PDF</button>
-                 <button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(o.orderNumber)}', this, false, 'print')">Generate print PDFs</button>`
+              ? `<button id="pdf-btn-${esc(o.orderNumber)}-preview" class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(o.orderNumber)}', this)">Generate PDF</button>
+                 <button id="pdf-btn-${esc(o.orderNumber)}-print" class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(o.orderNumber)}', this, false, 'print')">Generate print PDFs</button>`
               : ''}
           </div>
           <div class="print-action-row" id="print-action-${esc(o.orderNumber)}" style="margin-top:8px;">
@@ -663,19 +664,44 @@
         // A PDF already exists. Still offer a regenerate button (with confirm) for
         // generatable statuses, so staff can re-render after editing the book.
         if (['new','approved','paid'].includes(order.status)) {
-          pdfLinks.push(`<button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(order.orderNumber)}', this, true)">Regenerate PDF</button>`);
+          pdfLinks.push(`<button id="pdf-btn-${esc(order.orderNumber)}-preview" class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(order.orderNumber)}', this, true)">Regenerate PDF</button>`);
           // This row replaces the whole action row, so the print button must be
           // re-offered here too — otherwise it disappears as soon as any PDF exists.
           const hasPrint = found.includes('print_cover') || found.includes('print_inside');
-          pdfLinks.push(`<button class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(order.orderNumber)}', this, ${hasPrint}, 'print')">${hasPrint ? 'Regenerate print PDFs' : 'Generate print PDFs'}</button>`);
+          pdfLinks.push(`<button id="pdf-btn-${esc(order.orderNumber)}-print" class="pdf-link-btn" onclick="generatePdfFromDashboard('${esc(order.orderNumber)}', this, ${hasPrint}, 'print')">${hasPrint ? 'Regenerate print PDFs' : 'Generate print PDFs'}</button>`);
         }
         row.innerHTML = pdfLinks.join('');
         row.style.display = 'flex';
       }
+
+      // Shared status (TO-DOS #138): a render started from another tab, or before
+      // the last Refresh, has no local poll() loop running in THIS tab. Resume it
+      // from Firestore's pdfRender so the bar and disabled buttons reappear here.
+      if (isPdfRenderInFlight(order.pdfRender) && !row.querySelector('.pdf-progress-wrap')) {
+        const mode = order.pdfRender.mode === 'print' ? 'print' : 'preview';
+        const btn = document.getElementById(`pdf-btn-${order.orderNumber}-${mode}`);
+        if (btn) attachPdfPoll(order.orderNumber, mode, { btn, row, isRegenerate: true, resumed: true });
+      }
     }));
   }
 
-  // ── Generate PDF from dashboard (chunk-024) ──────────────────────────────
+  // Mirrors functions/pdf-render-utils.js isRenderInFlight — browser code can't
+  // require() that CommonJS module, so the same 20-minute stale rule is
+  // duplicated here. Keep both in sync if the rule changes (TO-DOS #138).
+  const PDF_RENDER_STALE_MS = 20 * 60 * 1000;
+  function isPdfRenderInFlight(pdfRender) {
+    if (!pdfRender) return false;
+    if (pdfRender.status !== 'starting' && pdfRender.status !== 'rendering') return false;
+    const updatedAt = pdfRender.updatedAt;
+    let updatedMs = null;
+    if (updatedAt && typeof updatedAt.toMillis === 'function') updatedMs = updatedAt.toMillis();
+    else if (updatedAt instanceof Date) updatedMs = updatedAt.getTime();
+    else if (typeof updatedAt === 'number') updatedMs = updatedAt;
+    if (updatedMs == null) return true;
+    return (Date.now() - updatedMs) < PDF_RENDER_STALE_MS;
+  }
+
+  // ── Generate PDF from dashboard (chunk-024, TO-DOS #138) ─────────────────
   // Calls the Cloud Run renderer via the generatePdf Cloud Function.
   // Staff must have saved the book state first — the PDF is built from Firestore.
   // The render runs async on Cloud Run (3–13 min). generatePdf just triggers it and
@@ -685,35 +711,17 @@
   // two print-house documents (cover wrap + square single inside pages).
   window.generatePdfFromDashboard = async function(orderNumber, btn, isRegenerate, mode) {
     const pdfMode = mode === 'print' ? 'print' : 'preview';
-    const what = pdfMode === 'print' ? 'Print PDFs already exist' : 'A PDF already exists';
-    if (isRegenerate && !confirm(`${what} for ${orderNumber}. Regenerate and overwrite them?`)) {
-      return;
-    }
+    const what = pdfMode === 'print' ? 'print PDFs' : 'a PDF';
+    // A fresh Generate now confirms too (TO-DOS #138) — only "Regenerate" used to.
+    const confirmMsg = isRegenerate
+      ? `${pdfMode === 'print' ? 'Print PDFs' : 'A PDF'} already exist${pdfMode === 'print' ? '' : 's'} for ${orderNumber}. Regenerate and overwrite them?`
+      : `Generate ${what} for ${orderNumber}?`;
+    if (!confirm(confirmMsg)) return;
+
     const row = document.getElementById(`pdf-row-${esc(orderNumber)}`);
     const origLabel = btn.textContent;
     btn.disabled = true;
     btn.textContent = 'Starting…';
-
-    // Build a small progress bar next to the button. The live status (Starting… /
-    // Rendering… N%) lives inside the button itself so it doesn't leave a stale
-    // "Starting…" sitting to the left of a moving percentage.
-    const wrap = document.createElement('span');
-    wrap.style.cssText = 'display:inline-flex;align-items:center;gap:8px;margin-left:8px;';
-    const barOuter = document.createElement('span');
-    barOuter.style.cssText = 'display:inline-block;width:120px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;';
-    const barInner = document.createElement('span');
-    barInner.style.cssText = 'display:block;height:100%;width:0%;background:var(--text);transition:width .3s ease;';
-    barOuter.appendChild(barInner);
-    wrap.appendChild(barOuter);
-    row.appendChild(wrap);
-
-    const cleanup = () => { wrap.remove(); };
-    const fail = (msg) => {
-      cleanup();
-      btn.textContent = origLabel;
-      btn.disabled = false;
-      alert(`PDF generation failed: ${msg}`);
-    };
 
     try {
       const res = await fetch(GENERATE_PDF_ENDPOINT, {
@@ -722,71 +730,158 @@
         body: JSON.stringify({ orderNumber, mode: pdfMode }),
       });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 409) {
+        // Another tab (or a crashed-but-not-yet-stale render) already has this order
+        // locked server-side. Refresh so the shared-status resume logic picks it up.
+        btn.disabled = false;
+        btn.textContent = origLabel;
+        alert(data.error || 'A render is already in progress for this order. Refresh to see its progress.');
+        return;
+      }
       if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
-
-      // Render started — poll for progress. ~16 min ceiling (covers an 80-page book).
-      const deadline = Date.now() + 16 * 60 * 1000;
-      const poll = async () => {
-        if (Date.now() > deadline) { fail('timed out waiting for the render'); return; }
-        let st;
-        try {
-          const r = await fetch(GET_PDF_STATUS_ENDPOINT, {
-            method: 'POST',
-            headers: await staffHeaders(),
-            body: JSON.stringify({ orderNumber }),
-          });
-          st = await r.json();
-          if (!r.ok) throw new Error(st.error || `Server error ${r.status}`);
-        } catch (err) {
-          // Transient network hiccup — keep polling rather than aborting the whole render.
-          setTimeout(poll, 3000);
-          return;
-        }
-
-        if (st.status === 'error') { fail(st.error || 'render error'); return; }
-
-        if (st.status === 'done') {
-          barInner.style.width = '100%';
-          const isPrintRender = (st.mode === 'print');
-          const mb = isPrintRender
-            ? (((st.coverSizeBytes || 0) + (st.insideSizeBytes || 0)) / 1024 / 1024).toFixed(1)
-            : (st.sizeBytes / 1024 / 1024).toFixed(1);
-          cleanup();
-          btn.disabled = false;
-          if (isPrintRender) {
-            // A print render produces TWO files, so one button can't stand in for the
-            // result. Rebuild the row instead — updatePdfLinks gives each its own
-            // download button (and re-signs the URL on click).
-            btn.textContent = origLabel;
-            await updatePdfLinks();
-          } else if (isRegenerate) {
-            // A "Preview PDF" button is already in this row, and openPdf() re-signs
-            // the URL on click — so it serves the freshly regenerated file. Just
-            // restore this button to "Regenerate PDF" instead of adding a duplicate.
-            btn.textContent = origLabel;
-          } else {
-            btn.textContent = 'Preview PDF';
-            btn.onclick = () => window.open(st.previewUrl, '_blank');
-          }
-          // Replace any prior size label so repeated regenerations don't stack them.
-          row.querySelectorAll('.pdf-size').forEach(s => s.remove());
-          const sizeSpan = document.createElement('span');
-          sizeSpan.className = 'pdf-size';
-          sizeSpan.style.cssText = 'font-size:11px;color:var(--muted);margin-left:6px;';
-          sizeSpan.textContent = `${mb} MB`;
-          row.appendChild(sizeSpan);
-          return;
-        }
-
-        // status 'starting' | 'rendering'
-        const pct = (st.total > 0) ? Math.round((st.done / st.total) * 100) : 0;
-        barInner.style.width = `${pct}%`;
-        btn.textContent = (st.total > 0) ? `Rendering… ${pct}%` : 'Starting…';
-        setTimeout(poll, 2500);
-      };
-      poll();
+      attachPdfPoll(orderNumber, pdfMode, { btn, origLabel, row, isRegenerate, resumed: false });
     } catch (err) {
-      fail(err.message);
+      btn.disabled = false;
+      btn.textContent = origLabel;
+      alert(`PDF generation failed: ${err.message}`);
+    }
+  };
+
+  // Shared by a fresh trigger (generatePdfFromDashboard) and a resumed poll after
+  // page load / Refresh (updatePdfLinks) — one render, one poll loop, either way
+  // it can be started (TO-DOS #138). Builds the progress bar + cancel (×) button
+  // and polls getPdfStatus until done/error/cancelled.
+  function attachPdfPoll(orderNumber, pdfMode, { btn, origLabel, row, isRegenerate, resumed }) {
+    origLabel = origLabel || btn.textContent;
+    btn.disabled = true;
+    // Disable the sibling mode's Generate/Regenerate button too — one render per
+    // order, and the server also refuses a second mode via the same guard.
+    const siblingMode = pdfMode === 'print' ? 'preview' : 'print';
+    const sibling = document.getElementById(`pdf-btn-${esc(orderNumber)}-${siblingMode}`);
+    if (sibling) sibling.disabled = true;
+
+    // Build a small progress bar + cancel button next to the button. The live
+    // status (Starting… / Rendering… N%) lives inside the button itself so it
+    // doesn't leave a stale "Starting…" sitting to the left of a moving percentage.
+    const wrap = document.createElement('span');
+    wrap.className = 'pdf-progress-wrap';
+    wrap.style.cssText = 'display:inline-flex;align-items:center;gap:6px;margin-left:8px;';
+    const barOuter = document.createElement('span');
+    barOuter.style.cssText = 'display:inline-block;width:120px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;';
+    const barInner = document.createElement('span');
+    barInner.style.cssText = 'display:block;height:100%;width:0%;background:var(--text);transition:width .3s ease;';
+    barOuter.appendChild(barInner);
+    wrap.appendChild(barOuter);
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.textContent = '×';
+    cancelBtn.title = `Cancel render for ${orderNumber}`;
+    cancelBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:15px;line-height:1;color:var(--muted);padding:0 2px;';
+    cancelBtn.onclick = () => cancelPdfRenderForOrder(orderNumber);
+    wrap.appendChild(cancelBtn);
+    row.appendChild(wrap);
+
+    const reEnable = () => {
+      btn.disabled = false;
+      if (sibling) sibling.disabled = false;
+    };
+    const cleanup = () => { wrap.remove(); };
+    const fail = (msg) => {
+      cleanup();
+      btn.textContent = origLabel;
+      reEnable();
+      alert(`PDF generation failed: ${msg}`);
+    };
+
+    // ~16 min ceiling (covers an 80-page book) from whenever THIS tab started
+    // watching — a resumed poll gets its own fresh ceiling rather than inheriting
+    // the original tab's, since we don't know how long it had already been running.
+    const deadline = Date.now() + 16 * 60 * 1000;
+    const poll = async () => {
+      if (Date.now() > deadline) { fail('timed out waiting for the render'); return; }
+      let st;
+      try {
+        const r = await fetch(GET_PDF_STATUS_ENDPOINT, {
+          method: 'POST',
+          headers: await staffHeaders(),
+          body: JSON.stringify({ orderNumber }),
+        });
+        st = await r.json();
+        if (!r.ok) throw new Error(st.error || `Server error ${r.status}`);
+      } catch (err) {
+        // Transient network hiccup — keep polling rather than aborting the whole render.
+        setTimeout(poll, 3000);
+        return;
+      }
+
+      if (st.status === 'error') { fail(st.error || 'render error'); return; }
+
+      if (st.status === 'cancelled') {
+        cleanup();
+        reEnable();
+        btn.textContent = 'Cancelled';
+        setTimeout(() => { btn.textContent = origLabel; }, 3000);
+        return;
+      }
+
+      if (st.status === 'done') {
+        barInner.style.width = '100%';
+        const isPrintRender = (st.mode === 'print');
+        const mb = isPrintRender
+          ? (((st.coverSizeBytes || 0) + (st.insideSizeBytes || 0)) / 1024 / 1024).toFixed(1)
+          : (st.sizeBytes / 1024 / 1024).toFixed(1);
+        cleanup();
+        reEnable();
+        if (isPrintRender) {
+          // A print render produces TWO files, so one button can't stand in for the
+          // result. Rebuild the row instead — updatePdfLinks gives each its own
+          // download button (and re-signs the URL on click).
+          btn.textContent = origLabel;
+          await updatePdfLinks();
+        } else if (isRegenerate) {
+          // A "Preview PDF" button is already in this row, and openPdf() re-signs
+          // the URL on click — so it serves the freshly regenerated file. Just
+          // restore this button to "Regenerate PDF" instead of adding a duplicate.
+          btn.textContent = origLabel;
+        } else {
+          btn.textContent = 'Preview PDF';
+          btn.onclick = () => window.open(st.previewUrl, '_blank');
+        }
+        // Replace any prior size label so repeated regenerations don't stack them.
+        row.querySelectorAll('.pdf-size').forEach(s => s.remove());
+        const sizeSpan = document.createElement('span');
+        sizeSpan.className = 'pdf-size';
+        sizeSpan.style.cssText = 'font-size:11px;color:var(--muted);margin-left:6px;';
+        sizeSpan.textContent = `${mb} MB`;
+        row.appendChild(sizeSpan);
+        return;
+      }
+
+      // status 'starting' | 'rendering'
+      const pct = (st.total > 0) ? Math.round((st.done / st.total) * 100) : 0;
+      barInner.style.width = `${pct}%`;
+      btn.textContent = (st.total > 0) ? `Rendering… ${pct}%` : (resumed ? 'Rendering…' : 'Starting…');
+      setTimeout(poll, 2500);
+    };
+    poll();
+  }
+
+  // ── Cancel a running render (×, TO-DOS #138) ─────────────────────────────
+  // Just asks the server to set cancelRequested; the active poll() loop above
+  // picks up status:'cancelled' on its next tick (within a couple of seconds)
+  // and updates the UI itself — nothing else to do here.
+  window.cancelPdfRenderForOrder = async function(orderNumber) {
+    if (!confirm(`Cancel the render for ${orderNumber}? The previous PDF (if any) is kept.`)) return;
+    try {
+      const res = await fetch(CANCEL_PDF_ENDPOINT, {
+        method: 'POST',
+        headers: await staffHeaders(),
+        body: JSON.stringify({ orderNumber }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) alert(data.error || 'Could not cancel the render.');
+    } catch (err) {
+      alert('Could not cancel: ' + err.message);
     }
   };
 

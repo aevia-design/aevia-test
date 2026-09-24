@@ -5,6 +5,7 @@ const path    = require('path');
 const { Firestore }  = require('@google-cloud/firestore');
 const { Storage }    = require('@google-cloud/storage');
 const { generatePdfFromFirestore, checkPageCountAgainstSequence } = require('../../scripts/export-pdf.js');
+const { shouldCancelRender } = require('../../functions/pdf-render-utils');
 
 const PORT        = process.env.PORT || 8080;
 const BUCKET_NAME = process.env.GCS_BUCKET || 'aevia-uploads-eu';
@@ -183,6 +184,21 @@ async function writeStatus(orderNumber, patch) {
   }
 }
 
+// Cancel checkpoints (TO-DOS #138): staff set pdfRender.cancelRequested via the
+// cancelPdfRender function. Reads happen only at the checkpoints below, not per
+// spread, so the added Firestore cost stays bounded (see call sites and the
+// session report for the exact count). A read error fails OPEN (keeps rendering)
+// rather than discarding a good render on a transient Firestore hiccup.
+async function checkCancelled(orderNumber) {
+  try {
+    const snap = await db.collection('orders').doc(orderNumber).get();
+    return shouldCancelRender((snap.data() || {}).pdfRender);
+  } catch (err) {
+    console.warn(`  ⚠ Could not check cancellation for ${orderNumber}: ${err.message}`);
+    return false;
+  }
+}
+
 // ── Request handler ────────────────────────────────────────────────────────────
 async function handleGenerate(body) {
   const { orderNumber } = body;
@@ -231,26 +247,56 @@ async function handleGenerate(body) {
   // the render actually started (covering Cloud Run cold-starts) before it returns.
   await writeStatus(orderNumber, { status: 'rendering', mode: pdfMode, done: 0, total, pageCount: state.pageCount });
 
+  // Cancel checkpoint 1/3: before the (potentially large, 1-4GB) photo download.
+  if (await checkCancelled(orderNumber)) {
+    console.log(`  ⏹ ${orderNumber}: cancelled before photo download`);
+    await writeStatus(orderNumber, { status: 'cancelled', mode: pdfMode });
+    return { cancelled: true };
+  }
+
   // 3. Fetch photos from GCS in-region (no internet egress)
   const bufferMap = await fetchAllPhotos(storedNames);
 
   // 4. Render PDF (uses the ported export-pdf.js logic). Throttle progress writes
   //    to ~1 per 1.5s so we don't hammer Firestore on fast spreads.
+  // Cancel checkpoint 2/3: piggybacked on the same throttle as the progress write
+  // (not a read per spread). Throws an error marked renderCancelled, which
+  // export-pdf.js lets through (every other progress error it swallows), so the
+  // render stops within ~1.5s instead of finishing and being discarded.
   let lastWrite = 0;
+  let cancelledDuringRender = false;
   const progressCb = async (done, tot) => {
     const now = Date.now();
     if (now - lastWrite < 1500) return;
     lastWrite = now;
+    if (await checkCancelled(orderNumber)) {
+      cancelledDuringRender = true;
+      throw Object.assign(new Error('render cancelled'), { renderCancelled: true });
+    }
     await writeStatus(orderNumber, { status: 'rendering', done, total: tot, pageCount: state.pageCount });
   };
-  const result = await generatePdfFromFirestore({
-    ordNum:    orderNumber,
-    stateData: state,
-    bufferMap,
-    fName:     folderName,
-    progressCb,
-    pdfMode,
-  });
+  let result;
+  try {
+    result = await generatePdfFromFirestore({
+      ordNum:    orderNumber,
+      stateData: state,
+      bufferMap,
+      fName:     folderName,
+      progressCb,
+      pdfMode,
+    });
+  } catch (err) {
+    if (!err || !err.renderCancelled) throw err;
+  }
+
+  // Cancel checkpoint 3/3: immediately before uploadPdf. This is the property that
+  // matters — nothing is uploaded, so the previous PDF survives a cancelled
+  // Regenerate. Re-check fresh (not just the flag) to catch a very late cancel.
+  if (cancelledDuringRender || await checkCancelled(orderNumber)) {
+    console.log(`  ⏹ ${orderNumber}: cancelled before upload — discarding render`);
+    await writeStatus(orderNumber, { status: 'cancelled', mode: pdfMode });
+    return { cancelled: true };
+  }
 
   // 5. Upload to GCS (signing happens in the generatePdf / getPdfStatus Cloud Function)
   if (pdfMode === 'print') {
