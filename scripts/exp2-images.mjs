@@ -30,8 +30,8 @@ const TEMPLATES = {
     specials:{ 'fp1':'open-04-fp1', 'fp2':'open-07-fp2', 'fp3':'open-11-fp3', 'fp4':'open-14-fp4', 'fp5':'open-18-fp5' },
   },
   wander: {
-    order: 'AEV-040',
-    spreads: { 'sp1':'open-01-sp1', 'sp2':'open-02-sp2', 'sp3':'open-03-sp3', 'sp4':'open-04-sp4' },
+    order: 'AEV-068',   // owner's picks, S196
+    spreads: { 'sp1':'open-01-sp1', 'sp2':'open-04-sp4', 'sp3':'open-05-sp5', 'sp4':'open-16-sp3', 'sp5':'open-13-sp6' },
     specials:{ 'fp1':'open-11-fp1' },
   },
   papercut: {

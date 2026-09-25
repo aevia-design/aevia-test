@@ -165,6 +165,10 @@ try {
     // The placement-warning badge (small orange ⚠ on a photo slot — a staff "out of date
     // order" flag) is baked into the screenshot; remove it so it never reaches the mockup.
     document.querySelectorAll(`${sel} .placement-warn-badge`).forEach(b => b.remove());
+    // The editor's "Add caption…" hint on an EMPTY caption is staff UI, never printed.
+    const st = document.createElement('style');
+    st.textContent = '.slot-caption:empty::before { content: none !important; }';
+    document.head.appendChild(st);
   }, SEL);
 
   const manifest = [];
