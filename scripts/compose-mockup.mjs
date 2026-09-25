@@ -79,19 +79,23 @@ const RIGHT = { left: mulR.left, top: pgR.top, right: pgR.right,  bottom: pgR.bo
 // shape: union of the white page base ("Page left/right", the curved silhouette) and the multiply
 // layer ("Left page "/"Right page", which reaches into the fold) so corners are trimmed but the
 // gutter still fills. Returns an absolute-pixel alpha sampler (0..255).
-function alphaSampler(names) {
+// The multiply layer only counts in the fold strip beyond the page base's gutter edge
+// (`inFold`): elsewhere it overhangs the paper onto the cover, and a dark page edge (the
+// map pages' navy frame) showed there as a line outside the book (S196).
+function alphaSampler(names, inFold) {
   const ls = names.map(layerRaw);
   return (ax, ay) => {
     let m = 0;
-    for (const r of ls) {
+    for (const [k, r] of ls.entries()) {
+      if (k > 0 && !inFold(ax)) continue;
       const lx = ax - r.left, ly = ay - r.top;
       if (lx >= 0 && ly >= 0 && lx < r.width && ly < r.height) { const a = r.buffer[(ly * r.width + lx) * 4 + 3]; if (a > m) m = a; }
     }
     return m;
   };
 }
-const maskLeft  = alphaSampler(['Page left', 'Left page ']);
-const maskRight = alphaSampler(['Page right', 'Right page']);
+const maskLeft  = alphaSampler(['Page left', 'Left page '], ax => ax >= pgL.right);
+const maskRight = alphaSampler(['Page right', 'Right page'], ax => ax < pgR.left);
 
 // Customer spread → two halves resized to each artwork slot.
 // The capture frames `.spread-pages`, which carries an asymmetric strip of container
@@ -121,6 +125,34 @@ async function half(left, w, slot, mask) {
   const sw = slot.right - slot.left, sh = slot.bottom - slot.top;
   const { data } = await img.clone().extract({ left, top: cT, width: w, height: contentH })
     .resize(sw, sh, { fit: 'fill' }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  // Bend each column to the page's CURVED height there (tallest at the fold), so the page's
+  // top and bottom edges follow the paper instead of being trimmed into a wedge — invisible
+  // on a pale page, obvious on a dark border like the map frames (S196).
+  const src = Buffer.from(data);
+  const T = [], B = [];
+  for (let x = 0; x < sw; x++) {
+    let t = 0, b = sh - 1;
+    while (t < b && mask(slot.left + x, slot.top + t) < 128) t++;
+    while (b > t && mask(slot.left + x, slot.top + b) < 128) b--;
+    T.push(t); B.push(b);
+  }
+  // The outline is found in whole pixels, which stair-steps a straight border; average it
+  // over neighbouring columns (real page columns only) to recover the smooth curve.
+  const R = 30, ok = x => B[x] - T[x] >= sh / 2;
+  const smooth = A => A.map((_, x) => { let s = 0, n = 0;
+    for (let k = Math.max(0, x - R); k <= Math.min(sw - 1, x + R); k++) if (ok(k)) { s += A[k]; n++; }
+    return n ? s / n : A[x]; });
+  const Ts = smooth(T), Bs = smooth(B);
+  for (let x = 0; x < sw; x++) {
+    if (!ok(x)) continue;   // no real page in this column — leave it, the clip hides it
+    const t = Ts[x], b = Bs[x];
+    for (let y = 0; y < sh; y++) {
+      const fy = Math.min(sh - 1, Math.max(0, (y - t) * (sh - 1) / (b - t)));
+      const y0 = Math.floor(fy), y1 = Math.min(sh - 1, y0 + 1), f = fy - y0;
+      for (let c = 0; c < 4; c++) data[(y * sw + x) * 4 + c] =
+        Math.round(src[(y0 * sw + x) * 4 + c] * (1 - f) + src[(y1 * sw + x) * 4 + c] * f);
+    }
+  }
   // Clip to the page silhouette: scale each pixel's alpha by the mask at its absolute position.
   for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
     const i = (y * sw + x) * 4;
