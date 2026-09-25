@@ -78,6 +78,24 @@
   // Default: DE on the /de/ pages, EN elsewhere; the customer can flip it either way.
   // The choice drives the whole order (artwork, form, captions) via the `lang` param.
   var LANG = window.location.pathname.indexOf('/de/') !== -1 ? 'de' : 'en';
+
+  // Germanization Stage 6: a page whose template has a German mockup set in <base>de/
+  // opts in with `deImages: true`; the gallery, thumbs and cards then follow LANG.
+  // Pages without the flag keep their English images whatever the language.
+  var EN_BASE = BASE;
+  function swapGalleryLang() {
+    if (!cfg.deImages) return;
+    var to = EN_BASE + (LANG === 'de' ? 'de/' : '');
+    var from = cfg.base;
+    if (from === to) return;
+    document.querySelectorAll('img').forEach(function (img) {
+      var src = img.getAttribute('src') || '';
+      if (src.indexOf(from) === 0 && src.slice(from.length).indexOf('/') === -1) {
+        img.setAttribute('src', to + src.slice(from.length));
+      }
+    });
+    cfg.base = to;
+  }
   var toggleHost = document.querySelector('.page-toggle');
   if (toggleHost) {
     var L = cfg.labels || {};
@@ -95,6 +113,7 @@
     toggleHost.parentNode.insertBefore(wrap, toggleHost.nextSibling);
     var langBtns = wrap.querySelectorAll('.seg button');
     var syncLang = function () {
+      swapGalleryLang();
       langBtns.forEach(function (b) {
         var on = b.dataset.lang === LANG;
         b.classList.toggle('on', on);

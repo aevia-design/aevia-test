@@ -44,6 +44,12 @@ const TEMPLATES = {
     spreads: { 'sp1':'open-01-sp1', 'sp2':'open-02-sp2', 'sp3':'open-03-sp3', 'sp4':'open-04-sp4' },
     specials:{ 'fpintro':'open-00-fpintro', 'fpstory':'open-07-fpstory', 'fpwords':'open-14-fpwords' },
   },
+  // German set (S195, owner's picks) -> exp2/tender/de/, the Stage 6 variant folder.
+  'tender-de': {
+    order: 'AEV-100', out: 'tender/de',
+    spreads: { 'sp1':'open-03-sp3', 'sp2':'open-06-sp6', 'sp3':'open-11-sp5', 'sp4':'open-12-sp6' },
+    specials:{ 'fpintro':'open-00-fpintro', 'fpstory':'open-14-fpstory', 'fpwords':'open-27-fpwords' },
+  },
   joyride: {
     order: 'AEV-069',
     spreads: { 'sp1':'sp1', 'sp2':'sp2', 'sp3':'sp3', 'sp4':'sp4', 'sp5':'sp5' },
@@ -99,7 +105,7 @@ if (!cfg.order) {
 }
 
 const src = `../mockups/${cfg.order}${cfg.monogram ? `-${cfg.monogram}` : ''}/`;
-const out = `../assets/images/mockups/exp2/${template}/`;
+const out = `../assets/images/mockups/exp2/${cfg.out || template}/`;
 mkdirSync(out, { recursive: true });
 
 // Accept either a literal composite name ('open-07-fpstory') or a bare book-sequence id
