@@ -3,6 +3,7 @@
 # to keep uploads small and builds fast. functions/pdf-render-utils.js is the one
 # exception: the renderer requires it (#138).
 .git
+.claude
 **/node_modules
 sessions
 qa
