@@ -52,8 +52,9 @@ const TEMPLATES = {
   },
   joyride: {
     order: 'AEV-069',
-    spreads: { 'sp1':'sp1', 'sp2':'sp2', 'sp3':'sp3', 'sp4':'sp4', 'sp5':'sp5' },
-    specials:{ 'fpintro':'fpintro', 'fp1':'fp1' },
+    // owner's picks, S196
+    spreads: { 'sp1':'open-03-sp3', 'sp2':'open-04-sp4', 'sp3':'open-05-sp5', 'sp4':'open-12-sp2', 'sp5':'open-07-sp7' },
+    specials:{ 'fpintro':'open-00-fpintro', 'fp1':'open-11-fp1' },
   },
   // Laguna names its five spreads EXPLICITLY (owner's picks, S172) rather than by bare
   // spread id. Two of the five are the same layout (SP1) shot with different photos at
