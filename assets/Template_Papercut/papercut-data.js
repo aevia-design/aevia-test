@@ -52,8 +52,8 @@ window.PAPERCUT_DATA = {
       // the year on the left and the name on the right. Swapped the GEOMETRY between the
       // two rows rather than the keys, so any caption text already saved against
       // 'name'/'year' stays with the right field.
-      { key: 'name',      xMm: 305, yMm: 180, wMm: 120, font: 'Source Sans 3', sizePt: 26, weight: 700, align: 'center',  color: '#4a4b40', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Our sweet Ann', placeholderDe: 'Unsere süße Ann', maxLength: 60 },
-      { key: 'year',      xMm: 394, yMm: 180, wMm: 60,  font: 'Source Sans 3', sizePt: 28, weight: 400, align: 'center', color: '#4a4b40', label: 'Front — year',       labelDe: 'Vorderseite — Jahr', placeholder: '2026', placeholderDe: '2026',          maxLength: 10 },
+      { key: 'name',      xMm: 305, yMm: 180, wMm: 85,  font: 'Source Sans 3', sizePt: 26, weight: 700, align: 'center',  color: '#4a4b40', label: 'Front — album name', labelDe: 'Vorderseite — Albumname', placeholder: 'Our sweet Ann', placeholderDe: 'Unsere süße Ann', maxLength: 60 },
+      { key: 'year',      xMm: 385, yMm: 180, wMm: 40,  font: 'Source Sans 3', sizePt: 28, weight: 400, align: 'center', color: '#4a4b40', label: 'Front — year',       labelDe: 'Vorderseite — Jahr', placeholder: '2026', placeholderDe: '2026',          maxLength: 10 },
       // Spine order corrected S154: the artboard puts the NAME at the top of the spine
       // and the YEAR below it; the y values were the wrong way round. Swapped yMm only.
       { key: 'spineName', xMm: 222.5, yMm: 78,  wMm: 98,  font: 'Source Sans 3', sizePt: 16, weight: 400, color: '#4a4b40', rotate: 270, label: 'Spine — name', labelDe: 'Buchrücken — Name', placeholder: 'Ann', placeholderDe: 'Ann',  maxLength: 20 },
