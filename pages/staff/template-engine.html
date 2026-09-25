@@ -4882,6 +4882,10 @@
       }
       const order = await res.json();
       window._loadedOrderNumber = order.orderNumber || raw;
+      // TO-DOS #99: the revision this tab loaded. saveStaffState carries it and
+      // is refused with 409 if the order was saved elsewhere since.
+      window._bookRevision = order.bookRevision || 0;
+      window._orderStatus  = order.status || null;
       // Always restore a saved book state when present — it holds the customer's
       // approved layout (approveOrder merges customer* → staff* at approval). There is
       // no "start from scratch" prompt: discarding a saved book was a footgun (native
@@ -5388,12 +5392,25 @@
           heartCrop:           window.heartCrop           || {},
           bookComplete:        completeness.complete,
           incompleteReasons:   completeness.reasons,
+          // TO-DOS #99: the revision this tab loaded — refused with 409 if the
+          // order was saved elsewhere since (another tab, or the customer/report
+          // flow bumping it), and refused if the book is currently with the
+          // customer (locked from review_sent on, except 'issue').
+          bookRevision:        window._bookRevision || 0,
         }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        if (res.status === 409 && err.code === 'LOCKED') {
+          throw new Error('This book is with the customer and cannot be saved right now.');
+        }
+        if (res.status === 409 && err.code === 'STALE') {
+          throw new Error((err.error || 'This book was saved elsewhere.') + ' Reload the order to continue.');
+        }
         throw new Error(err.error || `Server error ${res.status}`);
       }
+      const data = await res.json().catch(() => ({}));
+      if (typeof data.bookRevision === 'number') window._bookRevision = data.bookRevision;
       status.textContent = 'Saved ✓';
       setTimeout(() => { status.textContent = ''; }, 3000);
     } catch (err) {

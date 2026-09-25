@@ -6,6 +6,10 @@ const { normalizeEmail, projectOrderForCustomer, sortOrdersNewestFirst } = requi
 const { generateReferralCode, extractPromotionCodeId, referrerRewardDecision } = require('./referral-utils');
 const { normalizePromoCode, promoValidationDecision, describeDiscount } = require('./promo-utils');
 const { resolveApprovedCaptionLines } = require('./caption-line-utils');
+const {
+  canStaffSave, canCustomerSave, canApprove, canAcceptBlockingReport,
+  revisionMatches, mapCustomerToStaffUpdates, buildReportEntry,
+} = require('./review-lock-utils');
 const { isRenderInFlight } = require('./pdf-render-utils');
 const { createTransporter, FROM, renderEmail, emailButton } = require('./email');
 
@@ -302,6 +306,10 @@ exports.getOrder = functions
         customerCaptionStyles:      order.customerCaptionStyles      || null,
         customerCoverCaptionStyles: order.customerCoverCaptionStyles || null,
         customerHeartCrop:          order.customerHeartCrop          || null,
+        // TO-DOS #99: revision counter + reports, absent reads as 0/[] for old orders.
+        bookRevision:               order.bookRevision               || 0,
+        reports:                    order.reports                    || [],
+        issueNote:                  order.issueNote                  || null,
         signedUrls,
         derivativeUrls, // chunk-023: web-resolution URLs for engine rendering (fallback to signedUrls)
         storedNames: {
@@ -329,7 +337,7 @@ exports.saveOrderState = functions
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    const { token, bookAssignments, captions, captionLines, spreadCaptionStyles, coverCaptionStyles, heartCrop } = req.body;
+    const { token, bookAssignments, captions, captionLines, spreadCaptionStyles, coverCaptionStyles, heartCrop, bookRevision } = req.body;
     if (!token) return res.status(403).json({ error: 'Token required' });
 
     try {
@@ -341,20 +349,45 @@ exports.saveOrderState = functions
 
       if (snapshot.empty) return res.status(403).json({ error: 'Invalid or expired token' });
 
-      await snapshot.docs[0].ref.update({
-        customerBookAssignments: bookAssignments || null,
-        customerCaptions:        captions        || null,
-        // Where each caption actually broke on screen — mirrors staffBookCaptionLines
-        // (TO-DOS #129). See captionVisualLines()/collectCaptionLines() in customer-preview.html.
-        customerCaptionLines:    captionLines    || null,
-        customerCaptionStyles:   spreadCaptionStyles || null,
-        customerCoverCaptionStyles: coverCaptionStyles || null,
-        customerHeartCrop:       heartCrop || null,
-        customerUpdatedAt:       admin.firestore.FieldValue.serverTimestamp(),
+      const orderRef = snapshot.docs[0].ref;
+
+      const newRevision = await db.runTransaction(async (tx) => {
+        const doc = await tx.get(orderRef);
+        const orderData = doc.data();
+
+        // TO-DOS #99: the customer's own save is only accepted while the book
+        // is theirs to review — never while staff are mid-fix ('issue') or later.
+        if (!canCustomerSave(orderData.status)) {
+          const err = new Error('This book cannot be edited right now.');
+          err.code = 'LOCKED';
+          throw err;
+        }
+        if (!revisionMatches(orderData, bookRevision)) {
+          const err = new Error('Your book was updated elsewhere. Please reload.');
+          err.code = 'STALE';
+          throw err;
+        }
+
+        const next = ((orderData.bookRevision) || 0) + 1;
+        tx.update(orderRef, {
+          customerBookAssignments: bookAssignments || null,
+          customerCaptions:        captions        || null,
+          // Where each caption actually broke on screen — mirrors staffBookCaptionLines
+          // (TO-DOS #129). See captionVisualLines()/collectCaptionLines() in customer-preview.html.
+          customerCaptionLines:    captionLines    || null,
+          customerCaptionStyles:   spreadCaptionStyles || null,
+          customerCoverCaptionStyles: coverCaptionStyles || null,
+          customerHeartCrop:       heartCrop || null,
+          customerUpdatedAt:       admin.firestore.FieldValue.serverTimestamp(),
+          bookRevision:            next,
+        });
+        return next;
       });
 
-      return res.status(200).json({ success: true });
+      return res.status(200).json({ success: true, bookRevision: newRevision });
     } catch (err) {
+      if (err.code === 'STALE') return res.status(409).json({ error: err.message, code: 'STALE' });
+      if (err.code === 'LOCKED') return res.status(409).json({ error: err.message, code: 'LOCKED' });
       console.error('saveOrderState error:', err);
       return res.status(500).json({ error: err.message });
     }
@@ -371,7 +404,13 @@ exports.approveOrder = functions
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    const { token } = req.body;
+    // TO-DOS #99 (Codex review fix): approve carries the displayed book state in
+    // the SAME request, so a stale tab can never save an old draft then promote
+    // it. bookAssignments/captions/etc mirror saveOrderState's payload — when
+    // present they overwrite the order's customer* fields before promotion runs;
+    // when absent (older callers), promotion reads whatever is already stored.
+    const { token, bookRevision, bookAssignments, captions, captionLines,
+            spreadCaptionStyles, coverCaptionStyles, heartCrop } = req.body;
     if (!token) return res.status(403).json({ error: 'Token required' });
 
     try {
@@ -384,62 +423,80 @@ exports.approveOrder = functions
       if (snapshot.empty) return res.status(403).json({ error: 'Invalid or expired token' });
 
       const orderRef = snapshot.docs[0].ref;
-      const orderData = snapshot.docs[0].data();
 
-      if (orderData.status === 'approved' || orderData.status === 'paid') {
-        return res.status(409).json({ error: 'Order is already approved or paid' });
-      }
+      await db.runTransaction(async (tx) => {
+        const doc = await tx.get(orderRef);
+        const orderData = doc.data();
 
-      // Merge customer-approved state into staff fields
-      // Only overwrite if customer field exists and is not null
-      const updates = {
-        status: 'approved',
-        approvedAt: admin.firestore.FieldValue.serverTimestamp(),
-        statusHistory: admin.firestore.FieldValue.arrayUnion({
+        if (!canApprove(orderData.status)) {
+          const err = new Error(
+            orderData.status === 'issue'
+              ? 'A reported problem is still open — approval is blocked until it is fixed.'
+              : 'Order is already approved or paid'
+          );
+          err.code = orderData.status === 'issue' ? 'ISSUE_OPEN' : 'ALREADY_DONE';
+          throw err;
+        }
+        if (!revisionMatches(orderData, bookRevision)) {
+          const err = new Error('Your book was updated elsewhere. Please reload.');
+          err.code = 'STALE';
+          throw err;
+        }
+
+        // Save the displayed state onto customer* first (same shape as
+        // saveOrderState), then promote from THAT merged data — never from a
+        // possibly-older doc read.
+        const merged = { ...orderData };
+        if (bookAssignments !== undefined) merged.customerBookAssignments = bookAssignments || null;
+        if (captions !== undefined) merged.customerCaptions = captions || null;
+        if (captionLines !== undefined) merged.customerCaptionLines = captionLines || null;
+        if (spreadCaptionStyles !== undefined) merged.customerCaptionStyles = spreadCaptionStyles || null;
+        if (coverCaptionStyles !== undefined) merged.customerCoverCaptionStyles = coverCaptionStyles || null;
+        if (heartCrop !== undefined) merged.customerHeartCrop = heartCrop || null;
+
+        const updates = {
+          ...mapCustomerToStaffUpdates(merged),
+          customerBookAssignments:    merged.customerBookAssignments    || null,
+          customerCaptions:           merged.customerCaptions           || null,
+          customerCaptionLines:       merged.customerCaptionLines       || null,
+          customerCaptionStyles:      merged.customerCaptionStyles      || null,
+          customerCoverCaptionStyles: merged.customerCoverCaptionStyles || null,
+          customerHeartCrop:          merged.customerHeartCrop          || null,
           status: 'approved',
-          timestamp: admin.firestore.Timestamp.now()
-        })
-      };
+          approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+          statusHistory: admin.firestore.FieldValue.arrayUnion({
+            status: 'approved',
+            timestamp: admin.firestore.Timestamp.now()
+          }),
+          bookRevision: ((orderData.bookRevision) || 0) + 1,
+        };
 
-      // Copy customer fields to staff fields, respecting existing staff values if customer is null
-      if (orderData.customerBookAssignments != null) {
-        updates.staffBookAssignments = orderData.customerBookAssignments;
-      }
-      if (orderData.customerCaptions != null) {
-        updates.staffBookCaptions = orderData.customerCaptions;
-        // The staff-recorded lines describe pre-approval text and must not survive
-        // (captionLinesFor's staleness guard would reject them anyway). Since #129 the
-        // customer surface records its own line breaks, so those are promoted instead —
-        // null for any order saved before this change, since the field won't exist.
-        updates.staffBookCaptionLines = resolveApprovedCaptionLines(orderData);
-      }
-      if (orderData.customerCaptionStyles != null) {
-        updates.staffSpreadCaptionStyles = orderData.customerCaptionStyles;
-      }
-      if (orderData.customerCoverCaptionStyles != null) {
-        updates.staffCoverCaptionStyles = orderData.customerCoverCaptionStyles;
-      }
-      if (orderData.customerBookSequence != null) {
-        updates.staffBookSequence = orderData.customerBookSequence;
-      }
-      if (orderData.customerHeartCrop != null) {
-        updates.staffHeartCrop = orderData.customerHeartCrop;
-      }
-
-      await orderRef.update(updates);
+        tx.update(orderRef, updates);
+      });
 
       return res.status(200).json({ success: true });
     } catch (err) {
+      if (err.code === 'STALE') return res.status(409).json({ error: err.message, code: 'STALE' });
+      if (err.code === 'ISSUE_OPEN') return res.status(409).json({ error: err.message, code: 'ISSUE_OPEN' });
+      if (err.code === 'ALREADY_DONE') return res.status(409).json({ error: err.message });
       console.error('approveOrder error:', err);
       return res.status(500).json({ error: err.message });
     }
   });
 
 // ── Report an issue (customer flags a problem from the preview) ───────────────
-// Token-gated (only someone with the preview link can call it). Records the note
-// on the order, flips a review_sent order to 'issue' so it surfaces on the staff
-// dashboard, and emails support@ so it's seen even if no one is watching the
-// dashboard. Deliberately one-way: the back-and-forth then happens over email.
+// Token-gated (only someone with the preview link can call it). Two kinds of
+// report (TO-DOS #99, decision B2):
+//  - 'feedback' — appended to `reports`, emailed, no status change, approval
+//    stays open.
+//  - 'blocking' — only accepted in review_sent. In one transaction: saves the
+//    customer's displayed book state onto customer*, promotes it into
+//    staffBook* (the SAME mapping approveOrder uses), clears customer*, resets
+//    staffBookComplete so a re-send needs a fresh staff save, and flips status
+//    to 'issue'. The customer editor goes read-only immediately (this request's
+//    response), not only on next reload.
+// Every report is kept in `reports` (not just the latest); `issueNote` is kept
+// for back-compat with anything still reading it.
 exports.reportOrderIssue = functions
   .region('europe-west1')
   .runWith({ timeoutSeconds: 30, memory: '256MB' })
@@ -450,10 +507,14 @@ exports.reportOrderIssue = functions
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    const { token, message } = req.body;
+    const {
+      token, message, reportType, bookRevision,
+      bookAssignments, captions, captionLines, spreadCaptionStyles, coverCaptionStyles, heartCrop,
+    } = req.body;
     if (!token) return res.status(403).json({ error: 'Token required' });
     const note = String(message || '').trim().slice(0, 1000);
     if (!note) return res.status(400).json({ error: 'Message required' });
+    const isBlocking = reportType === 'blocking';
 
     try {
       const db = admin.firestore();
@@ -464,24 +525,67 @@ exports.reportOrderIssue = functions
 
       if (snapshot.empty) return res.status(403).json({ error: 'Invalid or expired token' });
 
-      const orderRef  = snapshot.docs[0].ref;
-      const orderData = snapshot.docs[0].data();
+      const orderRef = snapshot.docs[0].ref;
+      let orderData;
 
-      const updates = {
-        issueNote:       note,
-        issueReportedAt: admin.firestore.FieldValue.serverTimestamp(),
-      };
-      // Only knock the order back to 'issue' from the preview stage — never
-      // clobber an approved/paid/in-production order's status. The note + email
-      // still land so staff see it regardless.
-      if (orderData.status === 'review_sent') {
-        updates.status = 'issue';
-        updates.statusHistory = admin.firestore.FieldValue.arrayUnion({
-          status: 'issue',
-          timestamp: admin.firestore.Timestamp.now(),
+      if (isBlocking) {
+        orderData = await db.runTransaction(async (tx) => {
+          const doc = await tx.get(orderRef);
+          const data = doc.data();
+
+          if (!canAcceptBlockingReport(data.status)) {
+            const err = new Error('This can only be reported while the book is out for review.');
+            err.code = 'NOT_REVIEW_SENT';
+            throw err;
+          }
+          if (!revisionMatches(data, bookRevision)) {
+            const err = new Error('Your book was updated elsewhere. Please reload.');
+            err.code = 'STALE';
+            throw err;
+          }
+
+          // Save the customer's displayed (possibly unsaved) edits first, so
+          // the promotion below promotes what they're actually looking at.
+          const merged = { ...data };
+          if (bookAssignments !== undefined) merged.customerBookAssignments = bookAssignments || null;
+          if (captions !== undefined) merged.customerCaptions = captions || null;
+          if (captionLines !== undefined) merged.customerCaptionLines = captionLines || null;
+          if (spreadCaptionStyles !== undefined) merged.customerCaptionStyles = spreadCaptionStyles || null;
+          if (coverCaptionStyles !== undefined) merged.customerCoverCaptionStyles = coverCaptionStyles || null;
+          if (heartCrop !== undefined) merged.customerHeartCrop = heartCrop || null;
+
+          const entry = buildReportEntry('blocking', note, admin.firestore.Timestamp.now());
+
+          const updates = {
+            ...mapCustomerToStaffUpdates(merged),
+            // One live copy (decision B2): clear customer* now that it's promoted.
+            customerBookAssignments:    null,
+            customerCaptions:           null,
+            customerCaptionLines:       null,
+            customerCaptionStyles:      null,
+            customerCoverCaptionStyles: null,
+            customerHeartCrop:          null,
+            staffBookComplete:          false,
+            issueNote:       note, // back-compat for anything still reading it
+            issueReportedAt: admin.firestore.FieldValue.serverTimestamp(),
+            reports:         admin.firestore.FieldValue.arrayUnion(entry),
+            status: 'issue',
+            statusHistory: admin.firestore.FieldValue.arrayUnion({
+              status: 'issue',
+              timestamp: admin.firestore.Timestamp.now(),
+            }),
+            bookRevision: ((data.bookRevision) || 0) + 1,
+          };
+          tx.update(orderRef, updates);
+          return data;
+        });
+      } else {
+        orderData = snapshot.docs[0].data();
+        const entry = buildReportEntry('feedback', note, admin.firestore.Timestamp.now());
+        await orderRef.update({
+          reports: admin.firestore.FieldValue.arrayUnion(entry),
         });
       }
-      await orderRef.update(updates);
 
       try {
         const transporter = createTransporter();
@@ -489,14 +593,16 @@ exports.reportOrderIssue = functions
           from:    FROM.orders.from,
           to:      'support@aevia.at',
           replyTo: orderData.email || undefined,
-          subject: `Issue reported — ${orderData.orderNumber}`,
+          subject: isBlocking
+            ? `Issue reported — ${orderData.orderNumber}`
+            : `Feedback — ${orderData.orderNumber}`,
           html: `
             <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#2a2a2a;line-height:1.6">
-              <p><strong>${orderData.orderNumber}</strong> — the customer reported an issue with their book.</p>
+              <p><strong>${orderData.orderNumber}</strong> — the customer ${isBlocking ? 'reported an issue with' : 'shared feedback about'} their book.</p>
               <p><strong>Customer:</strong> ${orderData.customerName || '—'} (${orderData.email || '—'})<br>
                  <strong>Current status:</strong> ${orderData.status || '—'}</p>
               <p><strong>Their message:</strong></p>
-              <blockquote style="margin:0;padding:10px 14px;border-left:3px solid #dc2626;background:#fff5f5;white-space:pre-wrap">${note.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</blockquote>
+              <blockquote style="margin:0;padding:10px 14px;border-left:3px solid ${isBlocking ? '#dc2626' : '#8a8a8a'};background:${isBlocking ? '#fff5f5' : '#f7f7f5'};white-space:pre-wrap">${note.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</blockquote>
               <p style="margin-top:16px"><a href="${siteOrigin(req)}/pages/staff/dashboard.html">Open the staff dashboard →</a></p>
             </div>`,
         });
@@ -508,7 +614,81 @@ exports.reportOrderIssue = functions
 
       return res.status(200).json({ success: true });
     } catch (err) {
+      if (err.code === 'STALE') return res.status(409).json({ error: err.message, code: 'STALE' });
+      if (err.code === 'NOT_REVIEW_SENT') return res.status(409).json({ error: err.message, code: 'NOT_REVIEW_SENT' });
       console.error('reportOrderIssue error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+// ── Unlock for fix (staff, dashboard) ────────────────────────────────────────
+// TO-DOS #99, review v1 fix #3: an emailed report is unlocked by staff setting
+// 'issue' in the dashboard — but that must run the SAME promotion a blocking
+// customer report runs, or the fix lands on a stale staff copy while the
+// customer's real draft sits uncleared. The dashboard calls this instead of
+// writing `status` directly through the Firestore client SDK.
+exports.openIssueForFix = functions
+  .region('europe-west1')
+  .runWith({ timeoutSeconds: 30, memory: '256MB' })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Staff-Key, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    if (!(await isStaff(req))) {
+      return res.status(403).json({ error: 'Unauthorised' });
+    }
+
+    const { orderNumber, note } = req.body;
+    if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
+
+    try {
+      const db = admin.firestore();
+      const orderRef = db.collection('orders').doc(orderNumber);
+
+      await db.runTransaction(async (tx) => {
+        const doc = await tx.get(orderRef);
+        if (!doc.exists) {
+          const err = new Error(`Order ${orderNumber} not found`);
+          err.code = 'NOT_FOUND';
+          throw err;
+        }
+        const data = doc.data();
+        if (!canAcceptBlockingReport(data.status)) {
+          const err = new Error('This order is not out for review, so it cannot be unlocked for a fix.');
+          err.code = 'NOT_REVIEW_SENT';
+          throw err;
+        }
+
+        const entry = buildReportEntry('blocking', note || 'Reported by email — unlocked by staff.', admin.firestore.Timestamp.now());
+        const updates = {
+          ...mapCustomerToStaffUpdates(data),
+          customerBookAssignments:    null,
+          customerCaptions:           null,
+          customerCaptionLines:       null,
+          customerCaptionStyles:      null,
+          customerCoverCaptionStyles: null,
+          customerHeartCrop:          null,
+          staffBookComplete: false,
+          issueReportedAt: admin.firestore.FieldValue.serverTimestamp(),
+          reports: admin.firestore.FieldValue.arrayUnion(entry),
+          status: 'issue',
+          statusHistory: admin.firestore.FieldValue.arrayUnion({
+            status: 'issue',
+            timestamp: admin.firestore.Timestamp.now(),
+          }),
+          bookRevision: ((data.bookRevision) || 0) + 1,
+        };
+        tx.update(orderRef, updates);
+      });
+
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      if (err.code === 'NOT_FOUND') return res.status(404).json({ error: err.message });
+      if (err.code === 'NOT_REVIEW_SENT') return res.status(409).json({ error: err.message });
+      console.error('openIssueForFix error:', err);
       return res.status(500).json({ error: err.message });
     }
   });
@@ -531,31 +711,60 @@ exports.saveStaffState = functions
 
     const { orderNumber, bookAssignments, bookCaptions, bookCaptionLines, bookSequence,
             coverCaptionStyles, spreadCaptionStyles, heartCrop,
-            bookComplete, incompleteReasons } = req.body;
+            bookComplete, incompleteReasons, bookRevision } = req.body;
     if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
 
     try {
       const db = admin.firestore();
-      const doc = await db.collection('orders').doc(orderNumber).get();
-      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
+      const orderRef = db.collection('orders').doc(orderNumber);
 
-      await doc.ref.update({
-        staffBookAssignments: bookAssignments || null,
-        staffBookCaptions:    bookCaptions    || null,
-        // Line breaks as laid out in the engine. The PDF draws these rather than
-        // re-wrapping the text with its own measurement (S159).
-        staffBookCaptionLines: bookCaptionLines || null,
-        staffBookSequence:    bookSequence    || null,
-        staffCoverCaptionStyles:  coverCaptionStyles  || null,
-        staffSpreadCaptionStyles: spreadCaptionStyles || null,
-        staffHeartCrop:       heartCrop || null,
-        staffBookComplete:    bookComplete === true,
-        staffIncompleteReasons: incompleteReasons || [],
-        staffSavedAt:         admin.firestore.FieldValue.serverTimestamp(),
+      const newRevision = await db.runTransaction(async (tx) => {
+        const doc = await tx.get(orderRef);
+        if (!doc.exists) {
+          const err = new Error(`Order ${orderNumber} not found`);
+          err.code = 'NOT_FOUND';
+          throw err;
+        }
+        const orderData = doc.data();
+
+        // TO-DOS #99: once the book is with the customer (review_sent or
+        // later), staff cannot save — except in 'issue', which a blocking
+        // report or the dashboard's "Unlock for fix" opens back up.
+        if (!canStaffSave(orderData.status)) {
+          const err = new Error('This book is with the customer and cannot be saved right now.');
+          err.code = 'LOCKED';
+          throw err;
+        }
+        if (!revisionMatches(orderData, bookRevision)) {
+          const err = new Error('This book was saved elsewhere. Please reload.');
+          err.code = 'STALE';
+          throw err;
+        }
+
+        const next = ((orderData.bookRevision) || 0) + 1;
+        tx.update(orderRef, {
+          staffBookAssignments: bookAssignments || null,
+          staffBookCaptions:    bookCaptions    || null,
+          // Line breaks as laid out in the engine. The PDF draws these rather than
+          // re-wrapping the text with its own measurement (S159).
+          staffBookCaptionLines: bookCaptionLines || null,
+          staffBookSequence:    bookSequence    || null,
+          staffCoverCaptionStyles:  coverCaptionStyles  || null,
+          staffSpreadCaptionStyles: spreadCaptionStyles || null,
+          staffHeartCrop:       heartCrop || null,
+          staffBookComplete:    bookComplete === true,
+          staffIncompleteReasons: incompleteReasons || [],
+          staffSavedAt:         admin.firestore.FieldValue.serverTimestamp(),
+          bookRevision:         next,
+        });
+        return next;
       });
 
-      return res.status(200).json({ success: true });
+      return res.status(200).json({ success: true, bookRevision: newRevision });
     } catch (err) {
+      if (err.code === 'NOT_FOUND') return res.status(404).json({ error: err.message });
+      if (err.code === 'LOCKED') return res.status(409).json({ error: err.message, code: 'LOCKED' });
+      if (err.code === 'STALE') return res.status(409).json({ error: err.message, code: 'STALE' });
       console.error('saveStaffState error:', err);
       return res.status(500).json({ error: err.message });
     }
@@ -1716,7 +1925,10 @@ exports.markSentToPrint = functions
 // an incomplete or unreviewed book never reaches a customer. Safe to call again
 // to resend — it re-stamps sentAt and re-sends the email without duplicating the
 // status-history entry.
-const PRE_APPROVAL_STATUSES = ['uploading', 'new', 'designing', 'needs_info', 'review_sent'];
+// TO-DOS #99: 'issue' is added deliberately — accepting a re-send from 'issue'
+// is what closes the fix-and-re-send loop (it re-locks staff by setting
+// review_sent). Without it, sendPreviewEmail is a dead end for every unlocked order.
+const PRE_APPROVAL_STATUSES = ['uploading', 'new', 'designing', 'needs_info', 'review_sent', 'issue'];
 
 exports.sendPreviewEmail = functions
   .region('europe-west1')
@@ -1763,26 +1975,53 @@ exports.sendPreviewEmail = functions
 
       // Capture the immutable snapshot of what the customer is about to see,
       // stamped with the send time. Read straight from the order doc so this is
-      // authoritative (not whatever a stale browser tab holds).
+      // authoritative (not whatever a stale browser tab holds). Gains heartCrop
+      // and caption lines (Codex review fix) so a re-approved reprint can't
+      // silently lose them.
+      const sentAt = admin.firestore.FieldValue.serverTimestamp();
       const sentSnapshot = {
         bookAssignments:     order.staffBookAssignments     || null,
         bookCaptions:        order.staffBookCaptions         || null,
+        bookCaptionLines:    order.staffBookCaptionLines     || null,
         bookSequence:        order.staffBookSequence         || null,
         coverCaptionStyles:  order.staffCoverCaptionStyles   || null,
         spreadCaptionStyles: order.staffSpreadCaptionStyles  || null,
-        sentAt:              admin.firestore.FieldValue.serverTimestamp(),
+        heartCrop:           order.staffHeartCrop            || null,
+        sentAt,
       };
 
-      const update = { status: 'review_sent', sentSnapshot };
-      // Only add a history entry on the first transition into review_sent — a
-      // resend re-stamps sentAt but shouldn't pile up duplicate history rows.
-      if (order.status !== 'review_sent') {
-        update.statusHistory = admin.firestore.FieldValue.arrayUnion({
+      // TO-DOS #99 (Codex review fix): every send (first and re-sends) writes a
+      // frozen, numbered history entry via create() — never overwritten by a
+      // later send or by approval. n = the order's own incrementing sendCount.
+      const sendCount = (order.sendCount || 0) + 1;
+      const versionRef = ref.collection('sentVersions').doc(String(sendCount));
+
+      await db.runTransaction(async (tx) => {
+        const fresh = await tx.get(ref);
+        const freshData = fresh.data();
+        if (!PRE_APPROVAL_STATUSES.includes(freshData.status)) {
+          const err = new Error(`Order is already past the preview stage (${freshData.status}).`);
+          err.code = 'PAST_PREVIEW';
+          throw err;
+        }
+
+        const update = {
           status: 'review_sent',
-          timestamp: admin.firestore.Timestamp.now(),
-        });
-      }
-      await ref.update(update);
+          sentSnapshot,
+          sendCount,
+          bookRevision: ((freshData.bookRevision) || 0) + 1,
+        };
+        // Only add a history entry on the first transition into review_sent — a
+        // resend re-stamps sentAt but shouldn't pile up duplicate history rows.
+        if (freshData.status !== 'review_sent') {
+          update.statusHistory = admin.firestore.FieldValue.arrayUnion({
+            status: 'review_sent',
+            timestamp: admin.firestore.Timestamp.now(),
+          });
+        }
+        tx.update(ref, update);
+        tx.create(versionRef, { ...sentSnapshot, sentAt: admin.firestore.Timestamp.now(), n: sendCount });
+      });
 
       // Email the customer their preview link (S105-approved shell).
       const previewUrl = `${siteOrigin(req)}/pages/customer-preview.html?token=${order.previewToken}`;
@@ -1827,6 +2066,7 @@ exports.sendPreviewEmail = functions
 
       return res.status(200).json({ success: true });
     } catch (err) {
+      if (err.code === 'PAST_PREVIEW') return res.status(409).json({ error: err.message });
       console.error('sendPreviewEmail error:', err);
       return res.status(500).json({ error: err.message });
     }
