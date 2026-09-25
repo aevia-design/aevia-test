@@ -3586,7 +3586,11 @@
     if (document.getElementById('issue-lock-banner')) return;
     const banner = document.createElement('div');
     banner.id = 'issue-lock-banner';
-    banner.style.cssText = 'position:sticky;top:0;z-index:900;background:#fff5f5;border-bottom:1px solid #f3c8c8;color:#7a2020;padding:12px 20px;font-size:14px;text-align:center;';
+    // Sits directly under the fixed .nav (whose height differs on mobile) rather
+    // than on top of it. It covers the edit-hints bar, which is moot while locked.
+    const nav = document.querySelector('.nav');
+    const top = nav ? nav.offsetHeight : 0;
+    banner.style.cssText = `position:fixed;top:${top}px;left:0;right:0;z-index:95;background:#fff5f5;border-bottom:1px solid #f3c8c8;color:#7a2020;padding:12px 20px;font-size:14px;text-align:center;`;
     banner.textContent = t('issueBannerLocked');
     document.body.prepend(banner);
   }
