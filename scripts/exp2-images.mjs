@@ -67,7 +67,7 @@ const TEMPLATES = {
     specials:{ 'fpintro':'open-00-fpintro', 'fp1':'open-11-fp1' },
   },
   newborn: {
-    order: 'AEV-039',
+    order: 'AEV-071',   // owner's picks, S196
     spreads: { 'sp1':'open-01-sp1', 'sp2':'open-02-sp2', 'sp3':'open-03-sp3', 'sp4':'open-04-sp4' },
     specials:{ 'fpintro':'open-00-fpintro', 'fplabour':'open-11-fplabour' },
   },
