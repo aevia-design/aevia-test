@@ -1,40 +1,31 @@
 # Session Status
-_Last updated: 2026-09-24 (session 192)_
-_Context at save: **12 cards closed in one session**, most built by developer agents and verified
-by Claude on the live rig. **Clean public URLs are live** (`aevia.at/heirloom`, `/de/heirloom`)._
+_Last updated: 2026-09-24 (session 193)_
+_Context at save: four cards closed and verified live by the owner (#129, #102, #138, #137).
+PDF generation can now be watched from any tab and cancelled._
 
 ## Status
-**Session 192 — backlog sweep.** Full detail: **`sessions/2026-09-24-s192.md`**.
+**Session 193.** Full detail: **`sessions/2026-09-24-s193.md`**.
 
 ## Do this first
 **Read the board** (https://trello.com/b/HCrNJRN1/aevia): *In progress*, *Blocked*, top of
 *Next up*. Rules are in CLAUDE.md "Backlog board". At handover, `node scripts/trello-snapshot.mjs`.
 
-**Waiting on the owner (he reports back):**
-- **#102 + #67 in one test** — a Scribble order (full-bleed FP2) or Heirloom (FPhim): drag a
-  portrait photo up/down, Ctrl+B one caption word, Save book state, Generate PDF, compare.
-  Crop matches → close #102. Bold on screen but plain in the PDF → Claude blocks Ctrl+B/Ctrl+I.
-- **#124** — owner is creating one German order per template for the DE mockups.
-- **#99** — parked for a proper brief + /solutioning (customer journey). Direction and the open
-  re-send question are on the card.
+**Waiting on the owner:**
+- **#140 AI captions** (Backlog, briefed: `docs/briefs/caption-quality.md`). Owner will move it into
+  *Next up*. Step 1 only (word control + humour, current model) unless he asks for Step 2.
+- **#99** (approval overwrites staff edits): decide after #129, which is now done. **Whatever #99
+  decides must carry `customerCaptionLines` with the captions.**
+- **#67** bold-in-PDF was NOT covered by the AEV-070 test; still needs a Ctrl+B word → PDF check.
+- **#124** DE mockups, **#139** cloud costs (needs the owner's Billing CSV first; no brief yet).
 
-## What shipped in S192
-- **#89 closed** — both live checks green (AEV-101 flipped + emailed; Retry on AEV-102).
-  Upload-failed email now tells the customer to order again and links to the template's product
-  page (`e4e7cdc`).
-- **#111** — a slow photo decode is flagged "Check orientation", never silently guessed; wait
-  60s not 10s (`b3c05d1`).
-- **#116** — failed upload attempts record progress-event count + first/last times (`46028cb`);
-  how to read them: `docs/briefs/upload-failures.md` S192 section.
-- **#84** — "Export book state (JSON)" button + `saveBookState` Cloud Function removed (`b994b27`).
-- **#82 clean public URLs** (`94f5843`, ADR-0010) — 27 `_redirects` 200 rules; EN at root, DE
-  under `/de/`; transactional pages keep `/pages/`. Brief + research: `work/url-structure/`.
-- **#133** — German country names on the DE travel-map form, display-only (`53901e0`).
-- **#78** — Drive/Dropbox + "upload link" promises removed from 16 product pages; build
-  nothing (`c558f15`). Research: `work/photo-upload-options/research_v1.md`.
-- Closed with evidence, no code: #92, #95, #98, #101. New cards: #136 (email design + raw
-  `heirloom-green` in emails), #137 (missing artist portrait).
-- npm test **668**, qa:order **36**.
+## What shipped in S193
+- **#129** customer preview records caption line breaks; approval promotes them (`cdf0a7d`).
+- **#102** closed: full-bleed reposition prints exactly (AEV-070).
+- **#138** PDF generation: shared status in every tab, one render per order, confirm, cancel ×
+  (`905dc22`, `45e1be4`). New function `cancelPdfRender`; renderer revision 00043.
+- **#137** Dorottya's portrait (`1271645`). Heirloom monogram cards Bond/Harmony/Devotion, Beige
+  crop fixed; collections count their own cards (`07c07e9`). Engine nav → Dashboard (`b093a4e`).
+- npm test **686**, qa:order **36** (as of #129).
 
 ```powershell
 npx firebase deploy --only functions      # from the PROJECT ROOT, not functions/
@@ -47,13 +38,9 @@ npx firebase deploy --only functions      # from the PROJECT ROOT, not functions
 gcloud run deploy aevia-pdf-renderer --source C:/Users/evgmy/aevia-test --region europe-west1 --memory 8Gi --cpu 4 --timeout 900 --concurrency 1 --allow-unauthenticated --project aevia-uploads --quiet
 ```
 (Redeploy the renderer BEFORE generating PDFs if template data or SVGs changed, or you bake
-stale artwork.)
-⚠ **`--concurrency 1` added S193 (#138) — NOT YET DEPLOYED.** The service currently runs at the
-default `containerConcurrency: 160`, so several renders could share one instance's 8 GiB even
-though a book is 1-4 GB of photos (unconfirmed whether this has ever caused an OOM). No idle
-cost either way (billing is per request); 3 parallel orders just use 3 of the 10 max instances
-instead of possibly 1. Run the command above (with the flag) next time the renderer is
-redeployed for any reason.
+stale artwork.) **`--concurrency 1` is live since S193** (one render per instance).
+⚠ The image builds from the **working folder, untracked files included**. "Container import
+failed" = check `.dockerignore` first (LEARNINGS S193). From Git Bash, gcloud needs `cmd //c "gcloud ..."`.
 
 ## Still open on the print path
 ⚠ **`PRINTSMARTER_LIVE` is `true` and `submitPrintOrder` is deployed** - "Send to Printsmarter"
