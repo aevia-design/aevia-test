@@ -1,3 +1,18 @@
+## 2026-09-25 (S195) — A caption built outside the caption path misses every caption feature
+
+Heirloom's monogram letters were added as one-off elements, not through the caption registries the
+toolbar, the live redraw and the PDF read. Result: the back letters' edits saved but never showed;
+the intro letters never bound the toolbar, so +/− silently resized **the previously clicked caption**
+(the cover names grew 31%); the PDF ignored any style. Nothing threw.
+
+- **A new caption kind must pass three checks**: the toolbar binds to it on focus, a live change
+  redraws it, and `export-pdf.js` reads its override. Test the "click another caption first" path.
+- **`git checkout` of a data file can bring it back CRLF** while its siblings are LF —
+  `tests/de-template-strings.test.js` compares Heirloom colourways byte-for-byte and fails on it.
+  Strip `` (content is unchanged). An open Excel window locks a CSV ("unable to unlink").
+- **Measure a "looks off-centre" claim before changing size or coordinates**: IM FELL's M measured
+  0.00mm off its box centre at every size; the real error was the box position (0.43mm).
+
 ## 2026-09-24 (S192) — An agent's verdict is a hypothesis until the real system agrees
 
 Three agent results were wrong in S192, each plausible and well-evidenced on its own terms:

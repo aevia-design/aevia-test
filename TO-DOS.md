@@ -14,6 +14,7 @@ _Real people place real orders. Anything that strands or silently corrupts an or
 
 | # | Item | Notes |
 |---|------|-------|
+| 143 | Heirloom monogram letters editable like other captions | **[In progress]** Built S195 (4a6daaa), renderer 00046. Back letters: toolbar changes saved but never shown. Intro letters: toolbar stayed on the previously clicked caption and resized IT; PDF ignored any style. Now size/font/weight/align/letter-spacing show, save and print. Also fixed: live cover-caption resize unit (~31% too big), PDF cover-caption alignment override. Detail: sessions/2026-09-25-s195.md. |
 | 60 | Clean up QA test orders | AEV-023, 024, 025, 078, 079, **096** (S173 stall test, stranded at `uploading`). ⚠ Never demo AEV-078 — it carries deliberate injection payloads. |
 | 118 | Get a Heirloom order through Printsmarter | Neither test order is Heirloom, so the offset product (`aevia_hardcover_offset`) and the two-product split are unproven. Also owes the S187 print checks: cover photo visible on Heirloom/Tender/Newborn, Tender's spine at 410mm, Scribble captions after the Onest swap, front-panel centring. ⚠ Do NOT use Heirloom Blue (AEV-091) — old off-centre coordinates. |
 | 119 | Send confirm dialog misreports the shipping address | Reads the locally loaded `order.shippingAddress`, so it shows "⚠ NO SHIPPING ADDRESS ON ORDER" exactly when the S188 account fallback is working. Fix (~10 lines): have the confirm call `dryRun` and show the resolved address and its source. Do before the next send. |
@@ -25,11 +26,11 @@ _Customer-visible untruths, legal exposure, and anything that makes the site loo
 
 | # | Item | Notes |
 |---|------|-------|
+| 124 | Germanization Stage 6: DE mockups + gallery swap | **[In progress]** One job — each half is useless without the other. Then the add-on names (key the map off the English `name`, NOT the positional `slug`). Capture reads the DEPLOYED rig: push first. Owner creating one German order per template. → `docs/briefs/germanization.md` |
 | 25 | Terms & Conditions page | **[Blocked]** Minimum: refund/returns. Something must exist before taking payments. EN drafts of all three pages (Impressum, Datenschutz, AGB) written S183 → `work/legal-pages/drafts_en_v1.md`. **Still markdown only: no HTML, not linked from any footer, no DE.** **Resume from `work/legal-pages/plan_v1.md`** (parked S186) — it carries the benchmark findings, the settled decisions and the 5 open owner questions. ⚠ Its Cookies section is only true until #9/#10 ship. |
 | 135 | Ask Printsmarter to push every order status to our API | **[Blocked]** Goal (owner, S191): every order's phases on the dashboard — in production → shipped → delivered — with the time of each change, for analytics and delay reminders ("production delayed", "delivery delayed"). |
 | 80 | 🔴 Print specs on product pages are invented | **[Blocked]** Cover, paper, binding, FSC, "Printed in the EU" — all placeholder, on 6 pages × 2 languages. Real specs come from the Aug print visit. |
 | 12 | SEO: meta descriptions, schema, sitemap.xml | **[Blocked]** Canonicals, hreflang and robots.txt shipped S144. The rest describes content, so it waits on copy + photography. |
-| 124 | Germanization Stage 6: DE mockups + gallery swap | **[Blocked]** One job — each half is useless without the other. Then the add-on names (key the map off the English `name`, NOT the positional `slug`). Capture reads the DEPLOYED rig: push first. Owner creating one German order per template. → `docs/briefs/germanization.md` |
 | 91 | CDN libraries are unpinned with no SRI | 6 tags, zero `integrity=`. Not card skimming (Stripe hosts checkout) but auth tokens and link rewriting are exposed. Fix = vendor into `assets/js/` → [notes](docs/todo-notes.md#91) |
 | 11 | OG image tags | Zero pages have them today. Shared links look blank on WhatsApp/iMessage. |
 | 9 | Google Analytics | Nothing tracked today. Needed before spending on ads. ⚠ Shipping this **requires a consent banner AND a rewrite of the Cookies section** of the privacy page, which today truthfully says we run no analytics. Do #9, #10 and that revision as ONE job. |

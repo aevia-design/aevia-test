@@ -1,35 +1,41 @@
 # Session Status
-_Last updated: 2026-09-25 (session 194)_
-_Context at save: #99 review lock built, deployed and verified live by the owner. Printsmarter
-send dialog now shows the resolved address. Next session: owner works on coordinates/SVGs for final mockups._
+_Last updated: 2026-09-25 (session 195)_
+_Context at save: Heirloom colourways synced to Beige; Germanization Stage 6 started (gallery swap +
+Tender DE set); `npm run dev` follows _redirects; monogram letters editable; renderer rev 00046.
+Owner + Xenia are testing Heirloom before printing._
 
 ## Status
-**Session 194.** Full detail: **`sessions/2026-09-25-s194.md`**.
+**Session 195.** Full detail: **`sessions/2026-09-25-s195.md`**.
 
 ## Do this first
 **Read the board** (https://trello.com/b/HCrNJRN1/aevia): *In progress*, *Blocked*, top of
 *Next up*. Rules are in CLAUDE.md "Backlog board". At handover, `node scripts/trello-snapshot.mjs`.
 
-⚠ **Papercut cover captions changed (S194, `c70982f`)** - redeploy the PDF renderer before any Papercut PDF.
+Local dev is now **`npm run dev`** (clean URLs work). ⚠ It talks to the LIVE database.
 
 **Waiting on the owner:**
-- **#140 AI captions** (Backlog, briefed: `docs/briefs/caption-quality.md`). Step 1 only unless he asks.
-- **Printsmarter send dialog** (`5934963`) - owner to eyeball on a paid test order, then Cancel.
-- **#99 feedback path** (step 10) not tested live; passed locally.
-- **#67** bold-in-PDF still needs a Ctrl+B word → PDF check.
-- **#124** DE mockups, **#139** cloud costs (needs the owner's Billing CSV first; no brief yet).
+- **Heirloom test round** (owner + Xenia) — incl. the first PDF with a changed monogram-letter
+  size/alignment (never printed; renderer 00046 carries it).
+- **#124 Stage 6** — DE orders for the other templates. Per template: capture + compose the order,
+  add a `<t>-de` entry (`out: '<t>/de'`) in `scripts/exp2-images.mjs`, run it, add `deImages:true`
+  to both product pages. **Heirloom needs extra wiring** (its page repoints `cfg.base` per colourway).
+- **Roots/Roses intro letters sit ~0.43mm left** of the ornament (all colourways). +0.4mm X in
+  Xenia's CSV fixes it (measured) — hers to decide; not applied.
+- **#140 AI captions** (Backlog, briefed). **Printsmarter send dialog** eyeball (`5934963`).
+  **#99 feedback path** live. **#67** bold-in-PDF check. **#139** cloud costs (needs Billing CSV).
+
+## What shipped in S195
+- **Heirloom Blue/Brown/Green = Beige's coordinates** (`1f3c8ac`): letters, photo slot 333, name 333,
+  clip path; 9 re-filled photo windows cleared. Beige Roots stays 332.63 (owner, no re-export).
+- **Stage 6 gallery swap + Tender DE set from AEV-100** (`df52b52`) — owner verified.
+- **`scripts/dev-server.mjs`** (`1a593a2`).
+- **Monogram letters take toolbar styles** (`4a6daaa`); the intro letters used to resize the
+  previously clicked caption. Also: live cover-caption resize unit, PDF cover-caption alignment.
+- Renderer **00046**. npm test **726**.
 
 ## What shipped in S194
-- **#99 review lock and issue flow** (merge `74a971e`, Done, verified live steps 1-9). Brief
-  `docs/briefs/review-lock.md`, decision `work/review-lock/decision.md`. One `bookRevision` counter;
-  every book write is a Firestore transaction that 409s on a stale tab; lock = status; blocking report
-  promotes the customer draft into `staffBook*`; `sentVersions/{n}` per send; dashboard "Unlock for fix";
-  dropdown disabled in `review_sent`/`issue`; approve only from `review_sent`, carrying the displayed book.
-  Tests: `tests/review-lock-scenarios.test.js` (real handlers over an in-memory Firestore fake,
-  `tests/helpers/`), browser `npm run qa:review-lock` (needs http-server on 8080).
+- **#99 review lock and issue flow** (merge `74a971e`, Done). Brief `docs/briefs/review-lock.md`.
 - Send-to-Printsmarter confirm uses the dry run (`5934963`). Issue banner under the nav (`b535c4f`).
-- New cards: **#141** learn from customer edits (After launch), **#142** customer preview chrome in German.
-- npm test **721**.
 
 ## What shipped in S193
 - **#129** customer preview records caption line breaks; approval promotes them (`cdf0a7d`).
@@ -61,7 +67,7 @@ is armed beside "Preview submission". A misclick is a real book and a real invoi
 The send confirm dialog now shows the **resolved** address via `dryRun` (fixed S194, not yet eyeballed).
 ⚠ **Sending is once-only.** A problem found afterwards is a `cancel_order`, not a resend.
 ⚠ **Neither test order is Heirloom** - the two-product split and the offset stock are unexercised.
-**Do NOT use Heirloom Blue (AEV-091)** - its coordinates are still the old off-centre ones.
+Heirloom Blue/Brown/Green now carry Beige's coordinates (S195, renderer 00046) — none has been PDF'd since.
 ⚠ **AEV-100's inside PDF is 403.91 MB** (AEV-071's is 176.03). First suspect if a submission
 succeeds and nothing produces.
 
@@ -75,12 +81,12 @@ succeeds and nothing produces.
 templates and 0 for Heirloom, Laguna and Tender.** Compare two templates from different families
 before nudging again.
 
-## ⚠ Carried into the next Heirloom drop
-Owner will apply Beige's coordinates to **Blue, Brown and Green** next.
-- Their windows are `fill="none"` today; **expect the re-export to re-fill them**.
-  `tests/cover-photo-window.test.js` now catches that.
-- **Heirloom's slot tracks the ARTWORK opening centre, not the CSV** (332.63 vs 333.00).
-- ⚠ **Roses' new SVG has no photo opening at all** - it reuses Birds' value, unconfirmed.
+## ⚠ Heirloom artwork notes
+- **Every cover re-export re-fills the photo windows** (S195: all 9 colourway covers, and Beige's
+  "latest" too). `tests/cover-photo-window.test.js` catches it; set the fill to `none`.
+- **Heirloom's slot tracks the ARTWORK opening centre, not the CSV**: Beige 332.63 (its Roots window is
+  0.37mm left, accepted), Blue/Brown/Green 333.00.
+- ⚠ **Beige Roses' cover SVG has no photo-opening path** - it reuses Birds' value, unconfirmed.
 
 ## Where germanization stands
 | Stage | State |
@@ -92,7 +98,7 @@ Owner will apply Beige's coordinates to **Blue, Brown and Green** next.
 | 4a · Order-form chrome | ✅ done S178 — `assets/js/order-strings.js` |
 | 4b · Per-template copy | ✅ done S180, all eleven data files |
 | 5 · German AI captions | ✅ **done S182 — deployed, verified on a Newborn order** |
-| 6 · DE mockups + gallery swap + add-on names | ⬜ **the only unbuilt stage** |
+| 6 · DE mockups + gallery swap + add-on names | 🟡 **in progress S195** — swap built; Tender DE set live; other templates pending DE orders |
 
 ### What Stage 5 actually taught us (do not re-derive)
 1. **A blocklist alone cannot produce good German.** The first real output paraphrased around
@@ -138,6 +144,12 @@ Google (`200 OK`, `application/pdf`, no auth) — so the **URLs are proven and t
 AEV-095's *preview* alone was 231 MB.
 
 ## Recent decisions
+- **Monogram letters are resizable (S195, owner)** — for the optical weight of wide letters. IM FELL's
+  M is centred in its box at every size, so resizing is NOT a centring fix; position is.
+- **German mockups live in `exp2/<template>/de/`, pages opt in with `deImages:true` (S195)** — a
+  template without a DE set keeps English, never a broken image.
+- **Beige Roots cover window 0.37mm left: accepted, no re-export (S195, owner).** Birds' Q tail
+  touching the swirl: accepted.
 - **#99: the customer's saved draft is the only live copy after sending (S194, owner)** - staff fix
   ON TOP of it after a blocking report; no merging. Report form has two paths: blocking (locks approval,
   unlocks staff) vs feedback (does not block). The status IS the lock; don't add a separate flag.
