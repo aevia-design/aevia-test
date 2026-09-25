@@ -2467,15 +2467,22 @@
   function applyStyleToCapEl(key) {
     const el = document.querySelector(`.cover-caption[data-cover-caption-key="${key}"]`);
     if (!el) return;
-    const capDef = getActiveTemplateData().cover.captions.find(c => c.key === key);
+    // The toolbar's own capDef first: Heirloom's back-cover monogram letters are built
+    // from monograms[*].backLetters, not cover.captions, so a lookup there alone found
+    // nothing and every toolbar change was silently dropped on screen (S195).
+    const capDef = (_tbCapDef && _tbCapDef.key === key) ? _tbCapDef
+                 : getActiveTemplateData().cover.captions.find(c => c.key === key);
     if (!capDef) return;
     const ov = window.coverCaptionStyles[key] || {};
     el.style.fontFamily    = `'${ov.font || capDef.font}', serif`;
     el.style.fontWeight    = ov.weight || 400;
     el.style.fontStyle     = ov.italic ? 'italic' : 'normal';
-    el.style.fontSize      = (ov.sizePt || capDef.sizePt) + 'pt';
+    // Same canvas-px conversion as renderCover (sizePt * SCALE * 25.4/72). CSS 'pt' here
+    // drew every live-resized cover caption ~31% too large until the next re-render.
+    const sizePt = ov.sizePt || capDef.sizePt;
+    el.style.fontSize      = (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
     const lsMult = ov.lineSpacing !== undefined ? ov.lineSpacing : 1.1;
-    el.style.lineHeight    = ((ov.sizePt || capDef.sizePt) * lsMult).toFixed(1) + 'pt';
+    el.style.lineHeight    = (sizePt * lsMult * SCALE * 25.4 / 72).toFixed(1) + 'px';
     el.style.letterSpacing = (ov.letterSpacing || 0) + 'em';
     el.style.textAlign     = ov.align !== undefined ? ov.align : (capDef.align || 'center');
   }
@@ -2497,7 +2504,9 @@
     _tbCapEl.style.fontWeight    = weight;
     _tbCapEl.style.fontStyle     = italic ? 'italic' : 'normal';
     _tbCapEl.style.fontSize      = isFunnyWordsEl ? (sizePt * SCALE) + 'px' : (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
-    _tbCapEl.style.lineHeight    = lineSpacing;
+    // Monogram letters keep their box-height line-height — it is what centres the glyph
+    // vertically in its box, as the PDF does.
+    if (!capDef.monoLetter) _tbCapEl.style.lineHeight = lineSpacing;
     _tbCapEl.style.letterSpacing = letterSpacing + 'em';
     _tbCapEl.style.textAlign     = ov.align !== undefined ? ov.align : (capDef.halign || 'center');
   }
@@ -3309,16 +3318,23 @@
           el.spellcheck = false;
           el.dataset.label = i === 0 ? 'A' : 'B';
           const w = L.wMm * SCALE, h = L.hMm * SCALE;
+          // Toolbar overrides (S195): staff nudge a letter's size / font / alignment like
+          // any caption; stored under spreadCaptionStyles[si][side][key], read by the PDF.
+          const capDef = { font: L.font, sizePt: L.sizePt, style: 'regular', halign: 'center', letterSpacing: 0, monoLetter: true };
+          const ov = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[key] || {};
+          const lSize = ov.sizePt !== undefined ? ov.sizePt : L.sizePt;
           el.style.cssText =
             `position:absolute;left:${((L.xMm - BLEED_MM) * SCALE - w / 2)}px;` +
             `top:${((L.yMm - BLEED_MM) * SCALE - h / 2)}px;width:${w}px;height:${h}px;` +
-            `font-family:'${L.font}',serif;font-size:${(L.sizePt * SCALE * 25.4 / 72).toFixed(1)}px;` +
+            `font-family:'${ov.font || L.font}',serif;font-size:${(lSize * SCALE * 25.4 / 72).toFixed(1)}px;` +
+            `font-weight:${ov.weight || 400};font-style:${ov.italic ? 'italic' : 'normal'};` +
             // .slot-caption's default letter-spacing:-0.02em would apply to these too.
             // The CSV specifies none for the letter rows, and on a single centred glyph
             // the trailing spacing shifts it off-centre — so what staff nudge on screen
             // would not be what the PDF prints. Reset it explicitly.
-            `letter-spacing:normal;` +
-            `line-height:${h}px;text-align:center;color:${L.color};z-index:3;overflow:visible;`;
+            `letter-spacing:${ov.letterSpacing ? ov.letterSpacing + 'em' : 'normal'};` +
+            `line-height:${h}px;text-align:${ov.align || 'center'};color:${L.color};z-index:3;overflow:visible;`;
+          el.addEventListener('focus', () => showSpreadCaptionToolbar(spreadIndex, side, key, capDef, el));
           if (saved) el.innerHTML = saved;
           el.addEventListener('input', () => {
             // Hard cap: a single initial. Trim anything longer (paste, autocorrect).

@@ -2903,15 +2903,21 @@
           el.spellcheck = false;
           el.dataset.label = i === 0 ? 'A' : 'B';
           const w = L.wMm * SCALE, h = L.hMm * SCALE;
+          // Toolbar overrides (S195) — mirrors template-engine.html; the PDF reads them.
+          const capDef = { font: L.font, sizePt: L.sizePt, style: 'regular', halign: 'center', letterSpacing: 0, monoLetter: true };
+          const ov = window.spreadCaptionStyles?.[String(spreadIndex)]?.[side]?.[key] || {};
+          const lSize = ov.sizePt !== undefined ? ov.sizePt : L.sizePt;
           el.style.cssText =
             `position:absolute;left:${((L.xMm - BLEED_MM) * SCALE - w / 2)}px;` +
             `top:${((L.yMm - BLEED_MM) * SCALE - h / 2)}px;width:${w}px;height:${h}px;` +
-            `font-family:'${L.font}',serif;font-size:${(L.sizePt * SCALE * 25.4 / 72).toFixed(1)}px;` +
+            `font-family:'${ov.font || L.font}',serif;font-size:${(lSize * SCALE * 25.4 / 72).toFixed(1)}px;` +
+            `font-weight:${ov.weight || 400};font-style:${ov.italic ? 'italic' : 'normal'};` +
             // Reset .slot-caption's inherited letter-spacing:-0.02em — the CSV specifies
             // none for letter rows, and on a single centred glyph it shifts it off-centre.
             // Mirrors template-engine.html.
-            `letter-spacing:normal;` +
-            `line-height:${h}px;text-align:center;color:${L.color};z-index:3;overflow:visible;`;
+            `letter-spacing:${ov.letterSpacing ? ov.letterSpacing + 'em' : 'normal'};` +
+            `line-height:${h}px;text-align:${ov.align || 'center'};color:${L.color};z-index:3;overflow:visible;`;
+          el.addEventListener('focus', () => showCaptionToolbar(spreadIndex, side, key, capDef, el));
           if (saved) el.innerHTML = saved;
           el.addEventListener('input', () => {
             // Hard cap: a single initial. Trim anything longer (paste, autocorrect).
@@ -3289,7 +3295,8 @@
     _tbCapEl.style.fontStyle = italic ? 'italic' : 'normal';
     const _isFunnyWordsEl = capDef.font === 'FirstTimeWriting';
     _tbCapEl.style.fontSize = _isFunnyWordsEl ? (sizePt * SCALE) + 'px' : (sizePt * SCALE * 25.4 / 72).toFixed(1) + 'px';
-    _tbCapEl.style.lineHeight = lineSpacing;
+    // Monogram letters keep their box-height line-height (vertical centring, as in print).
+    if (!capDef.monoLetter) _tbCapEl.style.lineHeight = lineSpacing;
     _tbCapEl.style.letterSpacing = letterSpacing + 'em';
     _tbCapEl.style.textAlign = ov.align !== undefined ? ov.align : (capDef.halign || 'center');
   }

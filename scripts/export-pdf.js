@@ -927,6 +927,26 @@ function coverCaptionLines(text, font, sizePt, capDef = {}, ov = {}, fontName = 
 // pageSizePt = the PDF page size in points (square).
 // spreadId is used to determine caption color (FP spreads use plum).
 // spreadCaptionStyles carries per-slot user overrides from book-state.json.
+// Heirloom intro monogram letter: the data-file letter merged with any toolbar override
+// (spreadCaptionStyles[si][side].monoLetterN). Same weight→style mapping as the text panel.
+function monoLetterStyle(L, ov) {
+  ov = ov || {};
+  const style = ov.weight !== undefined
+    ? (w => w >= 600 ? (w >= 700 ? 'bold' : 'semibold') : ov.italic ? 'italic' : 'regular')(normaliseWeight(ov.weight))
+    : (ov.italic ? 'italic' : 'regular');
+  return {
+    fontName: ov.font !== undefined ? ov.font : L.font,
+    style,
+    sizePt: ov.sizePt !== undefined ? ov.sizePt : (L.sizePt || 23),
+    align: ov.align !== undefined ? ov.align : 'center',
+  };
+}
+
+// Cover caption alignment: a staff toolbar override wins, as it does in both engines.
+function coverCaptionAlign(capDef, ov) {
+  return (ov && ov.align) || (capDef && capDef.align) || 'center';
+}
+
 function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spreadId, spreadCaptionStyles, monoDef = null, captionLines = null) {
   const sideCaps = captions?.[si]?.[side];
   if (!sideCaps) return;
@@ -1135,17 +1155,20 @@ function drawCaptions(pg, fontMap, pageDef, si, side, captions, pageSizePt, spre
     monoDef[pageDef.monogramLetters].forEach((L, i) => {
       const ch = stripHtml(sideCaps['monoLetter' + (i + 1)] || '').trim().slice(0, 1);
       if (!ch) return;
-      const font = lookupFont(fontMap, L.font, 'regular');
+      const st = monoLetterStyle(L, scsOverrides['monoLetter' + (i + 1)]);
+      const font = lookupFont(fontMap, st.fontName, st.style);
       if (!font) return;
-      const sizePt      = L.sizePt || 23;
+      const sizePt      = st.sizePt;
       const boxWidthPt  = L.wMm * MM_TO_PT;
       const boxHeightPt = L.hMm * MM_TO_PT;
       const boxXPt      = (L.xMm - L.wMm / 2) * MM_TO_PT;
       const boxYPt      = pageSizePt - (L.yMm + L.hMm / 2) * MM_TO_PT;
-      const isLig       = LIGATURE_FONTS.has(L.font);
+      const isLig       = LIGATURE_FONTS.has(st.fontName);
       const wPt = isLig ? measureNoLig(font, ch, sizePt, 0)
                         : font.widthOfTextAtSize(ch, sizePt);
-      const xPt = boxXPt + (boxWidthPt - wPt) / 2;
+      const xPt = st.align === 'left'  ? boxXPt
+                : st.align === 'right' ? boxXPt + boxWidthPt - wPt
+                :                        boxXPt + (boxWidthPt - wPt) / 2;
       // Same baseline convention as the text panel above: top of the line box, minus
       // 0.75em to the baseline. One line, so valign:center reduces to this offset.
       const lineTopPt = boxYPt + boxHeightPt - (boxHeightPt - sizePt) / 2;
@@ -1581,9 +1604,10 @@ function drawCoverCaptions(pg, fontMap, coverDef, coverCaptions, coverCaptionSty
           ? measureNoLig(font, line, sizePt, charSpacing)
           : font.widthOfTextAtSize(line, sizePt) + charSpacing * Math.max(0, line.length - 1);
         const centerXPt = (capDef.xMm + coverCaptionShiftMm(capDef, spineWidthMm, referenceSpineMm)) * MM_TO_PT;
-        const xPt = capDef.align === 'left'  ? centerXPt - capDef.wMm / 2 * MM_TO_PT
-                  : capDef.align === 'right' ? centerXPt + capDef.wMm / 2 * MM_TO_PT - textW
-                  :                            centerXPt - textW / 2;
+        const align = coverCaptionAlign(capDef, ov);
+        const xPt = align === 'left'  ? centerXPt - capDef.wMm / 2 * MM_TO_PT
+                  : align === 'right' ? centerXPt + capDef.wMm / 2 * MM_TO_PT - textW
+                  :                     centerXPt - textW / 2;
         const drawOpts = {
           x: xPt, y: startYPt - li * lineSpacing,
           size: sizePt, font, color, characterSpacing: charSpacing,
@@ -1986,4 +2010,4 @@ async function generatePdfFromFirestore({ ordNum, stateData, bufferMap, fName, p
   return main();  // main() returns previewPdfBytes in server mode
 }
 
-module.exports = { generatePdfFromFirestore, coverCaptionStyle, coverCaptionLines, captionLinesFor, wrapText, lookupFont, FONT_FILE_MAP, getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions, checkPageCountAgainstSequence, coverCaptionShiftMm, activeMonogramDef, setActiveTemplate };
+module.exports = { generatePdfFromFirestore, coverCaptionStyle, monoLetterStyle, coverCaptionAlign, coverCaptionLines, captionLinesFor, wrapText, lookupFont, FONT_FILE_MAP, getSpineWidthMm, getSpineFontBumpPt, computeCoverDimensions, checkPageCountAgainstSequence, coverCaptionShiftMm, activeMonogramDef, setActiveTemplate };
