@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "test": "jest",
+    "dev": "node scripts/dev-server.mjs",
     "qa:order": "node qa/order-hardening-mock.mjs",
     "qa:review-lock": "node qa/review-lock-browser.mjs"
   },

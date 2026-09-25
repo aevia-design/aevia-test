@@ -339,15 +339,15 @@ bound or measure it before committing.
 
 ## Local dev
 ```bash
-npx http-server . -p 8080 -c-1   # from project root
+npm run dev   # from project root → http://localhost:8080/
 ```
-Use `http-server`, **not** `npx serve` — `serve` 404s and strips the `?token=` query locally.
-Always use the `.html` form locally; clean URLs are a Cloudflare feature and 404 on both local servers.
-Since #82 (S192) public pages link to their clean root address (e.g. `/heirloom`, `/de/heirloom`)
-— those root-absolute links do not resolve locally either, since `http-server` has no rewrites;
-open pages directly at `pages/<name>.html` instead.
+`scripts/dev-server.mjs` (S195, no dependencies) applies `_redirects` and serves extension-less
+addresses as `.html`, so the clean links (`/tender`, `/de/collections`) click through locally.
+It is for browsing, **not** a faithful test of `_redirects` — still test rewrites on the rig.
+`npx http-server . -p 8080 -c-1` still works for scripts that only need files (no clean URLs);
+**never `npx serve`** — it 404s and strips the `?token=` query.
 
-Pages: `http://localhost:8080/pages/home.html`  
+Pages: `http://localhost:8080/` (or `/pages/home.html`)  
 Engine: `http://localhost:8080/pages/staff/template-engine.html`
 
 ---
