@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "test": "jest",
-    "qa:order": "node qa/order-hardening-mock.mjs"
+    "qa:order": "node qa/order-hardening-mock.mjs",
+    "qa:review-lock": "node qa/review-lock-browser.mjs"
   },
   "jest": {
     "testMatch": [
