@@ -2001,14 +2001,18 @@ exports.sendPreviewEmail = functions
           err.code = 'NOT_COMPLETE';
           throw err;
         }
-        if (!revisionMatches(data, bookRevision)) {
+        // A plain resend (already review_sent) only re-emails the link: the book
+        // does not change, so it neither checks nor bumps the revision. Bumping
+        // here would 409 the customer's open tab and lose their unsaved edits.
+        const entering = isEnteringReviewSent(data.status);
+        if (entering && !revisionMatches(data, bookRevision)) {
           const err = new Error('This book was saved elsewhere. Please reload.');
           err.code = 'STALE';
           throw err;
         }
 
-        const next = ((data.bookRevision) || 0) + 1;
-        const update = { status: 'review_sent', bookRevision: next };
+        const next = entering ? ((data.bookRevision) || 0) + 1 : (data.bookRevision || 0);
+        const update = entering ? { status: 'review_sent', bookRevision: next } : {};
 
         // Codex review fix #2: a resend while ALREADY review_sent must not
         // re-snapshot or write a new version — the customer may have their
@@ -2016,7 +2020,7 @@ exports.sendPreviewEmail = functions
         // front of them. Only a genuine entry into review_sent (from a
         // pre-send status, or from 'issue' after a fix) captures a new
         // frozen snapshot + numbered sentVersions entry.
-        if (isEnteringReviewSent(data.status)) {
+        if (entering) {
           const sentAt = admin.firestore.FieldValue.serverTimestamp();
           update.sentSnapshot = {
             bookAssignments:     data.staffBookAssignments     || null,
@@ -2038,7 +2042,7 @@ exports.sendPreviewEmail = functions
           tx.create(versionRef, { ...update.sentSnapshot, sentAt: admin.firestore.Timestamp.now(), n: sendCount });
         }
 
-        tx.update(ref, update);
+        if (entering) tx.update(ref, update);
         return { order: data, newRevision: next };
       });
 
