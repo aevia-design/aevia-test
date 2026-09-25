@@ -363,6 +363,7 @@
   const MARK_SENT_TO_PRINT_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/markSentToPrint';
   const SUBMIT_PRINT_ORDER_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/submitPrintOrder';
   const SEND_PREVIEW_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/sendPreviewEmail';
+  const OPEN_ISSUE_ENDPOINT = 'https://europe-west1-aevia-uploads.cloudfunctions.net/openIssueForFix';
 
   // Headers for staff Cloud Function calls — sends the current user's Firebase
   // ID token. The function verifies it against the server-side staff allowlist.
@@ -545,10 +546,24 @@
         nudge = `<div class="sent-nudge${stale ? ' stale' : ''}">Preview sent ${timeAgo(sentMs)}${stale ? ' — nudge the customer?' : ' — awaiting response'}</div>`;
       }
 
+      // TO-DOS #99: every report is kept (not just the latest), and feedback
+      // is visible at any status — only blocking reports drive the ⚠ styling.
+      const reports = o.reports || [];
+      const reportsHtml = reports.length
+        ? `<div class="reports-list">${reports.map(r => {
+            const ts = r.at ? new Date(r.at.seconds * 1000).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' }) : '';
+            const isBlock = r.type === 'blocking';
+            return `<div class="report-entry${isBlock ? ' report-blocking' : ' report-feedback'}" title="${esc(r.message)}">
+              ${isBlock ? '⚠' : '💬'} ${esc((r.message || '').slice(0, 60))}${(r.message || '').length > 60 ? '…' : ''}${ts ? ' · ' + ts : ''}
+            </div>`;
+          }).join('')}</div>`
+        : '';
+
       return `<tr class="${o.status === 'issue' ? 'row-issue' : ''}">
         <td>
           <div class="order-num">${esc(o.orderNumber)}</div>
           ${o.status === 'issue' && o.issueNote ? `<div class="issue-note" title="${esc(o.issueNote)}">⚠ ${esc(o.issueNote)}</div>` : ''}
+          ${reportsHtml}
           <div class="order-date">${dateStr}</div>
           ${ageStr ? `<div class="order-age">${ageStr}</div>` : ''}
         </td>
@@ -597,11 +612,22 @@
           </div>
         </td>
         <td class="status-cell">
-          <select class="status-select" onchange="updateStatus('${esc(o.orderNumber)}', this.value)">
-            ${allStatuses.map(s =>
-              `<option value="${s}" ${o.status === s ? 'selected' : ''}>${statusLabel(s)}</option>`
-            ).join('')}
+          <!-- TO-DOS #99 (Codex review fix #3): while status is review_sent or
+               issue, the WHOLE dropdown is disabled, not just those three
+               options. Both statuses have dedicated server actions (Unlock
+               for fix, Send/Resend, the customer's own approve) — nothing
+               here should move the order sideways while one of those is the
+               live action. -->
+          <select class="status-select" onchange="updateStatus('${esc(o.orderNumber)}', this.value)" ${['review_sent', 'issue'].includes(o.status) ? 'disabled' : ''}>
+            ${allStatuses.map(s => {
+              const SERVER_ONLY = ['review_sent', 'issue', 'approved'];
+              const disabled = SERVER_ONLY.includes(s) && o.status !== s;
+              return `<option value="${s}" ${o.status === s ? 'selected' : ''} ${disabled ? 'disabled' : ''}>${statusLabel(s)}</option>`;
+            }).join('')}
           </select>
+          ${o.status === 'review_sent'
+            ? `<button class="preview-link-btn" style="margin-top:6px;" onclick="unlockForFix('${esc(o.orderNumber)}')">Unlock for fix</button>`
+            : ''}
           ${o.status === 'upload_failed' && o.uploadFailureDisposition
             ? `<div class="status-history" style="color:#b91c1c">${esc(DISPOSITION_LABEL[o.uploadFailureDisposition] || o.uploadFailureDisposition)}</div>`
             : ''}
@@ -931,19 +957,24 @@
       const res = await fetch(SEND_PREVIEW_ENDPOINT, {
         method: 'POST',
         headers: await staffHeaders(),
-        body: JSON.stringify({ orderNumber }),
+        // TO-DOS #99 (Codex review fix #1): carries the revision this
+        // dashboard row last saw. The server compares, bumps and returns it.
+        body: JSON.stringify({ orderNumber, bookRevision: order.bookRevision || 0 }),
       });
       const data = await res.json();
 
       if (res.ok) {
         order.status = 'review_sent';
         order.sentSnapshot = { ...(order.sentSnapshot || {}), sentAt: { seconds: Math.floor(Date.now() / 1000) } };
+        if (typeof data.bookRevision === 'number') order.bookRevision = data.bookRevision;
         order.statusHistory = order.statusHistory || [];
         if (!order.statusHistory.some(h => h.status === 'review_sent')) {
           order.statusHistory.push({ status: 'review_sent', timestamp: { seconds: Math.floor(Date.now() / 1000) } });
         }
         renderTable();
         alert(`Preview ${resend ? 're-sent' : 'sent'} to ${order.email}.`);
+      } else if (res.status === 409 && data.code === 'STALE') {
+        alert(`${data.error || 'This order changed elsewhere.'}\nRefresh and try again.`);
       } else {
         alert(`Could not send preview: ${data.error || res.status}`);
       }
@@ -1205,7 +1236,60 @@ ${data.error || res.status}`);
   const STATUS_SEQUENCE = ['uploading','new','review_sent','approved','paid','sent_to_print','printing','in_delivery','delivered'];
   const SIDE_STATES = ['issue', 'upload_failed'];
 
+  // TO-DOS #99 (review v1 fix #3/#4): review_sent, issue and approved each
+  // have a server-side path that does more than write `status` (promotion,
+  // revision bump, sentVersions). The <option>s are already disabled as
+  // targets, but guard here too in case that ever drifts.
+  const SERVER_ONLY_STATUSES = ['review_sent', 'issue', 'approved'];
+
+  // TO-DOS #99: unlocks staff on an order the customer reported by email
+  // (rather than through the in-page form). Goes through the SAME server
+  // promotion a blocking report runs — never a direct Firestore write — so
+  // the customer's draft is promoted and cleared before staff start fixing.
+  window.unlockForFix = async function(orderNumber) {
+    if (!confirm(`Unlock ${orderNumber} for a fix?\nThe customer's current draft will be promoted into the staff copy.`)) return;
+    // TO-DOS #99 (Codex review fix #5): carries, and lets the server compare
+    // and bump, the revision this dashboard row last saw.
+    const order = allOrders.find(o => o.orderNumber === orderNumber);
+    try {
+      const res = await fetch(OPEN_ISSUE_ENDPOINT, {
+        method: 'POST',
+        headers: await staffHeaders(),
+        body: JSON.stringify({
+          orderNumber,
+          note: 'Reported by email — unlocked by staff.',
+          bookRevision: (order && order.bookRevision) || 0,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 409 && data.code === 'STALE') {
+          alert(`${data.error || 'This order changed elsewhere.'}\nRefresh and try again.`);
+          return;
+        }
+        throw new Error(data.error || 'Could not unlock');
+      }
+      await loadOrders();
+    } catch (err) {
+      alert('Could not unlock: ' + err.message);
+    }
+  };
+
   window.updateStatus = async function(orderNumber, newStatus) {
+    if (SERVER_ONLY_STATUSES.includes(newStatus)) {
+      alert(`"${statusLabel(newStatus)}" is set automatically (send preview / report / approve), not from this dropdown.`);
+      renderTable();
+      return;
+    }
+    // Codex review fix #3: the <select> itself is disabled while review_sent
+    // or issue, but guard here too — the dropdown's disabled state can't be
+    // the only thing standing between staff and a direct write.
+    const currentStatus = allOrders.find(o => o.orderNumber === orderNumber)?.status;
+    if (['review_sent', 'issue'].includes(currentStatus)) {
+      alert(`${statusLabel(currentStatus)} has its own action (Unlock for fix / Send preview / the customer's approval) — this order can't be moved from here right now.`);
+      renderTable();
+      return;
+    }
     // Guard against accidental out-of-sequence jumps (a stray scroll on the <select>
     // landing on a far-ahead or earlier status). Adjacent forward steps pass silently.
     const current = allOrders.find(o => o.orderNumber === orderNumber)?.status;
