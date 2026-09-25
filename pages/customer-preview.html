@@ -919,20 +919,23 @@
      just delivered — approval stays open. -->
 <div id="issue-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
   <div style="background:#fff;max-width:440px;width:90%;padding:28px;border-radius:6px;font-family:var(--sans,Arial,sans-serif);">
-    <h3 style="font-family:Georgia,serif;font-size:20px;margin:0 0 6px;">Report or share feedback</h3>
-    <p style="font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 14px;">Tell us what's going on and we'll reply by email.</p>
+    <h3 id="issue-title" style="font-family:Georgia,serif;font-size:20px;margin:0 0 6px;"></h3>
+    <p id="issue-intro" style="font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 14px;"></p>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
-      <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer;">
+      <label id="issue-type-blocking-label" style="display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer;">
         <input type="radio" name="report-type" id="issue-type-blocking" value="blocking" checked style="margin-top:3px;">
-        <span>Something needs fixing that I can't change myself</span>
+        <span id="issue-type-blocking-text"></span>
       </label>
       <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer;">
         <input type="radio" name="report-type" id="issue-type-feedback" value="feedback" style="margin-top:3px;">
-        <span>Just sharing feedback</span>
+        <span id="issue-type-feedback-text"></span>
       </label>
     </div>
+    <!-- Shown instead of the blocking option while status is 'issue' — a fix
+         is already under way, so only feedback makes sense here. -->
+    <div id="issue-blocking-locked-note" style="display:none;font-size:12px;color:var(--muted);margin-bottom:10px;"></div>
     <textarea id="issue-text" rows="4" placeholder="What's the problem?" style="width:100%;box-sizing:border-box;padding:10px;font-size:14px;font-family:inherit;border:1px solid var(--border,#ddd);border-radius:4px;resize:vertical;"></textarea>
-    <div id="issue-hint" style="font-size:12px;color:var(--muted);margin-top:6px;">This holds up approval until we've fixed it. We'll email you when it's ready to review again.</div>
+    <div id="issue-hint" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
     <div id="issue-status" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px;">
       <button class="cancel-btn" id="issue-cancel">Cancel</button>
@@ -1022,6 +1025,42 @@
   window.spreadCaptionStyles = {};
   window.heartCrop          = {};   // { photoName: { x, y } } — object-position % crop offset for any slot, heart or regular (#74); customer-editable (S101), saved as customerHeartCrop
   window.orderData          = null;
+
+  // TO-DOS #99: {en,de} pairs for every NEW string this feature introduces
+  // (report modal, lock banner, 409 reload prompts, approve errors). Picked by
+  // the book's language, order-strings.js style — mirrors the pattern in
+  // assets/js/order-strings.js so the page reads its English from here too.
+  // Pre-existing page copy stays English-only (that's TO-DOS #142, out of
+  // scope here). German is a best-effort draft — NEEDS NATIVE REVIEW before
+  // it's trusted as final customer-facing copy.
+  const STR = {
+    reportTitle:        { en: 'Report or share feedback', de: 'Problem melden oder Feedback geben' },
+    reportIntro:         { en: "Tell us what's going on and we'll reply by email.", de: 'Sag uns, was los ist. Wir antworten per E-Mail.' },
+    reportBlockingLabel: { en: "Something needs fixing that I can't change myself", de: 'Etwas muss repariert werden, das ich selbst nicht ändern kann' },
+    reportFeedbackLabel: { en: 'Just sharing feedback', de: 'Ich möchte nur Feedback geben' },
+    reportBlockingLockedNote: { en: 'A fix is already under way, so only feedback can be sent right now.', de: 'Eine Korrektur läuft bereits. Momentan kann nur Feedback gesendet werden.' },
+    reportHintBlocking:  { en: "This holds up approval until we've fixed it. We'll email you when it's ready to review again.", de: 'Das hält die Freigabe an, bis wir es korrigiert haben. Wir schreiben dir eine E-Mail, wenn es wieder bereit ist.' },
+    reportHintFeedback:  { en: "We'll read it, but this won't hold up approval.", de: 'Wir lesen es, aber es hält die Freigabe nicht an.' },
+    reportNeedDescription: { en: 'Please describe the problem first.', de: 'Bitte beschreibe zuerst das Problem.' },
+    reportNeedMessage:   { en: 'Please add a note first.', de: 'Bitte schreibe zuerst eine Nachricht.' },
+    reportSentBlocking:  { en: "Thanks, we're on it and will email you when it's ready to review again.", de: 'Danke, wir sind dran und schreiben dir eine E-Mail, wenn es wieder bereit ist.' },
+    reportSentFeedback:  { en: 'Thanks for the feedback!', de: 'Danke für dein Feedback!' },
+    reportSendFailed:    { en: 'Could not send: ', de: 'Konnte nicht gesendet werden: ' },
+    staleUpdated:        { en: 'Your book was updated elsewhere.', de: 'Dein Buch wurde anderswo aktualisiert.' },
+    staleReloadNow:      { en: 'Reload now?', de: 'Jetzt neu laden?' },
+    staleReloadAndRetry: { en: 'Please reload the page and try again.', de: 'Bitte lade die Seite neu und versuche es erneut.' },
+    issueBannerLocked:   { en: "We're fixing this. We'll email you when your book is ready to review again. You can look, but the book can't be edited or approved right now.", de: 'Wir korrigieren das gerade. Wir schreiben dir eine E-Mail, wenn dein Buch wieder bereit zur Ansicht ist. Du kannst es ansehen, aber momentan nicht bearbeiten oder freigeben.' },
+    approveOnHold:       { en: 'On hold', de: 'Angehalten' },
+    approveCouldNot:     { en: 'Could not approve: ', de: 'Konnte nicht freigeben: ' },
+  };
+  // t(key) — the string in the book's own language, defaulting to English for
+  // any order without one (absent language reads as 'en', same rule as the
+  // rest of the germanization work).
+  function t(key) {
+    const lang = (window.orderData && window.orderData.language === 'de') ? 'de' : 'en';
+    const pair = STR[key];
+    return pair ? (pair[lang] || pair.en) : key;
+  }
 
   // Crop offset keyed by photo name (heart slot + regular slots, #74). Mirrors the
   // staff engine's getHeartCrop/setHeartCrop; edits persist via saveBookState.
@@ -3457,7 +3496,7 @@
     const data = await updateResp.json().catch(() => ({}));
     if (!updateResp.ok) {
       if (updateResp.status === 409) {
-        const err = new Error(data.error || 'Your book was updated elsewhere. Please reload the page.');
+        const err = new Error(data.error || (t('staleUpdated') + ' ' + t('staleReloadAndRetry')));
         err.stale = true;
         throw err;
       }
@@ -3481,7 +3520,7 @@
       btn.disabled = false;
       btn.innerHTML = 'Save changes';
       if (err.stale) {
-        if (confirm(err.message + '\nReload now?')) location.reload();
+        if (confirm(err.message + '\n' + t('staleReloadNow'))) location.reload();
       } else {
         showToast('Could not save changes: ' + err.message, 'warn');
       }
@@ -3504,7 +3543,7 @@
     document.querySelectorAll('.photo-slot img.slot-photo').forEach(i => { i.style.cursor = ''; i.removeAttribute('title'); });
     const approveBtn = document.getElementById('approve-btn');
     const saveBtn    = document.getElementById('save-btn');
-    if (approveBtn) { approveBtn.disabled = true; approveBtn.textContent = 'On hold'; }
+    if (approveBtn) { approveBtn.disabled = true; approveBtn.textContent = t('approveOnHold'); }
     if (saveBtn)    { saveBtn.style.display = 'none'; }
     showIssueBanner();
   }
@@ -3514,7 +3553,7 @@
     const banner = document.createElement('div');
     banner.id = 'issue-lock-banner';
     banner.style.cssText = 'position:sticky;top:0;z-index:900;background:#fff5f5;border-bottom:1px solid #f3c8c8;color:#7a2020;padding:12px 20px;font-size:14px;text-align:center;';
-    banner.textContent = "We're fixing this — we'll email you when your book is ready to review again. You can look, but the book can't be edited or approved right now.";
+    banner.textContent = t('issueBannerLocked');
     document.body.prepend(banner);
   }
 
@@ -3723,7 +3762,7 @@
       if (!approveResp.ok) {
         const body = await approveResp.json().catch(() => ({}));
         if (approveResp.status === 409 && body.code === 'STALE') {
-          if (confirm((body.error || 'Your book was updated elsewhere.') + '\nReload now?')) location.reload();
+          if (confirm((body.error || t('staleUpdated')) + '\n' + t('staleReloadNow'))) location.reload();
           btn.disabled = false;
           btn.innerHTML = 'Approve & confirm';
           return;
@@ -3737,7 +3776,7 @@
       if (window.orderData) window.orderData.status = 'approved';
       lockForApproval();
     } catch (err) {
-      showToast('Could not approve: ' + err.message, 'warn');
+      showToast(t('approveCouldNot') + err.message, 'warn');
       btn.disabled = false;
       btn.innerHTML = 'Approve & confirm';
     }
@@ -3756,19 +3795,37 @@
     const sendBtn = document.getElementById('issue-send');
     const blockingRadio = document.getElementById('issue-type-blocking');
     const feedbackRadio = document.getElementById('issue-type-feedback');
+    const blockingLabel = document.getElementById('issue-type-blocking-label');
+    const lockedNote     = document.getElementById('issue-blocking-locked-note');
     if (!link || !modal) return;
 
-    function isBlocking() { return blockingRadio && blockingRadio.checked; }
+    // A fix is already under way while status is 'issue' — the server would
+    // refuse a new blocking report anyway (canAcceptBlockingReport requires
+    // review_sent), so hide that option here rather than let it fail.
+    function blockingAllowed() {
+      return !window.orderData || window.orderData.status !== 'issue';
+    }
+
+    function isBlocking() { return blockingAllowed() && blockingRadio && blockingRadio.checked; }
     function updateHint() {
-      hint.textContent = isBlocking()
-        ? "This holds up approval until we've fixed it. We'll email you when it's ready to review again."
-        : "We'll read it, but this won't hold up approval.";
+      hint.textContent = isBlocking() ? t('reportHintBlocking') : t('reportHintFeedback');
     }
     [blockingRadio, feedbackRadio].forEach(r => r && r.addEventListener('change', updateHint));
 
     const open = () => {
+      document.getElementById('issue-title').textContent = t('reportTitle');
+      document.getElementById('issue-intro').textContent = t('reportIntro');
+      document.getElementById('issue-type-blocking-text').textContent = t('reportBlockingLabel');
+      document.getElementById('issue-type-feedback-text').textContent = t('reportFeedbackLabel');
+      lockedNote.textContent = t('reportBlockingLockedNote');
+
+      const allowBlocking = blockingAllowed();
+      blockingLabel.style.display = allowBlocking ? '' : 'none';
+      lockedNote.style.display    = allowBlocking ? 'none' : '';
+      if (feedbackRadio) feedbackRadio.checked = !allowBlocking;
+      if (blockingRadio) blockingRadio.checked = allowBlocking;
+
       status.textContent = ''; text.value = ''; sendBtn.disabled = false;
-      if (blockingRadio) blockingRadio.checked = true;
       updateHint();
       modal.style.display = 'flex'; text.focus();
     };
@@ -3781,8 +3838,8 @@
     sendBtn.addEventListener('click', async () => {
       const message = text.value.trim();
       const blocking = isBlocking();
-      if (blocking && !message) { status.style.color = '#b91c1c'; status.textContent = 'Please describe the problem first.'; return; }
-      if (!message) { status.style.color = '#b91c1c'; status.textContent = 'Please add a note first.'; return; }
+      if (blocking && !message) { status.style.color = '#b91c1c'; status.textContent = t('reportNeedDescription'); return; }
+      if (!message) { status.style.color = '#b91c1c'; status.textContent = t('reportNeedMessage'); return; }
       sendBtn.disabled = true;
       status.style.color = 'var(--muted)';
       status.textContent = 'Sending…';
@@ -3809,7 +3866,7 @@
         if (!resp.ok) {
           const respBody = await resp.json().catch(() => ({}));
           if (resp.status === 409 && respBody.code === 'STALE') {
-            throw Object.assign(new Error((respBody.error || 'Your book was updated elsewhere.') + ' Please reload the page and try again.'), { stale: true });
+            throw Object.assign(new Error((respBody.error || t('staleUpdated')) + ' ' + t('staleReloadAndRetry')), { stale: true });
           }
           throw new Error(respBody.error || `Failed (${resp.status})`);
         }
@@ -3819,13 +3876,13 @@
           window._readOnly = true;
           if (window.orderData) window.orderData.status = 'issue';
           lockForIssue();
-          showToast("Thanks — we're on it and will email you when it's ready to review again.");
+          showToast(t('reportSentBlocking'));
         } else {
-          showToast('Thanks for the feedback!');
+          showToast(t('reportSentFeedback'));
         }
       } catch (err) {
         status.style.color = '#b91c1c';
-        status.textContent = 'Could not send: ' + err.message;
+        status.textContent = t('reportSendFailed') + err.message;
         sendBtn.disabled = false;
       }
     });
