@@ -1180,17 +1180,42 @@ ${data.error || res.status}`);
   // Server-side guards (once-only, paid-status, kill-switch) back this up.
   window.sendToPrintsmarter = async function(orderNumber) {
     const order = allOrders.find(o => o.orderNumber === orderNumber);
-    const addr = order?.shippingAddress;
-    const addrLine = addr
-      ? `${addr.line1 || ''}${addr.line2 ? ', ' + addr.line2 : ''}, ${addr.postal_code || ''} ${addr.city || ''}, ${addr.country || ''}`
-      : '⚠ NO SHIPPING ADDRESS ON ORDER';
+
+    // Show the RESOLVED address via the same dry run as "Preview submission".
+    // Reading order.shippingAddress here misreported "no address" exactly when
+    // the S188 account-address fallback was doing its job.
+    let dry;
+    try {
+      const res = await fetch(SUBMIT_PRINT_ORDER_ENDPOINT, {
+        method: 'POST',
+        headers: await staffHeaders(),
+        body: JSON.stringify({ orderNumber, dryRun: true }),
+      });
+      dry = await res.json();
+      if (!res.ok) {
+        alert(`Cannot submit this order yet:\n\n${dry.error || res.status}`);
+        return;
+      }
+    } catch (err) {
+      alert('Could not check the order before sending: ' + err.message);
+      return;
+    }
+    const ship = (dry.payload && dry.payload.shipping_address) || {};
+    const addrLine = [
+      [ship.first_name, ship.last_name].filter(Boolean).join(' '),
+      ship.address1, ship.address2,
+      [ship.zip, ship.city].filter(Boolean).join(' '),
+      ship.country_code,
+    ].filter(Boolean).join(', ') || '⚠ NO ADDRESS';
+    const addrSource = dry.addressSource === 'order' ? 'from the order'
+      : (dry.addressSource === 'customer account' ? 'from the customer’s account' : '⚠ none');
 
     const confirmed = confirm(
       `Send this order to Printsmarter for REAL printing?\n\n` +
       `Order: ${orderNumber}\n` +
       `Pages: ${order?.pageCount ?? '?'}\n` +
       `Customer: ${order?.customerName || '?'}\n` +
-      `Ships to: ${addrLine}\n\n` +
+      `Ships to: ${addrLine}\n(${addrSource})\n\n` +
       `A physical book will be printed and invoiced. This cannot be undone from here.`
     );
     if (!confirmed) return;
