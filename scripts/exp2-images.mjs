@@ -62,7 +62,8 @@ const TEMPLATES = {
   // capture. The keys are output slot names; the values are source files.
   laguna: {
     order: 'AEV-095',
-    spreads: { 'sp1':'open-01-sp1', 'sp2':'open-04-sp4', 'sp3':'open-07-sp1', 'sp4':'open-09-sp3', 'sp5':'open-12-sp5' },
+    // owner's picks, S196
+    spreads: { 'sp1':'open-10-sp4', 'sp2':'open-12-sp5', 'sp3':'open-13-sp6', 'sp4':'open-15-sp2', 'sp5':'open-16-sp3' },
     specials:{ 'fpintro':'open-00-fpintro', 'fp1':'open-11-fp1' },
   },
   newborn: {
