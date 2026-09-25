@@ -20,15 +20,29 @@ function canCustomerSave(status) {
   return status === 'review_sent';
 }
 
-// Approval is refused while a blocking issue is open, or once already done.
+// Approval is only accepted from review_sent — the ONE status meaning "the
+// customer has a sent book in front of them and nothing else is going on".
+// (Codex review fix: previously refused only issue/approved/paid, which let
+// through anything else, e.g. 'new' or 'designing'.)
 function canApprove(status) {
-  return status !== 'issue' && status !== 'approved' && status !== 'paid';
+  return status === 'review_sent';
 }
 
 // A blocking report only makes sense while the customer has something to
 // approve. Outside review_sent there is nothing left to block.
 function canAcceptBlockingReport(status) {
   return status === 'review_sent';
+}
+
+// Whether a transition INTO 'review_sent' is a genuinely new send (from a
+// pre-send status, or re-sent after a fix closed 'issue') rather than a plain
+// resend of an already-sent book. Codex review fix: a resend while status is
+// ALREADY 'review_sent' must not re-snapshot or re-version — the customer may
+// have their own draft in progress, and staffBook* is not what they're
+// looking at. Only a genuine new send writes a new sentVersion / snapshot /
+// revision bump; a plain resend just re-sends the email.
+function isEnteringReviewSent(previousStatus) {
+  return previousStatus !== 'review_sent';
 }
 
 // bookRevision is absent on every order saved before this feature — that
@@ -85,6 +99,7 @@ module.exports = {
   canCustomerSave,
   canApprove,
   canAcceptBlockingReport,
+  isEnteringReviewSent,
   revisionMatches,
   mapCustomerToStaffUpdates,
   buildReportEntry,

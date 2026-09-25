@@ -8,6 +8,7 @@ const {
   revisionMatches,
   mapCustomerToStaffUpdates,
   buildReportEntry,
+  isEnteringReviewSent,
 } = require('../functions/review-lock-utils');
 
 describe('canStaffSave', () => {
@@ -49,6 +50,28 @@ describe('canApprove', () => {
   });
   test('allowed in review_sent', () => {
     expect(canApprove('review_sent')).toBe(true);
+  });
+  test('refused everywhere else too (Codex review fix: review_sent is the ONLY allowed status)', () => {
+    expect(canApprove('new')).toBe(false);
+    expect(canApprove('designing')).toBe(false);
+    expect(canApprove('needs_info')).toBe(false);
+    expect(canApprove('uploading')).toBe(false);
+    expect(canApprove(undefined)).toBe(false);
+  });
+});
+
+describe('isEnteringReviewSent (Codex review fix)', () => {
+  test('true when moving in from a pre-send status', () => {
+    expect(isEnteringReviewSent('new')).toBe(true);
+    expect(isEnteringReviewSent('designing')).toBe(true);
+    expect(isEnteringReviewSent('needs_info')).toBe(true);
+    expect(isEnteringReviewSent('uploading')).toBe(true);
+  });
+  test('true when moving in from issue (a fix was just re-sent)', () => {
+    expect(isEnteringReviewSent('issue')).toBe(true);
+  });
+  test('false for a plain resend — already review_sent', () => {
+    expect(isEnteringReviewSent('review_sent')).toBe(false);
   });
 });
 

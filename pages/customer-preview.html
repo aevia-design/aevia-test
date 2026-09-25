@@ -1417,7 +1417,11 @@
       // that's the server's canCustomerSave rule (saveOrderState refuses
       // outside review_sent), mirrored here so the UI doesn't invite an edit
       // the server will reject.
-      window._readOnly = ['approved', 'paid', 'issue'].includes(window.orderData.status);
+      // Codex review fix: read-only for EVERY status except review_sent — the
+      // one status meaning "the customer has a sent book in front of them".
+      // Previously only approved/paid/issue were locked, which left pre-send
+      // statuses (e.g. 'new') editable if a link was ever opened early.
+      window._readOnly = window.orderData.status !== 'review_sent';
       // TO-DOS #99: the revision this tab loaded. Every save/report/approve
       // carries it; a mismatch (someone else saved first) comes back as 409.
       window._bookRevision = window.orderData.bookRevision || 0;
@@ -1464,8 +1468,14 @@
       showBookChrome();
       if (window.orderData.status === 'issue') {
         lockForIssue();
-      } else if (window._readOnly) {
+      } else if (['approved', 'paid'].includes(window.orderData.status)) {
         lockForApproval();
+      } else if (window._readOnly) {
+        // Codex review fix: read-only for every non-review_sent status, but a
+        // pre-send status (the link opened before it was actually sent, e.g.
+        // staff QA) isn't "approved and locked" — just lock the editing sweep
+        // without lockForApproval's approve/pay copy, which would mislead.
+        lockGenericReadOnly();
       }
     } catch (err) {
       stopLoadHumour();
@@ -2318,6 +2328,7 @@
       });
       sidebar.addEventListener('drop', e => {
         sidebar.classList.remove('sidebar-drag-over');
+        if (window._readOnly) return; // Codex review fix (LOW), belt-and-braces
         let data;
         try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
         if (data.type !== 'slot') return;
@@ -2657,7 +2668,11 @@
             });
             slotEl.addEventListener('dragend', () => { window._dragType = null; slotEl.classList.remove('dragging'); });
             // Double-click returns the photo to the unplaced sidebar (pool photos only).
+            // Codex review fix (LOW): this mutating handler had no _readOnly
+            // guard, so a locked page (issue/approved/paid/pre-send) could
+            // still lose a photo on an accidental double-click.
             slotEl.addEventListener('dblclick', () => {
+              if (window._readOnly) return;
               const asgn = window.bookAssignments[spreadIndex];
               if (!asgn || !asgn[side]) return;
               asgn[side][slotIdx] = null;
@@ -3061,6 +3076,10 @@
   }
 
   function handleSlotDrop(e, spreadIndex, side, slotIdx) {
+    // Codex review fix (LOW, belt-and-braces): draggable is already disabled
+    // sitewide when read-only, so a drag can't normally start — but guard
+    // the mutation itself too, in case a drop event ever reaches here another way.
+    if (window._readOnly) return;
     let data;
     try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
 
@@ -3535,6 +3554,21 @@
   // as lockForApproval, but a different message — we are fixing it, not the
   // customer's own book being done. No approve/pay affordance changes needed
   // (those elements' state is unaffected by 'issue' — only save/edit is locked).
+  // Codex review fix: covers a pre-send status (previewToken opened before
+  // sendPreviewEmail — staff QA, or a link opened early). Read-only, but with
+  // no approve/pay copy since there is nothing to approve yet.
+  function lockGenericReadOnly() {
+    document.querySelectorAll('[contenteditable="true"]').forEach(el => el.setAttribute('contenteditable', 'false'));
+    document.querySelectorAll('[draggable="true"]').forEach(el => el.draggable = false);
+    document.querySelectorAll('.reposition-handle').forEach(h => h.remove());
+    document.querySelectorAll('.photo-slot.repositioning').forEach(s => s.classList.remove('repositioning'));
+    document.querySelectorAll('.photo-slot img.slot-photo').forEach(i => { i.style.cursor = ''; i.removeAttribute('title'); });
+    const approveBtn = document.getElementById('approve-btn');
+    const saveBtn    = document.getElementById('save-btn');
+    if (approveBtn) approveBtn.style.display = 'none';
+    if (saveBtn)    saveBtn.style.display = 'none';
+  }
+
   function lockForIssue() {
     document.querySelectorAll('[contenteditable="true"]').forEach(el => el.setAttribute('contenteditable', 'false'));
     document.querySelectorAll('[draggable="true"]').forEach(el => el.draggable = false);

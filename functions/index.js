@@ -7,7 +7,7 @@ const { generateReferralCode, extractPromotionCodeId, referrerRewardDecision } =
 const { normalizePromoCode, promoValidationDecision, describeDiscount } = require('./promo-utils');
 const { resolveApprovedCaptionLines } = require('./caption-line-utils');
 const {
-  canStaffSave, canCustomerSave, canApprove, canAcceptBlockingReport,
+  canStaffSave, canCustomerSave, canApprove, canAcceptBlockingReport, isEnteringReviewSent,
   revisionMatches, mapCustomerToStaffUpdates, buildReportEntry,
 } = require('./review-lock-utils');
 const { isRenderInFlight } = require('./pdf-render-utils');
@@ -428,11 +428,16 @@ exports.approveOrder = functions
         const doc = await tx.get(orderRef);
         const orderData = doc.data();
 
+        // Codex review fix: canApprove now allows ONLY review_sent — the one
+        // status meaning "a sent book is in front of the customer". Anything
+        // else (issue, approved/paid, or still pre-send) is refused.
         if (!canApprove(orderData.status)) {
           const err = new Error(
             orderData.status === 'issue'
               ? 'A reported problem is still open — approval is blocked until it is fixed.'
-              : 'Order is already approved or paid'
+              : (['approved', 'paid'].includes(orderData.status)
+                  ? 'Order is already approved or paid'
+                  : 'This book has not been sent for review yet.')
           );
           err.code = orderData.status === 'issue' ? 'ISSUE_OPEN' : 'ALREADY_DONE';
           throw err;
@@ -641,14 +646,14 @@ exports.openIssueForFix = functions
       return res.status(403).json({ error: 'Unauthorised' });
     }
 
-    const { orderNumber, note } = req.body;
+    const { orderNumber, note, bookRevision } = req.body;
     if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
 
     try {
       const db = admin.firestore();
       const orderRef = db.collection('orders').doc(orderNumber);
 
-      await db.runTransaction(async (tx) => {
+      const newRevision = await db.runTransaction(async (tx) => {
         const doc = await tx.get(orderRef);
         if (!doc.exists) {
           const err = new Error(`Order ${orderNumber} not found`);
@@ -661,8 +666,17 @@ exports.openIssueForFix = functions
           err.code = 'NOT_REVIEW_SENT';
           throw err;
         }
+        // TO-DOS #99 (Codex review fix #5): carry, compare and bump the
+        // revision here too — the dashboard's loaded copy could otherwise
+        // race a customer save or another staff tab.
+        if (!revisionMatches(data, bookRevision)) {
+          const err = new Error('This order was updated elsewhere. Please reload.');
+          err.code = 'STALE';
+          throw err;
+        }
 
         const entry = buildReportEntry('blocking', note || 'Reported by email — unlocked by staff.', admin.firestore.Timestamp.now());
+        const next = ((data.bookRevision) || 0) + 1;
         const updates = {
           ...mapCustomerToStaffUpdates(data),
           customerBookAssignments:    null,
@@ -679,15 +693,17 @@ exports.openIssueForFix = functions
             status: 'issue',
             timestamp: admin.firestore.Timestamp.now(),
           }),
-          bookRevision: ((data.bookRevision) || 0) + 1,
+          bookRevision: next,
         };
         tx.update(orderRef, updates);
+        return next;
       });
 
-      return res.status(200).json({ success: true });
+      return res.status(200).json({ success: true, bookRevision: newRevision });
     } catch (err) {
       if (err.code === 'NOT_FOUND') return res.status(404).json({ error: err.message });
       if (err.code === 'NOT_REVIEW_SENT') return res.status(409).json({ error: err.message });
+      if (err.code === 'STALE') return res.status(409).json({ error: err.message, code: 'STALE' });
       console.error('openIssueForFix error:', err);
       return res.status(500).json({ error: err.message });
     }
@@ -1944,83 +1960,86 @@ exports.sendPreviewEmail = functions
       return res.status(403).json({ error: 'Unauthorised' });
     }
 
-    const { orderNumber } = req.body;
+    const { orderNumber, bookRevision } = req.body;
     if (!orderNumber) return res.status(400).json({ error: 'orderNumber required' });
 
     try {
       const db = admin.firestore();
       const ref = db.collection('orders').doc(orderNumber);
-      const doc = await ref.get();
-      if (!doc.exists) return res.status(404).json({ error: `Order ${orderNumber} not found` });
 
-      const order = doc.data();
+      // Codex review fix: everything that reads/derives from order state —
+      // the gates, the snapshot, sendCount, the sentVersions ref — is now
+      // computed INSIDE the transaction, from ITS fresh read. Computing any
+      // of it beforehand (as the old code did) races a concurrent write.
+      const { order, newRevision } = await db.runTransaction(async (tx) => {
+        const doc = await tx.get(ref);
+        if (!doc.exists) {
+          const err = new Error(`Order ${orderNumber} not found`);
+          err.code = 'NOT_FOUND';
+          throw err;
+        }
+        const data = doc.data();
 
-      // Gate 1: a link must exist (staff generates + QAs it first).
-      if (!order.previewToken) {
-        return res.status(409).json({ error: 'Generate a preview link first, then send it.' });
-      }
-      // Gate 2: only send while the order is still awaiting the customer. Past
-      // approval, the customer has already seen and accepted the book.
-      if (!PRE_APPROVAL_STATUSES.includes(order.status)) {
-        return res.status(409).json({ error: `Order is already past the preview stage (${order.status}).` });
-      }
-      // Gate 3: the book must be saved as complete in the engine — never send a
-      // half-finished book. staffBookComplete is stamped on save (book-completeness.js).
-      if (order.staffBookComplete !== true) {
-        const reasons = (order.staffIncompleteReasons && order.staffIncompleteReasons.length)
-          ? order.staffIncompleteReasons.join(', ')
-          : 'the book has not been saved as complete yet';
-        return res.status(409).json({ error: `Book is not ready to send — ${reasons}.` });
-      }
-
-      // Capture the immutable snapshot of what the customer is about to see,
-      // stamped with the send time. Read straight from the order doc so this is
-      // authoritative (not whatever a stale browser tab holds). Gains heartCrop
-      // and caption lines (Codex review fix) so a re-approved reprint can't
-      // silently lose them.
-      const sentAt = admin.firestore.FieldValue.serverTimestamp();
-      const sentSnapshot = {
-        bookAssignments:     order.staffBookAssignments     || null,
-        bookCaptions:        order.staffBookCaptions         || null,
-        bookCaptionLines:    order.staffBookCaptionLines     || null,
-        bookSequence:        order.staffBookSequence         || null,
-        coverCaptionStyles:  order.staffCoverCaptionStyles   || null,
-        spreadCaptionStyles: order.staffSpreadCaptionStyles  || null,
-        heartCrop:           order.staffHeartCrop            || null,
-        sentAt,
-      };
-
-      // TO-DOS #99 (Codex review fix): every send (first and re-sends) writes a
-      // frozen, numbered history entry via create() — never overwritten by a
-      // later send or by approval. n = the order's own incrementing sendCount.
-      const sendCount = (order.sendCount || 0) + 1;
-      const versionRef = ref.collection('sentVersions').doc(String(sendCount));
-
-      await db.runTransaction(async (tx) => {
-        const fresh = await tx.get(ref);
-        const freshData = fresh.data();
-        if (!PRE_APPROVAL_STATUSES.includes(freshData.status)) {
-          const err = new Error(`Order is already past the preview stage (${freshData.status}).`);
+        // Gate 1: a link must exist (staff generates + QAs it first).
+        if (!data.previewToken) {
+          const err = new Error('Generate a preview link first, then send it.');
+          err.code = 'NO_TOKEN';
+          throw err;
+        }
+        // Gate 2: only send while the order is still awaiting the customer.
+        if (!PRE_APPROVAL_STATUSES.includes(data.status)) {
+          const err = new Error(`Order is already past the preview stage (${data.status}).`);
           err.code = 'PAST_PREVIEW';
           throw err;
         }
+        // Gate 3: the book must be saved as complete in the engine.
+        if (data.staffBookComplete !== true) {
+          const reasons = (data.staffIncompleteReasons && data.staffIncompleteReasons.length)
+            ? data.staffIncompleteReasons.join(', ')
+            : 'the book has not been saved as complete yet';
+          const err = new Error(`Book is not ready to send — ${reasons}.`);
+          err.code = 'NOT_COMPLETE';
+          throw err;
+        }
+        if (!revisionMatches(data, bookRevision)) {
+          const err = new Error('This book was saved elsewhere. Please reload.');
+          err.code = 'STALE';
+          throw err;
+        }
 
-        const update = {
-          status: 'review_sent',
-          sentSnapshot,
-          sendCount,
-          bookRevision: ((freshData.bookRevision) || 0) + 1,
-        };
-        // Only add a history entry on the first transition into review_sent — a
-        // resend re-stamps sentAt but shouldn't pile up duplicate history rows.
-        if (freshData.status !== 'review_sent') {
+        const next = ((data.bookRevision) || 0) + 1;
+        const update = { status: 'review_sent', bookRevision: next };
+
+        // Codex review fix #2: a resend while ALREADY review_sent must not
+        // re-snapshot or write a new version — the customer may have their
+        // OWN draft in progress by now, and staffBook* is not what's in
+        // front of them. Only a genuine entry into review_sent (from a
+        // pre-send status, or from 'issue' after a fix) captures a new
+        // frozen snapshot + numbered sentVersions entry.
+        if (isEnteringReviewSent(data.status)) {
+          const sentAt = admin.firestore.FieldValue.serverTimestamp();
+          update.sentSnapshot = {
+            bookAssignments:     data.staffBookAssignments     || null,
+            bookCaptions:        data.staffBookCaptions         || null,
+            bookCaptionLines:    data.staffBookCaptionLines     || null,
+            bookSequence:        data.staffBookSequence         || null,
+            coverCaptionStyles:  data.staffCoverCaptionStyles   || null,
+            spreadCaptionStyles: data.staffSpreadCaptionStyles  || null,
+            heartCrop:           data.staffHeartCrop            || null,
+            sentAt,
+          };
+          const sendCount = (data.sendCount || 0) + 1;
+          update.sendCount = sendCount;
           update.statusHistory = admin.firestore.FieldValue.arrayUnion({
             status: 'review_sent',
             timestamp: admin.firestore.Timestamp.now(),
           });
+          const versionRef = ref.collection('sentVersions').doc(String(sendCount));
+          tx.create(versionRef, { ...update.sentSnapshot, sentAt: admin.firestore.Timestamp.now(), n: sendCount });
         }
+
         tx.update(ref, update);
-        tx.create(versionRef, { ...sentSnapshot, sentAt: admin.firestore.Timestamp.now(), n: sendCount });
+        return { order: data, newRevision: next };
       });
 
       // Email the customer their preview link (S105-approved shell).
@@ -2064,9 +2083,11 @@ exports.sendPreviewEmail = functions
         `, { support: true }),
       });
 
-      return res.status(200).json({ success: true });
+      return res.status(200).json({ success: true, bookRevision: newRevision });
     } catch (err) {
-      if (err.code === 'PAST_PREVIEW') return res.status(409).json({ error: err.message });
+      if (err.code === 'NOT_FOUND') return res.status(404).json({ error: err.message });
+      if (['NO_TOKEN', 'PAST_PREVIEW', 'NOT_COMPLETE'].includes(err.code)) return res.status(409).json({ error: err.message });
+      if (err.code === 'STALE') return res.status(409).json({ error: err.message, code: 'STALE' });
       console.error('sendPreviewEmail error:', err);
       return res.status(500).json({ error: err.message });
     }
