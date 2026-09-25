@@ -102,6 +102,7 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     its `collection` to the engine registry (kids / travel / love) or it silently reads as kids.
     **`caption-quality.md` (S193, #140)** is the follow-up: word-overuse control + humour for Kids/Adventures.
   - `pdf-generation-control.md` (#138, BUILT S193) — shared render status, per-order lock, cancel.
+  - **`review-lock.md` (#99, BUILT S194) — read before touching customer-preview save/approve/report, `saveStaffState`, `sendPreviewEmail` or the dashboard status control.** One `bookRevision` compare-and-bump on every book write; decision in `work/review-lock/decision.md`.
   - **`germanization.md` — the DE/EN book-language build (S177). Read before touching the
     product-page selector, `svgDe`, the order form's language, or German captions.** Six
     stages, gated so the owner tests each; **0–5 are DONE** (choice → Firestore → both engines

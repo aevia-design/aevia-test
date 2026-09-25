@@ -1,22 +1,35 @@
 # Session Status
-_Last updated: 2026-09-24 (session 193)_
-_Context at save: four cards closed and verified live by the owner (#129, #102, #138, #137).
-PDF generation can now be watched from any tab and cancelled._
+_Last updated: 2026-09-25 (session 194)_
+_Context at save: #99 review lock built, deployed and verified live by the owner. Printsmarter
+send dialog now shows the resolved address. Next session: owner works on coordinates/SVGs for final mockups._
 
 ## Status
-**Session 193.** Full detail: **`sessions/2026-09-24-s193.md`**.
+**Session 194.** Full detail: **`sessions/2026-09-25-s194.md`**.
 
 ## Do this first
 **Read the board** (https://trello.com/b/HCrNJRN1/aevia): *In progress*, *Blocked*, top of
 *Next up*. Rules are in CLAUDE.md "Backlog board". At handover, `node scripts/trello-snapshot.mjs`.
 
+⚠ **Papercut cover captions changed (S194, `c70982f`)** - redeploy the PDF renderer before any Papercut PDF.
+
 **Waiting on the owner:**
-- **#140 AI captions** (Backlog, briefed: `docs/briefs/caption-quality.md`). Owner will move it into
-  *Next up*. Step 1 only (word control + humour, current model) unless he asks for Step 2.
-- **#99** (approval overwrites staff edits): decide after #129, which is now done. **Whatever #99
-  decides must carry `customerCaptionLines` with the captions.**
-- **#67** bold-in-PDF was NOT covered by the AEV-070 test; still needs a Ctrl+B word → PDF check.
+- **#140 AI captions** (Backlog, briefed: `docs/briefs/caption-quality.md`). Step 1 only unless he asks.
+- **Printsmarter send dialog** (`5934963`) - owner to eyeball on a paid test order, then Cancel.
+- **#99 feedback path** (step 10) not tested live; passed locally.
+- **#67** bold-in-PDF still needs a Ctrl+B word → PDF check.
 - **#124** DE mockups, **#139** cloud costs (needs the owner's Billing CSV first; no brief yet).
+
+## What shipped in S194
+- **#99 review lock and issue flow** (merge `74a971e`, Done, verified live steps 1-9). Brief
+  `docs/briefs/review-lock.md`, decision `work/review-lock/decision.md`. One `bookRevision` counter;
+  every book write is a Firestore transaction that 409s on a stale tab; lock = status; blocking report
+  promotes the customer draft into `staffBook*`; `sentVersions/{n}` per send; dashboard "Unlock for fix";
+  dropdown disabled in `review_sent`/`issue`; approve only from `review_sent`, carrying the displayed book.
+  Tests: `tests/review-lock-scenarios.test.js` (real handlers over an in-memory Firestore fake,
+  `tests/helpers/`), browser `npm run qa:review-lock` (needs http-server on 8080).
+- Send-to-Printsmarter confirm uses the dry run (`5934963`). Issue banner under the nav (`b535c4f`).
+- New cards: **#141** learn from customer edits (After launch), **#142** customer preview chrome in German.
+- npm test **721**.
 
 ## What shipped in S193
 - **#129** customer preview records caption line breaks; approval promotes them (`cdf0a7d`).
@@ -45,10 +58,7 @@ failed" = check `.dockerignore` first (LEARNINGS S193). From Git Bash, gcloud ne
 ## Still open on the print path
 ⚠ **`PRINTSMARTER_LIVE` is `true` and `submitPrintOrder` is deployed** - "Send to Printsmarter"
 is armed beside "Preview submission". A misclick is a real book and a real invoice.
-⚠ **The send confirm dialog misreports the address** - it reads the locally loaded
-`order.shippingAddress` and shows "⚠ NO SHIPPING ADDRESS ON ORDER" exactly when S188's account
-fallback is working. **Trust "Preview submission", not the dialog.** Fix is ~10 lines: have the
-confirm call `dryRun` and show the resolved address. **Do it before the next send.**
+The send confirm dialog now shows the **resolved** address via `dryRun` (fixed S194, not yet eyeballed).
 ⚠ **Sending is once-only.** A problem found afterwards is a `cancel_order`, not a resend.
 ⚠ **Neither test order is Heirloom** - the two-product split and the offset stock are unexercised.
 **Do NOT use Heirloom Blue (AEV-091)** - its coordinates are still the old off-centre ones.
@@ -128,6 +138,14 @@ Google (`200 OK`, `application/pdf`, no auth) — so the **URLs are proven and t
 AEV-095's *preview* alone was 231 MB.
 
 ## Recent decisions
+- **#99: the customer's saved draft is the only live copy after sending (S194, owner)** - staff fix
+  ON TOP of it after a blocking report; no merging. Report form has two paths: blocking (locks approval,
+  unlocks staff) vs feedback (does not block). The status IS the lock; don't add a separate flag.
+- **Every book-state write carries `bookRevision` (S194)** - a plain email resend neither checks nor
+  bumps it (bumping lost a customer's unsaved edits). Don't "simplify" approve back into save-then-approve:
+  the two-request version could approve a book the tab never showed.
+- **A fix needing a photo the customer never uploaded: handled by email for now (S194, owner)** - nobody
+  can add a photo after ordering. Own card only if it recurs.
 - **Clean public URLs via rewrite, not a move (S192, owner, ADR-0010)** — `_redirects` 200 rules
   whose destination has **no `.html`** (with `.html` Cloudflare 308-bounces back to `/pages/`).
   **No 301 from old `/pages/<public>` addresses** (loops); canonical tags carry SEO. EN at the
@@ -137,7 +155,7 @@ AEV-095's *preview* alone was 231 MB.
 - **Cloud photo sources: build nothing (S192, owner, #78)** — no mainstream competitor offers
   Drive/Dropbox on a web form; Google Photos is the only plausible one and Google restricted its
   API in March 2025. Revisit only with evidence of upload abandonment.
-- **#99 direction (S192, owner, NOT built)** — staff cannot edit once the preview link is sent;
+- **#99 direction (S192, owner; BUILT S194, see top)** — staff cannot edit once the preview link is sent;
   unlock only on a customer-reported issue. Open: what re-send does to the customer's draft.
   ⚠ `approveOrder` currently lets a customer approve while the order is in `issue`.
 - **Trello is the canonical backlog (S191, owner)** — TO-DOS.md is a snapshot regenerated at
@@ -338,7 +356,6 @@ The 23-item list that used to live here became cards #118–#132 or was already 
 - **Intro letter colour assumed `#7c746e`** — resolved for Beige; confirm with Xenia.
 - **`functions/index.js:1513` claims the dispatch email is "NOT yet wired". It IS wired** and
   emails the customer on any postback that reaches a real order. Stale comment, not fixed.
-- **Approval overwrites staff edits blindly.**
 - **Prices live in THREE places** — Stripe, `assets/js/prices.js`, `PRICE_BY_PAGE_COUNT`.
 - **Android is entirely untested on real hardware.**
 - **Staff test password is weak** for an account that can read real customer orders.

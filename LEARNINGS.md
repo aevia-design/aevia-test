@@ -10,7 +10,8 @@ Google API cap.
 - **Re-run the claim on the real target** (the rig, real photos, the source text) before merging
   or reporting. A local emulator, a stub, or a summary of a summary is where these went wrong.
 - **Worktree agents see only committed files and run a partial test suite** (jest ignores
-  `.claude/`; PDF suites lack `sharp`). Commit the brief first; re-run `npm test` in the main
+  `.claude/`; PDF suites lack `sharp`; S194: junction `functions/node_modules` + `scripts/node_modules`
+  into the worktree for the full suite). Commit the brief first; re-run `npm test` in the main
   checkout after merge.
 - **Test `_redirects` changes on the rig with a throwaway path** (`/spike-x`), never on `/`.
 

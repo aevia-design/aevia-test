@@ -14,7 +14,6 @@ _Real people place real orders. Anything that strands or silently corrupts an or
 
 | # | Item | Notes |
 |---|------|-------|
-| 99 | Approval overwrites staff edits blindly | **[Next up]** No staleness check between `customerUpdatedAt` and the last staff save. Either side can silently discard the other → [notes](docs/todo-notes.md#99) |
 | 60 | Clean up QA test orders | AEV-023, 024, 025, 078, 079, **096** (S173 stall test, stranded at `uploading`). ⚠ Never demo AEV-078 — it carries deliberate injection payloads. |
 | 118 | Get a Heirloom order through Printsmarter | Neither test order is Heirloom, so the offset product (`aevia_hardcover_offset`) and the two-product split are unproven. Also owes the S187 print checks: cover photo visible on Heirloom/Tender/Newborn, Tender's spine at 410mm, Scribble captions after the Onest swap, front-panel centring. ⚠ Do NOT use Heirloom Blue (AEV-091) — old off-centre coordinates. |
 | 119 | Send confirm dialog misreports the shipping address | Reads the locally loaded `order.shippingAddress`, so it shows "⚠ NO SHIPPING ADDRESS ON ORDER" exactly when the S188 account fallback is working. Fix (~10 lines): have the confirm call `dryRun` and show the resolved address and its source. Do before the next send. |
@@ -46,6 +45,7 @@ _Customer-visible untruths, legal exposure, and anything that makes the site loo
 | 136 | Customer emails look wrong on desktop | In Gmail on a desktop browser the emails sit as a narrow centred column with a lot of white space around them. They look fine in iPhone Mail. Redesign the shared shell (renderEmail in functions/email.js) so the desktop view looks deliberate. |
 | 139 | Understand + model Google Cloud costs | Owner wants to predict GCP/Firebase cost for the financial model from clear variables (# orders, photos/order, pages, PDF renders, storage months). Single-digit €/month today, pre-launch. Options: owner exports Billing CSV / enables BigQuery billing export, or grants read-only Billing Viewer; then derive per-order unit costs and add a tab to Business case v11. |
 | 140 | AI captions: stop "moment" overuse, add humour for Kids + Adventures | EN AI captions are samey ("moment" in every 2nd–3rd caption) and never playful; Xenia re-generates too often. Step 1: word-overuse control in code + humour per collection in the voice guide, current model. Step 2 only if needed: test cheap-tier models, cap ~€0.30/book. Brief: docs/briefs/caption-quality.md |
+| 142 | Customer preview page chrome in German | customer-preview.html switches the BOOK to German (setBookLanguage, l.1340) but its buttons, toasts, report form and approval text stay English. Follow order.language — no switcher (S177: one switch drives everything). Use the order-strings {en,de} pattern (assets/js/order-strings.js). /stop-slop the copy. #99 writes its new strings as {en,de} pairs from the start. |
 
 ---
 
@@ -82,6 +82,7 @@ _Real improvements, but nothing breaks if they wait._
 | 28 | Press / "as seen in" section | Placeholder space on the homepage. |
 | 130 | Server-side validation in functions/upload.js | Carried in STATUS next steps; no brief yet. |
 | 134 | One folder structure for every template | Every assets/Template_* folder gets the same layout: where the SVGs sit, where fonts sit, where the sizing CSVs and data file sit, where DE artwork and authored .txt copy sit. Needs its own session (owner, S191). |
+| 141 | Learn from customer edits at review | Measure what customers change between the sent preview and approval (photo swaps, captions rewritten, repositions) and roughly how long they spend (first open, saves, approval). Feeds back into better first drafts. |
 
 ---
 
@@ -116,6 +117,7 @@ _Deliberately not now. Several were investigated and declined — read the note 
 - **Done** — #89 · Stranded uploads: detect, flip, Retry — all built; two live checks left
 - **Done** — #116 · Upload stall: record enough to tell a file fault from a transport fault
 - **Done** — #92 · Verify the `confirmUpload` retry fix live
+- **Done** — #99 · Approval overwrites staff edits blindly
 - **Done** — #95 · Spine geometry for Papercut, Newborn, Wander
 - **Done** — #102 · Verify the full-bleed reposition fix in print
 - **Done** — #98 · Papercut orders before 13 July have `name`/`year` swapped
