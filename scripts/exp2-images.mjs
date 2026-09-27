@@ -44,6 +44,11 @@ const TEMPLATES = {
     spreads: { 'sp1':'open-01-sp1', 'sp2':'open-02-sp2', 'sp3':'open-03-sp3', 'sp4':'open-04-sp4' },
     specials:{ 'fpintro':'open-00-fpintro', 'fpstory':'open-07-fpstory', 'fpwords':'open-14-fpwords' },
   },
+  'scribble-de': {
+    order: 'AEV-104', out: 'scribble/de',   // owner's picks, S197
+    spreads: { 'sp1':'open-01-sp1', 'sp2':'open-05-sp4', 'sp3':'open-19-sp2', 'sp4':'open-13-sp4' },
+    specials:{ 'fp1':'open-04-fp1', 'fp2':'open-07-fp2', 'fp3':'open-11-fp3', 'fp4':'open-14-fp4', 'fp5':'open-18-fp5' },
+  },
   // German set (S195, owner's picks) -> exp2/tender/de/, the Stage 6 variant folder.
   'tender-de': {
     order: 'AEV-100', out: 'tender/de',
