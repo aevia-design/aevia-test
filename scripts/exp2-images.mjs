@@ -46,7 +46,7 @@ const TEMPLATES = {
   },
   'papercut-de': {
     order: 'AEV-105', out: 'papercut/de',   // owner's picks, S197
-    spreads: { 'sp1':'open-02-sp2', 'sp2':'open-09-sp1', 'sp3':'open-12-sp3', 'sp4':'open-05-sp4' },
+    spreads: { 'sp1':'open-02-sp2', 'sp2':'open-05-sp4', 'sp3':'open-09-sp1', 'sp4':'open-12-sp3' },
     specials:{ 'fp1':'open-04-fp1', 'fp2':'open-07-fp2', 'fp3':'open-11-fp3', 'fp4':'open-14-fp4', 'fp5':'open-18-fp5' },
   },
   'scribble-de': {
