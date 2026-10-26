@@ -185,8 +185,8 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     `PRICE_BY_PAGE_COUNT["40"]` resolves happily, so the coercion in `buildOrderPayload` is the
     only thing catching it. Do not "simplify" it away.
     **§5 of the brief: six questions are CLOSED, do not re-ask them**: `price` is the RETAIL sales
-    price (never our cost), `shipping_code` is `Standard`/`Express` (**and we now send
-    `Standard`**), there is no sandbox but our account does not currently forward orders to
+    price (never our cost), `shipping_code` is `Standard`/`Express` (**since S198 we send
+    `warenpost`** — Printsmarter's own alias, by email), there is no sandbox but our account does not currently forward orders to
     production (**their setting, not a test mode**), and `product_id` is issued by email.
     Still open and deliberately absent from the payload: **`shipping_price`** (we charge none;
     inventing one misstates a customs field) and **`return_address`**.

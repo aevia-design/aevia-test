@@ -1,11 +1,17 @@
 # Session Status
-_Last updated: 2026-09-25 (session 195)_
-_Context at save: Heirloom colourways synced to Beige; Germanization Stage 6 started (gallery swap +
-Tender DE set); `npm run dev` follows _redirects; monogram letters editable; renderer rev 00046.
-Owner + Xenia are testing Heirloom before printing._
+_Last updated: 2026-10-26 (session 198)_
+_Context at save: first API orders (AEV-071/100) delivered; Printsmarter changed paper on our
+request; we now ship `warenpost`; owner sending 2 new samples. #140 captions still uncommitted._
 
 ## Status
-**Session 195.** Full detail: **`sessions/2026-09-25-s195.md`**.
+**Session 198.** Full detail: **`sessions/2026-10-26-s198.md`** (S197: `sessions/2026-09-27-s197.md`).
+
+## What shipped in S198
+- **`shipping_code: 'warenpost'`** (lowercase, as Printsmarter wrote it) — `f50eecf`, only
+  `submitPrintOrder` deployed (#140 stashed during deploy, then restored). Owner confirmed it works.
+- **Printsmarter never reports delivery**: `get_order_status` returns `"versendet"` for delivered
+  orders. "printing" auto-status = **#144** (Backlog); "delivered" needs carrier tracking or a hand edit.
+- **Name sent to print = order's `customerName`**, not the account name; fix by hand in Firestore.
 
 ## Do this first
 **Read the board** (https://trello.com/b/HCrNJRN1/aevia): *In progress*, *Blocked*, top of
