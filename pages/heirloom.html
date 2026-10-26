@@ -149,7 +149,6 @@
     birds: 'Symbolises an equal partnership built on trust, balance and a shared path.',
     roses: 'Celebrates love, passion and two lives beautifully intertwined.'
   };
-  var MONO_X = { beige: '17.6%' };
   var COLOUR_NAME = { beige:'Beige', brown:'Brown', green:'Green', blue:'Blue' };
 
   var colour = 'beige', mono = 'roots';
@@ -193,10 +192,8 @@
     document.querySelectorAll('.mono-card').forEach(function (card) {
       var art = card.querySelector('.mono-art');
       if (art) art.style.backgroundImage = 'url("' + coverArt(colour, card.dataset.mono) + '")';
-      // Beige's monogram sits ~6mm further left in its artwork than the other colourways'
-      // (its coordinates were moved first), so its crop needs its own x. When the
-      // other colourways get the same coordinates, give them the same value. See LEARNINGS.
-      if (art) art.style.backgroundPosition = (MONO_X[colour] || '19%') + ' 50%';
+      // All four colourways share one cover geometry since S195, so one crop fits all.
+      if (art) art.style.backgroundPosition = '17.6% 50%';
     });
 
     // Keep whichever slot the customer is currently looking at, rather than snapping back
