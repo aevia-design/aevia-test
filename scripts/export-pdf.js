@@ -724,7 +724,9 @@ async function embedAllFonts(pdfDoc) {
 // 52 chars → 45 glyphs) → same per-character draw workaround.
 // Fredoka (Laguna cover display) exposes a `dlig` GSUB feature and collapses glyphs
 // via fontkit (verified S168: 49 chars → 43 glyphs) → same per-character draw workaround.
-const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star', 'Source Sans 3', 'Parisienne', 'Lora', 'Mulish', 'IM FELL English', 'Fredoka']);
+// Onest (Scribble, S182) forms NO ligatures, but its `calt` swaps every "t" for `t2.alt`
+// (1:1, so a glyph count misses it) and printed a gap after each t (S199) → same workaround.
+const LIGATURE_FONTS = new Set(['EB Garamond', 'Cormorant Garamond', 'Baskervville', 'Twinkle Star', 'Source Sans 3', 'Parisienne', 'Lora', 'Mulish', 'IM FELL English', 'Fredoka', 'Onest']);
 // EB Garamond additionally suppresses letter-spacing in the char-by-char path; the shaping
 // context loss caused irregular gaps when spacing was also applied. Cormorant Garamond keeps
 // its defined letter-spacing because the -0.02em tightening is aesthetically required.
