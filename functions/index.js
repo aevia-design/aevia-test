@@ -97,6 +97,7 @@ const CAPTION_VOICE = fs.readFileSync(path.join(__dirname, 'caption/caption-voic
 // User-message prompt builders. Extracted so the German path is testable —
 // see functions/caption/prompts.js and tests/caption-prompts.test.js.
 const { buildCaptionUserText, buildComposeUserText } = require('./caption/prompts');
+const { modelParams } = require('./caption/model');
 
 exports.generateCaption = functions
   .region('europe-west1')
@@ -130,12 +131,10 @@ exports.generateCaption = functions
 
       if (composeText) {
         const composed = await client.chat.completions.create({
-          model: 'gpt-4o-mini',
-          max_tokens: 300,
-          // Editing, not writing. The API default is tuned for creative generation, which is
-          // what produced the invented detail found in S175 testing ("under the stars" from a
-          // text that never mentioned them). Low temperature keeps it close to the source.
-          temperature: 0.2,
+          ...modelParams(300),
+          // Editing, not writing. S175 used temperature 0.2 against invented detail ("under the
+          // stars"); gpt-6-luna rejects any temperature but the default (400, S199), so the
+          // no-invention rules in the user message carry that job alone. Never re-add it.
           messages: [
             { role: 'system', content: CAPTION_VOICE },
             {
@@ -155,8 +154,7 @@ exports.generateCaption = functions
       const userText = buildCaptionUserText({ collection, note, previousCaptions, language });
 
       const response = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        max_tokens: 100,
+        ...modelParams(100),
         messages: [
           { role: 'system', content: CAPTION_VOICE },
           {

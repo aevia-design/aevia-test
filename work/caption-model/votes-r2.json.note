@@ -1,0 +1,3 @@
+Round 2 key-r2.json was overwritten by accident in S199 (the round-3 run saved under r2 names).
+Tally was computed before that: EN today 6 / plain 5 / context 5 / neither 0 (8 rows);
+DE today 0 / plain 2 / context 4 / neither 4 (9 rows). compare-r2.html restored from a backup.

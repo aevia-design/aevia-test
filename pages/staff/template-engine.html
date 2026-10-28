@@ -3183,7 +3183,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 // `language` makes the German section of caption-voice.md apply at all
                 // (germanization Stage 5) — without it the model writes English.
-                body: JSON.stringify({ image: base64, collection: getActiveCollection(), previousCaptions: collectExistingCaptions(), language: isGermanBook() ? 'de' : 'en' }),
+                body: JSON.stringify({ image: base64, collection: getActiveCollection(), note: window._captionContext || undefined, previousCaptions: collectExistingCaptions(), language: isGermanBook() ? 'de' : 'en' }),
               });
               if (!resp.ok) throw new Error((await resp.json()).error || resp.statusText);
               const { caption } = await resp.json();
@@ -5019,6 +5019,23 @@
     return Object.keys(spreads).find(k => k.toLowerCase() === lower) || String(slug || '').toUpperCase();
   }
 
+  // The customer's own words from the order, sent with every ✦ Generate as background
+  // (#140, S199): album notes, cover texts, special-page answers. The server caps the
+  // length and tells the model to use a detail rarely. Non-text fpTexts keys (zodiac,
+  // monogram choice) carry no story. See work/caption-model/decision-order-context.md.
+  function buildCaptionContext(order) {
+    const parts = [];
+    if (order.photoNotes) parts.push(order.photoNotes);
+    Object.values(order.coverCaptions || {}).forEach(v => { if (typeof v === 'string' && v.trim()) parts.push(v); });
+    Object.entries(order.fpTexts || {}).forEach(([key, val]) => {
+      if (key === 'zodiac' || key === 'monogram') return;
+      if (Array.isArray(val)) parts.push(val.join(', '));
+      else if (val && typeof val === 'object') parts.push([(val.countries || []).join(', '), val.itinerary].filter(Boolean).join(' — '));
+      else if (typeof val === 'string') parts.push(val);
+    });
+    return parts.map(p => String(p).trim()).filter(Boolean).join(' · ');
+  }
+
   async function loadOrderIntoEngine(order) {
     // 1. Reset engine state
     window.photoPool        = [];
@@ -5035,6 +5052,7 @@
     // template's defaultMonogram when absent.
     window._activeMonogram  = order.monogram || (order.fpTexts && order.fpTexts.monogram) || null;
     populateMonogramSelect();
+    window._captionContext  = buildCaptionContext(order);
 
     // Wander FP1 map selection (region + countries). fpTexts.fp1 is an OBJECT
     // {region, countries, itinerary} — the map render (renderBook) reads region

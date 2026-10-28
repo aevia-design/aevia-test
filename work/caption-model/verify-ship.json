@@ -1,0 +1,46 @@
+{
+ "out": {
+  "en-kids": [
+   "Held high, Mila lets the whole room hear her laugh",
+   "Mila, smiling up between you both",
+   "Our little bear, right in the middle of it all"
+  ],
+  "en-travel": [
+   "Before breakfast, the coast was ours",
+   "Salt water in your hair, the coast at your back",
+   "Warm stone beneath you, water still in your hair"
+  ],
+  "en-love": [
+   "The veil still flying, already halfway down the steps",
+   "Running barefoot, shoes in hand, and smiling all the way through it",
+   "Anna and Mischa, smiling as they walk into the light"
+  ],
+  "de-kids": [
+   "Hoch in die Luft, beide Hände festgehalten",
+   "Zwischen den Armen von Mama und Papa, ein Lachen voller Zähnchen",
+   "Mila, im senfgelben Strickpulli zwischen Bauklötzen"
+  ],
+  "de-travel": [
+   "Salz in den Locken, das Meer hinter dir",
+   "Nasse Locken, türkisblaues Meer",
+   "Ein Knoten im Korallrot, Sonnenlicht auf dem Fels"
+  ],
+  "de-love": [
+   "Mit wehendem Schleier die Stufen hinunter",
+   "Fliederfarbene Bänder auf dem Kies, barfuß unterwegs",
+   "Der Schleier hebt sich mit jedem Schritt"
+  ]
+ },
+ "slips": [
+  "en-kids: Held high, Mila lets the whole room hear her laugh",
+  "en-love: Anna and Mischa, smiling as they walk into the light"
+ ],
+ "details": [
+  "en-kids: Held high, Mila lets the whole room hear her laugh",
+  "en-kids: Mila, smiling up between you both",
+  "en-kids: Our little bear, right in the middle of it all",
+  "en-love: Anna and Mischa, smiling as they walk into the light",
+  "de-kids: Mila, im senfgelben Strickpulli zwischen Bauklötzen"
+ ],
+ "compose": "FAILED: 400 Unsupported value: 'temperature' does not support 0.2 with this model. Only the default (1) value is supported."
+}

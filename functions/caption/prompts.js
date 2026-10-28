@@ -94,6 +94,10 @@ const GERMAN_COMPOSE_RULES = [
  * Caption mode: one caption for one photograph.
  * Returns the plain-text user message that accompanies the image.
  */
+const GENDER_RULE = "The people in the photo are this book's readers. Don't guess anyone's gender, and don't " +
+  'describe them from outside as he, she, his, her or them (German: er, sie, sein, ihr as her/their).';
+const NOTE_CAP = 1200;
+
 function buildCaptionUserText({ collection = 'kids', note, previousCaptions, language } = {}) {
   const lang = normaliseLanguage(language);
   const lines = [`Collection: ${collection}`];
@@ -103,7 +107,20 @@ function buildCaptionUserText({ collection = 'kids', note, previousCaptions, lan
   // actually say it. Without this line that whole section is inert.
   lines.push(`Book language: ${lang === 'de' ? 'German (de)' : 'English (en)'}`);
 
-  if (note) lines.push(`Customer note: "${note}"`);
+  // Owner, S199: the people in the photo are the book's readers. First in the request on
+  // purpose — appended at the end it was ignored 3 times in 9 (round 5).
+  lines.push(GENDER_RULE);
+
+  // The customer's own words from the order, assembled by the staff engine (album notes,
+  // cover texts, special-page answers). See work/caption-model/decision-order-context.md.
+  const background = typeof note === 'string' ? note.trim().slice(0, NOTE_CAP) : '';
+  if (background) {
+    lines.push('');
+    lines.push(`Background from the customer's order (their own words): "${background}"`);
+    lines.push('When the photo gives a natural opening, use one detail from it — a name, a nickname, ' +
+      'a habit — in about one caption in three. Never quote it whole, never repeat a detail ' +
+      'already used in this book, and add nothing it does not say.');
+  }
 
   if (Array.isArray(previousCaptions) && previousCaptions.length > 0) {
     lines.push('');

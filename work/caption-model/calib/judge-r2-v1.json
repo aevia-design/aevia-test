@@ -1,0 +1,121 @@
+[
+  {
+    "id": "r2-en-kids-0",
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": "All warm, specific to moment."
+  },
+  {
+    "id": "r2-en-kids-1",
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": "All warm, family cuddle angle works."
+  },
+  {
+    "id": "r2-en-kids-2",
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "why": "c3 uses 'my' oddly (customer in photo)."
+  },
+  {
+    "id": "r2-en-travel-0",
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "why": "c1/c3 use 'our' for one person alone."
+  },
+  {
+    "id": "r2-en-travel-1",
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "why": "c3 pure inventory, cold description."
+  },
+  {
+    "id": "r2-en-travel-2",
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "why": "c3 inventory, flat. c2 poetic."
+  },
+  {
+    "id": "r2-en-love-0",
+    "c1": true,
+    "c2": false,
+    "c3": false,
+    "why": "c2 uses 'two people' (external voice). c3 cold."
+  },
+  {
+    "id": "r2-en-love-2",
+    "c1": true,
+    "c2": false,
+    "c3": true,
+    "why": "c2 mixed pronouns/gender. c1/c3 warm."
+  },
+  {
+    "id": "r2-de-kids-0",
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "why": "c3 nearly identical to c1 in same book."
+  },
+  {
+    "id": "r2-de-kids-1",
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": "All warm, playful, specific."
+  },
+  {
+    "id": "r2-de-kids-2",
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": "All observant, warm, touching."
+  },
+  {
+    "id": "r2-de-travel-0",
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "why": "c3 inventory. c1/c2 warm and specific."
+  },
+  {
+    "id": "r2-de-travel-1",
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "why": "c1 pure inventory. c2/c3 poetic."
+  },
+  {
+    "id": "r2-de-travel-2",
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": "All sensory, warm, observant."
+  },
+  {
+    "id": "r2-de-love-0",
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": "All warm, specific, romantic."
+  },
+  {
+    "id": "r2-de-love-1",
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": "All warm, capture barefoot joy."
+  },
+  {
+    "id": "r2-de-love-2",
+    "c1": true,
+    "c2": false,
+    "c3": true,
+    "why": "c2 uses fake word 'Spitzenstieier'."
+  }
+]

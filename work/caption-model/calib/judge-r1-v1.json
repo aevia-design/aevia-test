@@ -1,0 +1,172 @@
+{
+  "r1-en-kids-0": {
+    "c1": true,
+    "c2": true,
+    "why": "Warm, observational, no pronouns"
+  },
+  "r1-en-kids-1": {
+    "c1": true,
+    "c2": true,
+    "why": "Warm, relational, avoids pronouns"
+  },
+  "r1-en-kids-2": {
+    "c1": true,
+    "c2": true,
+    "why": "Warm curiosity, observational"
+  },
+  "r1-en-kids-3": {
+    "c1": true,
+    "c2": false,
+    "why": "c2 uses 'his' referring to child"
+  },
+  "r1-en-kids-4": {
+    "c1": false,
+    "c2": false,
+    "why": "Both use pronouns about people"
+  },
+  "r1-en-kids-5": {
+    "c1": true,
+    "c2": false,
+    "why": "c2 uses 'her'"
+  },
+  "r1-en-kids-6": {
+    "c1": true,
+    "c2": false,
+    "why": "c2 uses 'her', assigns 'mother'"
+  },
+  "r1-en-kids-7": {
+    "c1": true,
+    "c2": true,
+    "why": "Warm, no pronouns about people"
+  },
+  "r1-en-kids-8": {
+    "c1": true,
+    "c2": true,
+    "why": "Observational, warm, clear"
+  },
+  "r1-en-kids-9": {
+    "c1": true,
+    "c2": true,
+    "why": "Warm, poetic, observational"
+  },
+  "r1-en-travel-0": {
+    "c1": true,
+    "c2": false,
+    "why": "c2 uses 'him'"
+  },
+  "r1-en-travel-1": {
+    "c1": true,
+    "c2": false,
+    "why": "c2 uses 'her', inventory style"
+  },
+  "r1-en-travel-2": {
+    "c1": true,
+    "c2": true,
+    "why": "Warm, poetic, observational"
+  },
+  "r1-en-travel-3": {
+    "c1": false,
+    "c2": false,
+    "why": "c1 'two souls', c2 uses 'their'"
+  },
+  "r1-en-travel-4": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 uses 'them'; c2 warm personification"
+  },
+  "r1-en-travel-5": {
+    "c1": true,
+    "c2": true,
+    "why": "Warm, conversational, sensory"
+  },
+  "r1-en-travel-6": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 invented imagery; c2 observational"
+  },
+  "r1-en-travel-7": {
+    "c1": false,
+    "c2": false,
+    "why": "c1 flowery/invented; c2 uses 'her'"
+  },
+  "r1-en-travel-8": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 uses 'her'; c2 warm, poetic"
+  },
+  "r1-en-travel-9": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 invents metaphor; c2 observational"
+  },
+  "r1-en-love-0": {
+    "c1": false,
+    "c2": false,
+    "why": "Both use pronouns, 'two people'"
+  },
+  "r1-en-love-1": {
+    "c1": true,
+    "c2": true,
+    "why": "Warm, observational, no pronouns"
+  },
+  "r1-en-love-2": {
+    "c1": true,
+    "c2": false,
+    "why": "c1 poetic; c2 uses 'her', 'their'"
+  },
+  "r1-en-love-3": {
+    "c1": true,
+    "c2": false,
+    "why": "c1 warm; c2 flat/cold example in rubric"
+  },
+  "r1-en-love-4": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 uses 'her', 'his'; c2 warm"
+  },
+  "r1-en-love-5": {
+    "c1": false,
+    "c2": false,
+    "why": "c1 'two souls'; c2 uses 'her', 'his'"
+  },
+  "r1-en-love-6": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 uses 'her'; c2 warm, elegant"
+  },
+  "r1-en-love-9": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 assigns role 'groom'; c2 warm"
+  },
+  "r1-de-kids-0": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 assigns role 'Eltern'; c2 observational"
+  },
+  "r1-de-kids-1": {
+    "c1": true,
+    "c2": false,
+    "why": "c1 warm; c2 assigns 'Mama', 'Papa'"
+  },
+  "r1-de-kids-5": {
+    "c1": true,
+    "c2": false,
+    "why": "c1 observational; c2 uses 'ihrem'"
+  },
+  "r1-de-kids-6": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 uses 'seinem'; c2 warm embrace"
+  },
+  "r1-de-kids-8": {
+    "c1": true,
+    "c2": true,
+    "why": "Warm, observational, clear"
+  },
+  "r1-de-kids-9": {
+    "c1": false,
+    "c2": false,
+    "why": "c1 role assignment; c2 weak observation"
+  }
+}

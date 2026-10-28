@@ -134,6 +134,7 @@ function getMediaType(src) {
 // engine's ✦ Generate button produces.
 
 const { buildCaptionUserText } = require("./prompts");
+const { CAPTION_MODEL, modelParams } = require("./model");
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
@@ -151,8 +152,7 @@ async function run() {
   const mediaType = getMediaType(imagePath);
 
   const response = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    max_tokens: 100,
+    ...modelParams(100),
     messages: [
       { role: "system", content: voiceGuide },
       {
@@ -185,7 +185,7 @@ async function run() {
     language,
     customer_note: customerNote,
     caption,
-    model: "gpt-4o-mini",
+    model: CAPTION_MODEL,
   }, null, 2));
 
   console.log(`Saved to: ${outFile}\n`);

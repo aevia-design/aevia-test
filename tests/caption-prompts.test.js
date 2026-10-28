@@ -56,7 +56,7 @@ describe('caption mode — English (the regression baseline)', () => {
       note: 'First steps',
       previousCaptions: ['One', 'Two'],
     });
-    expect(out).toContain('Customer note: "First steps"');
+    expect(out).toContain('"First steps"');   // now sent as order background (S199)
     expect(out).toContain('- One');
     expect(out).toContain('- Two');
   });
