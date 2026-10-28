@@ -1,0 +1,370 @@
+{
+ "key": {
+  "en-kids": {
+   "A": "gpt-6.1-terra",
+   "B": "gpt-6-luna"
+  },
+  "en-travel": {
+   "A": "gpt-6.1-terra",
+   "B": "gpt-6-luna"
+  },
+  "en-love": {
+   "A": "gpt-6.1-terra",
+   "B": "gpt-6-luna"
+  },
+  "de-kids": {
+   "A": "gpt-6.1-terra",
+   "B": "gpt-6-luna"
+  },
+  "de-travel": {
+   "A": "gpt-6-luna",
+   "B": "gpt-6.1-terra"
+  },
+  "de-love": {
+   "A": "gpt-6.1-terra",
+   "B": "gpt-6-luna"
+  }
+ },
+ "all": {
+  "en-kids": [
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Up here, everything’s funny!",
+     "Your laugh lifts us right up",
+     "Little bear, ready for another lift!"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Higher, higher!",
+     "That smile gets me every time",
+     "Our little bear loves the view from up here"
+    ],
+    "best": 1
+   },
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Again, please!",
+     "I could lift you forever",
+     "We never get tired of this"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Up you go, little bear!",
+     "I like it up here!",
+     "You make my whole day brighter"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Look at my biggest stretch!",
+     "Can you fit under my arms?",
+     "Ready, set, twirl!"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Ready for my big twirl!",
+     "Look at you, striking a pose!",
+     "How tall can I stretch?"
+    ],
+    "best": 0
+   }
+  ],
+  "en-travel": [
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "We could follow this road all evening",
+     "No rush, the sun’s still up",
+     "The road can wait a little longer"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Let's take the long way",
+     "I'm in no hurry to arrive",
+     "We could follow this coast all day"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "We let the evening take its time",
+     "Stay a little longer, just us",
+     "One last bite before the sun goes"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "We could stay here until dark",
+     "You look even better than the view",
+     "Saving the last strawberry for you"
+    ],
+    "best": 1
+   },
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Coffee tastes better out here",
+     "I could stay right here all day",
+     "No rush, the coffee’s still brewing"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "I'll stay right here for coffee",
+     "No rush to leave this spot",
+     "Camping suits us just fine"
+    ],
+    "best": 0
+   }
+  ],
+  "en-love": [
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "One early exit, a lifetime side by side",
+     "You still make me smile like that",
+     "Every new chapter starts with you"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Still smiling at you, Mischa",
+     "We left the party together, and look at us now",
+     "I could stay right here with you"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Dressed up, still choosing each other",
+     "Our next chapter starts right here",
+     "A little sparkle, a lot of us"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Ready for whatever comes next",
+     "Quite the pair, aren't we?",
+     "My favorite place is by your side"
+    ],
+    "best": 1
+   },
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "You can look, but not yet",
+     "We’ll let the suspense last a little longer",
+     "I knew you’d be watching"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "You can peek, I'm ready",
+     "I can't take my eyes off you",
+     "Ready for whatever comes next"
+    ],
+    "best": 0
+   }
+  ],
+  "de-kids": [
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Ich flieg, Papa!",
+     "Noch höher, du kleiner Bär!",
+     "Bei deinem Lachen heben wir dich gleich noch höher"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Höher, höher, das macht Spaß!",
+     "Unser kleiner Bär ganz groß",
+     "Zusammen lachen wir am schönsten"
+    ],
+    "best": 1
+   },
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Noch ein Stück höher, bitte!",
+     "Dein Lachen macht uns ganz weich",
+     "Bei dir bin ich ganz groß"
+    ],
+    "best": 2
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Noch ein Stück höher!",
+     "Dein Blick bringt mich zum Lächeln",
+     "Wir zwei verstehen uns auch ohne Worte"
+    ],
+    "best": 1
+   },
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Guck mal, meine Bärenkrone!",
+     "Na, was zauberst du da oben?",
+     "Ich bin bereit für meinen großen Auftritt"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Ich bin bereit für eine Pirouette!",
+     "So zeigst du uns deinen Lieblingstanz",
+     "Und jetzt einmal auf Zehenspitzen!"
+    ],
+    "best": 0
+   }
+  ],
+  "de-travel": [
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Wir nehmen den langen Weg am Meer",
+     "Die Fähre wartet hoffentlich noch",
+     "So darf der Abend gern weiterfahren"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Mit dir nehme ich jede Kurve",
+     "So könnte die Fahrt noch lange weitergehen",
+     "Kroatien, du zeigst dich von deiner schönsten Seite"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Mit dir darf der Abend länger dauern",
+     "Wir haben es heute gar nicht eilig",
+     "Noch ein bisschen bleiben, bevor es dunkel wird"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Für heute bleiben wir noch ein bisschen",
+     "Ich könnte dich den ganzen Abend anschauen",
+     "Unser Abendessen mit Aussicht"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Ich bleib noch sitzen, der Tag läuft nicht weg",
+     "Noch ein Schluck, dann schauen wir weiter",
+     "Heute hat der Kaffee den besten Platz"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Hier schmeckt der Kaffee besonders gut",
+     "Jetzt bloß nicht aufstehen",
+     "Mein Lieblingsplatz zum Durchatmen"
+    ],
+    "best": 1
+   }
+  ],
+  "de-love": [
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Ich seh dich trotzdem ganz klar",
+     "Wir zwei, ganz nah am Glück",
+     "Früh gegangen, für immer geblieben"
+    ],
+    "best": 2
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Mit dir fühlt sich alles richtig an",
+     "Mischa, ich kann nicht aufhören zu lächeln",
+     "Zusammen sind wir am liebsten"
+    ],
+    "best": 1
+   },
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Mit dir geht jeder Schritt leicht",
+     "Ich würde diesen Weg immer wieder wählen",
+     "Heute gehört der ganze Weg uns"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Seite an Seite ins nächste Kapitel",
+     "Mit dir fühlt sich alles richtig an",
+     "Und jetzt kann die Feier losgehen!"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6-luna",
+    "candidates": [
+     "Mischa, ich seh dich trotzdem",
+     "Mit dir wird sogar Verstecken schön",
+     "Ich kann’s kaum erwarten, dich zu heiraten"
+    ],
+    "best": 0
+   },
+   {
+    "model": "gpt-6.1-terra",
+    "candidates": [
+     "Du erkennst mich auch hinter Spitze",
+     "Ich verstecke mich nur ganz kurz",
+     "Wir nehmen uns nicht zu ernst"
+    ],
+    "best": 0
+   }
+  ]
+ },
+ "cost": {
+  "gpt-6-luna": 0.0061111,
+  "gpt-6.1-terra": 0.040891999999999984
+ }
+}

@@ -13,7 +13,7 @@
  * Reasoning models take max_completion_tokens, not max_tokens.
  * See work/caption-model/selection_v1.md.
  */
-const CAPTION_MODEL = 'gpt-6-luna';
+const CAPTION_MODEL = 'gpt-6.1-terra';   // owner, S199: won round 6 14–10 over gpt-6-luna; ~$0.23/book with 3 drafts
 
 const THINKING_ALLOWANCE = 2000;
 

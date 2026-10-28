@@ -1,46 +1,45 @@
 {
  "out": {
   "en-kids": [
-   "Held high, Mila lets the whole room hear her laugh",
-   "Mila, smiling up between you both",
-   "Our little bear, right in the middle of it all"
+   "Our little bear is up in the air!",
+   "That smile gets us every time",
+   "Mila, what's your next move?"
   ],
   "en-travel": [
-   "Before breakfast, the coast was ours",
-   "Salt water in your hair, the coast at your back",
-   "Warm stone beneath you, water still in your hair"
+   "Taking my time in the sun",
+   "Swimming before breakfast, just how we like it",
+   "I could get used to this"
   ],
   "en-love": [
-   "The veil still flying, already halfway down the steps",
-   "Running barefoot, shoes in hand, and smiling all the way through it",
-   "Anna and Mischa, smiling as they walk into the light"
+   "Off we go, hand in hand!",
+   "Mischa, look at me now!",
+   "From that terrible party to this"
   ],
   "de-kids": [
-   "Hoch in die Luft, beide Hände festgehalten",
-   "Zwischen den Armen von Mama und Papa, ein Lachen voller Zähnchen",
-   "Mila, im senfgelben Strickpulli zwischen Bauklötzen"
+   "Unser kleiner Bär hebt ab!",
+   "Mila, dein Lachen steckt uns an!",
+   "Ich hab noch einen für dich!"
   ],
   "de-travel": [
-   "Salz in den Locken, das Meer hinter dir",
-   "Nasse Locken, türkisblaues Meer",
-   "Ein Knoten im Korallrot, Sonnenlicht auf dem Fels"
+   "Vor dem Frühstück noch ins Wasser",
+   "Ich lass mir die Sonne auf die Haut scheinen",
+   "Hier bleibe ich noch ein bisschen"
   ],
   "de-love": [
-   "Mit wehendem Schleier die Stufen hinunter",
-   "Fliederfarbene Bänder auf dem Kies, barfuß unterwegs",
-   "Der Schleier hebt sich mit jedem Schritt"
+   "Mischa, komm, wir gehen!",
+   "Barfuß fühlt sich heute richtig an",
+   "Unser Ja fühlt sich gut an"
   ]
  },
- "slips": [
-  "en-kids: Held high, Mila lets the whole room hear her laugh",
-  "en-love: Anna and Mischa, smiling as they walk into the light"
- ],
+ "slips": [],
  "details": [
-  "en-kids: Held high, Mila lets the whole room hear her laugh",
-  "en-kids: Mila, smiling up between you both",
-  "en-kids: Our little bear, right in the middle of it all",
-  "en-love: Anna and Mischa, smiling as they walk into the light",
-  "de-kids: Mila, im senfgelben Strickpulli zwischen Bauklötzen"
+  "en-kids: Our little bear is up in the air!",
+  "en-kids: Mila, what's your next move?",
+  "en-love: Mischa, look at me now!",
+  "en-love: From that terrible party to this",
+  "de-kids: Unser kleiner Bär hebt ab!",
+  "de-kids: Mila, dein Lachen steckt uns an!",
+  "de-love: Mischa, komm, wir gehen!"
  ],
- "compose": "FAILED: 400 Unsupported value: 'temperature' does not support 0.2 with this model. Only the default (1) value is supported."
+ "compose": "OK: We met through friends, and he made me laugh. We moved to Vienna together."
 }

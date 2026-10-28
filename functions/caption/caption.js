@@ -133,7 +133,7 @@ function getMediaType(src) {
 // Shared with the deployed function, so what this harness prints is what the
 // engine's ✦ Generate button produces.
 
-const { buildCaptionUserText } = require("./prompts");
+const { buildCaptionUserText, pickCaption } = require("./prompts");
 const { CAPTION_MODEL, modelParams } = require("./model");
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -152,7 +152,8 @@ async function run() {
   const mediaType = getMediaType(imagePath);
 
   const response = await client.chat.completions.create({
-    ...modelParams(100),
+    ...modelParams(300),
+    response_format: { type: "json_object" },
     messages: [
       { role: "system", content: voiceGuide },
       {
@@ -165,7 +166,7 @@ async function run() {
     ],
   });
 
-  const caption = response.choices[0].message.content.trim();
+  const caption = pickCaption(response.choices[0].message.content);
 
   console.log(`Caption:\n\n  ${caption}\n`);
 

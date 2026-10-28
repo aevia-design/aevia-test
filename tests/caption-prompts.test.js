@@ -34,15 +34,11 @@ describe('language normalisation', () => {
 });
 
 describe('caption mode — English (the regression baseline)', () => {
-  test('English is byte-identical in behaviour to what shipped before Stage 5', () => {
+  test('an English book gets English and none of the German machinery', () => {
     const out = buildCaptionUserText({ collection: 'travel' });
     expect(out).toContain('Collection: travel');
-    expect(out).toContain('IMPORTANT: Do not start the caption with the word "A" or "An".');
-    expect(out).toContain('Generate one caption for this photo.');
-    // No German instructions leak into an English book.
-    expect(out).not.toMatch(/GERMAN/);
-    expect(out).not.toMatch(/Nominalstil/);
-    expect(out).not.toMatch(/Sie/);
+    expect(out).toMatch(/captions for this photo in English/);
+    expect(out).not.toMatch(/in German/);
   });
 
   test('an absent language produces the English prompt', () => {
@@ -70,98 +66,9 @@ describe('caption mode — English (the regression baseline)', () => {
   });
 });
 
-describe('caption mode — German', () => {
-  const de = buildCaptionUserText({ collection: 'kids', language: 'de' });
-
-  test("it states the book language, or caption-voice.md's German section is inert", () => {
-    // The guide opens with "This section applies only when the request says the
-    // book's language is German" — so the request has to actually say it.
-    expect(de).toContain('Book language: German (de)');
-  });
-
-  test('it tells the model to write German rather than translate', () => {
-    expect(de).toMatch(/Write the caption in GERMAN/);
-    expect(de).toMatch(/Do not write English and translate/);
-  });
-
-  test('the English "no A/An" rule is NOT sent for a German book', () => {
-    // Researched and withdrawn for German (work/german-caption-voice/research_v1.md).
-    // Sending it would push the model AWAY from correct German, since the English
-    // manual in the system prompt already argues for it.
-    expect(de).not.toContain('Do not start the caption with the word "A" or "An"');
-    // And it must say so positively, or the model inherits the rule from the
-    // system prompt's English section anyway.
-    expect(de).toMatch(/does NOT carry over to German/);
-  });
-
-  test('it restates the no-invention rule as rule 1', () => {
-    // S175: this is the rule the system prompt alone could not hold.
-    expect(de).toMatch(/1\. Add NOTHING the photograph does not show/);
-  });
-
-  test('it pins informal address and forbids Sie', () => {
-    expect(de).toMatch(/NEVER Sie/);
-    expect(de).toMatch(/du, dir, dein/);
-  });
-
-  test('it carries the German tells that matter most', () => {
-    expect(de).toContain('Nominalstil');
-    expect(de).toContain('einfangen');
-    expect(de).toContain('nicht nur…, sondern auch…');
-  });
-
-  test('it demands a concrete, visible detail rather than a mood', () => {
-    // S182, from real output: the rules were a pure blocklist, and the model
-    // answered with generic abstractions that dodged every banned string
-    // ("Die ersten gemeinsamen Momente", "So viel Freude in einem kleinen
-    // Moment"). A prohibition list cannot produce concreteness — this positive
-    // rule is what fixed it. Do not demote it below the no-invention rule.
-    expect(de).toMatch(/NAME SOMETHING THAT IS ACTUALLY IN THE PHOTOGRAPH/);
-    expect(de).toMatch(/would sit equally well under any other photo in\s*\n?\s*the book is wrong/);
-  });
-
-  test('the forbidden-word list names the abstractions the model reaches for', () => {
-    // Each of these appeared in, or is one paraphrase away from, real S182 output.
-    ['Moment', 'Augenblick', 'Erinnerung', 'Abenteuer', 'Freude', 'unvergesslich', 'magisch']
-      .forEach(w => expect(de).toContain(w));
-  });
-
-  test('it closes the paraphrase loophole explicitly', () => {
-    // The model dodged "in diesem Moment" by writing "in einem kleinen Moment".
-    // Banning strings without banning the register just moves the problem.
-    expect(de).toMatch(/do not reach for a synonym or a paraphrase/);
-    expect(de).toMatch(/the register is the problem, not/);
-  });
-
-  test('it forbids reusing the guide\'s example captions verbatim', () => {
-    // The one good caption in the first S182 run ("Immer noch derselbe Blick")
-    // was a near-verbatim copy of the guide's own example. Examples set register;
-    // they must not become stock answers, or captions repeat across books.
-    expect(de).toMatch(/show the REGISTER/);
-    expect(de).toMatch(/Do not reuse their wording/);
-  });
-
-  test('it rejects the trailing present participle', () => {
-    // Real output: "geduldig auf das nächste Abenteuer wartend" — stiff, and it
-    // also invented the waiting.
-    expect(de).toMatch(/No trailing present participle/);
-  });
-
-  test('it forbids the exclamation mark and the trailing full stop', () => {
-    expect(de).toMatch(/No exclamation mark/);
-    expect(de).toMatch(/Do not end with a full stop/);
-  });
-
-  test('it asks for ß rather than avoiding it (post-Onest, S182)', () => {
-    // The font that lacked ß was replaced; the guide's old avoid-ß rule is gone.
-    expect(de).toMatch(/Write ß where German orthography requires it/);
-    expect(de).toMatch(/Never substitute "ss"/);
-  });
-
-  test('it asks for a German caption in the final instruction', () => {
-    expect(de).toMatch(/Generate one German caption for this photo/);
-  });
-});
+// The S182 'caption mode — German' block lived here. Retired S199: the owner replaced the
+// German caption rules with voice v3 (German follows the English voice; caption-voice.md).
+// Compose-mode German rules are unchanged and still tested below.
 
 describe('compose mode', () => {
   test('the no-invention rules survive in both languages', () => {

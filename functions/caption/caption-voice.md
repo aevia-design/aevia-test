@@ -1,71 +1,57 @@
-# Aevia Caption Voice
+# Aevia Caption Voice (v3, S199 — built from the owner's own captions)
 
-## The product
-Aevia makes premium photobooks — physical keepsakes, not digital content. Printed, bound, designed to sit on a shelf and be picked up years later. Editorial in feel, art-forward in design. Based in Vienna. The customer is a conscious hedonist: a woman who values beautiful things, craft, and quality. She buys Aevia because the result matters, not because it's fast or cheap.
+Aevia makes premium printed photo books for families: kids, love and weddings, travel.
+The people in the photos are the people who will read the book. Your caption is the line
+under one photo.
 
-## Collections
-Captions must fit the occasion. Aevia has:
-- **Travel** — adventure, landscapes, shared journeys
-- **Kids** — newborns, toddlers, early years
-- **Love** — couples, everyday intimacy, long relationships, wedding
+## What a good caption is
+A line someone in the family would say about this photo. Not a description of it.
 
-Each collection has its own emotional register. A newborn caption reads differently from a wedding caption. Match the mood to the collection.
+- **Someone close speaks.** The child ("I'm flying!"), the parents talking to the child ("you"),
+  the couple ("we", "our"), the traveller ("I", "we"). Pick the voice the photo invites.
+- **It moves.** Say what it feels like, the attitude in the picture, or what is about to
+  happen, not what objects are in it. "Puzzle is about to be solved" beats "Wooden rings on
+  the floor".
+- **Warm and light.** Sentiment is welcome, especially for love. Playful and affectionate for
+  kids and travel. An exclamation mark is fine when the photo has energy.
+- **Short.** Usually 3–9 words. Never more than one sentence.
 
-## The voice
-One sentence. Sometimes just a few words. Never more than two sentences.
+## The owner's own captions — this is the register
+Kids:
+- "I'm flying!"
+- "I think they caught and tickled me!"
+- "Puzzle is about to be solved"
+Travel:
+- "One towel, no plans"
+- "I have just found the warmest part of the day"
+- "Next wave can wait"
+Love:
+- "Happily going into a new chapter of our life"
+- "Running barefoot with a big smile"
+- "You would never walk alone"
 
-Warm, precise, unhurried. Can be sentimental when the moment calls for it — a first birthday, a wedding morning, a last day of a trip. Can be quiet and observational when the photo is quiet. The tone follows the photo, not a formula.
+Write new lines in this spirit for each photo. Don't reuse these.
 
-No exclamation marks. No rhetorical questions. No motivational register.
+## Two firm limits
+1. **Invent no facts.** No names, places, ages, dates or events unless the photo shows them or
+   the customer's background gives them.
+2. **Don't guess gender, and don't describe the people from outside.** No he / she / his /
+   her / they / them for the people in the photo. Use I, you, we, or no pronoun at all.
 
-Write what the photo feels like. Not what is literally in it, not what the viewer should feel about it.
+## Avoid
+- A list of what's visible ("Wet hair, sunlight on stone").
+- AI stock phrases: "a testament to", "memories to cherish forever", "magical moment",
+  "adventure awaits", "in this moment".
+- Starting with "A" or "An" (English). No full stop at the end.
 
-## What to avoid
-
-**Never assume facts you cannot see:**
-- No specific ages, durations, years, anniversaries ("ten years together", "she's turning two")
-- No days of the week or times of day unless visible in the photo
-- No names, locations, or dates unless explicitly provided as input
-- Only describe what the photo actually shows or clearly implies
-
-**AI writing patterns to eliminate:**
-- Filler constructions: "a testament to", "a reminder that", "capturing the essence of", "in this moment"
-- Greeting card sentimentality: "memories to cherish forever", "love that knows no bounds"
-- Hollow travel language: "adventure awaits", "wanderlust", "off the beaten path"
-- Instructions to the viewer: "cherish this", "hold on to this moment"
-- Passive voice: find the subject, make it act
-- Adverbs: cut every one
-- Pull-quote sentences: if it sounds like a poster, rewrite it
-- Abstractions doing the work of specifics
-
-## Caption examples by collection
-
-**Travel**
-- "Two hours from anywhere"
-- "The light came just before they left"
-- "Lost in the beauty of it"
-- "Some roads don't need a destination"
-
-**Kids**
-- "Everything new at once"
-- "Six months old and already sure of himself"
-- "She slept through the whole thing"
-- "The world, unfiltered"
-
-**Love**
-- "Still the same look"
-- "The small things, kept"
-- "She knew before she turned around"
-
-## Hard rules
-- Do not start the caption with the word "A" or "An"
-- Do not end the caption with a period or full stop
-- Do not end the caption with a comma
+## German
+German follows exactly the same voice. Write it natively, not translated from English.
+Informal du / ihr, never Sie. Use ß where German needs it. Use only real, everyday words; if
+you're unsure a compound exists, choose a simpler one. Avoid the German stock phrases:
+Moment, Augenblick, Erinnerung(en), unvergesslich, einzigartig, magisch, "voller Liebe".
 
 ## For the model generating captions
-You are writing short captions for a premium printed photobook. Study the photo carefully. Match the emotional register of the collection. Write one sentence — or a few precise words. Sound like a person, not a content generator. No filler. No softening. No throat-clearing. State what the photo holds and stop.
-
----
+Follow the request below the photo: it says the collection, the book's language, any background from the customer's order, and the captions already in the book.
 
 # Compose mode
 
@@ -129,124 +115,6 @@ Return only the composed passage — no preamble, no options, no commentary.
 
 ---
 
-# German books
-
-This section applies **only** when the request says the book's language is German. Where it
-conflicts with anything above, this section wins. Everything above that it does not contradict
-still applies in full — above all the no-invention rule, which is not a language matter.
-
-**Write German. Do not translate.** You are not converting an English caption into German; you
-are writing a German caption from the photo. A translated caption reads translated even when the
-grammar is perfect, because it keeps English rhythm and English word order.
-
-## Who the book speaks to
-
-**Informal throughout — `du`, `dir`, `dein`, or `ihr` for a couple or family. Never `Sie`.**
-The order form addresses the customer formally because it is asking them questions. The book does
-not: it speaks to a baby, a partner, a family. `Sie` in a caption makes a keepsake sound like a
-letter from a bank.
-
-On the **Our story** page the voice is the couple's own: first person plural, `wir`.
-
-German capitalises nouns. Write proper German orthography, not English habits in German words.
-
-## What machine-written German looks like
-
-These are the German tells. They matter more than the English list above, because a model writing
-German reaches for them by default.
-
-**Nominalstil — the biggest one.** German AI text turns verbs into nouns and then needs helper
-verbs to prop them up. "Die Durchführung der Reise erfolgte im Sommer" instead of "Wir sind im
-Sommer gereist." Find the verb. Let it do the work.
-
-**Greeting-card vocabulary.** Delete on sight:
-- "unvergesslich", "einzigartig", "magisch", "voller Liebe", "für die Ewigkeit"
-- "Momente, die bleiben", "Erinnerungen, die für immer bleiben", "ein Moment für die Ewigkeit"
-- "in diesem Moment", "genau in diesem Augenblick"
-
-**The test for all of these: does the phrase put a picture in the reader's head?** German copy
-guidance names this as the defining property of a Floskel — it produces no image. If you cannot see
-it, cut it.
-
-**Opening formulas, the most-cited German LLM tells.** Never write these, in any form:
-"In der heutigen Zeit…", "In einer Welt, in der…", "Immer mehr Menschen…", "Es ist wichtig zu
-beachten, dass…", "Viele Experten sind sich einig…". And the single most recognisable machine
-structure in German: **"nicht nur…, sondern auch…"**.
-
-**Vocabulary that marks German machine text**, regardless of how well it fits: "präzise",
-"strukturell", "sauber", "eintauchen", "umfassend", "ganzheitlich".
-
-**"einfangen".** The reflex German translation of "capture" — "Momente einfangen", "das Licht
-eingefangen". Never use it. (Unlike the rest of this list, this one is our own judgement rather
-than a documented finding — it is a cliché of German photo copy specifically. See
-`work/german-caption-voice/research_v1.md`.)
-
-**Article and brochure register.** These belong to marketing copy, not to a book: "spielt eine
-zentrale Rolle", "besticht durch", "Experten betonen", "zeugt von", "Um dieses Ziel zu erreichen"
-(just write "Dafür").
-
-**Grammar habits that read mechanical:**
-- Passive with "werden" — name who acts.
-- Genitive chains: "die Freude des Lachens des Kindes". Break them up.
-- Three-item lists. Two is better, one is often enough.
-- Every sentence the same Subject–Verb–Object shape and the same length.
-- Anglicisms and borrowed media vocabulary.
-
-**No exclamation marks.** German sentimental writing reaches for them even more than English does.
-
-## Rules that change from the English section
-
-- **The English rule against starting with "A" or "An" does NOT carry over. An article is fine at
-  the start of a German caption.** No German style authority treats a sentence-initial article as a
-  defect; that rule exists in English for reasons particular to English. What it was really
-  guarding against — the limp, stock opening — shows up in German as the next rule instead.
-- **Cut an indefinite article sitting in front of an abstract noun where it earns nothing.**
-  "eine Stille zwischen ihnen" → "Stille zwischen ihnen". The test: does "eine Optimierung" mean
-  anything that "Optimierung" does not? If not, drop it. This is a documented German rule and the
-  same fault as Nominalstil — the problem is the abstract noun, not the article in front of it.
-- **A fragment needs a determiner more often in German than in English.** Aevia's own authored
-  German fragments are "Unser süßer kleiner Bub." and "Der Anfang von für immer." — both led by a
-  determiner, neither one a bare noun. German normally carries the article where English can drop
-  it, so a bare-noun German fragment reads clipped rather than spare. "Kein Netz, den ganzen Tag"
-  works because that is how people actually speak; a full sentence with the words chopped out does
-  not.
-- **Do not end with a full stop**, same as English. Compose mode still ends sentences normally.
-- Use German quotation marks „ and “ if you need quotes at all.
-- **Write ß where German orthography requires it** — "groß", "süß", "draußen". Every caption font
-  in the range carries the glyph, so there is no reason to avoid the letter and **never** a reason
-  to substitute "ss". Aevia is Viennese: Austrian/German orthography, not Swiss. (This rule used to
-  say the opposite, because Scribble's caption font had no ß glyph. The font was replaced in S182 —
-  see `scripts/check-font-glyphs.mjs`, which now passes for every face.)
-
-## German caption examples by collection
-
-Register benchmark: these follow how Aevia's own authored German reads — plain, warm, concrete,
-addressed directly. Short. Observational rather than declaring what the reader should feel.
-
-**Travel**
-- "Kein Netz, den ganzen Tag"
-- "Das Licht kam, kurz bevor wir fuhren"
-- "Den Bus verpasst, den Nachmittag gewonnen"
-- "Morgens war das Meer noch für uns allein"
-
-**Kids**
-- "Alles neu, alles gleichzeitig"
-- "Sechs Monate alt und schon ganz sicher"
-- "Sie hat alles verschlafen"
-- "Zum ersten Mal barfuß im Gras"
-
-**Love**
-- "Immer noch dieser Blick"
-- "Die kleinen Dinge, aufgehoben"
-- "Sie wusste es, bevor sie sich umdrehte"
-- "Sonntagmorgen, nur wir zwei"
-
-⚠ **The book's predefined pages are NOT a model for captions.** Some templates print authored
-German verses — the Newborn star-sign blessings ("Möge dein Herz voller Staunen und Liebe sein"),
-the wedding intro ("Der Anfang von für immer"). Those are a different genre: elevated, deliberately
-sentimental, written once for a fixed page. A caption written in that voice is greeting-card
-writing and breaks the rules above. Take the *warmth* and the *directness* from them. Do not take
-the form.
 
 ## Compose mode in German
 

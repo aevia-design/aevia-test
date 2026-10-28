@@ -128,20 +128,32 @@ function buildCaptionUserText({ collection = 'kids', note, previousCaptions, lan
     previousCaptions.slice(-8).forEach(c => lines.push(`- ${c}`));
   }
 
+  // Voice v3 (S199 round 6): three drafts in one call — the photo is billed once — and the
+  // model picks. The voice itself, German included, lives in caption-voice.md; the S182
+  // German caption rules (GERMAN_CAPTION_RULES) pushed toward description and are no longer
+  // sent. 16 of 18 rows usable in the owner's blind vote (work/caption-model/votes-r6.json).
+  const langName = lang === 'de' ? 'German' : 'English';
   lines.push('');
-  if (lang === 'de') {
-    lines.push(...GERMAN_CAPTION_RULES);
-    lines.push('');
-    lines.push('Generate one German caption for this photo. Return only the caption text, nothing else.');
-  } else {
-    // English-only. Deliberately NOT sent for German: the rule is an English one,
-    // and research (work/german-caption-voice/research_v1.md) withdrew it for
-    // German outright — sending it would push the model away from correct German.
-    lines.push('IMPORTANT: Do not start the caption with the word "A" or "An".');
-    lines.push('Generate one caption for this photo. Return only the caption text, nothing else.');
-  }
+  lines.push(`Write THREE different captions for this photo in ${langName}, each in a different voice or angle, ` +
+    'then choose the one the family would love most. Reply as JSON only: {"candidates": ["...", "...", "..."], "best": 0}');
 
   return lines.join('\n');
+}
+
+/**
+ * The caption from a three-draft JSON reply. Falls back to the first candidate on a bad
+ * index and to the raw text when the reply is not JSON, so a malformed reply still gives
+ * staff a line rather than an error. Drops a trailing full stop (house rule).
+ */
+function pickCaption(content) {
+  const raw = String(content || '').trim();
+  let out = raw;
+  try {
+    const j = JSON.parse(raw);
+    const c = Array.isArray(j.candidates) ? j.candidates : [];
+    out = String(c[j.best] ?? c[0] ?? raw);
+  } catch (e) { /* not JSON — use the text as is */ }
+  return out.trim().replace(/^["“]|["”]$/g, '').replace(/\.$/, '').trim();
 }
 
 /**
@@ -180,6 +192,7 @@ function buildComposeUserText({ collection = 'kids', composeText = '', language 
 }
 
 module.exports = {
+  pickCaption,
   normaliseLanguage,
   buildCaptionUserText,
   buildComposeUserText,

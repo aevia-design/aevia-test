@@ -96,7 +96,7 @@ const path = require('path');
 const CAPTION_VOICE = fs.readFileSync(path.join(__dirname, 'caption/caption-voice.md'), 'utf8');
 // User-message prompt builders. Extracted so the German path is testable —
 // see functions/caption/prompts.js and tests/caption-prompts.test.js.
-const { buildCaptionUserText, buildComposeUserText } = require('./caption/prompts');
+const { buildCaptionUserText, buildComposeUserText, pickCaption } = require('./caption/prompts');
 const { modelParams } = require('./caption/model');
 
 exports.generateCaption = functions
@@ -153,8 +153,10 @@ exports.generateCaption = functions
 
       const userText = buildCaptionUserText({ collection, note, previousCaptions, language });
 
+      // Three drafts as JSON, the model's pick returned (voice v3, S199).
       const response = await client.chat.completions.create({
-        ...modelParams(100),
+        ...modelParams(300),
+        response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: CAPTION_VOICE },
           {
@@ -167,7 +169,7 @@ exports.generateCaption = functions
         ],
       });
 
-      const caption = response.choices[0].message.content.trim();
+      const caption = pickCaption(response.choices[0].message.content);
       res.json({ caption });
     } catch (err) {
       console.error('generateCaption error:', err);

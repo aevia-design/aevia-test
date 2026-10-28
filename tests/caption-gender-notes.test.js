@@ -29,3 +29,30 @@ describe('order notes', () => {
     expect(buildCaptionUserText({})).not.toMatch(/Background from/);
   });
 });
+
+describe('three drafts, the model picks (voice v3, S199 round 6)', () => {
+  const { pickCaption } = require('../functions/caption/prompts');
+
+  test.each(['en', 'de'])('the request asks for three candidates as JSON (%s)', (language) => {
+    const t = buildCaptionUserText({ collection: 'kids', language });
+    expect(t).toMatch(/THREE different captions/);
+    expect(t).toMatch(/"candidates"/);
+    expect(t).toMatch(language === 'de' ? /German/ : /English/);
+  });
+
+  test('pickCaption returns the chosen candidate', () => {
+    expect(pickCaption('{"candidates":["One","Two","Three"],"best":1}')).toBe('Two');
+  });
+
+  test('pickCaption falls back to the first candidate on a bad index', () => {
+    expect(pickCaption('{"candidates":["One","Two"],"best":7}')).toBe('One');
+  });
+
+  test('pickCaption falls back to the raw text when the reply is not JSON', () => {
+    expect(pickCaption('  Just a line  ')).toBe('Just a line');
+  });
+
+  test('pickCaption drops a trailing full stop (house rule)', () => {
+    expect(pickCaption('{"candidates":["Next wave can wait."],"best":0}')).toBe('Next wave can wait');
+  });
+});

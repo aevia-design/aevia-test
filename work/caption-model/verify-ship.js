@@ -6,7 +6,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const sharp = require(path.join(ROOT, 'functions/node_modules/sharp'));
 const OpenAI = require(path.join(ROOT, 'functions/node_modules/openai'));
 const { modelParams } = require(path.join(ROOT, 'functions/caption/model.js'));
-const { buildCaptionUserText, buildComposeUserText } = require(path.join(ROOT, 'functions/caption/prompts.js'));
+const { buildCaptionUserText, buildComposeUserText, pickCaption } = require(path.join(ROOT, 'functions/caption/prompts.js'));
 const VOICE = fs.readFileSync(path.join(ROOT, 'functions/caption/caption-voice.md'), 'utf8');
 const key = fs.readFileSync(path.join(ROOT, 'functions/.env'), 'utf8').match(/^OPENAI_API_KEY=(.*)$/m)[1].trim();
 const client = new OpenAI.default({ apiKey: key, maxRetries: 5 });
@@ -28,13 +28,13 @@ const DETAIL = /mila|bear|bär|sock|socke|bruno|nana|nane|croatia|kroatien|ferry
   for (const language of ['en', 'de']) for (const [collection, files] of Object.entries(BOOKS)) {
     const id = `${language}-${collection}`, book = [];
     for (const f of files) {
-      const r = await client.chat.completions.create({ ...modelParams(100), messages: [
+      const r = await client.chat.completions.create({ ...modelParams(300), response_format: { type: 'json_object' }, messages: [
         { role: 'system', content: VOICE },
         { role: 'user', content: [
           { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${await toBase64(f)}` } },
           { type: 'text', text: buildCaptionUserText({ collection, note: CONTEXT[language][collection], previousCaptions: book, language }) },
         ] }] });
-      const c = r.choices[0].message.content.trim(); book.push(c);
+      const c = pickCaption(r.choices[0].message.content); book.push(c);
       tin += r.usage.prompt_tokens; tout += r.usage.completion_tokens;
       if (!c) slips.push(`${id}: EMPTY`);
       if (PRON[language].test(c)) slips.push(`${id}: ${c}`);
@@ -45,14 +45,15 @@ const DETAIL = /mila|bear|bär|sock|socke|bruno|nana|nane|croatia|kroatien|ferry
   }
   let compose;
   try {
-    const r = await client.chat.completions.create({ ...modelParams(300), temperature: 0.2, messages: [
+    const r = await client.chat.completions.create({ ...modelParams(300), messages: [
       { role: 'system', content: VOICE },
       { role: 'user', content: buildComposeUserText({ collection: 'love', composeText: 'We met through friends. He made me laugh. We moved to Vienna together.', language: 'en' }) }] });
     compose = 'OK: ' + r.choices[0].message.content.trim();
   } catch (e) { compose = 'FAILED: ' + e.message; }
   fs.writeFileSync(path.join(__dirname, 'verify-ship.json'), JSON.stringify({ out, slips, details, compose }, null, 1));
-  console.log(`\n${tin} in / ${tout} out ~$${(tin * 0.10e-6 + tout * 0.50e-6).toFixed(3)}`);
+  console.log(`\n${tin} in / ${tout} out ~$${(tin * 1.00e-6 + tout * 5.00e-6).toFixed(3)}`);
   console.log('pronoun slips / empties:', slips.length, slips);
   console.log('captions using a note detail:', details.length, details);
-  console.log('compose with temperature 0.2:', compose);
+  console.log('compose:', compose);
+  for (const k in out) console.log(k, '|', out[k].join(' | '));
 })();
