@@ -1,0 +1,110 @@
+{
+  "r3-en-kids-0": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": "All warm and observational"
+  },
+  "r3-en-kids-1": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "why": "c1 outside POV; c2 warmest moment"
+  },
+  "r3-en-kids-2": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": "All capture moment warmly"
+  },
+  "r3-en-travel-0": {
+    "c1": true,
+    "c2": false,
+    "c3": false,
+    "why": "c1 warm stillness; c2-3 false we"
+  },
+  "r3-en-travel-1": {
+    "c1": true,
+    "c2": false,
+    "c3": false,
+    "why": "c1 in rubric example; c2-3 weaker"
+  },
+  "r3-en-travel-2": {
+    "c1": true,
+    "c2": false,
+    "c3": false,
+    "why": "c1 poetic warmth; c2-3 false we"
+  },
+  "r3-en-love-0": {
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "why": "c1-2 intimate for couple; c3 outside"
+  },
+  "r3-en-love-1": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": "All warm, c2 most vivid"
+  },
+  "r3-en-love-2": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": "All intimate and warm"
+  },
+  "r3-de-kids-0": {
+    "c1": true,
+    "c2": false,
+    "c3": false,
+    "why": "c1 has turn; c2-3 plain"
+  },
+  "r3-de-kids-1": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "why": "c1 cliche; c2 clear observation"
+  },
+  "r3-de-kids-2": {
+    "c1": true,
+    "c2": false,
+    "c3": false,
+    "why": "c1 has turn; others plain"
+  },
+  "r3-de-travel-0": {
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "why": "c1 plain; c2-3 contrast turn"
+  },
+  "r3-de-travel-1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "why": "All plain descriptions"
+  },
+  "r3-de-travel-2": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "why": "c2 has color wit; others plain"
+  },
+  "r3-de-love-0": {
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "why": "c1 cliche; c2-3 warm turn"
+  },
+  "r3-de-love-1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "why": "c1 cliche; c2 plain; c3 grammar"
+  },
+  "r3-de-love-2": {
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "why": "c1-2 have turn; c3 abstract"
+  }
+}

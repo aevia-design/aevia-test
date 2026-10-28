@@ -1,0 +1,46 @@
+{
+  "context": {
+    "en": {
+      "kids": "Mila, our little bear. Hates socks, loves our dog Bruno, says 'nana' for banana. · Our little bear",
+      "travel": "Croatia, August 2026. We swam every morning before breakfast and missed the ferry twice. · Summer on the coast",
+      "love": "Anna & Michael, Vienna, June 2026. He proposed on a tram; she calls him Mischa. · Anna & Michael · We met through friends at a terrible party and left early together."
+    },
+    "de": {
+      "kids": "Mila, unser kleiner Bär. Hasst Socken, liebt unseren Hund Bruno, sagt 'Nane' zu Banane. · Unser kleiner Bär",
+      "travel": "Kroatien, August 2026. Jeden Morgen vor dem Frühstück schwimmen, zweimal die Fähre verpasst. · Sommer am Meer",
+      "love": "Anna & Michael, Wien, Juni 2026. Er hat in der Straßenbahn den Antrag gemacht; sie nennt ihn Mischa. · Anna & Michael · Kennengelernt über Freunde auf einer furchtbaren Party, die wir zusammen früh verlassen haben."
+    }
+  },
+  "key": {
+    "en-kids": {
+      "A": "today",
+      "B": "plain",
+      "C": "context"
+    },
+    "en-travel": {
+      "A": "today",
+      "B": "plain",
+      "C": "context"
+    },
+    "en-love": {
+      "A": "plain",
+      "B": "today",
+      "C": "context"
+    },
+    "de-kids": {
+      "A": "plain",
+      "B": "context",
+      "C": "today"
+    },
+    "de-travel": {
+      "A": "today",
+      "B": "plain",
+      "C": "context"
+    },
+    "de-love": {
+      "A": "context",
+      "B": "plain",
+      "C": "today"
+    }
+  }
+}

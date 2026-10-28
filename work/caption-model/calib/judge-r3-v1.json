@@ -1,0 +1,110 @@
+{
+  "r3-en-kids-0": {
+    "c1": true,
+    "c2": false,
+    "c3": true,
+    "why": "c2 reads as inventory"
+  },
+  "r3-en-kids-1": {
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "why": "c1: 'both of us'=2 but photo shows 3"
+  },
+  "r3-en-kids-2": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": ""
+  },
+  "r3-en-travel-0": {
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "why": "c3: 'our' but single person"
+  },
+  "r3-en-travel-1": {
+    "c1": true,
+    "c2": false,
+    "c3": false,
+    "why": "c2/c3: inventory or wrong 'our'"
+  },
+  "r3-en-travel-2": {
+    "c1": true,
+    "c2": false,
+    "c3": false,
+    "why": "c2/c3: 'our/we' but one person"
+  },
+  "r3-en-love-0": {
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "why": "c3 talks about them as outsider"
+  },
+  "r3-en-love-1": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": ""
+  },
+  "r3-en-love-2": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": ""
+  },
+  "r3-de-kids-0": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": ""
+  },
+  "r3-de-kids-1": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": ""
+  },
+  "r3-de-kids-2": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": ""
+  },
+  "r3-de-travel-0": {
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "why": "c3 is inventory list"
+  },
+  "r3-de-travel-1": {
+    "c1": false,
+    "c2": false,
+    "c3": true,
+    "why": "c1/c2 are inventories"
+  },
+  "r3-de-travel-2": {
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "why": "c3 is inventory list"
+  },
+  "r3-de-love-0": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": ""
+  },
+  "r3-de-love-1": {
+    "c1": true,
+    "c2": false,
+    "c3": false,
+    "why": "c2 inventory; c3 odd perspective"
+  },
+  "r3-de-love-2": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "why": ""
+  }
+}

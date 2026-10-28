@@ -1,0 +1,200 @@
+[
+ {
+  "id": "r3-en-kids-0",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r3-en-kids-0.jpg",
+  "captions": {
+   "c1": "Joy in every swing",
+   "c2": "Both hands up, both feet off the ground",
+   "c3": "Feet off the ground, smile doing the rest"
+  }
+ },
+ {
+  "id": "r3-en-kids-1",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r3-en-kids-1.jpg",
+  "captions": {
+   "c1": "That laugh was meant to be shared with both of us",
+   "c2": "Somehow, every cuddle ends up in the middle of the family hug",
+   "c3": "Laughter shared in gentle moments"
+  }
+ },
+ {
+  "id": "r3-en-kids-2",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r3-en-kids-2.jpg",
+  "captions": {
+   "c1": "Curiosity in every touch",
+   "c2": "The stacking rings are getting a closer look than the camera is",
+   "c3": "That wooden ring is just within reach"
+  }
+ },
+ {
+  "id": "r3-en-travel-0",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r3-en-travel-0.jpg",
+  "captions": {
+   "c1": "Moments of stillness by the shore",
+   "c2": "Hair still in the wind, towel still around the shoulders",
+   "c3": "Wind in our hair, sea at our backs"
+  }
+ },
+ {
+  "id": "r3-en-travel-1",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r3-en-travel-1.jpg",
+  "captions": {
+   "c1": "Sun-kissed and free in the sea's embrace",
+   "c2": "Wet hair, saltwater still on skin",
+   "c3": "Wet hair, salt on our skin"
+  }
+ },
+ {
+  "id": "r3-en-travel-2",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r3-en-travel-2.jpg",
+  "captions": {
+   "c1": "Waves whispering secrets as the sun warms the skin",
+   "c2": "Sun on the rocks, water still on our skin",
+   "c3": "The stone held the sun longer than we did"
+  }
+ },
+ {
+  "id": "r3-en-love-0",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r3-en-love-0.jpg",
+  "captions": {
+   "c1": "Veil over your smile, our hands together",
+   "c2": "Veil across our smiles, your hand already reaching forward",
+   "c3": "Two people stepping into forever, hand in hand"
+  }
+ },
+ {
+  "id": "r3-en-love-1",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r3-en-love-1.jpg",
+  "captions": {
+   "c1": "Joy in every step, embracing the moment",
+   "c2": "The veil caught the wind, and the shoes came along for the walk",
+   "c3": "Barefoot on the gravel, shoes in hand, smiling to ourselves"
+  }
+ },
+ {
+  "id": "r3-en-love-2",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r3-en-love-2.jpg",
+  "captions": {
+   "c1": "The lace veil between us, and your smile just beyond it",
+   "c2": "Eyes intertwined, shared laughter lighting the way",
+   "c3": "Our smiles keep pace with the walk"
+  }
+ },
+ {
+  "id": "r3-de-kids-0",
+  "language": "de",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r3-de-kids-0.jpg",
+  "captions": {
+   "c1": "Oben gehalten, unten schon unterwegs",
+   "c2": "Hoch in der Luft, die Sohlen zuerst",
+   "c3": "Schaukeln zwischen den Händen der Eltern"
+  }
+ },
+ {
+  "id": "r3-de-kids-1",
+  "language": "de",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r3-de-kids-1.jpg",
+  "captions": {
+   "c1": "Lachen, das den ganzen Raum erfüllt",
+   "c2": "Das Kitzeln bringt selbst die Beine in Bewegung",
+   "c3": "Mitten im Lachen, sicher in euren Armen"
+  }
+ },
+ {
+  "id": "r3-de-kids-2",
+  "language": "de",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r3-de-kids-2.jpg",
+  "captions": {
+   "c1": "Der Turm steht, die Hand reicht schon zum nächsten Klötzchen",
+   "c2": "Gemeinsam auf dem Boden, die Berührungen sanft und neugierig",
+   "c3": "Die Hände immer dort, wo das Spielzeug ist"
+  }
+ },
+ {
+  "id": "r3-de-travel-0",
+  "language": "de",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r3-de-travel-0.jpg",
+  "captions": {
+   "c1": "Nachdenklich mit dem Blick auf das Wasser",
+   "c2": "Der Strand verschwimmt, das Handtuch bleibt",
+   "c3": "Der Wind übernimmt die Frisur, das Handtuch bleibt an Ort und Stelle"
+  }
+ },
+ {
+  "id": "r3-de-travel-1",
+  "language": "de",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r3-de-travel-1.jpg",
+  "captions": {
+   "c1": "Nasses Haar, Salz auf der Haut, das Meer bis zum Horizont",
+   "c2": "Nasses Haar, noch Salz auf der Haut",
+   "c3": "Tropfnasses Haar, die Sonne spiegelt sich im Wasser"
+  }
+ },
+ {
+  "id": "r3-de-travel-2",
+  "language": "de",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r3-de-travel-2.jpg",
+  "captions": {
+   "c1": "Wasserperlen auf der Haut, das Licht spielt auf dem Stein",
+   "c2": "Korallenrot stiehlt dem grauen Fels die Schau",
+   "c3": "Das Licht zeichnet helle Flecken auf den Fels, das nasse Haar fällt ins Gesicht"
+  }
+ },
+ {
+  "id": "r3-de-love-0",
+  "language": "de",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r3-de-love-0.jpg",
+  "captions": {
+   "c1": "Lächelnd die Treppe hinunter, vereint im Moment",
+   "c2": "Der Schleier weht uns ins Gesicht, und wir laufen weiter",
+   "c3": "Der Spitzenschleier hält sich noch vor unser Lächeln"
+  }
+ },
+ {
+  "id": "r3-de-love-1",
+  "language": "de",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r3-de-love-1.jpg",
+  "captions": {
+   "c1": "Barfuß und voller Lebensfreude",
+   "c2": "Barfuß im Brautkleid, die Schuhe in der Hand",
+   "c3": "Der Kiesweg bleibt den nackten Füßen überlassen, die Schuhe trägt ihr in der Hand"
+  }
+ },
+ {
+  "id": "r3-de-love-2",
+  "language": "de",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r3-de-love-2.jpg",
+  "captions": {
+   "c1": "Der Schleier liegt noch übers Lächeln, während wir schon weitergehen",
+   "c2": "Unsere Schritte fallen aus dem Takt, als wir uns ansehen",
+   "c3": "Händchen haltend, der Blick auf das Leben gerichtet"
+  }
+ }
+]

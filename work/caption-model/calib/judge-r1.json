@@ -1,0 +1,172 @@
+{
+  "r1-en-kids-0": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm. c2 is rubric example."
+  },
+  "r1-en-kids-1": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm, observational."
+  },
+  "r1-en-kids-2": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm, inside POV."
+  },
+  "r1-en-kids-3": {
+    "c1": true,
+    "c2": false,
+    "why": "c1 warm. c2 POV describes child from outside."
+  },
+  "r1-en-kids-4": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 multiple 'his'/'their' from outside. c2 warm."
+  },
+  "r1-en-kids-5": {
+    "c1": true,
+    "c2": false,
+    "why": "c1 warm inside POV. c2 inventory, uses 'her'."
+  },
+  "r1-en-kids-6": {
+    "c1": true,
+    "c2": false,
+    "why": "c1 warm. c2 inventory, uses 'her'."
+  },
+  "r1-en-kids-7": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm, specific observations."
+  },
+  "r1-en-kids-8": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm, observational, inside POV."
+  },
+  "r1-en-kids-9": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm. c2 more specific/playful."
+  },
+  "r1-en-travel-0": {
+    "c1": true,
+    "c2": false,
+    "why": "c1 rubric example. c2 uses 'him', inventory."
+  },
+  "r1-en-travel-1": {
+    "c1": true,
+    "c2": false,
+    "why": "c1 rubric example. c2 uses 'her', inventory tone."
+  },
+  "r1-en-travel-2": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm, poetic, no outside POV."
+  },
+  "r1-en-travel-3": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm for couple, poetic."
+  },
+  "r1-en-travel-4": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm, c2 playful detail."
+  },
+  "r1-en-travel-5": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm, c1 has humor."
+  },
+  "r1-en-travel-6": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 flowery cliché. c2 playful, warm."
+  },
+  "r1-en-travel-7": {
+    "c1": false,
+    "c2": false,
+    "why": "c1 cliché. c2 uses 'her', inventory."
+  },
+  "r1-en-travel-8": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 uses 'her', inventory. c2 warm, active."
+  },
+  "r1-en-travel-9": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm, c2 more specific."
+  },
+  "r1-en-love-0": {
+    "c1": false,
+    "c2": false,
+    "why": "c1 uses 'her'/'he' from outside. c2 generic, cliché."
+  },
+  "r1-en-love-1": {
+    "c1": true,
+    "c2": false,
+    "why": "c1 warm, inside POV. c2 inventory."
+  },
+  "r1-en-love-2": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm, together POV."
+  },
+  "r1-en-love-3": {
+    "c1": true,
+    "c2": false,
+    "why": "c1 warm, poetic. c2 rubric example of flat/cold."
+  },
+  "r1-en-love-4": {
+    "c1": true,
+    "c2": true,
+    "why": "Both warm, c1 observational detail."
+  },
+  "r1-en-love-5": {
+    "c1": true,
+    "c2": false,
+    "why": "c1 warm, together POV. c2 cold observation."
+  },
+  "r1-en-love-6": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 inventory uses 'her'. c2 warm, poetic."
+  },
+  "r1-en-love-9": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 uses 'his/him', inventory. c2 warm, inside POV."
+  },
+  "r1-de-kids-0": {
+    "c1": false,
+    "c2": false,
+    "why": "Both plain description, no wit or observation."
+  },
+  "r1-de-kids-1": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 cliché. c2 has wit in passive construction."
+  },
+  "r1-de-kids-5": {
+    "c1": false,
+    "c2": false,
+    "why": "Both inventory descriptions."
+  },
+  "r1-de-kids-6": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 inventory. c2 observational warmth."
+  },
+  "r1-de-kids-8": {
+    "c1": true,
+    "c2": true,
+    "why": "c1 poetic observation. c2 timing wit."
+  },
+  "r1-de-kids-9": {
+    "c1": false,
+    "c2": true,
+    "why": "c1 inventory. c2 playful personification."
+  }
+}

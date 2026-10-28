@@ -1,0 +1,189 @@
+[
+ {
+  "id": "r2-en-kids-0",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r2-en-kids-0.jpg",
+  "captions": {
+   "c1": "Both hands held high, both shoes pointed at us",
+   "c2": "Joy in every swing",
+   "c3": "Both hands in the air, both feet off the ground"
+  }
+ },
+ {
+  "id": "r2-en-kids-1",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r2-en-kids-1.jpg",
+  "captions": {
+   "c1": "The sweater inspection comes with a laugh",
+   "c2": "Laughter shared in gentle moments",
+   "c3": "Caught in the middle of a family cuddle"
+  }
+ },
+ {
+  "id": "r2-en-kids-2",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r2-en-kids-2.jpg",
+  "captions": {
+   "c1": "Those curls have everyone leaning in",
+   "c2": "Curiosity in every touch",
+   "c3": "A hand on my back, wooden toys within reach"
+  }
+ },
+ {
+  "id": "r2-en-travel-0",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r2-en-travel-0.jpg",
+  "captions": {
+   "c1": "Salt in our hair, the coast behind us",
+   "c2": "Moments of stillness by the shore",
+   "c3": "Salt in our hair, the sea behind us"
+  }
+ },
+ {
+  "id": "r2-en-travel-1",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r2-en-travel-1.jpg",
+  "captions": {
+   "c1": "Wet hair, salt water, nowhere in a hurry",
+   "c2": "Sun-kissed and free in the sea's embrace",
+   "c3": "Wet hair, red against the blue"
+  }
+ },
+ {
+  "id": "r2-en-travel-2",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r2-en-travel-2.jpg",
+  "captions": {
+   "c1": "Wet hair drying on warm stone",
+   "c2": "Waves whispering secrets as the sun warms the skin",
+   "c3": "Wet hair, sunlight on stone"
+  }
+ },
+ {
+  "id": "r2-en-love-0",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r2-en-love-0.jpg",
+  "captions": {
+   "c1": "Veil over our smiles, steps already in motion",
+   "c2": "Two people stepping into forever, hand in hand",
+   "c3": "Veil lifting, one foot still on the steps"
+  }
+ },
+ {
+  "id": "r2-en-love-2",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r2-en-love-2.jpg",
+  "captions": {
+   "c1": "Eyes intertwined, shared laughter lighting the way",
+   "c2": "His jacket brushing our wedding dress as we step into the light",
+   "c3": "Our hands met beneath the veil"
+  }
+ },
+ {
+  "id": "r2-de-kids-0",
+  "language": "de",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r2-de-kids-0.jpg",
+  "captions": {
+   "c1": "Beide Hände fest im Griff, beide Sohlen in der Luft",
+   "c2": "Schaukeln zwischen den Händen der Eltern",
+   "c3": "Beide Hände festgehalten, beide Sohlen in der Luft"
+  }
+ },
+ {
+  "id": "r2-de-kids-1",
+  "language": "de",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r2-de-kids-1.jpg",
+  "captions": {
+   "c1": "Zwischen zwei Pullovern passt noch ein breites Grinsen",
+   "c2": "Zwischen den Armen der Eltern wird das Kitzeln zur Chefsache",
+   "c3": "Lachen, das den ganzen Raum erfüllt"
+  }
+ },
+ {
+  "id": "r2-de-kids-2",
+  "language": "de",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r2-de-kids-2.jpg",
+  "captions": {
+   "c1": "Die kleine Hand reicht bis zum Holzring, die große bleibt am Rücken",
+   "c2": "Gemeinsam auf dem Boden, die Berührungen sanft und neugierig",
+   "c3": "Die Holzringe sind spannender als der Turm"
+  }
+ },
+ {
+  "id": "r2-de-travel-0",
+  "language": "de",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r2-de-travel-0.jpg",
+  "captions": {
+   "c1": "Nachdenklich mit dem Blick auf das Wasser",
+   "c2": "Der Wind hat die Frisur übernommen, das Handtuch bleibt an seinem Platz",
+   "c3": "Salz auf der Haut, die Haare noch nass"
+  }
+ },
+ {
+  "id": "r2-de-travel-1",
+  "language": "de",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r2-de-travel-1.jpg",
+  "captions": {
+   "c1": "Nasses Haar, klares Wasser, roter Bikini",
+   "c2": "Nasse Haare, rotes Bikinioberteil und kein Land in Sicht",
+   "c3": "Tropfnasses Haar, die Sonne spiegelt sich im Wasser"
+  }
+ },
+ {
+  "id": "r2-de-travel-2",
+  "language": "de",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r2-de-travel-2.jpg",
+  "captions": {
+   "c1": "Nasses Haar auf sonnenwarmem Stein",
+   "c2": "Nasses Haar auf warmem Stein, die Sonne auf der Haut",
+   "c3": "Wasserperlen auf der Haut, das Licht spielt auf dem Stein"
+  }
+ },
+ {
+  "id": "r2-de-love-0",
+  "language": "de",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r2-de-love-0.jpg",
+  "captions": {
+   "c1": "Mit wehenden Schleiern die Stufen hinunter",
+   "c2": "Der Schleier vorm Lachen, die Hand schon ausgestreckt",
+   "c3": "Lächelnd die Treppe hinunter, vereint im Moment"
+  }
+ },
+ {
+  "id": "r2-de-love-1",
+  "language": "de",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r2-de-love-1.jpg",
+  "captions": {
+   "c1": "Barfuß und voller Lebensfreude",
+   "c2": "Der Schleier weht, die Schuhe baumeln in der Hand",
+   "c3": "Barfuß über den Kies, die Schuhe in der Hand"
+  }
+ },
+ {
+  "id": "r2-de-love-2",
+  "language": "de",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r2-de-love-2.jpg",
+  "captions": {
+   "c1": "Händchen haltend, der Blick auf das Leben gerichtet",
+   "c2": "Schwarzer Anzug, Spitzenstieier und ineinander verschränkte Hände",
+   "c3": "Spitze über dem Lächeln, Schritte im Gleichklang"
+  }
+ }
+]

@@ -1,0 +1,313 @@
+{
+ "r1-en-kids-0": {
+  "c1": true,
+  "c2": true
+ },
+ "r1-en-kids-1": {
+  "c1": false,
+  "c2": false
+ },
+ "r1-en-kids-2": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-en-kids-3": {
+  "c1": false,
+  "c2": false
+ },
+ "r1-en-kids-4": {
+  "c1": false,
+  "c2": false
+ },
+ "r1-en-kids-5": {
+  "c1": false,
+  "c2": false
+ },
+ "r1-en-kids-6": {
+  "c1": false,
+  "c2": true
+ },
+ "r1-en-kids-7": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-en-kids-8": {
+  "c1": false,
+  "c2": true
+ },
+ "r1-en-kids-9": {
+  "c1": false,
+  "c2": true
+ },
+ "r1-en-travel-0": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-en-travel-1": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-en-travel-2": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-en-travel-3": {
+  "c1": true,
+  "c2": true
+ },
+ "r1-en-travel-4": {
+  "c1": true,
+  "c2": true
+ },
+ "r1-en-travel-5": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-en-travel-6": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-en-travel-7": {
+  "c1": false,
+  "c2": false
+ },
+ "r1-en-travel-8": {
+  "c1": true,
+  "c2": true
+ },
+ "r1-en-travel-9": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-en-love-0": {
+  "c1": false,
+  "c2": false
+ },
+ "r1-en-love-1": {
+  "c1": true,
+  "c2": true
+ },
+ "r1-en-love-2": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-en-love-3": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-en-love-4": {
+  "c1": false,
+  "c2": false
+ },
+ "r1-en-love-5": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-en-love-6": {
+  "c1": false,
+  "c2": true
+ },
+ "r1-en-love-9": {
+  "c1": false,
+  "c2": true
+ },
+ "r1-de-kids-0": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-de-kids-1": {
+  "c1": true,
+  "c2": true
+ },
+ "r1-de-kids-5": {
+  "c1": true,
+  "c2": false
+ },
+ "r1-de-kids-6": {
+  "c1": false,
+  "c2": false
+ },
+ "r1-de-kids-8": {
+  "c1": false,
+  "c2": true
+ },
+ "r1-de-kids-9": {
+  "c1": false,
+  "c2": false
+ },
+ "r2-en-kids-0": {
+  "c1": false,
+  "c2": true,
+  "c3": true
+ },
+ "r2-en-kids-1": {
+  "c1": true,
+  "c2": false,
+  "c3": false
+ },
+ "r2-en-kids-2": {
+  "c1": true,
+  "c2": false,
+  "c3": true
+ },
+ "r2-en-travel-0": {
+  "c1": false,
+  "c2": true,
+  "c3": false
+ },
+ "r2-en-travel-1": {
+  "c1": true,
+  "c2": true,
+  "c3": true
+ },
+ "r2-en-travel-2": {
+  "c1": true,
+  "c2": true,
+  "c3": true
+ },
+ "r2-en-love-0": {
+  "c1": true,
+  "c2": true,
+  "c3": false
+ },
+ "r2-en-love-2": {
+  "c1": true,
+  "c2": false,
+  "c3": true
+ },
+ "r2-de-kids-0": {
+  "c1": true,
+  "c2": false,
+  "c3": true
+ },
+ "r2-de-kids-1": {
+  "c1": false,
+  "c2": true,
+  "c3": false
+ },
+ "r2-de-kids-2": {
+  "c1": false,
+  "c2": false,
+  "c3": true
+ },
+ "r2-de-travel-0": {
+  "c1": false,
+  "c2": false,
+  "c3": true
+ },
+ "r2-de-travel-1": {
+  "c1": false,
+  "c2": false,
+  "c3": false
+ },
+ "r2-de-travel-2": {
+  "c1": false,
+  "c2": false,
+  "c3": false
+ },
+ "r2-de-love-0": {
+  "c1": false,
+  "c2": false,
+  "c3": false
+ },
+ "r2-de-love-1": {
+  "c1": false,
+  "c2": true,
+  "c3": false
+ },
+ "r2-de-love-2": {
+  "c1": false,
+  "c2": false,
+  "c3": false
+ },
+ "r3-en-kids-0": {
+  "c1": true,
+  "c2": true,
+  "c3": false
+ },
+ "r3-en-kids-1": {
+  "c1": false,
+  "c2": true,
+  "c3": true
+ },
+ "r3-en-kids-2": {
+  "c1": true,
+  "c2": false,
+  "c3": true
+ },
+ "r3-en-travel-0": {
+  "c1": true,
+  "c2": true,
+  "c3": false
+ },
+ "r3-en-travel-1": {
+  "c1": true,
+  "c2": false,
+  "c3": false
+ },
+ "r3-en-travel-2": {
+  "c1": true,
+  "c2": false,
+  "c3": false
+ },
+ "r3-en-love-0": {
+  "c1": true,
+  "c2": true,
+  "c3": true
+ },
+ "r3-en-love-1": {
+  "c1": true,
+  "c2": false,
+  "c3": false
+ },
+ "r3-en-love-2": {
+  "c1": false,
+  "c2": true,
+  "c3": true
+ },
+ "r3-de-kids-0": {
+  "c1": true,
+  "c2": true,
+  "c3": true
+ },
+ "r3-de-kids-1": {
+  "c1": true,
+  "c2": true,
+  "c3": true
+ },
+ "r3-de-kids-2": {
+  "c1": true,
+  "c2": false,
+  "c3": false
+ },
+ "r3-de-travel-0": {
+  "c1": false,
+  "c2": false,
+  "c3": false
+ },
+ "r3-de-travel-1": {
+  "c1": false,
+  "c2": true,
+  "c3": false
+ },
+ "r3-de-travel-2": {
+  "c1": false,
+  "c2": false,
+  "c3": false
+ },
+ "r3-de-love-0": {
+  "c1": true,
+  "c2": false,
+  "c3": false
+ },
+ "r3-de-love-1": {
+  "c1": true,
+  "c2": false,
+  "c3": false
+ },
+ "r3-de-love-2": {
+  "c1": false,
+  "c2": false,
+  "c3": true
+ }
+}

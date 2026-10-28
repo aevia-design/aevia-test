@@ -1,0 +1,38 @@
+{
+  "context": {
+    "kids": "Mila, our little bear. Hates socks, loves our dog Bruno, says 'nana' for banana. · Our little bear",
+    "travel": "Croatia, August 2026. We swam every morning before breakfast and missed the ferry twice. · Summer on the coast",
+    "love": "Anna & Michael, Vienna, June 2026. He proposed on a tram; she calls him Mischa. · Anna & Michael · We met through friends at a terrible party and left early together."
+  },
+  "key": {
+    "en-kids": {
+      "A": "notes",
+      "B": "plain"
+    },
+    "en-travel": {
+      "A": "notes",
+      "B": "plain"
+    },
+    "en-love": {
+      "A": "plain",
+      "B": "notes"
+    }
+  },
+  "withNotes": {
+    "en-kids": [
+      "Held high, laughing all the way",
+      "The whole family in on the giggles",
+      "Right in the middle of their little world"
+    ],
+    "en-travel": [
+      "Salt in his hair, the coast behind him",
+      "The sea still on her skin, the morning wide open",
+      "Sun-warmed stone and nowhere to be"
+    ],
+    "en-love": [
+      "Down the steps, already laughing",
+      "Barefoot, veil flying, bouquet in hand",
+      "The look that says everything, just before the next step"
+    ]
+  }
+}

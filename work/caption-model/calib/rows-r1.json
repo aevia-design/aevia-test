@@ -1,0 +1,342 @@
+[
+ {
+  "id": "r1-en-kids-0",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-en-kids-0.jpg",
+  "captions": {
+   "c1": "Both hands up, grin already there",
+   "c2": "Joy in every swing"
+  }
+ },
+ {
+  "id": "r1-en-kids-1",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-en-kids-1.jpg",
+  "captions": {
+   "c1": "Laughter shared in gentle moments",
+   "c2": "Between four hands, one delighted wriggle"
+  }
+ },
+ {
+  "id": "r1-en-kids-2",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-en-kids-2.jpg",
+  "captions": {
+   "c1": "Curiosity in every touch",
+   "c2": "The stacking rings hold everyone’s attention"
+  }
+ },
+ {
+  "id": "r1-en-kids-3",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-en-kids-3.jpg",
+  "captions": {
+   "c1": "Joyful surprise in every lift",
+   "c2": "His shoes dangle while Dad holds him aloft"
+  }
+ },
+ {
+  "id": "r1-en-kids-4",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-en-kids-4.jpg",
+  "captions": {
+   "c1": "His dad’s hands at his back, their eyes on each other",
+   "c2": "Pure wonder in their eyes"
+  }
+ },
+ {
+  "id": "r1-en-kids-5",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-en-kids-5.jpg",
+  "captions": {
+   "c1": "Little hands reaching for the sky",
+   "c2": "Hands arched over her head, skirt just above the knees"
+  }
+ },
+ {
+  "id": "r1-en-kids-6",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-en-kids-6.jpg",
+  "captions": {
+   "c1": "Soft warmth wrapped in love‍",
+   "c2": "Her yellow sleeve tucked beneath her mother’s hand"
+  }
+ },
+ {
+  "id": "r1-en-kids-7",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-en-kids-7.jpg",
+  "captions": {
+   "c1": "Delight in every playful jump",
+   "c2": "The dog’s front paws leave the floor at the sight of a treat"
+  }
+ },
+ {
+  "id": "r1-en-kids-8",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-en-kids-8.jpg",
+  "captions": {
+   "c1": "Three hands on the puppy, one tongue out of place",
+   "c2": "Giggles and puppy kisses on a cozy afternoon"
+  }
+ },
+ {
+  "id": "r1-en-kids-9",
+  "language": "en",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-en-kids-9.jpg",
+  "captions": {
+   "c1": "Exploring the world, one small step at a time",
+   "c2": "One foot on the ball, one small audience in the grass"
+  }
+ },
+ {
+  "id": "r1-en-travel-0",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r1-en-travel-0.jpg",
+  "captions": {
+   "c1": "Moments of stillness by the shore",
+   "c2": "Wind-tossed hair, sea behind him"
+  }
+ },
+ {
+  "id": "r1-en-travel-1",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r1-en-travel-1.jpg",
+  "captions": {
+   "c1": "Sun-kissed and free in the sea's embrace",
+   "c2": "Wet hair, salt on her skin, the sea at her side"
+  }
+ },
+ {
+  "id": "r1-en-travel-2",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r1-en-travel-2.jpg",
+  "captions": {
+   "c1": "Waves whispering secrets as the sun warms the skin",
+   "c2": "Wet hair against the sun-warmed stone"
+  }
+ },
+ {
+  "id": "r1-en-travel-3",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r1-en-travel-3.jpg",
+  "captions": {
+   "c1": "Golden hour, two souls lost in the journey",
+   "c2": "The winding road gives way to the sea, with the sun in their eyes"
+  }
+ },
+ {
+  "id": "r1-en-travel-4",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r1-en-travel-4.jpg",
+  "captions": {
+   "c1": "Gentle warmth wraps around them as the day fades",
+   "c2": "The strawberries kept company with the sunset"
+  }
+ },
+ {
+  "id": "r1-en-travel-5",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r1-en-travel-5.jpg",
+  "captions": {
+   "c1": "Coffee with a mountain view, no rush to get dressed",
+   "c2": "Coffee brewing in the quiet of the trees"
+  }
+ },
+ {
+  "id": "r1-en-travel-6",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r1-en-travel-6.jpg",
+  "captions": {
+   "c1": "Splashing into the turquoise embrace of nature's beauty",
+   "c2": "One foot committed, the other still negotiating with the water"
+  }
+ },
+ {
+  "id": "r1-en-travel-7",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r1-en-travel-7.jpg",
+  "captions": {
+   "c1": "Joy dances on water, embraced by nature’s vibrant palette",
+   "c2": "Wet hair, mountain water on her shoulders"
+  }
+ },
+ {
+  "id": "r1-en-travel-8",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r1-en-travel-8.jpg",
+  "captions": {
+   "c1": "Both feet off the ground, mountain peaks behind her",
+   "c2": "Leaping into the adventure of the mountains"
+  }
+ },
+ {
+  "id": "r1-en-travel-9",
+  "language": "en",
+  "collection": "travel",
+  "image": "work/caption-model/calib/img/r1-en-travel-9.jpg",
+  "captions": {
+   "c1": "Finding balance on the path less traveled",
+   "c2": "One hand reaching for the grass, both feet on the rocks"
+  }
+ },
+ {
+  "id": "r1-en-love-0",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r1-en-love-0.jpg",
+  "captions": {
+   "c1": "Her veil caught in the sunlight while he pulls her along",
+   "c2": "Two people stepping into forever, hand in hand"
+  }
+ },
+ {
+  "id": "r1-en-love-1",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r1-en-love-1.jpg",
+  "captions": {
+   "c1": "Joy in every step, embracing the moment",
+   "c2": "Barefoot, veil flying, shoes in hand"
+  }
+ },
+ {
+  "id": "r1-en-love-2",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r1-en-love-2.jpg",
+  "captions": {
+   "c1": "Eyes intertwined, shared laughter lighting the way",
+   "c2": "Her veil between their smiles"
+  }
+ },
+ {
+  "id": "r1-en-love-3",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r1-en-love-3.jpg",
+  "captions": {
+   "c1": "Stillness in the chaos, wrapped in warmth and light",
+   "c2": "His hand at her waist, her eyes on his face"
+  }
+ },
+ {
+  "id": "r1-en-love-4",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r1-en-love-4.jpg",
+  "captions": {
+   "c1": "Her bouquet spills silver leaves beside his polished shoes",
+   "c2": "The promise held in a quiet moment between them"
+  }
+ },
+ {
+  "id": "r1-en-love-5",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r1-en-love-5.jpg",
+  "captions": {
+   "c1": "Veiled laughter, two souls woven together in promise",
+   "c2": "Lace drawn close around her face, his gaze turned toward her"
+  }
+ },
+ {
+  "id": "r1-en-love-6",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r1-en-love-6.jpg",
+  "captions": {
+   "c1": "White petals scattered around her silver shoes",
+   "c2": "Elegance found in every detail, ready for the journey ahead"
+  }
+ },
+ {
+  "id": "r1-en-love-9",
+  "language": "en",
+  "collection": "love",
+  "image": "work/caption-model/calib/img/r1-en-love-9.jpg",
+  "captions": {
+   "c1": "The groom stands to speak, one hand around his glass, the table quieting around him",
+   "c2": "Words spoken, hearts open, laughter echoing in the warmth of shared moments"
+  }
+ },
+ {
+  "id": "r1-de-kids-0",
+  "language": "de",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-de-kids-0.jpg",
+  "captions": {
+   "c1": "Schaukeln zwischen den Händen der Eltern",
+   "c2": "Beide Hände fest im Griff, beide Sohlen in der Luft"
+  }
+ },
+ {
+  "id": "r1-de-kids-1",
+  "language": "de",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-de-kids-1.jpg",
+  "captions": {
+   "c1": "Lachen, das den ganzen Raum erfüllt",
+   "c2": "Zwischen Mamas Armen und Papas Händen wird gekichert"
+  }
+ },
+ {
+  "id": "r1-de-kids-5",
+  "language": "de",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-de-kids-5.jpg",
+  "captions": {
+   "c1": "Hände über dem Kopf, der ganze Körper in Bewegung",
+   "c2": "Beide Hände formen einen Kreis über ihrem Kopf"
+  }
+ },
+ {
+  "id": "r1-de-kids-6",
+  "language": "de",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-de-kids-6.jpg",
+  "captions": {
+   "c1": "Ein kleiner Pullover, zwei Hände an seinem Rücken",
+   "c2": "Sanfte Berührungen von dreien, die sich umarmen"
+  }
+ },
+ {
+  "id": "r1-de-kids-8",
+  "language": "de",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-de-kids-8.jpg",
+  "captions": {
+   "c1": "Ein Lächeln, das auf den kleinen Hund trifft",
+   "c2": "Die Zunge schon draußen, die Hände noch im Fell"
+  }
+ },
+ {
+  "id": "r1-de-kids-9",
+  "language": "de",
+  "collection": "kids",
+  "image": "work/caption-model/calib/img/r1-de-kids-9.jpg",
+  "captions": {
+   "c1": "Ein Fuß auf dem Ball, die kleine Schwester im Gras",
+   "c2": "Zwei kleine Füße im Gras, während der Ball still auf den Boden schaut"
+  }
+ }
+]

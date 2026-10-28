@@ -1,0 +1,64 @@
+{
+ "en-kids-0": [
+  "A",
+  "B"
+ ],
+ "en-kids-1": [
+  "B"
+ ],
+ "en-kids-2": [
+  "B"
+ ],
+ "en-travel-0": [
+  "A",
+  "B"
+ ],
+ "en-travel-1": [
+  "A",
+  "B"
+ ],
+ "en-travel-2": [
+  "A",
+  "B"
+ ],
+ "en-love-0": [
+  "A",
+  "B"
+ ],
+ "en-love-1": [
+  "A",
+  "B"
+ ],
+ "en-love-2": [
+  "A",
+  "B"
+ ],
+ "de-kids-0": [
+  "A",
+  "B"
+ ],
+ "de-kids-1": [
+  "B"
+ ],
+ "de-kids-2": [
+  "A"
+ ],
+ "de-travel-1": [
+  "B"
+ ],
+ "de-travel-0": [
+  "neither"
+ ],
+ "de-travel-2": [
+  "neither"
+ ],
+ "de-love-1": [
+  "B"
+ ],
+ "de-love-0": [
+  "B"
+ ],
+ "de-love-2": [
+  "neither"
+ ]
+}

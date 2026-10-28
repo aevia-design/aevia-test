@@ -1,0 +1,26 @@
+{
+  "en-kids": {
+    "A": "luna",
+    "B": "today"
+  },
+  "en-travel": {
+    "A": "today",
+    "B": "luna"
+  },
+  "en-love": {
+    "A": "luna",
+    "B": "today"
+  },
+  "de-kids": {
+    "A": "luna",
+    "B": "today"
+  },
+  "de-travel": {
+    "A": "today",
+    "B": "luna"
+  },
+  "de-love": {
+    "A": "luna",
+    "B": "today"
+  }
+}

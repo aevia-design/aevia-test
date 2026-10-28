@@ -1,0 +1,32 @@
+{
+  "en-kids": {
+    "A": "old",
+    "B": "new",
+    "newRetries": 0
+  },
+  "en-travel": {
+    "A": "new",
+    "B": "old",
+    "newRetries": 0
+  },
+  "en-love": {
+    "A": "new",
+    "B": "old",
+    "newRetries": 0
+  },
+  "de-kids": {
+    "A": "old",
+    "B": "new",
+    "newRetries": 0
+  },
+  "de-travel": {
+    "A": "old",
+    "B": "new",
+    "newRetries": 0
+  },
+  "de-love": {
+    "A": "old",
+    "B": "new",
+    "newRetries": 0
+  }
+}

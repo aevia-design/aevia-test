@@ -96,7 +96,9 @@ const path = require('path');
 const CAPTION_VOICE = fs.readFileSync(path.join(__dirname, 'caption/caption-voice.md'), 'utf8');
 // User-message prompt builders. Extracted so the German path is testable —
 // see functions/caption/prompts.js and tests/caption-prompts.test.js.
-const { buildCaptionUserText, buildComposeUserText } = require('./caption/prompts');
+const { buildComposeUserText } = require('./caption/prompts');
+const { generateCaption: generateCaptionText } = require('./caption/generate');
+const { modelParams } = require('./caption/model');
 
 exports.generateCaption = functions
   .region('europe-west1')
@@ -130,8 +132,7 @@ exports.generateCaption = functions
 
       if (composeText) {
         const composed = await client.chat.completions.create({
-          model: 'gpt-4o-mini',
-          max_tokens: 300,
+          ...modelParams(300),
           // Editing, not writing. The API default is tuned for creative generation, which is
           // what produced the invented detail found in S175 testing ("under the stars" from a
           // text that never mentioned them). Low temperature keeps it close to the source.
@@ -152,24 +153,9 @@ exports.generateCaption = functions
         return;
       }
 
-      const userText = buildCaptionUserText({ collection, note, previousCaptions, language });
-
-      const response = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        max_tokens: 100,
-        messages: [
-          { role: 'system', content: CAPTION_VOICE },
-          {
-            role: 'user',
-            content: [
-              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}` } },
-              { type: 'text', text: userText },
-            ],
-          },
-        ],
-      });
-
-      const caption = response.choices[0].message.content.trim();
+      // Word control + at most one retry live in caption/generate.js (#140).
+      const { caption } = await generateCaptionText(client, CAPTION_VOICE,
+        { image, collection, note, previousCaptions, language });
       res.json({ caption });
     } catch (err) {
       console.error('generateCaption error:', err);

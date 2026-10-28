@@ -56,7 +56,7 @@ describe('caption mode — English (the regression baseline)', () => {
       note: 'First steps',
       previousCaptions: ['One', 'Two'],
     });
-    expect(out).toContain('Customer note: "First steps"');
+    expect(out).toContain('"First steps"');   // now sent as order background (S199)
     expect(out).toContain('- One');
     expect(out).toContain('- Two');
   });
@@ -116,8 +116,8 @@ describe('caption mode — German', () => {
     // ("Die ersten gemeinsamen Momente", "So viel Freude in einem kleinen
     // Moment"). A prohibition list cannot produce concreteness — this positive
     // rule is what fixed it. Do not demote it below the no-invention rule.
-    expect(de).toMatch(/NAME SOMETHING THAT IS ACTUALLY IN THE PHOTOGRAPH/);
-    expect(de).toMatch(/would sit equally well under any other photo in\s*\n?\s*the book is wrong/);
+    expect(de).toMatch(/Anchor the caption in something actually in the photograph/);   // softened S199
+    expect(de).toMatch(/would fit any photo in the book/);
   });
 
   test('the forbidden-word list names the abstractions the model reaches for', () => {

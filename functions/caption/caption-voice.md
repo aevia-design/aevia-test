@@ -18,7 +18,11 @@ Warm, precise, unhurried. Can be sentimental when the moment calls for it — a 
 
 No exclamation marks. No rhetorical questions. No motivational register.
 
-Write what the photo feels like. Not what is literally in it, not what the viewer should feel about it.
+**Kids and Travel: humour is welcome.** When the photo offers something funny — a face full of cake, a toddler mid-protest, a map held upside down — a dry, affectionate line beats a sentimental one. Deadpan and understated, the way a parent tells the story at dinner years later. Laugh with the child, never at them. No puns, no sarcasm, and the joke must come from what the photo shows or the note says — never an invented situation. Not every caption should be funny; a quiet photo still gets a quiet line.
+
+**Love: warm first.** Humour is rare and gentle at most — a knowing look, never a punchline.
+
+Start from something you can see — a hand, wet hair, a crumb, the light on a wall — and let the feeling come from that detail. Never name the feeling instead of showing its detail, and never tell the viewer what to feel.
 
 ## What to avoid
 
@@ -37,25 +41,36 @@ Write what the photo feels like. Not what is literally in it, not what the viewe
 - Adverbs: cut every one
 - Pull-quote sentences: if it sounds like a poster, rewrite it
 - Abstractions doing the work of specifics
+- Stock caption words: "embrace", "whispered secrets", "warmth", "joy", "the path less traveled"
 
 ## Caption examples by collection
 
 **Travel**
-- "Two hours from anywhere"
-- "The light came just before they left"
-- "Lost in the beauty of it"
+- "Nothing but road in either direction"
+- "The last light on the water"
 - "Some roads don't need a destination"
+- "Salt still in our hair"
+
+Humour, each tied to what the photo shows — never to anything it does not:
+- "Map upside down, confidence intact" — photo: someone studying a map held upside down
+- "Ice cream losing the race against the sun" — photo: ice cream dripping down a hand
+- "Both shoes off, both feet in" — photo: bare feet in a stream, shoes on the bank
 
 **Kids**
 - "Everything new at once"
-- "Six months old and already sure of himself"
-- "She slept through the whole thing"
+- "Already sure about everything"
+- "I slept through the whole thing" — the child's own voice
 - "The world, unfiltered"
+
+Humour, each tied to what the photo shows — never to anything it does not:
+- "Negotiations over broccoli have stalled" — photo: a toddler pushing a plate of broccoli away
+- "Most of the cake made it in" — photo: a face smeared with cake
+- "Nap declined" — photo: a toddler wide awake, standing in the cot and gripping the bars
 
 **Love**
 - "Still the same look"
 - "The small things, kept"
-- "She knew before she turned around"
+- "We knew before we turned around"
 
 ## Hard rules
 - Do not start the caption with the word "A" or "An"
@@ -223,17 +238,26 @@ zentrale Rolle", "besticht durch", "Experten betonen", "zeugt von", "Um dieses Z
 Register benchmark: these follow how Aevia's own authored German reads — plain, warm, concrete,
 addressed directly. Short. Observational rather than declaring what the reader should feel.
 
+The humour rule above applies in German too: Kids and Travel may be dry and affectionate when the
+photo offers it — the joke must name something visible — and Love stays warm. German deadpan often works as a clipped report or an official-
+sounding phrase applied to a small child ("Mittagsschlaf abgelehnt").
+
 **Travel**
 - "Kein Netz, den ganzen Tag"
 - "Das Licht kam, kurz bevor wir fuhren"
 - "Den Bus verpasst, den Nachmittag gewonnen"
 - "Morgens war das Meer noch für uns allein"
+- "Karte verkehrt herum, Laune bestens" — Foto: jemand studiert eine Karte, die verkehrt herum ist
+- "Das Eis verliert gegen die Sonne" — Foto: Eis tropft über die Hand
 
 **Kids**
 - "Alles neu, alles gleichzeitig"
 - "Sechs Monate alt und schon ganz sicher"
 - "Sie hat alles verschlafen"
 - "Zum ersten Mal barfuß im Gras"
+- "Die Brokkoli-Verhandlungen stocken" — Foto: ein Kleinkind schiebt den Teller Brokkoli weg
+- "Der Kuchen hat es nur zur Hälfte in den Mund geschafft" — Foto: Gesicht voller Kuchen
+- "Mittagsschlaf abgelehnt" — Foto: hellwach im Gitterbett, beide Hände an den Stäben
 
 **Love**
 - "Immer noch dieser Blick"
