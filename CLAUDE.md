@@ -100,7 +100,7 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     must carry **a length ceiling and NEVER a floor** — "45–65 words" is what made it invent
     "under the stars" about a couple who never mentioned stars. Adding a template means adding
     its `collection` to the engine registry (kids / travel / love) or it silently reads as kids.
-    **`caption-quality.md` (S193, #140)** is the follow-up: word-overuse control + humour for Kids/Adventures.
+    **#140 outcome (S199): voice v3 + `gpt-6.1-terra`, read `docs/briefs/caption-model-migration.md` and `work/caption-model/` (votes, voice-v3, verify scripts) before touching captions.** The model is named only in `functions/caption/model.js`; never send `temperature` (gpt-6 models 400). German captions follow the English voice; the S197–S199 rule-based rewrite is parked on branch `caption-140-voice`.
   - `pdf-generation-control.md` (#138, BUILT S193) — shared render status, per-order lock, cancel.
   - **`review-lock.md` (#99, BUILT S194) — read before touching customer-preview save/approve/report, `saveStaffState`, `sendPreviewEmail` or the dashboard status control.** One `bookRevision` compare-and-bump on every book write; decision in `work/review-lock/decision.md`.
   - **`germanization.md` — the DE/EN book-language build (S177). Read before touching the
@@ -134,7 +134,7 @@ which session just completed, e.g. "✅ Session 27 logged — start the next wit
     ⚠ **Re-run `work/germanization/make-papercut-v-de.mjs`** if Papercut's two Art `-DE` files
     are re-exported — its portrait variants are generated in-repo from them. Validation trail:
     `work/germanization/stage0-report.md`.
-    **German style rules are researched — do not re-derive them**:
+    **German style rules are researched — do not re-derive them** (for CAPTIONS they were superseded by voice v3 in S199, owner; they still inform Compose):
     `work/german-caption-voice/research_v1.md` (14 sources, two recorded corrections). Settled
     there: the English "no A/An" caption rule **does not carry over** to German; **Nominalstil** is
     the primary target; **journalism caption guidance must not govern this genre** (informing vs

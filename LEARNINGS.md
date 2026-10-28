@@ -1,3 +1,23 @@
+## 2026-10-28 (S199) — Caption prompts: show the taste, don't legislate it
+
+Five blind rounds of rule-tuning (voice rules, pronoun bans, "name what's in the photo",
+softer tone, thinking) never beat today's captions; German stayed a list of objects. Round 6
+won 16/18 after one change: **the owner wrote nine captions himself and they became the
+guide's leading examples**, plus three drafts with the model's own pick. The old guide was
+~80% prohibitions and its English and German halves contradicted each other ("what it feels
+like" vs "observe what's visible") — the model resolved the conflict by describing.
+**Rule: when output quality is a matter of taste, get examples from the person whose taste it
+is before writing more rules.** Corollary: an LLM judge calibrated on 69 of his votes agreed
+only 59% — taste is comparative per row; use code for hard failures (pronouns, empties) only.
+Also: gpt-6 models reject any `temperature` but the default (400) — Compose would have broken.
+
+## 2026-10-27 (S199) — A 1:1 glyph swap is a ligature bug a glyph count cannot see
+
+Scribble's PDFs printed a gap after every "t" ("st ay"). Onest forms no ligatures — fontkit
+returned as many glyphs as characters — but its `calt` swaps t → `t2.alt`, and pdf-lib spaces
+the swapped glyph wrongly. **Check per glyph** (`font.layout(s).glyphs[i].id` vs
+`glyphForCodePoint`), not by count; any mismatch → add the family to `LIGATURE_FONTS`.
+
 ## 2026-09-25 (S195) — A caption built outside the caption path misses every caption feature
 
 Heirloom's monogram letters were added as one-off elements, not through the caption registries the

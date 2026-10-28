@@ -1,17 +1,29 @@
 # Session Status
-_Last updated: 2026-10-26 (session 198)_
-_Context at save: first API orders (AEV-071/100) delivered; Printsmarter changed paper on our
-request; we now ship `warenpost`; owner sending 2 new samples. #140 captions still uncommitted._
+_Last updated: 2026-10-28 (session 199)_
+_Context at save: AI captions migrated off gpt-4o-mini (dies 14 Jan 2027) to gpt-6.1-terra with a
+new voice built from the owner's own captions; deployed and smoke-tested live. Two site fixes shipped._
 
 ## Status
-**Session 198.** Full detail: **`sessions/2026-10-26-s198.md`** (S197: `sessions/2026-09-27-s197.md`).
+**Session 199.** Full detail: **`sessions/2026-10-27-s199.md`** (S198: `sessions/2026-10-26-s198.md`).
 
-## What shipped in S198
-- **`shipping_code: 'warenpost'`** (lowercase, as Printsmarter wrote it) — `f50eecf`, only
-  `submitPrintOrder` deployed (#140 stashed during deploy, then restored). Owner confirmed it works.
-- **Printsmarter never reports delivery**: `get_order_status` returns `"versendet"` for delivered
-  orders. "printing" auto-status = **#144** (Backlog); "delivered" needs carrier tracking or a hand edit.
-- **Name sent to print = order's `customerName`**, not the account name; fix by hand in Firestore.
+## What shipped in S199
+- **Heirloom monogram cards centred for all colourways** (`72a2586`) — the product-page crop still
+  used the pre-S195 offset for Blue/Brown/Green. Owner verified live.
+- **Scribble PDF gaps after every "t" fixed** (`5205fdd`, renderer **00047**) — Onest's `calt`
+  swaps t→`t2.alt` 1:1; added to `LIGATURE_FONTS`. Owner verified. ⚠ A glyph COUNT misses 1:1
+  swaps — compare glyph ids (LEARNINGS).
+- **#140 captions rebuilt and deployed** (`2c823cf`, `a57fe43`, only `generateCaption`):
+  - model **`gpt-6.1-terra`**, named once in `functions/caption/model.js`, `reasoning_effort: 'low'`
+    + thinking allowance. gpt-4o-mini shuts down **14 Jan 2027**. ~$0.23/book (was ~$0.62).
+  - **voice v3**: caption part of `caption-voice.md` rewritten around the owner's nine captions
+    (a family member speaks, warm, light, exclamations OK). Firm limits: no invented facts, no
+    guessed gender. **German follows the same voice** — S182 German caption rules no longer sent.
+  - three drafts as JSON, model's pick via `pickCaption`.
+  - staff engine sends order notes + cover texts + special-page answers as background.
+  - **Compose must never send `temperature`** (gpt-6 models 400) — guarded by a test.
+  - Evidence: 6 blind rounds in `work/caption-model/` (votes-*.json); round 6 = 16/18 usable.
+  - Fuller S197–S199 rewrite parked on branch **`caption-140-voice`** (pushed).
+- `docs/aevia-context-for-advisors.md` — startup brief for outside legal/tax advice (owner edited).
 
 ## Do this first
 **Read the board** (https://trello.com/b/HCrNJRN1/aevia): *In progress*, *Blocked*, top of
@@ -27,7 +39,9 @@ Local dev is now **`npm run dev`** (clean URLs work). ⚠ It talks to the LIVE d
   to both product pages. **Heirloom needs extra wiring** (its page repoints `cfg.base` per colourway).
 - **Roots/Roses intro letters sit ~0.43mm left** of the ornament (all colourways). +0.4mm X in
   Xenia's CSV fixes it (measured) — hers to decide; not applied.
-- **#140 AI captions** (Backlog, briefed). **Printsmarter send dialog** eyeball (`5934963`).
+- **#140 captions: owner + Xenia judge voice v3 on real orders** before any more tuning. Open ideas,
+  not built: move the order-form notes box after the special pages with new examples (brief
+  `docs/briefs/caption-context-and-voice.md`). **Printsmarter send dialog** eyeball (`5934963`).
   **#99 feedback path** live. **#67** bold-in-PDF check. **#139** cloud costs (needs Billing CSV).
 
 ## What shipped in S195
@@ -150,6 +164,13 @@ Google (`200 OK`, `application/pdf`, no auth) — so the **URLs are proven and t
 AEV-095's *preview* alone was 231 MB.
 
 ## Recent decisions
+- **Captions: show, don't tell (S199, owner)** — the voice guide leads with the owner's own lines;
+  rule-heavy prompts produced description. **German captions follow the English voice**; the
+  S182 German caption rules/tests are retired (Compose German rules unchanged).
+- **gpt-6.1-terra over gpt-6-luna (S199, owner)** — won 14–10 blind; luna is the cheap fallback
+  (one line in `model.js`). Anthropic deferred: no API credits.
+- **An LLM judge cannot stand in for the owner's caption taste (S199)** — calibrated on 69 voted
+  rows it reached 59% agreement (bar 75%). Use code checks for hard failures only.
 - **Monogram letters are resizable (S195, owner)** — for the optical weight of wide letters. IM FELL's
   M is centred in its box at every size, so resizing is NOT a centring fix; position is.
 - **German mockups live in `exp2/<template>/de/`, pages opt in with `deImages:true` (S195)** — a
@@ -351,10 +372,9 @@ The 23-item list that used to live here became cards #118–#132 or was already 
 - **Should Tender's middle stanza ever have wrapped differently?** 132mm sets every authored line
   on one line at 22pt. The frame's clear interior is 136.8mm, so there is ~2.4mm each side and no
   room to grow further.
-- **Are our caption rules too austere for a baby book?** Xenia's own German uses an exclamation
-  mark both voice sections forbid. Surfaced S180, not decided.
-- **Does the English caption prompt need the same concreteness fix as German?** Its control output
-  was "Everything new in this quiet moment" — the same weakness. Left alone on purpose.
+- **Does voice v3 hold up on real orders?** Tested on stock photos only. Watch for assumed details
+  ("Ich flieg, Papa!" guesses the adult) and a one-sentence note echoed verbatim. (The S180
+  "too austere?" and "concreteness" questions were answered by v3 in S199.)
 - **Is the language selector acceptable live before Stage 6?** A DE pick now gives German artwork,
   a German form and German captions, but English mockups. Production is waitlist-gated.
 - **Which templates go to Printsmarter as samples?** Signed URLs are v4/7-day; whether their
