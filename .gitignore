@@ -65,3 +65,8 @@ assets/Aevia - Business case v*.xlsx
 
 # Trello API credentials (full account access) - never commit
 trello.env
+
+# Printsmarter contract + AVV — confidential under §16 of the Rahmenvertrag.
+# Deliberately untracked since S200; ignored here so no `git add -A` can push it
+# to a repo that deploys to Cloudflare.
+assets/Printsmarter/
