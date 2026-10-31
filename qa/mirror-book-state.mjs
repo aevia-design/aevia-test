@@ -73,7 +73,12 @@ const renamed = srcOrig.filter((n, i) => dstOrig[i] !== n).length;
 console.log(`✓ ${srcNames.length} photos line up index for index, same stored names`
   + (renamed ? ` (${renamed} matched through the rename map)` : ''));
 
-const captions = JSON.parse(fs.readFileSync(path.resolve(CAPS_FILE), 'utf8'));
+// Keys starting with `_` are notes in the file, not spreads. Without this they are
+// treated as a spread index, their string is walked per character, and the note is
+// saved into the book as a caption.
+const captions = Object.fromEntries(
+  Object.entries(JSON.parse(fs.readFileSync(path.resolve(CAPS_FILE), 'utf8')))
+    .filter(([k]) => !k.startsWith('_')));
 
 // Every caption slot the source fills must be filled in the translation, or the German
 // book quietly loses a line the English one has.

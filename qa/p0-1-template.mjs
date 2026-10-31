@@ -86,6 +86,18 @@ const SPECS = {
     multiCover: true,
     coverCaps: { name: 'Hot Getaway in Milan', subtitle: 'July, 2026', spine: 'Milan', spineSub: '2026' },
   },
+  // Heirloom: one product page serves four colourways x three monograms, so the SPEC
+  // key is the registry key (heirloom-<colour>) while `page` is the page to start from.
+  // Beige + Roots are the page defaults, so no selector click is needed for them; a
+  // different pairing would need one. FPintro is always included — the two optional
+  // cards are FPstory and FPwhylove, and FPwhylove expands into FPhim + FPher.
+  'heirloom-beige': {
+    page: 'heirloom',
+    photoDir: 'heirloom',
+    addons: ['FPstory', 'FPwhylove'],
+    coverPhoto: true,
+    coverCaps: { name: 'ANNA & MICHAEL', spine: 'Anna & Michael' },
+  },
   laguna: {
     photoDir: 'laguna',
     addons: ['FPintro', 'FP1'],
@@ -122,7 +134,8 @@ const BASE = 'https://aevia-test.pages.dev/pages';
 // The DE product page sets LANG='de' in product.js, which puts lang=de on the CTA and
 // so into the order. Starting here is what makes the order a German one — there is no
 // other switch (germanization.md: one choice drives everything).
-const CONFIGURATOR = LANG === 'de' ? `${BASE}/de/${TEMPLATE}.html` : `${BASE}/${TEMPLATE}.html`;
+const PAGE = SPEC.page || TEMPLATE;
+const CONFIGURATOR = LANG === 'de' ? `${BASE}/de/${PAGE}.html` : `${BASE}/${PAGE}.html`;
 // Suffix the run dir so a phone run doesn't overwrite the desktop baseline.
 const VARIANT = [LANG !== 'en' && LANG, DEVICE && DEVICE.replace(/\s+/g, ''), BROWSER !== 'chromium' && BROWSER, HEIC_N && `heic${HEIC_N}`].filter(Boolean).join('-');
 const RUN_DIR = path.resolve('sessions/qa-runs', `${new Date().toISOString().slice(0, 10)}-p0-1-${TEMPLATE}${VARIANT ? '-' + VARIANT : ''}`);

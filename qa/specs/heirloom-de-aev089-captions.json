@@ -1,0 +1,44 @@
+{
+  "_comment": "Spread 0 is the AUTHORED Heirloom intro — this is composeDe() from heirloom-data.js verbatim, not a translation of the English. Spreads 5, 11 and 16 are the customer's own words, translated.",
+  "0": {
+    "right": {
+      "textPanel": "Am 11. Juni 2026\nin Wien, Österreich\nhaben wir Ja zueinander gesagt.\n\nUmgeben von den Menschen, die wir lieben,\nhaben wir uns versprochen,\nuns jeden Tag füreinander zu entscheiden.\n\nDer Anfang von für immer.\n\nAnna &amp; Michael",
+      "monoLetter1": "A",
+      "monoLetter2": "M"
+    }
+  },
+  "1": { "left": { "0": "Jede Liebesgeschichte beginnt irgendwo." } },
+  "3": { "right": { "0": "Unsere nächsten Schritte, Seite an Seite" } },
+  "4": { "right": { "0": "Ein wunderschöner Tag, unzählige Erinnerungen.&nbsp;" } },
+  "5": {
+    "right": {
+      "textPanel": "Jede Liebesgeschichte beginnt irgendwo.\nUnsere begann mitten im Alltag  über die Arbeit, gemeinsame Freunde und Gespräche, die langsam zum\nschönsten Teil des Tages wurden.\n\nAus einem einfachen Hallo\nwurden Nachrichten, Kaffee,\nlange Spaziergänge und kleine Rituale,\ndie nur wir verstanden.\n\nVon diesem Tag an haben wir\nnach und nach zueinander gefunden."
+    }
+  },
+  "6": { "right": { "0": "Das leichteste Ja.&nbsp;" } },
+  "7": {
+    "left": { "0": "Mein liebstes Mädchen im Arm.&nbsp;" },
+    "right": { "0": "Und so beginnt unser nächstes Kapitel." }
+  },
+  "8": { "left": { "0": "Passende Lippen" } },
+  "11": {
+    "left": {
+      "textPanel": "Sein Lachen ist mein Lieblingsgeräusch.\n\nEr lässt jeden Ort wie Zuhause wirken.\n\nIch bewundere seine Stärke und seine Güte.\n\nEr findet immer das Schöne \nin den kleinen Dingen.\n\nEr ist mein sicherster Ort"
+    }
+  },
+  "13": { "right": { "0": "Selfieee!" } },
+  "14": { "left": { "0": "Und jetzt springen!" } },
+  "16": {
+    "left": {
+      "textPanel": "Ihr Lächeln erhellt jeden Raum.\n\nSie macht gewöhnliche Tage unvergesslich.\n\nIch bewundere ihr sanftes Herz.\n\nSie erinnert mich daran, worauf es wirklich ankommt.\n\nSie ist mein Lieblingsmensch, \njeden einzelnen Tag."
+    }
+  },
+  "18": { "right": { "0": "Glückwunsch!" } },
+  "19": { "right": { "0": "Diese Umarmung halte ich noch ein bisschen" } },
+  "cover": {
+    "name": "ANNA &amp; MICHAEL",
+    "spine": "Anna &amp; Michael",
+    "backLetter1": "A",
+    "backLetter2": "M"
+  }
+}
