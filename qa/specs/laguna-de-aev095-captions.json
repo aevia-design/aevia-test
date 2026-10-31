@@ -1,0 +1,34 @@
+{
+  "0": {
+    "right": {
+      "textPanel": "Lang ersehnte Auszeit im August.\n\nNeue Orte, warme Tage,\nlange Gespräche\nund nirgends, wo wir sein mussten.\nEine Reise, die uns\nein Stück näher gebracht hat."
+    }
+  },
+  "1": { "left": { "0": "Warme Sonne auf&nbsp;der&nbsp;Haut" } },
+  "3": { "right": { "0": "Zusammen, wo das&nbsp;Meer auf&nbsp;den&nbsp;Strand trifft" } },
+  "4": { "right": { "0": "<br>" } },
+  "6": { "right": { "0": "Sonnengeküsst und&nbsp;voller&nbsp;Möglichkeiten" } },
+  "7": { "left": { "0": "So ein Foto gelingt nur mit einem liebevollen Blick" } },
+  "10": { "right": { "0": "Ausgelassene Momente am&nbsp;Wasser" } },
+  "11": {
+    "right": {
+      "textPanel": "Tag 1: Ankunft in Athen\n\n - Müde, aber glücklich eingecheckt, spät zu Abend gegessen und direkt ins Bett\n\nTag 2-3: Santorin erkunden\n\n - Zwei Tage über die Insel gestreift und unsere liebsten Plätze für den Sonnenuntergang gefunden\n\nTag 4-5: Strandtage auf Milos\n\n - Auf Milos wurde alles langsamer: schwimmen und versteckte Buchten entdecken \n\nTag 6-7: Inselhüpfen rund um Paros\n\n - Unsere letzten Tage drehten sich um die kleinen Dörfer auf Paros"
+    }
+  },
+  "12": { "right": { "0": "Eis auf Milos?! JA!!!" } },
+  "13": {
+    "right": { "0": "Ein traumhafter Blick von unserer Terrasse" },
+    "left": { "0": "Späte Nachmittage am Meer" }
+  },
+  "14": { "left": { "0": "Blick auf die Abendwellen" } },
+  "18": { "right": { "0": "Letzte Nacht im Paradies" } },
+  "19": {
+    "left": { "0": "Unseren perfekten Platz für den Sonnenuntergang gefunden" },
+    "right": { "0": "Hand in Hand mit dir" }
+  },
+  "cover": {
+    "front": "Griechenland, 2026",
+    "frontSub": "Wo alles langsamer wurde",
+    "spine": "Griechenland, 2026"
+  }
+}

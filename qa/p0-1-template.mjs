@@ -86,6 +86,12 @@ const SPECS = {
     multiCover: true,
     coverCaps: { name: 'Hot Getaway in Milan', subtitle: 'July, 2026', spine: 'Milan', spineSub: '2026' },
   },
+  laguna: {
+    photoDir: 'laguna',
+    addons: ['FPintro', 'FP1'],
+    coverPhoto: true,
+    coverCaps: { front: 'Greece, 2026', frontSub: 'Where everything slowed down', spine: 'Greece, 2026' },
+  },
   tender: {
     photoDir: 'tender',
     addons: ['FPintro', 'FPstory', 'FPwords'],
