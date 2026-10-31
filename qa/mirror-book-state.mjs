@@ -18,7 +18,11 @@
 // the saved line breaks would be wrong. They are left null and the engine recomputes
 // them the next time a human saves the book.
 //
-// Run:  node qa/mirror-book-state.mjs <sourceOrder> <targetOrder> <captions.json>
+// Run:  node qa/mirror-book-state.mjs <sourceOrder> <targetOrder> <captions.json> [renames.json]
+//
+// `renames.json` is { "<source original filename>": "<target original filename>" }, for the
+// case where the photo LIBRARY was re-exported or renamed between the two orders. Every
+// mismatched index must be covered by it, so a genuine mix-up still stops the run.
 // The captions file is { "<spreadIdx>": { left|right: { "0"|"textPanel"|... : "text" } },
 // "cover": {...} } in the same shape as staffBookCaptions — it REPLACES the source's.
 
@@ -26,9 +30,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getOrder } from './firestore.mjs';
 
-const [SRC, DST, CAPS_FILE] = process.argv.slice(2);
+const [SRC, DST, CAPS_FILE, RENAMES_FILE] = process.argv.slice(2);
 if (!SRC || !DST || !CAPS_FILE) {
-  console.error('Usage: node qa/mirror-book-state.mjs <sourceOrder> <targetOrder> <captions.json>');
+  console.error('Usage: node qa/mirror-book-state.mjs <sourceOrder> <targetOrder> <captions.json> [renames.json]');
   process.exit(1);
 }
 
@@ -50,15 +54,24 @@ if (!dst) { console.error(`${DST} not found`); process.exit(1); }
 const a = src.photoManifest || {}, b = dst.photoManifest || {};
 const names = (m) => (m.pool || []).map(p => p.split('/').pop());
 const srcNames = names(a), dstNames = names(b);
-const originalsMatch = (a.poolOriginalNames || []).length === (b.poolOriginalNames || []).length
-  && (a.poolOriginalNames || []).every((n, i) => b.poolOriginalNames[i] === n);
+const renames = RENAMES_FILE ? JSON.parse(fs.readFileSync(path.resolve(RENAMES_FILE), 'utf8')) : {};
+const srcOrig = a.poolOriginalNames || [], dstOrig = b.poolOriginalNames || [];
+const sameLength = srcOrig.length === dstOrig.length;
+// A name may differ only where the rename map says so — anything else is a real mismatch.
+const unexplained = sameLength
+  ? srcOrig.map((n, i) => [i, n, dstOrig[i]]).filter(([, n, d]) => d !== n && renames[n] !== d)
+  : [];
 const storedMatch = srcNames.length === dstNames.length && srcNames.every((n, i) => dstNames[i] === n);
-if (!originalsMatch || !storedMatch) {
+if (!sameLength || unexplained.length || !storedMatch) {
   console.error('❌ Photo sets do not line up — refusing to copy a layout onto different pictures.');
-  console.error(`   original filenames match: ${originalsMatch} | stored photo_NNN names match: ${storedMatch}`);
+  console.error(`   same pool length: ${sameLength} | stored photo_NNN names match: ${storedMatch}`);
+  for (const [i, n, d] of unexplained.slice(0, 10)) console.error(`   [${i}] ${n}  !=  ${d}`);
+  if (unexplained.length) console.error(`   ${unexplained.length} unexplained difference(s) — add them to a renames.json if they are the same picture.`);
   process.exit(1);
 }
-console.log(`✓ ${srcNames.length} photos line up index for index, same stored names`);
+const renamed = srcOrig.filter((n, i) => dstOrig[i] !== n).length;
+console.log(`✓ ${srcNames.length} photos line up index for index, same stored names`
+  + (renamed ? ` (${renamed} matched through the rename map)` : ''));
 
 const captions = JSON.parse(fs.readFileSync(path.resolve(CAPS_FILE), 'utf8'));
 

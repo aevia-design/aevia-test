@@ -1,0 +1,27 @@
+{
+  "0": { "right": { "0": "" } },
+  "1": {
+    "left": {
+      "0": "Das Wasser war glasklar –&nbsp;<span style=\"font-family: &quot;Cormorant Garamond&quot;, var(--sans); font-size: 19px; letter-spacing: -0.02em;\">die perfekte Belohnung nach einem langen Tag auf dem Weg</span>"
+    }
+  },
+  "3": { "right": { "0": "Ein kleines Missgeschick konnte die Laune nicht verderben!" } },
+  "4": { "right": { "0": "Bestens ausgerüstet für den neuen Tag" } },
+  "5": { "right": { "0": "Diese Aussicht!" } },
+  "6": {
+    "left": { "0": "Vor dieser Kulisse wird einfach jedes Foto gut!" },
+    "right": { "0": "Der Weg bei Nacht war noch aufregender … Gruselig? Ja" }
+  },
+  "7": { "left": { "0": "Der Vollmond wollte uns etwas sagen." } },
+  "10": { "right": { "0": "" } },
+  "11": {
+    "right": {
+      "textPanel": "Tag 1: Bozen. In Bozen angekommen und in einem kleinen Gasthaus untergekommen, versteckt in einem stillen Tal\n\nTag 2: Seceda. 10 km über Almwiesen und verschlungene Pfade, während die Gipfel in den Wolken verschwanden\n\nTag 3: Drei Zinnen. Wandern unter den berühmtesten Gipfeln der Dolomiten. Monumental!\n\nTag 4: Sellajoch. Ein ruhigerer Tag am Sellajoch, danach ein Picknick an einem stillen Bergsee\n\nTag 5: Mailand. Eine letzte Fahrt durch Norditalien, mit einem letzten Halt in Mailand vor der Heimreise"
+    }
+  },
+  "13": {
+    "left": { "0": "Stell dir vor, so aufzuwachen …" },
+    "right": { "0": "Frische Luft und Ruhe" }
+  },
+  "cover": { "front": "Dolomiten, 2026", "spine": "Dolomiten, 2026" }
+}
