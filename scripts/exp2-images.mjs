@@ -92,6 +92,13 @@ const TEMPLATES = {
     spreads: { 'sp1':'open-10-sp4', 'sp2':'open-12-sp5', 'sp3':'open-13-sp6', 'sp4':'open-15-sp2', 'sp5':'open-16-sp3' },
     specials:{ 'fpintro':'open-00-fpintro', 'fp1':'open-11-fp1' },
   },
+  // German set (S201) -> exp2/laguna/de/. AEV-109 mirrors AEV-095 page for page, so the
+  // EN picks carry over unchanged.
+  'laguna-de': {
+    order: 'AEV-109', out: 'laguna/de',
+    spreads: { 'sp1':'open-10-sp4', 'sp2':'open-12-sp5', 'sp3':'open-13-sp6', 'sp4':'open-15-sp2', 'sp5':'open-16-sp3' },
+    specials:{ 'fpintro':'open-00-fpintro', 'fp1':'open-11-fp1' },
+  },
   newborn: {
     order: 'AEV-071',   // owner's picks, S196
     spreads: { 'sp1':'open-01-sp1', 'sp2':'open-02-sp2', 'sp3':'open-03-sp3', 'sp4':'open-04-sp4' },
