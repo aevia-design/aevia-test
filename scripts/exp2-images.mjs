@@ -66,6 +66,14 @@ const TEMPLATES = {
     spreads: { 'sp1':'open-03-sp3', 'sp2':'open-04-sp4', 'sp3':'open-05-sp5', 'sp4':'open-12-sp2', 'sp5':'open-07-sp7' },
     specials:{ 'fpintro':'open-00-fpintro', 'fp1':'open-11-fp1' },
   },
+  // German set (S201) -> exp2/joyride/de/. AEV-107 mirrors AEV-069 photo for photo with
+  // the same 20-page sequence and the same assignments, so the EN picks carry over
+  // unchanged — every one of them is the same spread of the same book in German.
+  'joyride-de': {
+    order: 'AEV-107', out: 'joyride/de',
+    spreads: { 'sp1':'open-03-sp3', 'sp2':'open-04-sp4', 'sp3':'open-05-sp5', 'sp4':'open-12-sp2', 'sp5':'open-07-sp7' },
+    specials:{ 'fpintro':'open-00-fpintro', 'fp1':'open-11-fp1' },
+  },
   // Laguna names its five spreads EXPLICITLY (owner's picks, S172) rather than by bare
   // spread id. Two of the five are the same layout (SP1) shot with different photos at
   // different points in the book, so an id-keyed lookup would collapse them onto the same
