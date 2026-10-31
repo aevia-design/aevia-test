@@ -77,6 +77,15 @@ const SPECS = {
     coverPhoto: true,
     coverCaps: { year: '2026', name: 'Our sweet Ann', spineName: 'Ann', spineYear: '2026' },
   },
+  joyride: {
+    photoDir: 'joyride',
+    addons: ['FPintro', 'FP1'],
+    coverPhoto: true,
+    // Joyride takes FOUR cover photos through one multi drop zone; they fill the
+    // frames in the order they are added, so coverFile is a list here.
+    multiCover: true,
+    coverCaps: { name: 'Hot Getaway in Milan', subtitle: 'July, 2026', spine: 'Milan', spineSub: '2026' },
+  },
   tender: {
     photoDir: 'tender',
     addons: ['FPintro', 'FPstory', 'FPwords'],
@@ -136,9 +145,10 @@ const photos = fs.readdirSync(PHOTO_DIR, { recursive: true })
 // A mirror spec names its files, so the same photo lands in the same role as in the
 // order being mirrored. nextPhoto() keeps walking `photos` when a role is unnamed.
 const inDir = (f) => { const p = path.join(PHOTO_DIR, f); if (!fs.existsSync(p)) { console.error(`Spec names a missing photo: ${p}`); process.exit(1); } return p; };
-const COVER_FILE = SPEC.coverFile ? inDir(SPEC.coverFile) : null;
+const COVER_FILES = (SPEC.coverFile ? (Array.isArray(SPEC.coverFile) ? SPEC.coverFile : [SPEC.coverFile]) : []).map(inDir);
 const SPECIAL_FILES = (SPEC.specialFiles || []).map(inDir);
 const MAIN_FILES = (SPEC.mainFiles || []).map(inDir);
+const ITIN_LINES = SPEC.itinLines || null;
 
 // HEIC is what an iPhone shoots by default, so a real customer's upload is mixed
 // JPG + HEIC. The form accepts .heic and converts server-side (convertHeic), which
@@ -225,7 +235,7 @@ const fillSpecial = async () => {
   for (const sid of await page.$$eval('#step-special select', els => els.map(e => e.id))) {
     if (sid.startsWith('country-add-')) {
       await page.$eval(`#${sid}`, el => { el.dataset.touched = '1'; });
-      const country = await page.$eval(`#${sid}`, el =>
+      const country = SELECTS[sid] ?? await page.$eval(`#${sid}`, el =>
         [...el.options].find(o => o.value && o.value !== 'None')?.value || '');
       await page.selectOption(`#${sid}`, country);
       await page.waitForTimeout(500);
@@ -243,7 +253,11 @@ const fillSpecial = async () => {
     els => els.map(e => ({ id: e.id, cls: e.className })));
   for (const [i, f] of fields.entries()) {
     const key = (f.id.split('-').pop() || '').toLowerCase();
-    const val = FIELD_VALUES[key] || (f.cls.includes('itin-line') ? `Day ${i + 1}: Dublin to Galway` : `QA note ${i + 1}`);
+    const itinIdx = fields.slice(0, i).filter(x => x.cls.includes('itin-line')).length;
+    const val = FIELD_VALUES[key]
+      || (f.cls.includes('itin-line')
+            ? (ITIN_LINES ? (ITIN_LINES[itinIdx] ?? '') : `Day ${i + 1}: Dublin to Galway`)
+            : `QA note ${i + 1}`);
     const sel = f.id ? `#${f.id}` : null;
     if (sel) await page.fill(sel, val);
     else await page.$$eval('#step-special input.itin-line, #step-special input:not([type=file])',
@@ -288,9 +302,19 @@ try {
   // ── C. Cover ──────────────────────────────────────────────────
   note('── C. Cover');
   if (SPEC.coverPhoto) {
-    await page.setInputFiles('#dz-cover input[type=file]', COVER_FILE || nextPhoto());
-    await page.waitForSelector('#cover-preview', { state: 'visible', timeout: 60000 });
-    note('Cover photo uploaded');
+    // Multi-cover (Joyride) has ONE drop zone taking N files, and per-slot previews
+    // `#cover-preview-<slotKey>` — there is no bare `#cover-preview` to wait on.
+    const coverSet = COVER_FILES.length ? COVER_FILES : [nextPhoto()];
+    await page.setInputFiles('#dz-cover input[type=file]', coverSet);
+    if (SPEC.multiCover) {
+      await page.waitForFunction(
+        (n) => document.querySelectorAll('[id^="cover-preview-"]:not([id$="-inner"]):not([id$="-name"])').length >= n
+          && [...document.querySelectorAll('.single-preview-inner')].filter(e => e.innerHTML.trim()).length >= n,
+        coverSet.length, { timeout: 120000 });
+    } else {
+      await page.waitForSelector('#cover-preview', { state: 'visible', timeout: 60000 });
+    }
+    note(`Cover photo(s) uploaded: ${coverSet.length}`);
   } else {
     const dz = await page.$('#dz-cover');
     note(`No cover photo expected — #dz-cover ${dz ? 'IS PRESENT (unexpected)' : 'absent ✓'}`);

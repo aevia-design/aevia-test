@@ -1,0 +1,34 @@
+{
+  "0": {
+    "right": {
+      "textPanel": "Ein paar sonnige Tage in Mailand,\ndanach Kunst, lange Spaziergänge und die Biennale in Venedig.\n\nItalien, Juni 2026",
+      "textPanelTitle": "Ciao bella!"
+    }
+  },
+  "4": {
+    "right": {
+      "0": "Neugier in&nbsp;einem Moment der&nbsp;Stille"
+    }
+  },
+  "8": {
+    "right": {
+      "0": "Durch die Gassen gestreift und dabei charmante italienische Cafés entdeckt"
+    }
+  },
+  "11": {
+    "right": {
+      "textPanel": "Tag 1–3: ein paar Tage in Mailand, mit gutem Essen und Zeit zu zweit\n\nTag 4: Roadtrip nach Venedig\n\nTag 5–7: Biennale in Venedig, mit viel Kunst, Musik und Performances"
+    }
+  },
+  "14": {
+    "right": {
+      "0": "Mitten im Sprung, bereit für&nbsp;das&nbsp;nächste&nbsp;Abenteuer"
+    }
+  },
+  "cover": {
+    "name": "Heiße Auszeit in Italien",
+    "subtitle": "Juni 2026",
+    "spine": "Heiße Auszeit in Italien",
+    "spineSub": "Juni 2026"
+  }
+}
