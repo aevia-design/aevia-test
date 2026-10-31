@@ -34,6 +34,14 @@ const TEMPLATES = {
     spreads: { 'sp1':'open-01-sp1', 'sp2':'open-04-sp4', 'sp3':'open-05-sp5', 'sp4':'open-16-sp3', 'sp5':'open-13-sp6' },
     specials:{ 'fp1':'open-11-fp1' },
   },
+  // German set (S201) -> exp2/wander/de/. AEV-108 mirrors AEV-068 page for page, so the
+  // EN picks carry over unchanged. NOT PRINT-SAFE: seven of its photos are half-resolution
+  // re-exports (the upscales AEV-068 used no longer exist) — fine at gallery size only.
+  'wander-de': {
+    order: 'AEV-108', out: 'wander/de',
+    spreads: { 'sp1':'open-01-sp1', 'sp2':'open-04-sp4', 'sp3':'open-05-sp5', 'sp4':'open-16-sp3', 'sp5':'open-13-sp6' },
+    specials:{ 'fp1':'open-11-fp1' },
+  },
   papercut: {
     order: 'AEV-077',   // owner's picks, S197
     spreads: { 'sp1':'open-02-sp2', 'sp2':'open-03-sp3', 'sp3':'open-08-sp6', 'sp4':'open-09-sp1' },
