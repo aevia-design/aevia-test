@@ -1,0 +1,33 @@
+{
+  "_comment": "Mirror of AEV-071 (Newborn, EN) as a German order, for the DE product-page gallery. Brief: work/newborn-de-mockup/brief.md. Photo roles resolved from AEV-071's photoManifest: pool order by original filename prefix, cover + labour photos matched by GCS md5.",
+  "photoDir": "C:/Users/evgmy/aevia-test/assets/test photos/Newborn",
+  "name": "QA Newborn DE (AEV-071 twin)",
+  "notes": "TEST ORDER — German twin of AEV-071, for the DE product-page mockups. Not a customer order. Do not print.",
+  "coverFile": "013.jpg",
+  "specialFiles": ["001.jpg", "002.jpg"],
+  "coverCaps": {
+    "name": "Valentina",
+    "subtitle": "Deine ersten Monate",
+    "spine": "Unser süßes Mädchen"
+  },
+  "fieldValues": {
+    "date": "4. November 2025",
+    "time": "6:09 Uhr",
+    "weight": "2,89 kg",
+    "length": "48 cm",
+    "gender": "Mädchen"
+  },
+  "selects": {
+    "zodiac-fplabour": "Scorpio"
+  },
+  "mainFiles": [
+    "003.jpg", "004.jpg", "005.jpg", "006.png", "007.jpg", "008.jpg", "009.jpg",
+    "010.jpg", "011.jpg", "012.jpg", "013.jpg", "014.jpg", "015.jpg", "016.jpg",
+    "017.jpg", "018.jpg", "019.jpg", "020.jpg", "021.jpg", "022.jpg", "023.jpg",
+    "024.jpg", "025.jpg", "026.jpg", "027.jpg", "028.jpg", "029.jpg", "030.jpg",
+    "031.jpg", "032.jpg", "033.jpg", "034.jpg", "036.jpg", "037.jpg", "038.jpg",
+    "039.jpg", "040.jpg", "041.jpg", "042.jpg", "043.jpg", "044.jpg", "045.jpg",
+    "046.jpg", "047.jpg", "048.jpg", "049.jpg", "050.jpg", "051.jpg", "052.jpg",
+    "053.jpg", "054.jpg"
+  ]
+}

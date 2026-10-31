@@ -81,6 +81,16 @@ const TEMPLATES = {
     spreads: { 'sp1':'open-01-sp1', 'sp2':'open-02-sp2', 'sp3':'open-03-sp3', 'sp4':'open-04-sp4' },
     specials:{ 'fpintro':'open-00-fpintro', 'fplabour':'open-11-fplabour' },
   },
+  // German set (S201) -> exp2/newborn/de/. AEV-106 mirrors AEV-071 photo for photo and
+  // has the SAME 20-page sequence, so the EN picks map across unchanged — except sp1:
+  // AEV-106 carries no caption on the first SP1 (index 01), and a captionless spread in
+  // the German gallery is the one thing this set exists to avoid. Index 07 is the same
+  // SP1 layout WITH a German caption, so it takes the slot.
+  'newborn-de': {
+    order: 'AEV-106', out: 'newborn/de',
+    spreads: { 'sp1':'open-07-sp1', 'sp2':'open-02-sp2', 'sp3':'open-03-sp3', 'sp4':'open-04-sp4' },
+    specials:{ 'fpintro':'open-00-fpintro', 'fplabour':'open-11-fplabour' },
+  },
 };
 
 // ── Heirloom: 4 colourways × 3 monograms ──────────────────────────────────────────────

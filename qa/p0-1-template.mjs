@@ -29,10 +29,20 @@ import { address, waitForEmail, extractLinks } from './testmail.mjs';
 const argv = process.argv.slice(2);
 const argVal = (n, d) => { const a = argv.find(x => x.startsWith(`--${n}=`)); return a ? a.slice(n.length + 3).replace(/^["']|["']$/g, '') : d; };
 
+// S201 — two more optional dimensions, both OFF by default:
+//   --lang=de        start from pages/de/<template>.html, so the CTA carries lang=de
+//                    and the order is stored with language:'de' (germanization Stage 6)
+//   --spec=<file>    a JSON file merged over the template's SPEC. Lets a run mirror an
+//                    EXISTING order (same photos, same captions, translated text) instead
+//                    of the generic QA values. Recognised keys: photoDir (absolute),
+//                    coverFile, specialFiles[], mainFiles[], coverCaps{}, fieldValues{},
+//                    selects{} (element id → option value), name, notes.
 const TEMPLATE = (argv.find(a => !a.startsWith('--')) || '').toLowerCase();
 const DEVICE = argVal('device', null);
 const BROWSER = argVal('browser', 'chromium');
 const HEIC_N = parseInt(argVal('heic', '0'), 10) || 0;
+const LANG = argVal('lang', 'en').toLowerCase() === 'de' ? 'de' : 'en';
+const SPEC_FILE = argVal('spec', null);
 
 if (DEVICE && !devices[DEVICE]) {
   console.error(`Unknown device "${DEVICE}". Try: ${Object.keys(devices).filter(d => /iPhone 1[34]|Pixel 7|iPad/.test(d)).join(' | ')}`);
@@ -75,7 +85,8 @@ const SPECS = {
   },
 };
 
-const SPEC = SPECS[TEMPLATE];
+const OVERRIDE = SPEC_FILE ? JSON.parse(fs.readFileSync(path.resolve(SPEC_FILE), 'utf8')) : {};
+const SPEC = SPECS[TEMPLATE] && { ...SPECS[TEMPLATE], ...OVERRIDE };
 if (!SPEC) {
   console.error(`Usage: node qa/p0-1-template.mjs <${Object.keys(SPECS).join('|')}>`);
   process.exit(1);
@@ -88,13 +99,20 @@ const FIELD_VALUES = {
   place: 'Vienna', bride: 'Anna', groom: 'Paul',
   meet: 'At a friend’s birthday in Vienna', started: 'Summer 2019',
   words: 'You are our favourite thing.',
+  ...(SPEC.fieldValues || {}),
 };
+const SELECTS = SPEC.selects || {};
 
 const BASE = 'https://aevia-test.pages.dev/pages';
+// The DE product page sets LANG='de' in product.js, which puts lang=de on the CTA and
+// so into the order. Starting here is what makes the order a German one — there is no
+// other switch (germanization.md: one choice drives everything).
+const CONFIGURATOR = LANG === 'de' ? `${BASE}/de/${TEMPLATE}.html` : `${BASE}/${TEMPLATE}.html`;
 // Suffix the run dir so a phone run doesn't overwrite the desktop baseline.
-const VARIANT = [DEVICE && DEVICE.replace(/\s+/g, ''), BROWSER !== 'chromium' && BROWSER, HEIC_N && `heic${HEIC_N}`].filter(Boolean).join('-');
+const VARIANT = [LANG !== 'en' && LANG, DEVICE && DEVICE.replace(/\s+/g, ''), BROWSER !== 'chromium' && BROWSER, HEIC_N && `heic${HEIC_N}`].filter(Boolean).join('-');
 const RUN_DIR = path.resolve('sessions/qa-runs', `${new Date().toISOString().slice(0, 10)}-p0-1-${TEMPLATE}${VARIANT ? '-' + VARIANT : ''}`);
-const PHOTO_DIR = path.resolve('qa/test-photos', SPEC.photoDir);
+// A spec may point at any folder (qa/test-photos is gitignored and often absent).
+const PHOTO_DIR = path.isAbsolute(SPEC.photoDir) ? SPEC.photoDir : path.resolve('qa/test-photos', SPEC.photoDir);
 fs.mkdirSync(RUN_DIR, { recursive: true });
 
 // QA_TAG lets a caller pin the testmail tag (= the customer email) instead of getting a
@@ -114,6 +132,13 @@ const env = Object.fromEntries(
 const photos = fs.readdirSync(PHOTO_DIR, { recursive: true })
   .filter(f => /\.(jpe?g|png)$/i.test(f)).sort()
   .map(f => path.join(PHOTO_DIR, f));
+
+// A mirror spec names its files, so the same photo lands in the same role as in the
+// order being mirrored. nextPhoto() keeps walking `photos` when a role is unnamed.
+const inDir = (f) => { const p = path.join(PHOTO_DIR, f); if (!fs.existsSync(p)) { console.error(`Spec names a missing photo: ${p}`); process.exit(1); } return p; };
+const COVER_FILE = SPEC.coverFile ? inDir(SPEC.coverFile) : null;
+const SPECIAL_FILES = (SPEC.specialFiles || []).map(inDir);
+const MAIN_FILES = (SPEC.mainFiles || []).map(inDir);
 
 // HEIC is what an iPhone shoots by default, so a real customer's upload is mixed
 // JPG + HEIC. The form accepts .heic and converts server-side (convertHeic), which
@@ -156,6 +181,7 @@ const nextPhoto = () => photos[photoIdx++];
 
 note(`═══ P0-1 ${TEMPLATE.toUpperCase()}${VARIANT ? ` — ${VARIANT}` : ''} ═══`);
 note(`Photos: ${photos.length} in ${SPEC.photoDir} | Inbox: ${EMAIL}`);
+note(`Language: ${LANG} | Configurator: ${CONFIGURATOR}${SPEC_FILE ? ` | Spec: ${SPEC_FILE}` : ''}`);
 note(`Browser: ${BROWSER} | Profile: ${DEVICE || 'desktop 1440×950'}${heicFiles.length ? ` | HEIC: ${heicFiles.length} (${heicFiles.map(f => path.basename(f)).join(', ')})` : ''}`);
 
 const engine = BROWSER === 'webkit' ? webkit : chromium;
@@ -194,7 +220,7 @@ const advanceTo = async (expectSel, label, errSels = []) => {
 const fillSpecial = async () => {
   const zones = await page.$$eval('[id^="dz-special-"]', els => els.map(e => e.id));
   note(`Photo zones: ${zones.join(', ') || '(none)'}`);
-  for (const zid of zones) await page.setInputFiles(`#${zid} input[type=file]`, nextPhoto());
+  for (const [zi, zid] of zones.entries()) await page.setInputFiles(`#${zid} input[type=file]`, SPECIAL_FILES[zi] || nextPhoto());
 
   for (const sid of await page.$$eval('#step-special select', els => els.map(e => e.id))) {
     if (sid.startsWith('country-add-')) {
@@ -207,7 +233,7 @@ const fillSpecial = async () => {
       note(`  ${sid} = "${country}" (${tags ? 'tag rendered' : 'NO tag rendered'})`);
       if (!tags) finding('S2', `Country "${country}" selected but no tag rendered — map may be empty`);
     } else {
-      const opt = await page.$eval(`#${sid}`, el =>
+      const opt = SELECTS[sid] ?? await page.$eval(`#${sid}`, el =>
         [...el.options].find(o => o.value && o.value !== 'None')?.value || '');
       if (opt) { await page.selectOption(`#${sid}`, opt); note(`  ${sid} = "${opt}"`); }
     }
@@ -235,7 +261,7 @@ let orderNumber = null, submitTs = null;
 try {
   // ── A. Configurator ───────────────────────────────────────────
   note(`── A. ${TEMPLATE} configurator`);
-  await page.goto(`${BASE}/${TEMPLATE}.html`, { waitUntil: 'networkidle' });
+  await page.goto(CONFIGURATOR, { waitUntil: 'networkidle' });
   // Every template uses .sp-card (the old "scribble uses .addon" note was wrong).
   // Click the CARD element — a coordinate click can land on .sp-thumb, which
   // stopPropagation()s and only opens the image preview.
@@ -253,16 +279,16 @@ try {
   // ── B. Step 1 — details ───────────────────────────────────────
   note('── B. Step 1 (details)');
   await page.waitForSelector('#step1', { state: 'visible' });
-  await page.fill('#inp-name', `QA ${TEMPLATE}`);
+  await page.fill('#inp-name', SPEC.name || `QA ${TEMPLATE}`);
   await page.fill('#inp-email', EMAIL);
-  await page.fill('#album-notes', 'Automated pre-launch QA order. Please keep it warm and simple.');
+  await page.fill('#album-notes', SPEC.notes || 'Automated pre-launch QA order. Please keep it warm and simple.');
   await shot(page, '02-step1.png');
   await advanceTo('#step-cover', 'step-cover', ['#err-step1']);
 
   // ── C. Cover ──────────────────────────────────────────────────
   note('── C. Cover');
   if (SPEC.coverPhoto) {
-    await page.setInputFiles('#dz-cover input[type=file]', nextPhoto());
+    await page.setInputFiles('#dz-cover input[type=file]', COVER_FILE || nextPhoto());
     await page.waitForSelector('#cover-preview', { state: 'visible', timeout: 60000 });
     note('Cover photo uploaded');
   } else {
@@ -309,7 +335,7 @@ try {
   note(`Main photos required: ${target}`);
   if (!Number.isFinite(target) || target < 1) { finding('S2', `#photo-count-min unreadable ("${target}")`); throw new Error('bad target'); }
 
-  const mainSet = photos.slice(photoIdx, photoIdx + target);
+  const mainSet = MAIN_FILES.length ? MAIN_FILES.slice(0, target) : photos.slice(photoIdx, photoIdx + target);
   if (mainSet.length < target) finding('S1', `Only ${mainSet.length} photos left in ${SPEC.photoDir}, need ${target}`);
   // Swap the tail for HEIC rather than appending — the photo count must match the
   // target EXACTLY or the form refuses to advance (README gotcha, S124).
@@ -438,7 +464,7 @@ otherFails.slice(0, 10).forEach(m => note('  ' + m));
 
 fs.writeFileSync(path.join(RUN_DIR, 'run-log.txt'), log.join('\n'));
 fs.writeFileSync(path.join(RUN_DIR, 'findings.json'), JSON.stringify(
-  { template: TEMPLATE, browser: BROWSER, device: DEVICE || 'desktop 1440x950',
+  { template: TEMPLATE, language: LANG, spec: SPEC_FILE, browser: BROWSER, device: DEVICE || 'desktop 1440x950',
     heic: heicFiles.map(f => path.basename(f)),
     orderNumber, email: EMAIL, tag: TAG, findings, gcsAborts: aborts, otherNetFails: otherFails, consoleMsgs: [...new Set(consoleMsgs)] }, null, 2));
 note(`Artefacts → ${RUN_DIR}`);
